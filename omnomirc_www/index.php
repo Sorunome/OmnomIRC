@@ -32,7 +32,7 @@ if (strpos($_SERVER['HTTP_USER_AGENT'],"textmode;")===false) {?>
 	
 	function AJAXSend() {
 		Message = document.getElementById("message").value;
-		sendAJAXMessage(userName,Signature,Message,"#Omnimaga");
+		sendAJAXMessage(userName,Signature,Message,"#Omnimaga",omnimagaUserId);
 		oldMessages.push(Message);
 		document.getElementById("message").value = "";
 		document.getElementById("message").focus();
@@ -167,9 +167,10 @@ if (strpos($_SERVER['HTTP_USER_AGENT'],"textmode;")===false) {?>
 <script type="text/javascript">
 	startIndicator();
 	
-	function signCallback(sig,nick) {
+	function signCallback(sig,nick,id) {
 		Signature = sig;
 		userName = nick;
+		omnimagaUserId = id;
 		load();
 	}
 	resize();

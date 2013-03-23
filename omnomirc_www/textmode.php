@@ -15,11 +15,12 @@ if (isset($_GET['login'])) {
 	//session_destroy();
 	$_SESSION['sig'] = $_GET['sig'];
 	$_SESSION['nick'] = $_GET['nick'];
+	$_SESSION['id'] = $_GET['id'];
 }
 if (isset($_GET['message'])) {
 	echo "<html><body><form action='textmode.php?sendMessage' method='post'><input type='text' name='message' autofocus style='width:100%'><input type='Submit' value='Send'></form><table>".$_SESSION['content']."</table></body></html>";
 } elseif (isset($_GET['sendMessage'])) {
-	header("Location: message.php?textmode&nick=".base64_url_encode($_SESSION['nick'])."&signature=".base64_url_encode($_SESSION['sig'])."&message=".base64_url_encode($_POST['message'])."&channel=I29tbmltYWdh");
+	header("Location: message.php?textmode&nick=".base64_url_encode($_SESSION['nick'])."&signature=".base64_url_encode($_SESSION['sig'])."&message=".base64_url_encode($_POST['message'])."&channel=I29tbmltYWdh&id=".$_SESSION['id']);
 } else {
 	
 	if (isset($_GET['update'])) {

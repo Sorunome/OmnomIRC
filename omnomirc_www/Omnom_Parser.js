@@ -653,7 +653,7 @@ scrolledDown = true;
 // Message Send Start          *
 //******************************
 
-	function sendAJAXMessage(name,signature,message,chan) //'chan' kept for legacy purposes.
+	function sendAJAXMessage(name,signature,message,chan,omnimagaUserId) //'chan' kept for legacy purposes.
 	{
 		if (message[0] == "/")
 		{
@@ -666,7 +666,7 @@ scrolledDown = true;
 			str="0:pm:0:" + d.getTime()/1000 + ":" + base64.encode(name) + ":" + base64.encode(HTMLEncode(message)); //Print PMs locally.
 			//addLine(str);
 		}
-		var theURL = "message.php?nick=" + base64.encode(name) + "&signature="+base64.encode(signature)+"&message=" + base64.encode(message) +"&channel=" + getChannelEn();
+		var theURL = "message.php?nick=" + base64.encode(name) + "&signature="+base64.encode(signature)+"&message=" + base64.encode(message) +"&channel=" + getChannelEn() + "&id=" + omnimagaUserId;
 		xmlhttp2=new XMLHttpRequest();
 		xmlhttp2.open("GET", theURL ,false);
 		xmlhttp2.send(null);

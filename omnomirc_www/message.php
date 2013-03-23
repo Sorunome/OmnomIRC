@@ -24,7 +24,7 @@ ip 108.174.51.58
 	include("Source/sql.php");
 	include("Source/sign.php");
 
-	if (!isset($_GET['signature']) || !isset($_GET['nick']) || !isset($_GET['message']) || !isset($_GET['channel'])) die("Missing Required Field");
+	if (!isset($_GET['signature']) || !isset($_GET['nick']) || !isset($_GET['message']) || !isset($_GET['channel']) || !isset($_GET['id'])) die("Missing Required Field");
 	if (strlen($_GET['message']) < 4) die("Bad message");
 	if (!checkSignature($_GET['nick'],$_GET['signature'],true)) die("Bad signature");
 	
@@ -121,6 +121,12 @@ ip 108.174.51.58
 		$returnmessage = "\x033Ignored users: ".str_replace("\n",",",$userSql["ignores"]);
 	}
 	if ($parts[0] == "/reload" || $parts[0] == "/refresh") {$reload = true;$sendNormal=false;}
+	if ($parts[0] == "/position") {
+		$returnmessage = "";
+		$sendNormal = false;
+		$sendPm = true;
+		$returnmessage = file_get_contents("http://www.omnimaga.org/checkLogin.php?op&u=".$_GET['id']."&nick=".$_GET['nick']);
+	}
 	//Sorunome edit END
 	if ($channel[0] == "*") //PM
 	{
