@@ -1,7 +1,9 @@
 OmnomIRC
 ========
 
-Changelog:
+Changelog
+---------
+
 17/1/2013
  - Added /ignore
  - Added /unignore
