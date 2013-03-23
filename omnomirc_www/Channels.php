@@ -17,14 +17,13 @@
     You should have received a copy of the GNU General Public License
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
-	include("/path/to/omnomirc_www/folder/Source/sign.php");
+	include("Source/sign.php");
 	//Set the channels here.
 	//$channels[]=Array("#channel",AlwaysShow);
 	$channels=Array();
-	$channels[]=Array("#chan1",true);//Default chan, 'cause it's the first in the array.
-	$channels[]=Array("#chan2",true);
+	$channels[]=Array("#main",true);//Default chan, 'cause it's the first in the array.
 	$exChans=Array();
-	$exChans[]=Array("#chan",false);
+	$exChans[]=Array("#main2",false);
 ?>
 <?PHP
 	

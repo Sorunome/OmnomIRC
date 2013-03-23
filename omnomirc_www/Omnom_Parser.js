@@ -17,25 +17,29 @@
     You should have received a copy of the GNU General Public License
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
+(function(window,undefined){
+	document.domain=HOSTNAME;
 
-document.domain=HOSTNAME;
-
-messageList = Array();
-UserListArr = Array();
-curLine = 0;
-//messageBox = document.getElementById("MessageBox");
-messageBox = document.createElement("table");
-messageBox.style.width="100%";
-messageBox.style.height="100%";
-messageBox.className='MessageBox';
-mBoxCont = document.getElementById("mboxCont");
-Userlist = Array();
-scrolledDown = true;
+	var messageList = [],
+		UserListArr = [],
+		curLine = 0,
+		//messageBox = document.getElementById("MessageBox");
+		messageBox = window.messageBox = document.createElement("table"),
+		mBoxCont = window.mBoxCont = document.getElementById("mboxCont"),
+		Userlist = [],
+		scrolledDown = true,
+		statusTxt = "",
+		statusStarted = false,
+		focusHandlerRegistered = false,
+		userListContainer = document.getElementById("UserListArrContainer"),
+		userListDiv = document.getElementById("UserList");
+	messageBox.style.width="100%";
+	messageBox.style.height="100%";
+	messageBox.className='MessageBox';
 //******************************
 // Start Request Loop functions*
 //******************************
-	function startLoop()
-	{
+	function startLoop(){
 		xmlhttp=getAjaxObject();
 		if (xmlhttp==null) { 
 			alert ("Your browser does not support AJAX! Please update for OmnomIRC compatibility.");
@@ -46,56 +50,55 @@ scrolledDown = true;
 	}
 	inRequest = false;
 	errorCount = 0;
-	function cancelRequest()
-	{
+	function cancelRequest(){
 		xmlhttp.abort();
 		inRequest = false;
 	}
-	function sendRequest()
-	{
-		if (inRequest)
+	function sendRequest(){
+		if(inRequest){
 			return;
+		}
 		url = "Update.php?lineNum=" + curLine + "&channel=" + getChannelEn() + "&nick=" + base64.encode(userName) + "&signature=" + base64.encode(Signature);
 		xmlhttp.open("GET",url,true);
-		if (isBlurred()){
-			setTimeout("xmlhttp.send(null);",2500); //Only query every 2.5 seconds maximum if not foregrounded.
-		}
-		else
-		{
-			setTimeout("xmlhttp.send(null);",75); //Wait for everything to get parsed before requesting again.
+		if(isBlurred()){
+			setTimeout(function(){
+				xmlhttp.send(null);
+			},2500); //Only query every 2.5 seconds maximum if not foregrounded.
+		}else{
+			setTimeout(function(){
+				xmlhttp.send(null);
+			},75); //Wait for everything to get parsed before requesting again.
 		}
 		inRequest = true;
 	}
-	
-	function getIncomingLine()
-	{
-		if (xmlhttp.readyState==4 || xmlhttp.readyState=="complete") { 
+	function getIncomingLine(){
+		if(xmlhttp.readyState==4 || xmlhttp.readyState=="complete"){ 
 			inRequest = false;
-			if (xmlhttp.responseText == "Could not connect to SQL DB." || xmlhttp.status != 200) 
-			{
+			if(xmlhttp.responseText == "Could not connect to SQL DB." || xmlhttp.status != 200){
 				errorCount++;
-				if (errorCount == 10)
-				{
+				if(errorCount == 10){
 					OmnomIRC_Error("OmnomIRC has lost connection to server. Please refresh to reconnect.");
 					return;
-				}
-				else
-				{
+				}else{
 					sendRequest();
 					return;
 				}
 			}
-			if (xmlhttp.status == 200) addLines(xmlhttp.responseText); //Filter out 500s from timeouts
+			if(xmlhttp.status == 200){
+				addLines(xmlhttp.responseText); //Filter out 500s from timeouts
+			}
 			errorCount = 0;
 			sendRequest();
 		}
 	}
-	
-	function getAjaxObject()
-	{
+	function getAjaxObject(){
 		xmlhttp=new XMLHttpRequest(); //Decent Browsers
-		if (!xmlhttp || xmlhttp == undefined || xmlhttp == null) xmlhttp=new ActiveXObject("Msxml2.XMLHTTP");  //IE7+
-		if (!xmlhttp || xmlhttp == undefined || xmlhttp == null) xmlhttp=new ActiveXObject("Microsoft.XMLHTTP"); //IE6-
+		if(!xmlhttp || xmlhttp == undefined || xmlhttp == null){
+			xmlhttp=new ActiveXObject("Msxml2.XMLHTTP");  //IE7+
+		}
+		if(!xmlhttp || xmlhttp == undefined || xmlhttp == null){
+			xmlhttp=new ActiveXObject("Microsoft.XMLHTTP"); //IE6-
+		}
 		return xmlhttp;
 	}
 	
@@ -106,27 +109,27 @@ scrolledDown = true;
 //******************************
 // Start Parser                *
 //******************************
-	function addLines(message)
-	{
+	function addLines(message){
 		parts = message.split("\n");
-		for (var i=0;i<parts.length;i++)
-		{
-			if (parts[i].length > 2)
-			{
+		for (var i=0;i<parts.length;i++){
+			if (parts[i].length > 2){
 				addLine(parts[i]);
 			}
 		}
 	}
-	function addLine(message)
-	{
-		if (!message || message == null || message == undefined)
+	var addLine = window.addLine = function(message){
+		if(!message || message == null || message == undefined){
 			return;
+		}
 		lnNum = parseInt(message.split(":")[0]);
 		curLine = parseInt(curLine);
-		if (lnNum > curLine)
+		if (lnNum > curLine){
 			curLine = lnNum;
+		}
 		doScroll = false;
-		if (mBoxCont.clientHeight + mBoxCont.scrollTop > mBoxCont.scrollHeight - 50) doScroll = true;
+		if(mBoxCont.clientHeight + mBoxCont.scrollTop > mBoxCont.scrollHeight - 50){
+			doScroll = true;
+		}
 		//messageBox = document.getElementById("MessageBox");
 		/*
 		if ("\v" != "v") //If IE, take the slow but sure route (This is enough of a performance hit in all browsers to use the optimized code if possible. Also, IE can go fuck itself.)
@@ -134,40 +137,40 @@ scrolledDown = true;
 		else //If not IE, yay!
 			messageBox.innerHTML = messageBox.innerHTML + parseMessage(message);*/
 		var row = parseMessage(message);
-		if (row)
+		if(row){
 			messageBox.appendChild(row);
-		if (doScroll)mBoxCont.scrollTop = mBoxCont.scrollHeight + 50;
+		}
+		if(doScroll){
+			mBoxCont.scrollTop = mBoxCont.scrollHeight + 50;
+		}
 	}
 	
-	function parseMessage(message) //type of message
-	{
+	function parseMessage(message){ //type of message
 		a = message;
-		var parts = message.split(":");
-		lnumber = parts[0];
-		type = parts[1];
-		online = parts[2];
-		parsedMessage = "";
+		var parts = message.split(":"),
+			lnumber = parts[0],
+			type = parts[1],
+			online = parts[2],
+			parsedMessage = "";
 		
-		for (i = 4;i < parts.length;i++)
+		for(i = 4;i < parts.length;i++){
 			parts[i] = base64.decode(parts[i]);
+		}
 		name = clickable_names(parts[4],online);
 		var undefined;
-		if (parts[5] == undefined || parts[5] == "")
+		if(parts[5] == undefined || parts[5] == ""){
 			parts[5] = " ";
-		if (parts[5] != undefined && parts[5] != null)
-		{
+		}
+		if(parts[5] != undefined && parts[5] != null){
 			parsedMessage = parseColors(parts[5]);
-			if (parts[5].toLowerCase().indexOf(userName.toLowerCase().substr(0,4)) >= 0 && hasLoaded && notifications && parts[4].toLowerCase() != "new")
-			{
+			if(parts[5].toLowerCase().indexOf(userName.toLowerCase().substr(0,4)) >= 0 && hasLoaded && notifications && parts[4].toLowerCase() != "new"){
 				showNotification("<" + parts[4] + "> " + parts[5]);
-				if (highDing)
-				{
+				if(highDing){
 					document.getElementById('ding').play();
 				}
 			}
 		}
-		if ((type == "message" || type == "action") && parts[4].toLowerCase() != "new")
-		{
+		if((type == "message" || type == "action") && parts[4].toLowerCase() != "new"){
 			parsedMessage = parseHighlight(parsedMessage);
 		}
 		retval = "";
@@ -179,36 +182,43 @@ scrolledDown = true;
 		tdName.innerHTML = '*';
 		tdMessage = document.createElement('td');
 		tdMessage.className=type;
-		switch (type)
-		{
+		switch(type){
 			case "reload":
 				startIndicator();
 				cancelRequest();
 				hasLoaded = false;
 				scrolledDown = true;
 				curLine = 0;
-				UserListArr = Array();
+				UserListArr = [];
 				userListDiv.innerHTML = "";
 				drawChannels();
-				var body= document.getElementsByTagName('body')[0];
-				var script= document.createElement('script');
+				var body= document.getElementsByTagName('body')[0],
+					script= document.createElement('script');
 				script.type= 'text/javascript';
 				script.src= 'Load.php?count=125&channel=' + getChannelEn() + "&nick=" + base64.encode(userName) + "&signature=" + base64.encode(Signature) + "&time=" + (new Date).getTime();;
-				script.onload= function(){parseUsers();startLoop();mBoxCont.scrollTop = mBoxCont.scrollHeight;hasLoaded = true;stopIndicator();};
+				script.onload= function(){
+					parseUsers();
+					startLoop();
+					mBoxCont.scrollTop = mBoxCont.scrollHeight;
+					hasLoaded = true;
+					stopIndicator();
+				};
 				body.appendChild(script);
 				displayMessage = false;
 				break;
 			case "join":
 				tdMessage.innerHTML = name + " has joined "+getChannelDe();
 				addUserJoin(parts[4],online);
-				if (online == "1")
+				if (online == "1"){
 					return "";
+				}
 				break;
 			case "part":
 				tdMessage.innerHTML = name + " has left "+getChannelDe()+" (" + parsedMessage + ")";
 				removeUser(parts[4]);
-				if (online == "1")
+				if (online == "1"){
 					return "";
+				}
 				break;
 			case "quit":
 				tdMessage.innerHTML = name + " has quit IRC (" + parsedMessage + ")";
@@ -220,20 +230,23 @@ scrolledDown = true;
 				break;
 			case "message":
 				tdName.innerHTML = name;
-				tdMessage.innerHTML = parsedMessage;break;
+				tdMessage.innerHTML = parsedMessage;
+				break;
 			case "action":
-				tdMessage.innerHTML = name + " " + parsedMessage;break;
+				tdMessage.innerHTML = name + " " + parsedMessage;
+				break;
 			case "mode":
-				tdMessage.innerHTML = name + " set "+getChannelDe()+" mode " + parts[5];break;
+				tdMessage.innerHTML = name + " set "+getChannelDe()+" mode " + parts[5];
+				break;
 			case "nick":
 				tdMessage.innerHTML = name + " has changed his nick to " + parsedMessage;
 				removeUser(parts[4]);
 				addUserJoin(parts[5],online);
 				break;
 			case "topic":
-				if (name!="" && name!="undefined" && name!=" " && (typeof name != 'undefined')) {
+				if(name!="" && name!="undefined" && name!=" " && (typeof name != 'undefined')){
 					tdMessage.innerHTML = name + " has changed the topic to " + parsedMessage;
-				} else {
+				}else{
 					displayMessage = false;
 				}
 				setTopic(parsedMessage);
@@ -245,32 +258,30 @@ scrolledDown = true;
 				tdMessage.innerHTML = parsedMessage;
 				break;
 			case "pm":
-				if (getChannelDe().toLowerCase() != ("*" + parts[4]).toLowerCase() && parts[4] != userName)//Not in the PM window
-				{
-					if (!hasLoaded)
+				if (getChannelDe().toLowerCase() != ("*" + parts[4]).toLowerCase() && parts[4] != userName){//Not in the PM window
+					if (!hasLoaded){
 						return "";
+					}
 					tdMessage.innerHTML = parsedMessage;
 					tdName.innerHTML = "(PM)" + name;
-					if (hasLoaded)
-					{
+					if (hasLoaded){
 						openPMWindow(parts[4]);
-						if (notifications)
+						if(notifications){
 							showNotification("(PM) <" + parts[4] + "> " + parts[5]);
-						if (highDing)
-								document.getElementById('ding').play();
+						}
+						if(highDing){
+							document.getElementById('ding').play();
+						}
 						document.getElementById("*" + parts[4]).style.color="#C22";
 					}
-				}
-				else
-				{
+				}else{
 					tdMessage.className="message";
 					tdMessage.innerHTML = parsedMessage; //In the PM window
 					tdName.innerHTML = name;
 				}
-			break;
+				break;
 			case "curline":
 				return "";
-			break;
 			case "highlight":
 				if (parts[6].toLowerCase() == "new") return "";
 				//document.getElementById(parts[4]).style.color="#C22"; //This call will fail if they aren't in the chan. Crude, but effective.
@@ -281,55 +292,55 @@ scrolledDown = true;
 				
 				
 				return "";
-			break;
 			case "default":
 				return "";
-			break;
 		}
 		var row = document.createElement("tr");
-		
 		//pretag = '<tr style="width:100%;">';
 		doHigh = !doHigh;
-		if (lineHigh && doHigh && displayMessage)
-		{
+		if (lineHigh && doHigh && displayMessage){
 			//pretag = '<tr style="width:100%;" class="linehigh">';
 			row.className = "linehigh";
 		}
 		doLineHigh = !doLineHigh;
-		if (type != "internal") d = new Date(parts[3]*1000);
-		if (type == "internal") 
-		{
+		if (type != "internal"){
+			d = new Date(parts[3]*1000);
+		}
+		if (type == "internal"){
 			d = new Date();
 		}
 		tdTime.innerHTML = '[' + d.toLocaleTimeString() + ']';
 		tdTime.style.height="1px";
 		tdName.style.height="1px";
 		tdMessage.style.height="1px";
-		if (showTime) row.appendChild(tdTime);
+		if (showTime){
+			row.appendChild(tdTime);
+		}
 		row.appendChild(tdName);
 		row.appendChild(tdMessage);
-		
 		row.style.width="100%";
 		row.style.height="1px";
 		refreshThis(row);
-		if (tdName.innerHTML == "*")
+		if(tdName.innerHTML == "*"){
 			statusTxt = tdName.innerHTML + " ";
-		else
+		}else{
 			statusTxt = "<" + StripHTML(tdName.innerHTML) + "> ";			
-		if (showTime)
+		}
+		if (showTime){
 			statusTxt = "[" + d.toLocaleTimeString() + "] " + statusTxt;
-			
+		}
 		statusTxt = statusTxt + StripHTML(tdMessage.innerHTML);
 		changeStatusBarText(statusTxt);
-		if (displayMessage)
+		if(displayMessage){
 			return row;
-		else
+		}else{
 			return;
+		}
 	}
-	function fixMBoxContHeight() {
+	function fixMBoxContHeight(){
 		mBoxCont.scrollTop = mBoxCont.scrollHeight;
 	}
-	function parseSmileys(s) { //smileys
+	function parseSmileys(s){ //smileys
 		if (showSmileys) {
 			var addStuff = "";
 			if (scrolledDown)
@@ -374,64 +385,66 @@ scrolledDown = true;
 		}
 		return s;
 	}
-	
-	function parseColors(colorStr) //colors
-	{
-		if (!colorStr || colorStr == null || colorStr == undefined) return;
+	function parseColors(colorStr){ //colors
+		if (!colorStr || colorStr == null || colorStr == undefined){
+			return;
+		}
 		colorStr = clickable_links(colorStr);
 		colorStr = parseSmileys(colorStr);
 		//lcount = 0;
 		//a = colorStr;
-		var arrayResults = Array();
+		var arrayResults = [],
+			isBool = false,
+			numSpan = 0,
+			isItalic = false,
+			isUnderline = false,
+			s,
+			colorStrTemp = "1,0";
 		colorStr+="\x0f";
 		arrayResults = colorStr.split(RegExp("([\x02\x03\x0f\x16\x1d\x1f])"));
 		colorStr="";
-		var isBool = false;
-		var numSpan = 0;
-		var isItalic = false;
-		var isUnderline = false;
-		var s;
-		var colorStrTemp = "1,0";
-		for (var i=0;i<arrayResults.length;i++) {
-			switch (arrayResults[i]) {
+		for(var i=0;i<arrayResults.length;i++){
+			switch (arrayResults[i]){
 				case "\x03":
-					for (var j=0;j<numSpan;j++)
+					for(var j=0;j<numSpan;j++){
 						colorStr+="</span>";
+					}
 					numSpan=1;
 					i++;
 					colorStrTemp = arrayResults[i];
 					s=arrayResults[i].replace(/^([0-9]{1,2}),([0-9]{1,2})/g,"<span class=\"fg-$1\"><span class=\"bg-$2\">");
-					if (s==arrayResults[i]) {
+					if(s==arrayResults[i]){
 						s=arrayResults[i].replace(/^([0-9]{1,2})/g,"<span class=\"fg-$1\">");
-					} else {
+					}else{
 						numSpan++;
 					}
 					colorStr+=s;
 					break;
 				case "\x02":
 					isBool = !isBool;
-					if (isBool) {
+					if(isBool){
 						colorStr+="<b>";
-					} else {
+					}else{
 						colorStr+="</b>";
 					}
 					break;
 				case "\x1d":
 					isItalic = !isItalic;
-					if (isItalic) {
+					if(isItalic){
 						colorStr+="<i>";
-					} else {
+					}else{
 						colorStr+="</i>";
 					}
 					break;
 				case "\x16":
-					for (var j=0;j<numSpan;j++)
+					for(var j=0;j<numSpan;j++){
 						colorStr+="</span>";
+					}
 					numSpan=2;
 					var stemp;
 					s=colorStrTemp.replace(/^([0-9]{1,2}),([0-9]{1,2}).+/g,"<span class=\"fg-$2\"><span class=\"bg-$1\">");
 					stemp=colorStrTemp.replace(/^([0-9]{1,2}),([0-9]{1,2}).+/g,"$2,$1");
-					if (s==colorStrTemp) {
+					if(s==colorStrTemp){
 						s=colorStrTemp.replace(/^([0-9]{1,2}).+/g,"<span class=\"fg-0\"><span class=\"bg-$1\">");
 						stemp=colorStrTemp.replace(/^([0-9]{1,2}).+/g,"0,$1");
 					}
@@ -440,27 +453,28 @@ scrolledDown = true;
 					break;
 				case "\x1f":
 					isUnderline = !isUnderline;
-					if (isUnderline) {
+					if(isUnderline){
 						colorStr+="<u>";
-					} else {
+					}else{
 						colorStr+="</u>";
 					}
 					break;
 				case "\x0f":
-					if (isUnderline) {
+					if(isUnderline){
 						colorStr+="</u>";
 						isUnderline=false;
 					}
-					if (isItalic) {
+					if(isItalic){
 						colorStr+="</i>";
 						isItalic=false;
 					}
-					if (isBool) {
+					if(isBool){
 						colorStr+="</b>"
 						isBool = false;
 					}
-					for (var j=0;j<numSpan;j++)
+					for(var j=0;j<numSpan;j++){
 						colorStr+="</span>";
+					}
 					numSpan=0;
 					break;
 				default:
@@ -469,25 +483,25 @@ scrolledDown = true;
 		}
 		/*Strip codes*/
 		colorStr = colorStr.replace(/(\x03|\x02|\x1F|\x09|\x0F)/g,"");
-
 		return(colorStr);
 	}
-	function parseHighlight(text) //highlight
-	{
-		if (text.toLowerCase().indexOf(userName.toLowerCase().substr(0,4)) >= 0)
-		{
+	function parseHighlight(text){ //highlight
+		if (text.toLowerCase().indexOf(userName.toLowerCase().substr(0,4)) >= 0){
 			style = "";
-			if (highRed)
+			if(highRed){
 				style = style + "color:#C73232;";
-			if (highBold)
+			}
+			if(highBold){
 				style = style + "font-weight:bold;";
+			}
 			return '<span class="highlight" style="' + style + '">' + text + "</span>";
 		}
 		return text;
 	}
-	function clickable_links(text) //urls
-	{
-		if (!text || text == null || text == undefined) return;
+	function clickable_links(text){ //urls
+		if (!text || text == null || text == undefined){
+			return;
+		}
 		//text = text.replace(/http:\/\/www\.omnimaga\.org\//g,"h111://www.omnimaga.org/");
 		//text = text.replace(/http:\/\/ourl\.ca\//g,"h111://ourl.ca/");
 		//text = text.replace(/((h111:\/\/(www\.omnimaga\.org\/|ourl\.ca))[-a-zA-Z0-9@:;%_+.~#?&//=]+)/, '<a target="_top" href="$1">$1</a>');
@@ -496,36 +510,36 @@ scrolledDown = true;
 		//text = text.replace(/h111/g,"http");
 		return text;
 	}
-	function clickable_names(name,isOnline) //omnomirc names
-	{
-		if (isOnline == "1")
+	function clickable_names(name,isOnline){ //omnomirc names
+		if (isOnline == "1"){
 			return '<a target="_top" href="http://www.omnimaga.org/index.php?action=ezportal;sa=page;p=13&userSearch=' + name + '">' + colored_names(name) + '</a>';
+		}
 		return colored_names(name);
 	}
-	function colored_names(name) //colored neames (duh)
-	{
-		if (!coloredNames)
+	function colored_names(name){ //colored neames (duh)
+		if (!coloredNames){
 			return name;
-		if (!name || name == null || name == undefined)
+		}
+		if (!name || name == null || name == undefined){
 			return;
+		}
 		rcolors = Array(19, 20, 22, 24, 25, 26, 27, 28, 29);
 		sum = i = 0; 
-		while (name[i])
+		while (name[i]){
 			sum += name.charCodeAt(i++);
+		}
 		sum %= 9;
 		return '<span class="uName-'+rcolors[sum]+'">'+name+'</span>';
 	}
-	
 	function refreshThis(elementOnShow){
-	   var msie = 'Microsoft Internet Explorer';
-	   var tmp = 0;
-	   if (navigator.appName == msie){
-		  tmp = elementOnShow.offsetTop  +  'px';
-	   }else{
-		  tmp = elementOnShow.offsetTop;
-	   }
+		var msie = 'Microsoft Internet Explorer';
+		var tmp = 0;
+		if (navigator.appName == msie){
+			tmp = elementOnShow.offsetTop  +  'px';
+		}else{
+			tmp = elementOnShow.offsetTop;
+		}
 	}
-	
 //******************************
 // End Parser                  *
 //******************************
@@ -533,53 +547,51 @@ scrolledDown = true;
 //******************************
 // Userlist Start              *
 //******************************
-	userListContainer = document.getElementById("UserListArrContainer");
-	userListDiv = document.getElementById("UserList");
-	function addUser(user)
-	{
+	function addUser(user){
 		UserListArr.push(user);
 	}
-	
-	function addUserJoin(user,online)
-	{
+	function addUserJoin(user,online){
 		if(!hasLoaded) return;
 		var userp = base64.encode(user) + ":" + online;
 		UserListArr.push(userp);
 		parseUsers();
 	}
-	
-	function parseUsers()
-	{
-		if (!userListDiv || userListDiv == null)
-		 userListDiv = document.getElementById("UserList");
+	function parseUsers(){
+		if (!userListDiv || userListDiv == null){
+			userListDiv = document.getElementById("UserList");
+		}
 		userText = "";
 		i = 0;
-		UserListArr.sort(function(a,b)
-						{
-							var al=base64.decode(a).toLowerCase(),bl=base64.decode(b).toLowerCase();
-							return al==bl?(a==b?0:a<b?-1:1):al<bl?-1:1;
-						});
-		for (i=0;i<UserListArr.length;i++)
-		{
+		UserListArr.sort(
+			function(a,b){
+				var al = base64.decode(a).toLowerCase(),
+					bl = base64.decode(b).toLowerCase();
+				return al==bl?(a==b?0:a<b?-1:1):al<bl?-1:1;
+			}
+		);
+		for (i=0;i<UserListArr.length;i++){
 			parts = UserListArr[i].split(":");
-			if (parts[1] == "0") userText = userText + "#" + base64.decode(parts[0]) + "<br/>";
-			if (parts[1] == "1") 
+			if (parts[1] == "0"){
+				userText = userText + "#" + base64.decode(parts[0]) + "<br/>";
+			}
+			if(parts[1] == "1"){
 				userText = userText + '<a target="_top" href="http://www.omnimaga.org/index.php?action=ezportal;sa=page;p=13&userSearch=' +base64.decode(parts[0]) + 
 				'"><img src="http://omnomirc.www.omnimaga.org/omni.png" alt="Omnimaga User" title="Omnimaga User" border=0 width=8 height=8 />' + base64.decode(parts[0]) + '</a><br/>';
-			if (parts[1] == "2") userText = userText + "!" + base64.decode(parts[0]) + "<br/>";
+			}
+			if(parts[1] == "2"){
+				userText = userText + "!" + base64.decode(parts[0]) + "<br/>";
+			}
 		}
 		userText = userText + "<br/><br/>";
 		userListDiv.innerHTML = userText;
 	}
-	
-	function removeUser(user)
-	{
+	function removeUser(user){
 		if(!hasLoaded) return;
-		for (i in UserListArr)
-		{
+		for (i in UserListArr){
 			parts = UserListArr[i].split(":");
-			if (base64.decode(parts[0]) == user)
+			if (base64.decode(parts[0]) == user){
 				UserListArr.splice(i,1);
+			}
 		}
 		parseUsers();
 	}
@@ -591,8 +603,7 @@ scrolledDown = true;
 //******************************
 // Load Start                  *
 //******************************
-	function load()
-	{
+	var load = window.load = function(){
 		cookieLoad();
 		lineHigh = getOption(6,"T") == "T";
 		doHigh = false;
@@ -607,12 +618,11 @@ scrolledDown = true;
 		doStatusUpdates = getOption(11,"T") == "T";
 		showSmileys = getOption(12,"T") == "T";
 		hasLoaded = false;
-		if (!showSmileys) {
+		if (!showSmileys){
 			document.getElementById('smileyMenuButton').src='smileys/smiley_grey.png';
 			document.getElementById('smileyMenuButton').style.cursor='default';
 		}
-		if (!enabled)
-		{
+		if (!enabled){
 			mboxCont.appendChild(messageBox);
 			messageBox.innerHTML = '<a href="#" onclick="toggleEnable();">OmnomIRC is disabled. Click here to enable.</a>';
 			return false;
@@ -622,7 +632,10 @@ scrolledDown = true;
 		var chanScr= document.createElement('script');
 		chanScr.type= 'text/javascript';
 		chanScr.src= 'Channels.php';
-		chanScr.onload= function(){channelSelectorCallback();readOldMessagesCookies();};
+		chanScr.onload= function(){
+			channelSelectorCallback();
+			readOldMessagesCookies();
+		};
 		body.appendChild(chanScr);
 		chanList = document.getElementById('chanList');
 		isBlurred();
@@ -640,8 +653,7 @@ scrolledDown = true;
 //******************************
 // Links Start                 *
 //******************************
-	function toggleEnable()
-	{
+	function toggleEnable(){
 		setOption(5,!(getOption(5,'T') == 'T')?'T':'F');
 		window.location.reload(true);
 	}
@@ -653,22 +665,25 @@ scrolledDown = true;
 // Message Send Start          *
 //******************************
 
-	function sendAJAXMessage(name,signature,message,chan) //'chan' kept for legacy purposes.
-	{
-		if (message[0] == "/")
-		{
+	var sendAJAXMessage = window.sendAJAXMessage = function(name,signature,message,chan){ //'chan' kept for legacy purposes.
+		if (message[0] == "/"){
 			if (parseCommand(message.substr(1)))
 				return;
 		}
-		if (getChannelDe()[0] == "*")
-		{
+		if (getChannelDe()[0] == "*"){
 			d = new Date();
 			str="0:pm:0:" + d.getTime()/1000 + ":" + base64.encode(name) + ":" + base64.encode(HTMLEncode(message)); //Print PMs locally.
 			//addLine(str);
 		}
-		var theURL = "message.php?nick=" + base64.encode(name) + "&signature="+base64.encode(signature)+"&message=" + base64.encode(message) +"&channel=" + getChannelEn();
-		xmlhttp2=new XMLHttpRequest();
-		xmlhttp2.open("GET", theURL ,false);
+		var xmlhttp2=new XMLHttpRequest();
+		xmlhttp2.onreadyStateChange = function(){
+			console.log(xmlhttp2.readyState,xmlhttp2.responseText);
+		};
+		xmlhttp2.open(
+			"GET",
+			"message.php?nick=" + base64.encode(name) + "&signature="+base64.encode(signature)+"&message=" + base64.encode(message) +"&channel=" + getChannelEn(),
+			false
+		);
 		xmlhttp2.send(null);
 	}
 //******************************
@@ -678,30 +693,34 @@ scrolledDown = true;
 //******************************
 // Channel Selector Start      *
 //******************************
-	function channelSelectorCallback()
-	{
+	function channelSelectorCallback(){
 		messageBox.cellPadding = "0px";
 		messageBox.cellSpacing = "0px";
-		if (showExChans)
-			for (i in exChannels)
+		if (showExChans){
+			for (i in exChannels){
 				channels.push(exChannels[i]);
+			}
+		}
 		/*if (moreChans)
 			for(i in moreChans)
 				channels.push(base64.encode(moreChans[i]));*/
 		loadChannels(); //From cookies
 		drawChannels();
 		scrolledDown = true;
-		
 		var body= document.getElementsByTagName('body')[0];
 		var script= document.createElement('script');
 		script.type= 'text/javascript';
 		script.src= 'Load.php?count=125&channel=' + getChannelEn() + "&nick=" + base64.encode(userName) + "&signature=" + base64.encode(Signature) + "&time=" + (new Date).getTime();
-		script.onload= function(){mBoxCont.appendChild(messageBox);parseUsers();startLoop();mBoxCont.scrollTop = mBoxCont.scrollHeight;hasLoaded = true;stopIndicator();};
+		script.onload= function(){
+			mBoxCont.appendChild(messageBox);
+			parseUsers();
+			startLoop();
+			mBoxCont.scrollTop = mBoxCont.scrollHeight;
+			hasLoaded = true;stopIndicator();
+		};
 		body.appendChild(script);
 	}
-	
-	function changeChannel()
-	{
+	function changeChannel(){
 		//Empty out dirty holders
 		cancelRequest();
 		startIndicator();
@@ -715,7 +734,7 @@ scrolledDown = true;
 		hasLoaded = false;
 		scrolledDown = true;
 		curLine = 0;
-		UserListArr = Array();
+		UserListArr = [];
 		userListDiv.innerHTML = "";
 		
 		drawChannels();	
@@ -726,50 +745,71 @@ scrolledDown = true;
 		script.onload= function(){mBoxCont.appendChild(messageBox);parseUsers();startLoop();mBoxCont.scrollTop = mBoxCont.scrollHeight;hasLoaded = true;stopIndicator();};
 		body.appendChild(script);
 	}
-	
-	function drawChannels()
-	{
-		var chanText = '';//'<table>';
-		for (i in channels)
-		{
-		var chanName = base64.decode(channels[i]);
-			//partChannel
-			style = "chan";
-			chanText += '<table class="chanList"><td id="' + chanName + '" class="';
-			if (getChannelIndex()==i)
-				style = "curchan";
-			chanText += style;
-			chanText += '">';
-			if (chanName.substr(0,1) != "#")
-				chanText += '<span onclick="partChannel(\'' + chanName + '\')" onmouseover="this.style.color=\'#C73232\';this.style.font-weight=\'bolder\'" onmouseout="this.style.color=\'' + ((getChannelIndex()==i)?'#FFF':'#22C') + '\';this.style.font-weight=\'normal\'">x</span> ';
-			chanText += '<span onclick="selectChannel(' + i + ')">';
-			chanText += chanName;
-			chanText += "</span>";
-			chanText += "</td></table>";
+	function drawChannels(){
+		"use strict";
+		var table,
+			td,
+			span,
+			span2,
+			chanName,
+			docfrag = document.createDocumentFragment(),
+			chanList = document.getElementById("ChanList");
+		for (var i in channels){
+			// build elements/variables
+			table = document.createElement('table');
+			td = document.createElement('td');
+			span = document.createElement('span');
+			span2 = document.createElement('span');
+			table.className = 'chanList';
+			chanName = base64.decode(channels[i]);
+			// Set properties/events
+			td.id = chanName;
+			td.className = (getChannelIndex()==i)?"curchan" :"chan"
+			if (chanName.substr(0,1) != "#"){
+				span.onclick = (function(name){
+					return function(){
+						partChannel(name);
+					}
+				})(chanName);
+				span.onmouseover = function(){
+					this.style.color = '#C73232';
+					this.style.fontWeight = 'bolder'
+				};
+				span.onmouseout = (function(color){
+					return function(){
+						this.style.color = color;
+						this.style.fontWeight = 'normal';
+					}
+				})((getChannelIndex()==i)?'#FFF':'#22C');
+				span.innerHTML = 'x';
+				td.appendChild(span);
+			}
+			span2.onclick = (function(i){
+				return function(){
+					selectChannel(i);
+				};
+			})(i);
+			span2.innerHTML = chanName;
+			// Append to DOM
+			td.appendChild(span2);
+			table.appendChild(td);
+			docfrag.appendChild(table);
 		}
-		//chanText += "</table>";
-		document.getElementById("ChanList").innerHTML = chanText;
+		chanList.innerHTML = '';
+		chanList.appendChild(docfrag);
 	}
-	
-	function selectChannel(index)
-	{
+	function selectChannel(index){
 		setOption(4,String.fromCharCode(index + 32),true);
 		changeChannel();
 		readOldMessagesCookies();
 	}
-	
-	function getChannelEn()
-	{
+	var getChannelEn = window.getChannelEn = function(){
 		return channels[getChannelIndex()];
 	}
-	
-	function getChannelDe()
-	{
+	function getChannelDe(){
 		return base64.decode(channels[getChannelIndex()]);
 	}
-	
-	function getChannelIndex()
-	{
+	function getChannelIndex(){
 		var index = getOption(4,String.fromCharCode(32)).charCodeAt(0) - 32;
 		if (index > (channels.length - 1))
 			index = 0;
@@ -782,20 +822,19 @@ scrolledDown = true;
 //******************************
 // Tab Completion Start        *
 //******************************
-
-function searchUser(start,startAt)
-{
-	if(!startAt)
-		startAt = 0;
-	for (i=0;i<UserListArr.length;i++)
-	{
-		parts = UserListArr[i].split(":");
-		name = base64.decode(parts[0]).toLowerCase();
-		if (name.indexOf(start.toLowerCase()) == 0 && startAt-- <= 0)
-			return base64.decode(parts[0]);
+	function searchUser(start,startAt){
+		if(!startAt){
+			startAt = 0;
+		}
+		for (i=0;i<UserListArr.length;i++){
+			parts = UserListArr[i].split(":");
+			name = base64.decode(parts[0]).toLowerCase();
+			if (name.indexOf(start.toLowerCase()) == 0 && startAt-- <= 0){
+				return base64.decode(parts[0]);
+			}
+		}
+		return start;
 	}
-	return start;
-}
 	
 //******************************
 // Tab Completion End          *
@@ -804,40 +843,32 @@ function searchUser(start,startAt)
 //******************************
 // Commands Start              *
 //******************************
-	function setTopic(message)
-	{
+	function setTopic(message){
 		document.getElementById('topic').innerHTML = message;
 	}
-	function sendInternalMessage(message)
-	{
+	function sendInternalMessage(message){
 		d = new Date();
 		str="0:internal:0:" + parseInt(d.getTime()*1000) + ":" + base64.encode(message);
 		addLine(str);
 	}
-	
-	function OmnomIRC_Error(message)
-	{
+	function OmnomIRC_Error(message){
 		sendInternalMessage('<span style="color:#C73232;">'+message+"</span>");
 	}
-	
-	function joinChannel(paramaters)
-	{
-			if (paramaters.substr(0,1) != "@" && paramaters.substr(0,1) != "#")
+	function joinChannel(paramaters){
+			if (paramaters.substr(0,1) != "@" && paramaters.substr(0,1) != "#"){
 				paramaters = "@" + paramaters;
+			}
 			//Check if it already exists or not. If so, try to join it.
 			var count = 0;
-			for (i in channels)
-			{
-				if (base64.decode(channels[i]).toLowerCase() == paramaters.toLowerCase())
-				{
+			for (i in channels){
+				if (base64.decode(channels[i]).toLowerCase() == paramaters.toLowerCase()){
 					selectChannel(count);
 					return;
 				}
 				count++;
 			}
 			//Channel not in existance.
-			if (paramaters.substr(0,1) == "#")
-			{
+			if (paramaters.substr(0,1) == "#"){
 				sendInternalMessage('<span style="color:#C73232;"> Join Error: Cannot join new channels starting with #.</span>');
 				return;
 			}
@@ -846,42 +877,34 @@ function searchUser(start,startAt)
 			saveChannels();
 			selectChannel(channels.length-1);
 	}
-	
-	function openPMWindow(paramaters)
-	{
-		if (paramaters.substr(0,1) == "@" && paramaters.substr(0,1) == "#")
+	function openPMWindow(paramaters){
+		if (paramaters.substr(0,1) == "@" && paramaters.substr(0,1) == "#"){
 			sendInternalMessage('<span style="color:#C73232;"> Query Error: Cannot query a channel. Use /join instead.</span>');
-		if (paramaters.substr(0,1) != "*")
+		}
+		if (paramaters.substr(0,1) != "*"){
 			paramaters = "*" + paramaters;
-		for (i in channels)
-			if (base64.decode(channels[i]).toLowerCase() == paramaters.toLowerCase())
+		}
+		for (i in channels){
+			if (base64.decode(channels[i]).toLowerCase() == paramaters.toLowerCase()){
 				return; //PM already opened, don't open another.
+			}
+		}
 		channels.push(base64.encode(paramaters));
 		saveChannels();
 		drawChannels();
 	}
-	
-	function partChannel(paramaters)
-	{
-		if (paramaters == "")
-		{
+	function partChannel(paramaters){
+		if (paramaters == ""){
 			partChannel(getChannelDe());
 			return;
 		}
-		if (paramaters.substr(0,1) != "#")
-		{
-			for (i in channels)
-			{
-				if (base64.decode(channels[i]) == paramaters)
-				{
-					
-					if (getChannelDe() == paramaters)
-					{
+		if (paramaters.substr(0,1) != "#"){
+			for (i in channels){
+				if (base64.decode(channels[i]) == paramaters){
+					if (getChannelDe() == paramaters){
 						channels.splice(i,1);
 						selectChannel(i-1);
-					}
-					else
-					{
+					}else{
 						channels.splice(i,1);
 						drawChannels();
 					}
@@ -889,51 +912,40 @@ function searchUser(start,startAt)
 					return;
 				}
 			}
-			if (paramaters.substr(0,1) != "@" && paramaters.substr(0,1) != "#")
-			{
+			if (paramaters.substr(0,1) != "@" && paramaters.substr(0,1) != "#"){
 				paramaters = "@" + paramaters;
 				partChannel(paramaters);
-			}
-			else
-			{
+			}else{
 				sendInternalMessage('<span style="color:#C73232;"> Part Error: I cannot part ' + paramaters + '. (You are not in it.)</span>');
 			}
-		}	
-		else
-		sendInternalMessage('<span style="color:#C73232;"> Part Error: I cannot part ' + paramaters + '. (That is not an OmnomIRC channel.)</span>');
+		}else{
+			sendInternalMessage('<span style="color:#C73232;"> Part Error: I cannot part ' + paramaters + '. (That is not an OmnomIRC channel.)</span>');
+		}
 	}
-	
-	function parseCommand(message)
-	{
+	function parseCommand(message){
 		var command = message.split(" ")[0];
 		var paramaters = message.substr(command.length+1).toLowerCase();
-		switch(command)
-		{
-			case "j":
-			case "join":
+		switch(command){
+			case "j": case "join":
 				joinChannel(paramaters);
-			return true;
-			case "q":
-			case "query":
+				return true;
+			case "q": case "query":
 				openPMWindow(paramaters);
-			return true;
-			case "win":
-			case "w":
-			case "window":
+				return true;
+			case "win": case "w": case "window":
 				if (parseInt(paramaters) > channels.length || parseInt(paramaters) <= 0)
 					sendInternalMessage('<span style="color:#C73232;"> Invalid window selection. Valid options: 1-'+channels.length+'</span>');
 				else
 					selectChannel(parseInt(paramaters)-1);
 			return true;
-			case "p":
-			case "part":
+			case "p": case "part":
 				partChannel(paramaters);
-			return true;
+				return true;
 			case "test":
 				sendInternalMessage(Signature);
-			return true;
+				return true;
 			default:
-			return false;
+				return false;
 		}
 	}
 //******************************
@@ -944,30 +956,24 @@ function searchUser(start,startAt)
 // Dynamic Channels Start      *
 //******************************
 
-	function loadChannels()
-	{
-		if (document.cookie.indexOf("OmnomChannels") >= 0)
-		{
+	function loadChannels(){
+		if (document.cookie.indexOf("OmnomChannels") >= 0){
 			var moreChans = document.cookie.split(";")[0].replace(/^.*OmnomChannels=(.+?)|.*/, "\$1").split("%");
-			for (i in moreChans)
-			{
-				
-				if (moreChans[i][0] != "#" && moreChans[i] != "")
-				{
-					if (moreChans[i][0] == "^") moreChans[i][0] = "#";
+			for (i in moreChans){
+				if (moreChans[i][0] != "#" && moreChans[i] != ""){
+					if (moreChans[i][0] == "^"){
+						moreChans[i][0] = "#";
+					}
 					channels.push(moreChans[i]);
 				}
 			}
 		}
 	}
 
-	function saveChannels()
-	{
+	function saveChannels(){
 		var chanList = "";
-		for (i in channels)
-		{
-			if (base64.decode(channels[i]).substr(0,1) != "#")
-			{
+		for (i in channels){
+			if (base64.decode(channels[i]).substr(0,1) != "#"){
 				chanList = chanList + channels[i] + "%";
 			}
 		}
@@ -982,32 +988,37 @@ function searchUser(start,startAt)
 //******************************
 // Focus Handler Start         *
 //******************************
-var focusHandlerRegistered = false;
-function isBlurred() {
-	if  (focusHandlerRegistered == undefined)
-		focusHandlerRegistered = false;
-	if (!focusHandlerRegistered)
-		registerFocusHandler();
-	if (parent != undefined)
-		return parent.window.bIsBlurred;
-	else
-		return bIsBlurred;
-}
-
-function registerFocusHandler() {
-	focusHandlerRegistered = true;
-	if (parent != undefined)//Child(iframe)
-	{
-		parent.window.bIsBlurred = false;
-		parent.window.onblur = function(){ parent.window.bIsBlurred=true;if(console.log)console.log("Blur");return true; }
-		parent.window.onfocus= function(){ parent.window.bIsBlurred=false;resize();if(console.log)console.log("Focus");return true;}
+	function isBlurred() {
+		if(focusHandlerRegistered == undefined){
+			focusHandlerRegistered = false;
+		}
+		if(!focusHandlerRegistered){
+			registerFocusHandler();
+		}
+		if(parent != undefined){
+			return parent.window.bIsBlurred;
+		}else{
+			return bIsBlurred;
+		}
 	}
-	else //Not a child
-	{
-		window.onblur = function(){ bIsBlurred=true;if(console.log)console.log("Blur");return true; }
-		window.onfocus= function(){ bIsBlurred=false;resize();if(console.log)console.log("Focus");return true;}
+	function registerFocusHandler() {
+		focusHandlerRegistered = true;
+		if (parent != undefined){//Child(iframe)
+			parent.window.bIsBlurred = false;
+			parent.window.onblur = function(){
+				parent.window.bIsBlurred = true;
+				return true;
+			};
+			parent.window.onfocus= function(){
+				parent.window.bIsBlurred=false;
+				resize();
+				return true;
+			};
+		}else{ //Not a child
+			window.onblur = function(){ bIsBlurred=true;if(console.log)console.log("Blur");return true; }
+			window.onfocus= function(){ bIsBlurred=false;resize();if(console.log)console.log("Focus");return true;}
+		}
 	}
-}
 //******************************
 // Focus Handler End           *
 //******************************
@@ -1015,29 +1026,26 @@ function registerFocusHandler() {
 //******************************
 // Status Bar Updater Start    *
 //******************************
-statusTxt = "";
-statusStarted = false;
-function startStatusBarUpdate()
-{
-	if (!doStatusUpdates) return;
-	if (!statusStarted)
-		setInterval(doStatusBarUpdate,500);
-	statusStarted = true;
-}
+	function startStatusBarUpdate(){
+		if (!doStatusUpdates) return;
+		if (!statusStarted)
+			setInterval(doStatusBarUpdate,500);
+		statusStarted = true;
+	}
 
-function doStatusBarUpdate()
-{
-	window.status=statusTxt;
-	if (parent)
-		parent.window.status=statusTxt;
-}
+	function doStatusBarUpdate()
+	{
+		window.status=statusTxt;
+		if (parent)
+			parent.window.status=statusTxt;
+	}
 
-function changeStatusBarText(msg)
-{
-	statusTxt = msg;
-	if (!statusStarted)
-		startStatusBarUpdate();
-}
+	function changeStatusBarText(msg){
+		statusTxt = msg;
+		if (!statusStarted){
+			startStatusBarUpdate();
+		}
+	}
 //******************************
 // Status Bar Updater End      *
 //******************************
@@ -1045,20 +1053,21 @@ function changeStatusBarText(msg)
 //******************************
 // HTML Tools Start            *
 //******************************
- function HTMLEncode(str)
- {
-   var div = document.createElement('div');
-   var text = document.createTextNode(str);
-   div.appendChild(text);
-   return div.innerHTML;
-  }
-  function StripHTML(str)
-  {
-	var tmp = document.createElement("div");
-	tmp.innerHTML = str;
-	return tmp.textContent||tmp.innerText;
-  }
-  String.prototype.trim = function() { return this.replace(/^\s+|\s+$/g, ""); };
+	function HTMLEncode(str){
+		var div = document.createElement('div'),
+			text = document.createTextNode(str);
+		div.appendChild(text);
+		return div.innerHTML;
+	}
+	function StripHTML(str){
+		var tmp = document.createElement("div");
+		tmp.innerHTML = str;
+		return tmp.textContent||tmp.innerText;
+	}
+	String.prototype.trim = function(){
+		return this.replace(/^\s+|\s+$/g, "");
+	};
 //******************************
 // HTML Tools End              *
 //******************************
+})(window);
