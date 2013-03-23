@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- withgusto 500 error page -->
+<head>
+	<title>Server Error: It's a Five Double-Oh!</title>
+	<meta charset="utf-8" />
+	<!-- Enable HTML5 in IE except for IE9 -->
+	<!--[if lt IE 9]>
+		<script src="html5shiv.js"></script>
+	<![endif]-->
+	
+	<!-- Fix the PNG transparency problem for IE6 and lower -->
+	<!--[if lte IE 6]>
+		<script type="text/javascript" src="supersleight-min.js"></script>
+	<![endif]-->
+	<script type="text/javascript">
+	function getParameterByName(name)
+	{
+	  name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
+	  var regexS = "[\\?&]" + name + "=([^&#]*)";
+	  var regex = new RegExp(regexS);
+	  var results = regex.exec(window.location.search);
+	  if(results == null)
+	    return "";
+	  else
+	    return decodeURIComponent(results[1].replace(/\+/g, " "));
+	}
+	function safe_tags(str) {
+	    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') ;
+	}
+	// This checks to see if the result is blank.
+	// If it is, return something special. Otherwise, just escape and return the result.
+	function getParameterByNameBC(name)
+	{
+	  tmp = getParameterByName(name);
+	  if(tmp == "") {
+	    return "<b>None</b>";
+	  } else {
+	    return safe_tags(tmp);
+	  }
+	}
+	
+	function getParameterByNameBool(name)
+	{
+	  tmp = getParameterByName(name);
+	  if(tmp == "1") {
+	    return "Yes";
+	  } else if (tmp == "0") {
+	    return "No";
+	  } else {
+	    return "Unknown (server said "+getParameterByNameBC(name)+")";
+	  }
+	}
+	</script>
+	<link href='http://fonts.googleapis.com/css?family=PT+Sans:400,700,400italic' rel='stylesheet' type='text/css'>
+	<style type="text/css">
+	html {
+		font-size: 100%;
+		overflow-y: scroll;
+		-webkit-text-size-adjust: 100%;
+		-ms-text-size-adjust: 100%;
+	}
+	body {
+		font-family: "PT Sans", Times, "Times New Roman", Arial, sans-serif;
+		font-size: 16px;
+	}
+	.info, .success, .warning, .error, .validation, .criticalerror {
+		border: 1px solid;
+		margin: 10px 0px;
+		padding:10px 10px 10px 50px; /* OLD: 15, 10, 15, 50 px */
+		background-repeat: no-repeat;
+		background-position: 10px center;
+		display: inline-block;
+		font-size: 14px;
+	}
+	.error {
+		color: #D8000C;
+		background-color: #FFBABA;
+		background-image: url('error.png');
+	}
+	.criticalerror {
+		color: #FFFFFF;
+		background-color: #8C0000;
+		background-image: url('error.png');
+	}
+	</style>
+</head>
+<body>
+<b>Oops! This webpage exploded into a million glittery pieces! :( (Error code 500!)</b><br /><br />
+Something bad happened internally - either the server is upset, or PHP
+is <a href="http://stackoverflow.com/questions/5317444/when-php-fatal-error-happens-nginx-reports-http-error-500-to-browser">throwing a tantrum</a>.<br />
+Notify the maintainer of this page first about this problem.<br />
+If the maintainer can't fix it or requests admin help, contact the admin!<br />
+Be sure to include the error details below.<br /><br />
+If you want to, you can try <script type="text/javascript">document.write("<a href='"+getParameterByNameBC("q")+"'>reloading</a> this page.");</script>
+<noscript>going to the page again.</noscript><br />
+Do NOT reload the current page; the page you have tried to access redirected to this error page.<br />
+(Don't use CTRL-R, F5, etc.)<br />
+Reloading this page will reload the error page, not the page you were looking for!
+<br /><br />
+
+<noscript>
+<div class="error">We detected that Javascript is disabled (or doesn't exist) for you.<br />
+Javascript must be enabled to show the error details below.<br />
+Please enable it and refresh this page (CTRL-R or F5).<br />
+If you are unable to enable Javascript (your browser doesn't support it,<br />
+security policy, etc.), send the URL of this page to the maintainer/admin.<br />
+This error page's URL contains all of the error information needed.</div><br /><br /></noscript>
+<div class="criticalerror">
+<b><u>Error details:</u></b><br />
+<b>Attempted to access page:</b> <script type="text/javascript">document.write(getParameterByNameBC("q"));</script><br />
+<b>Document root:</b> <script type="text/javascript">document.write(getParameterByNameBC("docroot"));</script><br />
+<b>Query String:</b> <script type="text/javascript">document.write(getParameterByNameBC("args"));</script><br />
+<b>Request filename:</b> <script type="text/javascript">document.write(getParameterByNameBC("fn"));</script><br />
+<b>Request type:</b> <script type="text/javascript">document.write(getParameterByNameBC("reqtype"));</script><br />
+<b>Accessed by:</b> <script type="text/javascript">document.write(getParameterByNameBC("remoteip"));</script><br />
+<b>HTTP User:</b> <script type="text/javascript">document.write(getParameterByNameBC("user"));</script><br />
+<b>PHP related error?</b> <script type="text/javascript">document.write(getParameterByNameBool("phprelated"));</script><br />
+</div>
+<br />
+Despite this page telling you that things are collapsing, it <i>is</i> <b><a href="http://validator.w3.org/check?uri=referer">HTML5 compliant</a></b>!
+</body>
+</html>
