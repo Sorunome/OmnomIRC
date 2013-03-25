@@ -37,7 +37,7 @@ if(isset($_GET['op'])) {
 		echo $memberContext[$id]['group'];
 } else {
 	if(isset($_GET['txt']))
-		echo $signature."\n".$nick;
+		echo $signature."\n".$nick."\n".$context['user']['id'];
 	elseif (isset($_GET['textmode']))
 		header('Location: http://omnomirc.www.omnimaga.org/textmode.php?login&nick='.urlencode($nick).'&sig='.urlencode($signature).'&id='.$context['user']['id']);
 	else
