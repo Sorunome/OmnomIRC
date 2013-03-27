@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS `irc_lines` (
   `type` varchar(45) NOT NULL,
   `channel` varchar(45) NOT NULL,
   `time` varchar(45) NOT NULL,
-  `Online` tinyint(1) NOT NULL DEFAULT '0',
+  `Online` int(10) NOT NULL DEFAULT '0',
   PRIMARY KEY (`line_number`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 
@@ -54,6 +54,8 @@ CREATE TABLE IF NOT EXISTS `irc_outgoing_messages` (
   `nick` varchar(45) NOT NULL,
   `channel` varchar(45) NOT NULL,
   `action` tinyint(1) NOT NULL DEFAULT '0',
+  `fromSource` INT(11) NOT NULL DEFAULT '0',
+
   PRIMARY KEY (`prikey`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
 

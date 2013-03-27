@@ -25,7 +25,6 @@
 	include("Source/sign.php");
 	include("Source/userlist.php");
 	ob_start();
-	
 	$count = $_GET['count'];
 	$channel = "#omnimaga";
 	if (isset($_GET['channel']))
@@ -128,5 +127,10 @@
 	{
 		echo "addUser('" . base64_url_encode(htmlspecialchars($user[1])) . ":" . $user[2] . "');";
 	}
-	ob_end_flush();
+	if (isset($_GET['calc'])) {
+		ob_end_clean();
+		$temp = mysql_fetch_array(sql_query("SELECT MAX(line_number) FROM `irc_lines`"));
+		echo $temp[0];
+	} else
+		ob_end_flush();
 ?>

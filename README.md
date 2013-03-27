@@ -60,3 +60,11 @@ Changelog
 
 21/3/2013
  - added textbased browser support
+
+27/3/2013
+ - added calculator support using gCn
+ 
+TODO
+----
+ - Add ops
+ - Add channel changing for calculators

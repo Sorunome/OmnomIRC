@@ -26,7 +26,7 @@ ip 108.174.51.58
 
 	if (!isset($_GET['signature']) || !isset($_GET['nick']) || !isset($_GET['message']) || !isset($_GET['channel']) || !isset($_GET['id'])) die("Missing Required Field");
 	if (strlen($_GET['message']) < 4) die("Bad message");
-	if (!checkSignature($_GET['nick'],$_GET['signature'],true)) die("Bad signature");
+	if (!(checkSignature($_GET['nick'],$_GET['signature'],true) || (isset($_GET['calc']) && $_GET['passwd']=='<passwd>'))) die("Bad signature");
 	
 	
 	$message = base64_url_decode(str_replace(" ","+",$_GET['message']));
@@ -42,90 +42,92 @@ ip 108.174.51.58
 	$nick = html_entity_decode(base64_url_decode($_GET['nick']));
 	$channel = base64_url_decode($_GET['channel']);
 	$pm = false;
-	if ($parts[0] == "/msg" || $parts[0] == "/pm")
-	{
-		$pm=true;
-		$channel = $parts[1];
-		$message = "";
-		unset($parts[0]);
-		unset($parts[1]);
-		$message = implode(" ",$parts);
-		$type = "pm";
-	}
-	
-	//Sorunome edit START
 	$sendNormal = true;
 	$reload = false;
 	$sendPm = false;
-	if ($parts[0] == "/ignore") {
-		unset($parts[0]);
-		$ignoreuser = strtolower(implode(" ",$parts));
-		$returnmessage = "";
-		$sendNormal = false;
-		$sendPm = true;
-		$userSql = mysql_fetch_array(sql_query("SELECT * FROM `irc_ignorelist` WHERE name='%s'",strtolower($nick)));
-		if ($userSql["name"]==NULL) {
-			sql_query("INSERT INTO `irc_ignorelist` (name,ignores) VALUES('%s','')",strtolower($nick));
+	if (!isset($_GET['calc'])) {
+		if ($parts[0] == "/msg" || $parts[0] == "/pm")
+		{
+			$pm=true;
+			$channel = $parts[1];
+			$message = "";
+			unset($parts[0]);
+			unset($parts[1]);
+			$message = implode(" ",$parts);
+			$type = "pm";
+		}
+		
+		//Sorunome edit START
+		if ($parts[0] == "/ignore") {
+			unset($parts[0]);
+			$ignoreuser = strtolower(implode(" ",$parts));
+			$returnmessage = "";
+			$sendNormal = false;
+			$sendPm = true;
 			$userSql = mysql_fetch_array(sql_query("SELECT * FROM `irc_ignorelist` WHERE name='%s'",strtolower($nick)));
-		}
-		if (strpos($userSql["ignores"],$ignoreuser."\n")===false) {
-			$userSql["ignores"].=$ignoreuser."\n";
-			sql_query("UPDATE `irc_ignorelist` SET ignores='%s' WHERE name='%s'",$userSql["ignores"],strtolower($nick));
-			$returnmessage = "\x033Now ignoring $ignoreuser.";
-			$reload = true;
-		} else {
-			$returnmessage = "\x034ERROR: couldn't ignore $ignoreuser: already ignoring.";
-		}
-	}
-	if ($parts[0] == "/unignore") {
-		unset($parts[0]);
-		$ignoreuser = strtolower(implode(" ",$parts));
-		$returnmessage = "";
-		$sendNormal = false;
-		$sendPm = true;
-		$userSql = mysql_fetch_array(sql_query("SELECT * FROM `irc_ignorelist` WHERE name='%s'",strtolower($nick)));
-		if ($userSql["name"]==NULL) {
-			sql_query("INSERT INTO `irc_ignorelist` (name,ignores) VALUES('%s','')",strtolower($nick));
-			$userSql = mysql_fetch_array(sql_query("SELECT * FROM `irc_ignorelist` WHERE name='%s'",strtolower($nick)));
-		}
-		$allIgnoreUsers = explode("\n","\n".$userSql["ignores"]);
-		$unignored = false;
-		for ($i;$i<sizeof($allIgnoreUsers);$i++) {
-			echo $allIgnoreUsers[$i]." ".$ignoreuser."\n";
-			if ($allIgnoreUsers[$i]==$ignoreuser) {
-				$unignored = true;
-				unset($allIgnoreUsers[$i]);
+			if ($userSql["name"]==NULL) {
+				sql_query("INSERT INTO `irc_ignorelist` (name,ignores) VALUES('%s','')",strtolower($nick));
+				$userSql = mysql_fetch_array(sql_query("SELECT * FROM `irc_ignorelist` WHERE name='%s'",strtolower($nick)));
+			}
+			if (strpos($userSql["ignores"],$ignoreuser."\n")===false) {
+				$userSql["ignores"].=$ignoreuser."\n";
+				sql_query("UPDATE `irc_ignorelist` SET ignores='%s' WHERE name='%s'",$userSql["ignores"],strtolower($nick));
+				$returnmessage = "\x033Now ignoring $ignoreuser.";
+				$reload = true;
+			} else {
+				$returnmessage = "\x034ERROR: couldn't ignore $ignoreuser: already ignoring.";
 			}
 		}
-		unset($allIgnoreUsers[0]); //whitespace bug
-		$userSql["ignores"] = implode("\n",$allIgnoreUsers);
-		if ($ignoreuser=="*") {$userSql["ignores"]="";$unignored=true;} //unignore all
-		if ($unignored) {
-			$returnmessage = "\x033You are not more ignoring $ignoreuser";
-			if ($ignoreuser=="*") $returnmessage = "\x033You are no longer ignoring anybody.";
-			mysql_fetch_array(sql_query("UPDATE `irc_ignorelist` SET ignores='%s' WHERE name='%s'",$userSql["ignores"],strtolower($nick)));
-			$reload = true;
-		} else {
-			$returnmessage = "\x034ERROR: You weren't ignoring $ignoreuser";
-		}
-	}
-	if ($parts[0] == "/ignorelist") {
-		$returnmessage = "";
-		$sendNormal = false;
-		$sendPm = true;
-		$userSql = mysql_fetch_array(sql_query("SELECT * FROM `irc_ignorelist` WHERE name='%s'",strtolower($nick)));
-		if ($userSql["name"]==NULL) {
-			sql_query("INSERT INTO `irc_ignorelist` (name,ignores) VALUES('%s','')",strtolower($nick));
+		if ($parts[0] == "/unignore") {
+			unset($parts[0]);
+			$ignoreuser = strtolower(implode(" ",$parts));
+			$returnmessage = "";
+			$sendNormal = false;
+			$sendPm = true;
 			$userSql = mysql_fetch_array(sql_query("SELECT * FROM `irc_ignorelist` WHERE name='%s'",strtolower($nick)));
+			if ($userSql["name"]==NULL) {
+				sql_query("INSERT INTO `irc_ignorelist` (name,ignores) VALUES('%s','')",strtolower($nick));
+				$userSql = mysql_fetch_array(sql_query("SELECT * FROM `irc_ignorelist` WHERE name='%s'",strtolower($nick)));
+			}
+			$allIgnoreUsers = explode("\n","\n".$userSql["ignores"]);
+			$unignored = false;
+			for ($i;$i<sizeof($allIgnoreUsers);$i++) {
+				echo $allIgnoreUsers[$i]." ".$ignoreuser."\n";
+				if ($allIgnoreUsers[$i]==$ignoreuser) {
+					$unignored = true;
+					unset($allIgnoreUsers[$i]);
+				}
+			}
+			unset($allIgnoreUsers[0]); //whitespace bug
+			$userSql["ignores"] = implode("\n",$allIgnoreUsers);
+			if ($ignoreuser=="*") {$userSql["ignores"]="";$unignored=true;} //unignore all
+			if ($unignored) {
+				$returnmessage = "\x033You are not more ignoring $ignoreuser";
+				if ($ignoreuser=="*") $returnmessage = "\x033You are no longer ignoring anybody.";
+				mysql_fetch_array(sql_query("UPDATE `irc_ignorelist` SET ignores='%s' WHERE name='%s'",$userSql["ignores"],strtolower($nick)));
+				$reload = true;
+			} else {
+				$returnmessage = "\x034ERROR: You weren't ignoring $ignoreuser";
+			}
 		}
-		$returnmessage = "\x033Ignored users: ".str_replace("\n",",",$userSql["ignores"]);
-	}
-	if ($parts[0] == "/reload" || $parts[0] == "/refresh") {$reload = true;$sendNormal=false;}
-	if ($parts[0] == "/position") {
-		$returnmessage = "";
-		$sendNormal = false;
-		$sendPm = true;
-		$returnmessage = file_get_contents("http://www.omnimaga.org/checkLogin.php?op&u=".$_GET['id']."&nick=".$_GET['nick']);
+		if ($parts[0] == "/ignorelist") {
+			$returnmessage = "";
+			$sendNormal = false;
+			$sendPm = true;
+			$userSql = mysql_fetch_array(sql_query("SELECT * FROM `irc_ignorelist` WHERE name='%s'",strtolower($nick)));
+			if ($userSql["name"]==NULL) {
+				sql_query("INSERT INTO `irc_ignorelist` (name,ignores) VALUES('%s','')",strtolower($nick));
+				$userSql = mysql_fetch_array(sql_query("SELECT * FROM `irc_ignorelist` WHERE name='%s'",strtolower($nick)));
+			}
+			$returnmessage = "\x033Ignored users: ".str_replace("\n",",",$userSql["ignores"]);
+		}
+		if ($parts[0] == "/reload" || $parts[0] == "/refresh") {$reload = true;$sendNormal=false;}
+		if ($parts[0] == "/position") {
+			$returnmessage = "";
+			$sendNormal = false;
+			$sendPm = true;
+			$returnmessage = file_get_contents("http://www.omnimaga.org/checkLogin.php?op&u=".$_GET['id']."&nick=".$_GET['nick']);
+		}
 	}
 	//Sorunome edit END
 	if ($channel[0] == "*") //PM
@@ -135,8 +137,14 @@ ip 108.174.51.58
 	}
 	
 	if ($sendNormal) {//sorunome edit
-		sql_query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action) VALUES('%s','%s','%s','%s')",$message,$nick,$channel,($type=="action")?'1':'0');
-		sql_query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s',1)",$nick,$message,$type,$channel,time());
+		$fromSource='0';
+		$isOnline='1';
+		if (isset($_GET['calc'])){
+			$fromSource='1';
+			$isOnline='2';
+		}
+		sql_query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource) VALUES('%s','%s','%s','%s','%s')",$message,$nick,$channel,($type=="action")?'1':'0',$fromSource);
+		sql_query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s','%s')",$nick,$message,$type,$channel,time(),$isOnline);
 	}
 	if ($sendPm) {//sorunome edit START
 		sql_query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s',1)","OmnomIRC",$returnmessage,"server",$nick,time());

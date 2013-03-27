@@ -49,61 +49,99 @@
 		if ($nick != "0")
 			UpdateUser($nick,$channel);
 		CleanOfflineUsers(); //This gets called often enough. We can't have have constant presence in the matrix without a helper app, this is the closest we'll get.
-		$query = sql_query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND (`channel` = '%s' OR `channel` = '%s' OR (`channel` = '%s' AND `name1` = '%s'))",$curLine + 0,$channel,$nick,$pm?$sender:"0", $nick);
+		if (!isset($_GET['calc']))
+			$query = sql_query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND (`channel` = '%s' OR `channel` = '%s' OR (`channel` = '%s' AND `name1` = '%s'))",$curLine + 0,$channel,$nick,$pm?$sender:"0", $nick);
+		else
+			$query = sql_query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND (`channel` LIKE '%s')",$curLine + 0,"%#%");
+		
 		$result = mysql_fetch_array($query);
 		//Sorunome edit START
-		$userSql = mysql_fetch_array(sql_query("SELECT * FROM `irc_ignorelist` WHERE name='%s'",strtolower($nick)));
-		$ignorelist = "";
-		if ($userSql["name"]!=NULL) {
-			$ignorelist = $userSql["ignores"];
+		if (!isset($_GET['calc'])) {
+			$userSql = mysql_fetch_array(sql_query("SELECT * FROM `irc_ignorelist` WHERE name='%s'",strtolower($nick)));
+			$ignorelist = "";
+			if ($userSql["name"]!=NULL) {
+				$ignorelist = $userSql["ignores"];
+			}
 		}
 		//Sorunome edit END
 		if (!isset($result[0]))
 		{
-			$result = mysql_fetch_array(sql_query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND locate('%s',`message`) != 0 AND NOT ((`type` = 'pm' AND `name1` <> '%s') OR (`type` = 'server'))",$curLine + 0,substr($nick,0,4), $nick));
+			if (!isset($_GET['calc']))
+				$result = mysql_fetch_array(sql_query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND locate('%s',`message`) != 0 AND NOT ((`type` = 'pm' AND `name1` <> '%s') OR (`type` = 'server'))",$curLine + 0,substr($nick,0,4), $nick));
+			else
+				$result = mysql_fetch_array(sql_query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND (`channel` LIKE '%s')",$curLine + 0,"%#%"));
 			if (!isset($result[0])) {usleep(500000); continue;}
-			if (strpos($userSql["ignores"],strtolower($result["name1"])."\n")===false) { //Sorunome edit
-				echo $result['line_number'] . ":highlight:0:0:". base64_url_encode($result['channel']) . "::" . base64_url_encode($result['name1']) . ":" . base64_url_encode($result['message']);
-			} else { //Sorunome edit START
-				echo $result['line_number'].":curline:0:0:";
-			} //Sorunome edit END
-			die; //That's it, folks!
+			if  (!isset($_GET['calc'])) {
+				if (strpos($userSql["ignores"],strtolower($result["name1"])."\n")===false) { //Sorunome edit
+					echo $result['line_number'] . ":highlight:0:0:". base64_url_encode($result['channel']) . "::" . base64_url_encode($result['name1']) . ":" . base64_url_encode($result['message']);
+				} else { //Sorunome edit START
+					echo $result['line_number'].":curline:0:0:";
+				} //Sorunome edit END
+				die; //That's it, folks!
+			}
 		}
 		do {
-			if (!isset($result['time'])) $result['time'] = time();
-			if (strpos($userSql["ignores"],strtolower($result["name1"])."\n")===false) { //sorunome edit
-				switch (strtolower($result['type']))
-				{
-					case "pm":
-					case "message":
-						echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result['message'])) . ':' . base64_url_encode(htmlspecialchars("0"));break;
-					case "action":
-						echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result['message'])) . ':' . base64_url_encode(htmlspecialchars("0"));break;
-					case "join":
-						echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1']));break;
-					case "part":
-						echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result["message"]));break;
-					case "kick":
-						echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result["name2"])) . ":" . base64_url_encode(htmlspecialchars($result["message"]));break;
-					case "quit":
-						echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result["message"]));break;
-					case "mode":
-						echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result["message"]));break;
-					case "nick":
-						echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result["name2"]));break;
-					case "topic":
-						echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result["message"]));break;
-					case "reload":
-						echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . "::";break;
-					case "server":
-						echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result["message"]));break;
-					case "topic":
-					echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result["message"]));break;
+			if (!isset($_GET['calc'])) {
+				if (!isset($result['time'])) $result['time'] = time();
+				if (strpos($userSql["ignores"],strtolower($result["name1"])."\n")===false) { //sorunome edit
+					switch (strtolower($result['type']))
+					{
+						case "pm":
+						case "message":
+							echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result['message'])) . ':' . base64_url_encode(htmlspecialchars("0"));break;
+						case "action":
+							echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result['message'])) . ':' . base64_url_encode(htmlspecialchars("0"));break;
+						case "join":
+							echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1']));break;
+						case "part":
+							echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result["message"]));break;
+						case "kick":
+							echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result["name2"])) . ":" . base64_url_encode(htmlspecialchars($result["message"]));break;
+						case "quit":
+							echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result["message"]));break;
+						case "mode":
+							echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result["message"]));break;
+						case "nick":
+							echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result["name2"]));break;
+						case "topic":
+							echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result["message"]));break;
+						case "reload":
+							echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . "::";break;
+						case "server":
+							echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result["message"]));break;
+						case "topic":
+							echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result["message"]));break;
+					}
+					echo "\n";
+				} else { //Sorunome edit START
+					echo $result['line_number'].":curline:0:0:";
+				} //Sorunome edit END
+			} else {
+				if ($result['Online']=='2')
+					$addStr=$result['name1'].":";
+				else
+					$addStr=":";
+				switch (strtolower($result['type'])) {
+				case "pm":
+				case "message":
+					echo $addStr.$result['line_number'].":".$result['channel'].":".$result['name1'].":".$result['message'];break;
+				case "action":
+					echo $addStr.$result['line_number'].":".$result['channel'].":*".$result['name1']." ".$result['message'];break;
+				case "join":
+					if ($result['Online']!='1')echo $addStr.$result['line_number'].":".$result['channel'].":*".$result['name1']." has joined ".$result['channel'];else echo $addStr.$result['line_number']."::";break;
+				case "part":
+					if ($result['Online']!='1')echo $addStr.$result['line_number'].":".$result['channel'].":*".$result['name1']." has parted ".$result['channel'];else echo $addStr.$result['line_number']."::";break;
+				case "quit":
+					if ($result['Online']!='1')echo $addStr.$result['line_number'].":".$result['channel'].":*".$result['name1']." has quit";else echo $addStr.$result['line_number']."::";break;
+				case "mode":
+					echo $addStr.$result['line_number'].":".$result['channel'].":*".$result['name1']." has set mode ".$result['message'];break;
+				case "nick":
+					echo $addStr.$result['line_number'].":".$result['channel'].":*".$result['name1']." has changed nick to ".$result['name2'];break;
+				case "topic":
+					echo $addStr.$result['line_number'].":".$result['channel'].":*".$result['name1']." has set topic to ".$result['message'];break;
 				}
 				echo "\n";
-			} else { //Sorunome edit START
-				echo $result['line_number'].":curline:0:0:";
-			} //Sorunome edit END
+			}
 		} while ($result = mysql_fetch_array($query));
 		break;
 	}
