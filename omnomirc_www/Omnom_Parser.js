@@ -822,7 +822,7 @@
 //******************************
 // Tab Completion Start        *
 //******************************
-	function searchUser(start,startAt){
+	var searchUser = window.searchUser = function(start,startAt){
 		if(!startAt){
 			startAt = 0;
 		}

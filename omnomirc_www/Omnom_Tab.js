@@ -16,24 +16,24 @@
     You should have received a copy of the GNU General Public License
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
-
-message = document.getElementById("message");
-if(message.addEventListener ) {
-	message.addEventListener("keydown",keyHandler,false);
-	} else if(message.attachEvent ) {
-        message.attachEvent("onkeydown",keyHandler);
-    }
-isInTab = false;
-tabWord = "";
-tabCount = 0;
-startPos = 0;
-endPos = 0;
-endPosO = 0;
-    function keyHandler(e) {
+(function(window,undefined){
+	var message = document.getElementById("message"),
+		isInTab = false,
+		tabWord = "",
+		tabCount = 0,
+		startPos = 0,
+		endPos = 0,
+		endPosO = 0;
+	if(message.addEventListener ){
+		message.addEventListener("keydown",keyHandler,false);
+	} else if(message.attachEvent ){
+		message.attachEvent("onkeydown",keyHandler);
+	}
+    function keyHandler(e){
 		if (getCurrentWord() == "")
 			return true;
         var TABKEY = 9;
-        if(e.keyCode == TABKEY) {
+        if(e.keyCode == TABKEY){
             if(e.preventDefault) {
                 e.preventDefault();
             }
@@ -41,57 +41,57 @@ endPosO = 0;
 			getTabComplete();
 			tabCount++;
 			isInTab = true;
-			setTimeout(1,1); //Who woulda thought that a bogus call makes it not parse it in FF4?
+			//setTimeout(1,1); //Who woulda thought that a bogus call makes it not parse it in FF4?
             return false;
-        }
-		else
-		{
+        }else{
 			tabWord = "";
 			tabCount = 0;
 			isInTab = false;
 		}
     }
-	function getCurrentWord()
-	{
-		if (isInTab)
+	function getCurrentWord(){
+		if (isInTab){
 			return tabWord;
+		}
 		startPos = message.selectionStart;
 		endPos = message.selectionStart;
-		
 		startChar = message.value.charAt(startPos);
-		while (startChar != " " && --startPos > 0)
+		while (startChar != " " && --startPos > 0){
 			startChar = message.value.charAt(startPos);
+		}
 		if (startChar == " ") startPos++;
 		endChar = message.value.charAt(endPos);
-		while (endChar != " " && ++endPos <= message.value.length)
+		while (endChar != " " && ++endPos <= message.value.length){
 			endChar = message.value.charAt(endPos);
+		}
 		endPosO = endPos;		
 		return message.value.substr(startPos,endPos - startPos).trim();
 	}
-	function getTabComplete()
-	{		
-		if (!isInTab)
-		{
+	function getTabComplete(){		
+		if (!isInTab){
 			startPos = message.selectionStart;
-		
 			startChar = message.value.charAt(startPos);
-			while (startChar != " " && --startPos > 0)
+			while (startChar != " " && --startPos > 0){
 				startChar = message.value.charAt(startPos);
-			if (startChar == " ") startChar+=2;
-		
+			}
+			if (startChar == " "){
+				startChar+=2;
+			}
 			endPos = message.selectionStart;
 			endChar = message.value.charAt(endPos);
-			while (endChar != " " && ++endPos <= message.value.length)
+			while (endChar != " " && ++endPos <= message.value.length){
 				endChar = message.value.charAt(endPos);
-			if (endChar == " ") endChar-=2;
+			}
+			if (endChar == " "){
+				endChar-=2;
+			}
 		}
 		name = searchUser(getCurrentWord(),tabCount);
-		if (name == getCurrentWord())
-		{
+		if (name == getCurrentWord()){
 			tabCount = 0;
 			name = searchUser(getCurrentWord(),tabCount);
 		}
-			
 		message.value = message.value.substr(0,startPos) + name + message.value.substr(endPos + 1);
 		endPos = endPosO + name.length;
 	}
+})(window);
