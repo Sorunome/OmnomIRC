@@ -64,7 +64,10 @@ Changelog
 27/3/2013
  - added calculator support using gCn
  
+28/3/2013
+ - added channel changing for calulators
+ 
 TODO
 ----
  - Add ops
- - Add channel changing for calculators
+<s> - Add channel changing for calculators</s> done!
