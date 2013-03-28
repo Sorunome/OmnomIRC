@@ -6,7 +6,7 @@ import time
 import struct
 print "OmnomIRC Calcnet bridge by Sorunome"
 print "Starting..."
-PASSWD="AizohVoo8phiemai6goh"
+PASSWD="<passwd>"
 
 HOST, PORT = "134.0.27.190", 4295
 connectedCalcs = []
