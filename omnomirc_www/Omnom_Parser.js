@@ -500,6 +500,8 @@ scrolledDown = true;
 	{
 		if (isOnline == "1")
 			return '<a target="_top" href="http://www.omnimaga.org/index.php?action=ezportal;sa=page;p=13&userSearch=' + name + '">' + colored_names(name) + '</a>';
+		if (isOnline == "2")
+			return '<span style="color:#8A5D22">(C)</span> '+colored_names(name);
 		return colored_names(name);
 	}
 	function colored_names(name) //colored neames (duh)
