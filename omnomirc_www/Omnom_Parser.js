@@ -19,7 +19,6 @@
 */
 (function(window,undefined){
 	document.domain=HOSTNAME;
-
 	var messageList = [],
 		UserListArr = [],
 		curLine = 0,
@@ -32,7 +31,10 @@
 		statusStarted = false,
 		focusHandlerRegistered = false,
 		userListContainer = document.getElementById("UserListArrContainer"),
-		userListDiv = document.getElementById("UserList");
+		userListDiv = document.getElementById("UserList"),
+        xmlhttp,
+        inRequest = false,
+        errorCount = 0;
 	messageBox.style.width="100%";
 	messageBox.style.height="100%";
 	messageBox.className='MessageBox';
@@ -41,15 +43,13 @@
 //******************************
 	function startLoop(){
 		xmlhttp=getAjaxObject();
-		if (xmlhttp==null) { 
+		if (xmlhttp===null) { 
 			alert ("Your browser does not support AJAX! Please update for OmnomIRC compatibility.");
 			return;
 		}
 		xmlhttp.onreadystatechange=getIncomingLine;
 		sendRequest();
 	}
-	inRequest = false;
-	errorCount = 0;
 	function cancelRequest(){
 		xmlhttp.abort();
 		inRequest = false;
@@ -58,7 +58,7 @@
 		if(inRequest){
 			return;
 		}
-		url = "Update.php?lineNum=" + curLine + "&channel=" + getChannelEn() + "&nick=" + base64.encode(userName) + "&signature=" + base64.encode(Signature);
+		var url = "Update.php?lineNum=" + curLine + "&channel=" + getChannelEn() + "&nick=" + base64.encode(userName) + "&signature=" + base64.encode(Signature);
 		xmlhttp.open("GET",url,true);
 		if(isBlurred()){
 			setTimeout(function(){
@@ -93,11 +93,11 @@
 	}
 	function getAjaxObject(){
 		xmlhttp=new XMLHttpRequest(); //Decent Browsers
-		if(!xmlhttp || xmlhttp == undefined || xmlhttp == null){
-			xmlhttp=new ActiveXObject("Msxml2.XMLHTTP");  //IE7+
+		if(!xmlhttp || xmlhttp === undefined || xmlhttp === null){
+			xmlhttp = new ActiveXObject("Msxml2.XMLHTTP");  //IE7+
 		}
-		if(!xmlhttp || xmlhttp == undefined || xmlhttp == null){
-			xmlhttp=new ActiveXObject("Microsoft.XMLHTTP"); //IE6-
+		if(!xmlhttp || xmlhttp === undefined || xmlhttp === null){
+			xmlhttp = new ActiveXObject("Microsoft.XMLHTTP"); //IE6-
 		}
 		return xmlhttp;
 	}
@@ -110,7 +110,7 @@
 // Start Parser                *
 //******************************
 	function addLines(message){
-		parts = message.split("\n");
+		var parts = message.split("\n");
 		for (var i=0;i<parts.length;i++){
 			if (parts[i].length > 2){
 				addLine(parts[i]);
@@ -118,15 +118,15 @@
 		}
 	}
 	var addLine = window.addLine = function(message){
-		if(!message || message == null || message == undefined){
+		if(!message || message === null || message === undefined){
 			return;
 		}
-		lnNum = parseInt(message.split(":")[0]);
+		var lnNum = parseInt(message.split(":")[0]);
 		curLine = parseInt(curLine);
 		if (lnNum > curLine){
 			curLine = lnNum;
 		}
-		doScroll = false;
+		var doScroll = false;
 		if(mBoxCont.clientHeight + mBoxCont.scrollTop > mBoxCont.scrollHeight - 50){
 			doScroll = true;
 		}
@@ -143,25 +143,24 @@
 		if(doScroll){
 			mBoxCont.scrollTop = mBoxCont.scrollHeight + 50;
 		}
-	}
-	
+	};
 	function parseMessage(message){ //type of message
-		a = message;
-		var parts = message.split(":"),
-			lnumber = parts[0],
+		var //a = message,
+            parts = message.split(":"),
+			//lnumber = parts[0],
 			type = parts[1],
 			online = parts[2],
-			parsedMessage = "";
-		
+			parsedMessage = "",
+            i;
 		for(i = 4;i < parts.length;i++){
 			parts[i] = base64.decode(parts[i]);
 		}
 		name = clickable_names(parts[4],online);
 		var undefined;
-		if(parts[5] == undefined || parts[5] == ""){
+		if(parts[5] === undefined || parts[5] === ""){
 			parts[5] = " ";
 		}
-		if(parts[5] != undefined && parts[5] != null){
+		if(parts[5] !== undefined && parts[5] !== null){
 			parsedMessage = parseColors(parts[5]);
 			if(parts[5].toLowerCase().indexOf(userName.toLowerCase().substr(0,4)) >= 0 && hasLoaded && notifications && parts[4].toLowerCase() != "new"){
 				showNotification("<" + parts[4] + "> " + parts[5]);
@@ -175,12 +174,12 @@
 		}
 		retval = "";
 		displayMessage = true;
-		tdTime = document.createElement('td');
+		var tdTime = document.createElement('td');
 		tdTime.className="irc-date";
-		tdName = document.createElement('td');
+		var tdName = document.createElement('td');
 		tdName.className="name";
 		tdName.innerHTML = '*';
-		tdMessage = document.createElement('td');
+		var tdMessage = document.createElement('td');
 		tdMessage.className=type;
 		switch(type){
 			case "reload":
@@ -244,7 +243,7 @@
 				addUserJoin(parts[5],online);
 				break;
 			case "topic":
-				if(name!="" && name!="undefined" && name!=" " && (typeof name != 'undefined')){
+				if(name!=="" && name!="undefined" && name!=" " && (typeof name != 'undefined')){
 					tdMessage.innerHTML = name + " has changed the topic to " + parsedMessage;
 				}else{
 					displayMessage = false;
@@ -313,7 +312,7 @@
 		tdTime.style.height="1px";
 		tdName.style.height="1px";
 		tdMessage.style.height="1px";
-		if (showTime){
+		if(showTime){
 			row.appendChild(tdTime);
 		}
 		row.appendChild(tdName);
@@ -375,7 +374,7 @@
 			s = s.replace(/:crazy:/g,"<img src='smileys/fou.gif' alt='Crazy' "+addStuff+">");
 			s = s.replace(/:hyper:/g,"<img src='smileys/happy0075.gif' alt='Hyper' "+addStuff+">");
 			s = s.replace(/:love:/g,"<img src='smileys/love.gif' alt='Love' "+addStuff+">");
- 			s = s.replace(/:mad:/g,"<img src='smileys/mad.gif' alt='Mad' "+addStuff+">");
+            s = s.replace(/:mad:/g,"<img src='smileys/mad.gif' alt='Mad' "+addStuff+">");
 			s = s.replace(/:w00t:/g,"<img src='smileys/smiley_woot.gif' alt='w00t' "+addStuff+">");
 			s = s.replace(/(^| )\*\.\*/g,"$1<img src='smileys/psychedelicO_O.gif' alt='O.O.O' "+addStuff+">");
 			s = s.replace(/(^| )D:/g,"$1<img src='smileys/bigfrown.gif' alt='Big Frown' "+addStuff+">");
@@ -386,7 +385,7 @@
 		return s;
 	}
 	function parseColors(colorStr){ //colors
-		if (!colorStr || colorStr == null || colorStr == undefined){
+		if (!colorStr || colorStr === null || colorStr === undefined){
 			return;
 		}
 		colorStr = clickable_links(colorStr);
@@ -437,7 +436,7 @@
 					}
 					break;
 				case "\x16":
-					for(var j=0;j<numSpan;j++){
+					for(j=0;j<numSpan;j++){
 						colorStr+="</span>";
 					}
 					numSpan=2;
@@ -469,10 +468,10 @@
 						isItalic=false;
 					}
 					if(isBool){
-						colorStr+="</b>"
+						colorStr+="</b>";
 						isBool = false;
 					}
-					for(var j=0;j<numSpan;j++){
+					for(j=0;j<numSpan;j++){
 						colorStr+="</span>";
 					}
 					numSpan=0;
@@ -487,7 +486,7 @@
 	}
 	function parseHighlight(text){ //highlight
 		if (text.toLowerCase().indexOf(userName.toLowerCase().substr(0,4)) >= 0){
-			style = "";
+			var style = "";
 			if(highRed){
 				style = style + "color:#C73232;";
 			}
@@ -499,7 +498,7 @@
 		return text;
 	}
 	function clickable_links(text){ //urls
-		if (!text || text == null || text == undefined){
+		if (!text || text === null || text === undefined){
 			return;
 		}
 		//text = text.replace(/http:\/\/www\.omnimaga\.org\//g,"h111://www.omnimaga.org/");
@@ -520,11 +519,12 @@
 		if (!coloredNames){
 			return name;
 		}
-		if (!name || name == null || name == undefined){
+		if (!name || name === null || name === undefined){
 			return;
 		}
-		rcolors = Array(19, 20, 22, 24, 25, 26, 27, 28, 29);
-		sum = i = 0; 
+		var rcolors = Array(19, 20, 22, 24, 25, 26, 27, 28, 29),
+            sum = 0,
+            i = 0; 
 		while (name[i]){
 			sum += name.charCodeAt(i++);
 		}
@@ -587,8 +587,8 @@
 	}
 	function removeUser(user){
 		if(!hasLoaded) return;
-		for (i in UserListArr){
-			parts = UserListArr[i].split(":");
+		for (var i in UserListArr){
+			var parts = UserListArr[i].split(":");
 			if (base64.decode(parts[0]) == user){
 				UserListArr.splice(i,1);
 			}
@@ -644,7 +644,7 @@
 			message.disabled = "true";
 			message.value = "You need to login if you want to chat!";
 		}
-	}
+	};
 	//window.onLoad = load();
 //******************************
 // Load End                    *
@@ -671,8 +671,8 @@
 				return;
 		}
 		if (getChannelDe()[0] == "*"){
-			d = new Date();
-			str="0:pm:0:" + d.getTime()/1000 + ":" + base64.encode(name) + ":" + base64.encode(HTMLEncode(message)); //Print PMs locally.
+			var d = new Date(),
+                str="0:pm:0:" + d.getTime()/1000 + ":" + base64.encode(name) + ":" + base64.encode(HTMLEncode(message)); //Print PMs locally.
 			//addLine(str);
 		}
 		var xmlhttp2=new XMLHttpRequest();
@@ -685,7 +685,7 @@
 			false
 		);
 		xmlhttp2.send(null);
-	}
+	};
 //******************************
 // Message Send End            *
 //******************************
@@ -697,7 +697,7 @@
 		messageBox.cellPadding = "0px";
 		messageBox.cellSpacing = "0px";
 		if (showExChans){
-			for (i in exChannels){
+			for (var i in exChannels){
 				channels.push(exChannels[i]);
 			}
 		}
@@ -738,8 +738,8 @@
 		userListDiv.innerHTML = "";
 		
 		drawChannels();	
-		var body= document.getElementsByTagName('body')[0];
-		var script= document.createElement('script');
+		var body= document.getElementsByTagName('body')[0],
+		    script= document.createElement('script');
 		script.type= 'text/javascript';
 		script.src= 'Load.php?count=125&channel=' + getChannelEn() + "&nick=" + base64.encode(userName) + "&signature=" + base64.encode(Signature) + "&time=" + (new Date).getTime();;
 		script.onload= function(){mBoxCont.appendChild(messageBox);parseUsers();startLoop();mBoxCont.scrollTop = mBoxCont.scrollHeight;hasLoaded = true;stopIndicator();};
@@ -764,22 +764,22 @@
 			chanName = base64.decode(channels[i]);
 			// Set properties/events
 			td.id = chanName;
-			td.className = (getChannelIndex()==i)?"curchan" :"chan"
+			td.className = (getChannelIndex()==i)?"curchan" :"chan";
 			if (chanName.substr(0,1) != "#"){
 				span.onclick = (function(name){
 					return function(){
 						partChannel(name);
-					}
+					};
 				})(chanName);
 				span.onmouseover = function(){
 					this.style.color = '#C73232';
-					this.style.fontWeight = 'bolder'
+					this.style.fontWeight = 'bolder';
 				};
 				span.onmouseout = (function(color){
 					return function(){
 						this.style.color = color;
 						this.style.fontWeight = 'normal';
-					}
+					};
 				})((getChannelIndex()==i)?'#FFF':'#22C');
 				span.innerHTML = 'x';
 				td.appendChild(span);
@@ -805,7 +805,7 @@
 	}
 	var getChannelEn = window.getChannelEn = function(){
 		return channels[getChannelIndex()];
-	}
+	};
 	function getChannelDe(){
 		return base64.decode(channels[getChannelIndex()]);
 	}
@@ -826,15 +826,15 @@
 		if(!startAt){
 			startAt = 0;
 		}
-		for (i=0;i<UserListArr.length;i++){
-			parts = UserListArr[i].split(":");
-			name = base64.decode(parts[0]).toLowerCase();
+		for (var i=0;i<UserListArr.length;i++){
+            var parts = UserListArr[i].split(":"),
+                name = base64.decode(parts[0]).toLowerCase();
 			if (name.indexOf(start.toLowerCase()) == 0 && startAt-- <= 0){
 				return base64.decode(parts[0]);
 			}
 		}
 		return start;
-	}
+	};
 	
 //******************************
 // Tab Completion End          *
@@ -847,8 +847,8 @@
 		document.getElementById('topic').innerHTML = message;
 	}
 	function sendInternalMessage(message){
-		d = new Date();
-		str="0:internal:0:" + parseInt(d.getTime()*1000) + ":" + base64.encode(message);
+        var d = new Date(),
+		    str="0:internal:0:" + parseInt(d.getTime()*1000) + ":" + base64.encode(message);
 		addLine(str);
 	}
 	function OmnomIRC_Error(message){
@@ -884,7 +884,7 @@
 		if (paramaters.substr(0,1) != "*"){
 			paramaters = "*" + paramaters;
 		}
-		for (i in channels){
+		for (var i in channels){
 			if (base64.decode(channels[i]).toLowerCase() == paramaters.toLowerCase()){
 				return; //PM already opened, don't open another.
 			}
@@ -894,12 +894,12 @@
 		drawChannels();
 	}
 	function partChannel(paramaters){
-		if (paramaters == ""){
+		if (paramaters === ""){
 			partChannel(getChannelDe());
 			return;
 		}
 		if (paramaters.substr(0,1) != "#"){
-			for (i in channels){
+			for (var i in channels){
 				if (base64.decode(channels[i]) == paramaters){
 					if (getChannelDe() == paramaters){
 						channels.splice(i,1);
@@ -959,8 +959,8 @@
 	function loadChannels(){
 		if (document.cookie.indexOf("OmnomChannels") >= 0){
 			var moreChans = document.cookie.split(";")[0].replace(/^.*OmnomChannels=(.+?)|.*/, "\$1").split("%");
-			for (i in moreChans){
-				if (moreChans[i][0] != "#" && moreChans[i] != ""){
+			for (var i in moreChans){
+				if (moreChans[i][0] != "#" && moreChans[i] !== ""){
 					if (moreChans[i][0] == "^"){
 						moreChans[i][0] = "#";
 					}
@@ -972,7 +972,7 @@
 
 	function saveChannels(){
 		var chanList = "";
-		for (i in channels){
+		for(var i in channels){
 			if (base64.decode(channels[i]).substr(0,1) != "#"){
 				chanList = chanList + channels[i] + "%";
 			}
@@ -989,13 +989,13 @@
 // Focus Handler Start         *
 //******************************
 	function isBlurred() {
-		if(focusHandlerRegistered == undefined){
+		if(focusHandlerRegistered === undefined){
 			focusHandlerRegistered = false;
 		}
 		if(!focusHandlerRegistered){
 			registerFocusHandler();
 		}
-		if(parent != undefined){
+		if(parent !== undefined){
 			return parent.window.bIsBlurred;
 		}else{
 			return bIsBlurred;
@@ -1003,7 +1003,7 @@
 	}
 	function registerFocusHandler() {
 		focusHandlerRegistered = true;
-		if (parent != undefined){//Child(iframe)
+		if (parent !== undefined){//Child(iframe)
 			parent.window.bIsBlurred = false;
 			parent.window.onblur = function(){
 				parent.window.bIsBlurred = true;
@@ -1015,8 +1015,21 @@
 				return true;
 			};
 		}else{ //Not a child
-			window.onblur = function(){ bIsBlurred=true;if(console.log)console.log("Blur");return true; }
-			window.onfocus= function(){ bIsBlurred=false;resize();if(console.log)console.log("Focus");return true;}
+			window.onblur = function(){
+                bIsBlurred=true;
+                if(console.log){
+                    console.log("Blur");
+                }
+                return true;
+            };
+			window.onfocus= function(){
+                bIsBlurred=false;
+                resize();
+                if(console.log){
+                    console.log("Focus");
+                }
+                return true;
+            };
 		}
 	}
 //******************************

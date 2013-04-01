@@ -30,7 +30,7 @@
 		message.attachEvent("onkeydown",keyHandler);
 	}
     function keyHandler(e){
-		if (getCurrentWord() == "")
+		if (getCurrentWord() === "")
 			return true;
         var TABKEY = 9;
         if(e.keyCode == TABKEY){
@@ -55,12 +55,12 @@
 		}
 		startPos = message.selectionStart;
 		endPos = message.selectionStart;
-		startChar = message.value.charAt(startPos);
+		var startChar = message.value.charAt(startPos);
 		while (startChar != " " && --startPos > 0){
 			startChar = message.value.charAt(startPos);
 		}
 		if (startChar == " ") startPos++;
-		endChar = message.value.charAt(endPos);
+		var endChar = message.value.charAt(endPos);
 		while (endChar != " " && ++endPos <= message.value.length){
 			endChar = message.value.charAt(endPos);
 		}
@@ -70,7 +70,7 @@
 	function getTabComplete(){		
 		if (!isInTab){
 			startPos = message.selectionStart;
-			startChar = message.value.charAt(startPos);
+			var startChar = message.value.charAt(startPos);
 			while (startChar != " " && --startPos > 0){
 				startChar = message.value.charAt(startPos);
 			}
@@ -78,7 +78,7 @@
 				startChar+=2;
 			}
 			endPos = message.selectionStart;
-			endChar = message.value.charAt(endPos);
+			var endChar = message.value.charAt(endPos);
 			while (endChar != " " && ++endPos <= message.value.length){
 				endChar = message.value.charAt(endPos);
 			}
@@ -86,7 +86,7 @@
 				endChar-=2;
 			}
 		}
-		name = searchUser(getCurrentWord(),tabCount);
+		var name = searchUser(getCurrentWord(),tabCount);
 		if (name == getCurrentWord()){
 			tabCount = 0;
 			name = searchUser(getCurrentWord(),tabCount);
