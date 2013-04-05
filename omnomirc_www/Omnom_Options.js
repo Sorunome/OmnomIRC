@@ -87,33 +87,26 @@
 //******************************
 // Chrome Notification Start   *
 //******************************
-
-	function showNotification(message)
-	{
-		if (window.webkitNotifications === undefined || window.webkitNotifications === null || !window.webkitNotifications)
+	function showNotification(message){
+		if (window.webkitNotifications === undefined || window.webkitNotifications === null || !window.webkitNotifications){
 			return 0;
-		if (window.webkitNotifications.checkPermission() !== 0)
+		}
+		if (window.webkitNotifications.checkPermission() !== 0){
 			return 0;
+		}
 		var n;
 		n = window.webkitNotifications.createNotification('http://www.omnimaga.org/favicon.ico', 'OmnomIRC Highlight', message);
 		n.show();
 	}
-	
-	function setAllowNotification()
-	{
-		if (window.webkitNotifications === undefined || window.webkitNotifications === null || !window.webkitNotifications)
-		{
+	function setAllowNotification(){
+		if (window.webkitNotifications === undefined || window.webkitNotifications === null || !window.webkitNotifications){
 			alert("This feature only works in chrome.");
 			return;
 		}
 		window.webkitNotifications.requestPermission(permissionGranted);
-			
 	}
-	
-	function permissionGranted()
-	{
-		if (window.webkitNotifications.checkPermission() === 0)
-		{
+	function permissionGranted(){
+		if (window.webkitNotifications.checkPermission() === 0){
 			showNotification("Notifications Enabled!");
 			setOption(7,'T');
 			window.location.refresh(true);
