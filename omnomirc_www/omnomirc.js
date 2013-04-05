@@ -19,7 +19,7 @@
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
 (function(window,undefined){
-     var OmnomIRC = function(){
+     var OmnomIRC = window.OmnomIRC = (function(){
             var ret = {
                     options: "----------------------------------------|", //40 for future expansion!(and 40 bytes isn't much.) Pipe is a terminator.
                     cookieLoad: proto('cookieLoad'),
@@ -38,11 +38,11 @@
             }
             window.onLoad = this.cookieLoad();
             return ret;
-        },
+        })(),
         proto = function(fn){
             return function(){
                 try{
-                    return _proto[fn].apply(this,arguments);
+                    return _proto[fn].apply(OmnomIRC,arguments);
                 }catch(e){
                     return null;
                 }
