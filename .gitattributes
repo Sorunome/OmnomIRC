@@ -1,0 +1,11 @@
+# Default
+* text=auto
+*.txt text= eol=lf
+
+# Source Files
+*.js text eol=crlf
+*.php text eol=crlf
+
+# Binary 
+*.png binary
+*.jpg binary
