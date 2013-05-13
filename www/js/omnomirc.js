@@ -18,5 +18,7 @@
 	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
 (function(window,undefined){
-
+	var $o = window.OmnomIRC = window.$o = function(){
+		
+	};
 })(window);
