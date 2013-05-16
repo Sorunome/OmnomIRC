@@ -47,7 +47,9 @@
 		if ($countBeforeQuit++ == 50)//Timeout after 25 seconds.
 			die();
 		if ($nick != "0")
-			UpdateUser($nick,$channel);
+			UpdateUser($nick,$channel,'1');
+		if (isset($_GET['calc']))
+			UpdateUser("OmnomIRC","#omnimaga",'2');
 		CleanOfflineUsers(); //This gets called often enough. We can't have have constant presence in the matrix without a helper app, this is the closest we'll get.
 		if (!isset($_GET['calc']))
 			$query = sql_query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND (`channel` = '%s' OR `channel` = '%s' OR (`channel` = '%s' AND `name1` = '%s'))",$curLine + 0,$channel,$nick,$pm?$sender:"0", $nick);
@@ -132,13 +134,15 @@
 				case "part":
 					if ($result['Online']!='1')echo $addStr.$result['line_number'].":".$result['channel'].":*".$result['name1']." has parted ".$result['channel'];else echo $addStr.$result['line_number']."::";break;
 				case "quit":
-					if ($result['Online']!='1')echo $addStr.$result['line_number'].":".$result['channel'].":*".$result['name1']." has quit";else echo $addStr.$result['line_number']."::";break;
+					if ($result['Online']!='1')echo $addStr.$result['line_number'].":".$result['channel'].":*".$result['name1']." has quit (".$result['message'].")";else echo $addStr.$result['line_number']."::";break;
 				case "mode":
 					echo $addStr.$result['line_number'].":".$result['channel'].":*".$result['name1']." has set mode ".$result['message'];break;
 				case "nick":
 					echo $addStr.$result['line_number'].":".$result['channel'].":*".$result['name1']." has changed nick to ".$result['name2'];break;
 				case "topic":
 					echo $addStr.$result['line_number'].":".$result['channel'].":*".$result['name1']." has set topic to ".$result['message'];break;
+				default:
+					echo $addStr.$result['line_number']."::";break;
 				}
 				echo "\n";
 			}

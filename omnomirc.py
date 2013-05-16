@@ -6,7 +6,7 @@ import time
 import struct
 print "OmnomIRC Calcnet bridge by Sorunome"
 print "Starting..."
-PASSWD="<passwd>"
+PASSWD="PASSWD"
 
 HOST, PORT = "134.0.27.190", 4295
 connectedCalcs = []
@@ -81,7 +81,8 @@ class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
 			try:
 				data = self.request.recv(1024)
 			except Exception,err:
-				print "Error:"+err
+				print "Error:"
+				print err
 				break
 			if not data:  # EOF
 				break
@@ -102,17 +103,17 @@ class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
 			if (data[2]=='c'):
 				calcId=data[3:]
 				printString+="Calc-message recieved. Calc-ID:"+calcId+"\n"
-				self.send("\xAD**Now speeking in channel "+self.chan)
 			if (data[2]=='b' or data[2]=='f'):
 				#print data[5:10]
 				if ord(data[17])==171:
+					self.request.sendall(data)
+					self.send("\xABOmnomIRC")
 					if not self.connectedToIRC:
 						printString+=self.calcName+" has joined\n"
 						self.connectedToIRC=True
 						sendMessage=True
 						message = "/me has joined "+self.chan+" ("+calcId+")"
-					self.request.sendall(data)
-					self.send("\xABOmnomIRC")
+						self.send("\xAD**Now speeking in channel "+self.chan)
 				elif ord(data[17])==172:
 					if self.connectedToIRC:
 						printString+=self.calcName+" has quit\n"

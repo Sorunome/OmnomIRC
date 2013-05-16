@@ -25,6 +25,7 @@ if (strpos($_SERVER['HTTP_USER_AGENT'],"textmode;")===false) {?>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>OmnomIRC V2</title>
 <link rel="stylesheet" type="text/css" href="style.css" />
+<link rel="stylesheet" type="text/css" href="http://www.omnimaga.org/OmnomIRCThemes.php" />
 <script src="config.js"></script>
 <script src="btoa.js"></script>
 <script type="text/javascript">
@@ -56,8 +57,8 @@ if (strpos($_SERVER['HTTP_USER_AGENT'],"textmode;")===false) {?>
 			messageBox.style.height = winbg2.clientHeight - offset + "px";
 			mBoxCont.style.height = winbg2.clientHeight - offset + "px";
 			mBoxCont.scrollTop = mBoxCont.scrollHeight;
-			msg.style.width = mBoxCont.clientWidth - send.clientWidth - "39" + "px";
-			msg.style.left = "0px";
+			//msg.style.width = mBoxCont.clientWidth - send.clientWidth - "39" + "px";
+			//msg.style.left = "0px";
 		}
 		else
 		{
@@ -69,51 +70,51 @@ if (strpos($_SERVER['HTTP_USER_AGENT'],"textmode;")===false) {?>
 			messageBox.style.height = winbg2.clientHeight - offset + "px";
 			mBoxCont.style.height = winbg2.clientHeight - offset + "px";
 			mBoxCont.scrollTop = mBoxCont.scrollHeight;
-			msg.style.width = mBoxCont.clientWidth - send.clientWidth - "39" + "px";
-			msg.style.left = "0px";
+			//msg.style.width = mBoxCont.clientWidth - send.clientWidth - "39" + "px";
+			//msg.style.left = "0px";
 		}
 	}
 	window.onresize = resize;
 </script>
 </head>
 <body style="overflow:hidden;margin:0px;padding:0px;*height:100%">
-<div class="windowbg2" id="windowbg2" style="width:100%;height:100%;overflow:hidden;">
-<div id="Channels" style="width:90%;overflow:hidden;position:absolute;overflow-x:hidden;overflow-y:hidden;">
-<div id="ChanListButtons" style="width:98%;overflow:hidden;display:inline;position:relative;left:0px;top:4px;">
+<div class="windowbg2" id="windowbg2">
+<div id="Channels">
+<div id="ChanListButtons">
 	<span style="font-size:10pt;" class="arrowButton" onmousedown="menul=setInterval('document.getElementById(\'ChanListCont\').scrollLeft -= 9',50)" onmouseup="clearInterval(menul)" onmouseout="clearInterval(menul)">&#9668;</span>
 	<span style="font-size:10pt;" class="arrowButton" onmousedown="menur=setInterval('document.getElementById(\'ChanListCont\').scrollLeft += 9',50)" onmouseup="clearInterval(menur)" onmouseout="clearInterval(menur)">&#9658;</span>
 </div>
 
-<div id="ChanListCont" style="width:96%;overflow-x:hidden;display:block;position:relative;left:23px;top:-16px;">
-	<div id="ChanList" style="width:500%"></div>
+<div id="ChanListCont">
+	<div id="ChanList"></div>
 </div>
 </div>
-<div id="topicbox" style="width:90%;overflow:hidden;position:absolute;overflow-x:hidden;overflow-y:hidden;left:0px;top:26px;margin:0;padding:0;">
-	<div id="TopicButtons" style="width:98%;overflow:hidden;display:inline;position:relative;left:0px;top:-2px;margin:0;padding:0;">
+<div id="topicbox">
+	<div id="TopicButtons">
 		<span style="font-size:8pt;" class="arrowButton" onmousedown="menul=setInterval('document.getElementById(\'topicCont\').scrollLeft -= 9',50)" onmouseup="clearInterval(menul)" onmouseout="clearInterval(menul)">&#9668;</span>
 		<span style="font-size:8pt;" class="arrowButton" onmousedown="menur=setInterval('document.getElementById(\'topicCont\').scrollLeft += 9',50)" onmouseup="clearInterval(menur)" onmouseout="clearInterval(menur)">&#9658;</span>
 	</div>
-	<div id="topicCont" style="width:96%;overflow-x:hidden;display:block;position:relative;left:23px;top:-16px;margin:0;padding:0;">
+	<div id="topicCont">
 		<div id="topic" style="white-space:nowrap;"></div>
 	</div>
 </div>
 <br/>
 <br/>
 <br/>
-<div id="mboxCont" style="width:90%;height:100%;overflow:hidden;position:relative;overflow-x:hidden;overflow-y:hidden;"></div>
-	<span class="arrowButtonHoriz3"><div style="font-size:12pt;width:12%;height:9pt;top:0;left:90%;position:absolute;font-weight:bolder;margin-top:10pt;margin-left:-10pt;" class="arrowButtonHoriz2">&#9650;</div>
-	<div style="font-size:12pt;width:12%;height:9pt;top:0;left:90%;position:absolute;margin-top:10pt;margin-left:-10pt;" onmousedown="downIntM = setInterval('document.getElementById(\'mboxCont\').scrollTop -= 9;scrolledDown=false;',50);" onmouseout="clearInterval(downIntM);" onmouseup="clearInterval(downIntM);"></div></span>
-	<span class="arrowButtonHoriz3"><div style="font-size:12pt;width:12%;height:9pt;top:100%;left:90%;position:absolute;margin-top:-10pt;margin-left:-10pt;font-weight:bolder;" class="arrowButtonHoriz2">&#9660;</div>
-	<div style="font-size:12pt;width:12%;height:9pt;top:100%;left:90%;position:absolute;margin-top:-10pt;margin-left:-10pt;" onmousedown="upIntM = setInterval('document.getElementById(\'mboxCont\').scrollTop += 9;if (mBoxCont.scrollTop+mBoxCont.clientHeight==mBoxCont.scrollHeight)scrolledDown=true;',50);" onmouseout="clearInterval(upIntM);" onmouseup="clearInterval(upIntM);"></div></span>
+<div id="mboxCont"></div>
+	<span class="arrowButtonHoriz3"><div style="font-size:12pt;width:12px;height:9pt;top:0;position:absolute;font-weight:bolder;margin-top:10pt;margin-left:-10pt;" class="arrowButtonHoriz2">&#9650;</div>
+	<div style="font-size:12pt;width:12px;height:9pt;top:0;position:absolute;margin-top:10pt;margin-left:-10pt;left:98%;left:calc(99% - 5px);left:-webkit-calc(99% - 5px);" onmousedown="downIntM = setInterval('document.getElementById(\'mboxCont\').scrollTop -= 9;scrolledDown=false;',50);" onmouseout="clearInterval(downIntM);" onmouseup="clearInterval(downIntM);"></div></span>
+	<span class="arrowButtonHoriz3"><div style="font-size:12pt;width:12px;height:9pt;bottom:9pt;position:absolute;margin-top:-10pt;margin-left:-10pt;font-weight:bolder;" class="arrowButtonHoriz2">&#9660;</div>
+	<div style="font-size:12pt;width:12px;height:9pt;bottom:9pt;position:absolute;margin-top:-10pt;margin-left:-10pt;left:98%;left:calc(99% - 5px);left:-webkit-calc(99% - 5px);" onmousedown="upIntM = setInterval('document.getElementById(\'mboxCont\').scrollTop += 9;if (mBoxCont.scrollTop+mBoxCont.clientHeight==mBoxCont.scrollHeight)scrolledDown=true;',50);" onmouseout="clearInterval(upIntM);" onmouseup="clearInterval(upIntM);"></div></span>
 
-<div id="UserListContainer" style="width:10%;height:98%;left:90%;top:0;position:absolute;color:#222;border-style:dashed;border-width:1px;border-right-color:#000;overflow:hidden;">
+<div id="UserListContainer">
 	<span style="left:10%;position:relative;font-size:6pt;"><!--<a href="http://omnom.omnimaga.org/irc/efnet/?channel=omnimaga#bottom" target="_TOP">Logs</a><br/>--><a href="http://www.omnimaga.org/OmnomIRC_Full.html" target="_TOP">Full View</a><br/><a id="toggle" href="#" onclick="toggleEnable();">Toggle</a><br/><a href="Options.html" accesskey="o" alt="OmnomIRC Options" title="OmnomIRC Options">Options</a></span>
-	<div id="UserList" style="position:relative;left:10%;height:88%;top:1%;width:120%;font-family:verdana,sans-serif;overflow-x:hidden;overflow-y:scroll;">
+	<div id="UserList" style="position:relative;left:10%;height:88%;height:calc(100% - 50px);height:-webkit-calc(100% - 50px);top:1%;width:120%;font-family:verdana,sans-serif;overflow-x:hidden;overflow-y:scroll;">
 	</div>
-	<span class="arrowButtonHoriz3"><div style="width:12%;height:9pt;top:0pt;left:78%;position:absolute;font-weight:bolder;margin-top:10pt;" class="arrowButtonHoriz2">&#9650;</div>
-	<div style="width:12%;height:9pt;top:0pt;left:78%;position:absolute;margin-top:10pt;" onmousedown="downInt = setInterval('userListDiv.scrollTop -= 9',50);" onmouseout="clearInterval(downInt);" onmouseup="clearInterval(downInt);"></div></span>
-	<span class="arrowButtonHoriz3"><div style="width:12%;height:9pt;top:100%;left:78%;position:absolute;margin-top:-10pt;font-weight:bolder;" class="arrowButtonHoriz2">&#9660;</div>
-	<div style="width:12%;height:9pt;top:100%;left:78%;position:absolute;margin-top:-10pt;" onmousedown="upInt = setInterval('userListDiv.scrollTop += 9',50);" onmouseout="clearInterval(upInt);" onmouseup="clearInterval(upInt);"></div></span>
+	<span class="arrowButtonHoriz3"><div style="width:12px;height:9pt;top:0pt;position:absolute;font-weight:bolder;margin-top:10pt;" class="arrowButtonHoriz2">&#9650;</div>
+	<div style="width:12px;height:9pt;top:0pt;position:absolute;margin-top:10pt;left: 90%;left:calc(99% - 10px);left:-webkit-calc(99% - 10px);" onmousedown="downInt = setInterval('userListDiv.scrollTop -= 9',50);" onmouseout="clearInterval(downInt);" onmouseup="clearInterval(downInt);"></div></span>
+	<span class="arrowButtonHoriz3"><div style="width:12px;height:9pt;top:100%;position:absolute;margin-top:-10pt;font-weight:bolder;" class="arrowButtonHoriz2">&#9660;</div>
+	<div style="width:12px;height:9pt;top:100%;position:absolute;margin-top:-10pt;left: 90%;left:calc(99% - 10px);left:-webkit-calc(99% - 10px);" onmousedown="upInt = setInterval('userListDiv.scrollTop += 9',50);" onmouseout="clearInterval(upInt);" onmouseup="clearInterval(upInt);"></div></span>
 	</div>
 </div>
 </div><img id="smileyMenuButton" src="smileys/smiley.gif" style="cursor:pointer;margin-left:2px;margin-right:2px;" onclick="if(showSmileys){if(document.getElementById('smileyselect').style.display==''){document.getElementById('smileyselect').style.display='none';this.src='smileys/smiley.gif';}else{document.getElementById('smileyselect').style.display='';this.src='smileys/tongue.gif';}}"><form style="Display:inline;" name="irc" action="javascript:void(0)" onSubmit="AJAXSend()"><input autocomplete="off" accesskey="i" type="text" name="message" id="message" size="128" maxlength="256" alt="OmnomIRC" title="OmnomIRC"/><input type="submit" value="Send" id="send" /></form>

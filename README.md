@@ -67,6 +67,10 @@ Changelog
 28/3/2013
  - added channel changing for calulators
  
+15/5/2013
+ - completley re-wrote css (well, Darl181 did)
+ - added custom css for each forum theme
+ 
 TODO
 ----
  - Add ops

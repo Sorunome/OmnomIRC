@@ -725,7 +725,7 @@ scrolledDown = true;
 		var script= document.createElement('script');
 		script.type= 'text/javascript';
 		script.src= 'Load.php?count=125&channel=' + getChannelEn() + "&nick=" + base64.encode(userName) + "&signature=" + base64.encode(Signature) + "&time=" + (new Date).getTime();;
-		script.onload= function(){mBoxCont.appendChild(messageBox);parseUsers();startLoop();mBoxCont.scrollTop = mBoxCont.scrollHeight;hasLoaded = true;stopIndicator();};
+		script.onload= function(){mBoxCont.appendChild(messageBox);parseUsers();startLoop();mBoxCont.scrollTop = mBoxCont.scrollHeight;hasLoaded = true;doHigh=!doHigh;stopIndicator();};
 		body.appendChild(script);
 	}
 	

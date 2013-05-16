@@ -2,7 +2,7 @@
 	include_once("Source/cachefix.php");
 	include_once("Source/sql.php");
 	
-	function UpdateUser($nick,$channel)
+	function UpdateUser($nick,$channel,$online)
 	{
 		if($channel[0]=="*")
 			return; //PMs have no userlist.
