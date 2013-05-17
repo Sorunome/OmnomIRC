@@ -70,6 +70,11 @@ Changelog
 15/5/2013
  - completley re-wrote css (well, Darl181 did)
  - added custom css for each forum theme
+
+16/5/2013
+ - Fixed the userlist
+ - Added /topic
+ - Added that ourl.ca links don't open in a new tab
  
 TODO
 ----

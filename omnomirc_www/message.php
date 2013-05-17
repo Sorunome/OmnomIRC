@@ -140,6 +140,23 @@ ip 108.174.51.58
 				else
 					$returnmessage = "You aren't op";
 				break;
+			case "topic":
+				$sendNormal = false;
+				if (isOp()) {
+					unset($parts[0]);
+					$newTopic = implode(" ",$parts);
+					$temp = mysql_fetch_array(sql_query("SELECT * FROM `irc_topics` WHERE chan='%s'",strtolower($channel)));
+					if ($temp["chan"]==NULL) {
+						sql_query("INSERT INTO `irc_topics` (chan,topic) VALUES('%s','')",strtolower($channel));
+					}
+					sql_query("UPDATE `irc_topics` SET topic='%s' WHERE chan='%s'",$newTopic,strtolower($channel));
+					sql_query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES('%s','%s','%s','%s','%s','%s')",$newTopic,$nick,$channel,'0','0','topic');
+					sql_query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s','%s')",$nick,$newTopic,"topic",$channel,time(),'1');
+				} else {
+					$returnmessage = "You aren't op";
+					$sendPm = true;
+				}
+				break;
 			default:
 				if (substr($parts[0],0,2)=="//")
 					$message=substr($message,1);
@@ -165,7 +182,7 @@ ip 108.174.51.58
 			$fromSource='1';
 			$isOnline='2';
 		}
-		sql_query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource) VALUES('%s','%s','%s','%s','%s')",$message,$nick,$channel,($type=="action")?'1':'0',$fromSource);
+		sql_query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES('%s','%s','%s','%s','%s','%s')",$message,$nick,$channel,($type=="action")?'1':'0',$fromSource,"msg");
 		sql_query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s','%s')",$nick,$message,$type,$channel,time(),$isOnline);
 	}
 	if ($sendPm) {//sorunome edit START

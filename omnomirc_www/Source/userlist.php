@@ -42,8 +42,8 @@
 	}
 	function CleanOfflineUsers()
 	{
-		$result = sql_query("SELECT * FROM `irc_users` WHERE `time` < %s",strtotime('-1 minute'));
-		sql_query("DELETE FROM `irc_users` WHERE `time` < %s",strtotime('-1 minute'));
+		$result = sql_query("SELECT * FROM `irc_users` WHERE `time` < %s  AND online='1'",strtotime('-1 minute'));
+		sql_query("DELETE FROM `irc_users` WHERE `time` < %s  AND online='1'",strtotime('-1 minute'));
 		while ($row = mysql_fetch_array($result))
 			notifyPart($row['username'],$row['channel']);
 	}

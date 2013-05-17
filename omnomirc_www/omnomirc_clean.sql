@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS `irc_outgoing_messages` (
   `channel` varchar(45) NOT NULL,
   `action` tinyint(1) NOT NULL DEFAULT '0',
   `fromSource` INT(11) NOT NULL DEFAULT '0',
+  `type` varchar(45) NOT NULL DEFAULT 'msg',
 
   PRIMARY KEY (`prikey`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;

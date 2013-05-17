@@ -194,7 +194,7 @@ scrolledDown = true;
 				var script= document.createElement('script');
 				script.type= 'text/javascript';
 				script.src= 'Load.php?count=125&channel=' + getChannelEn() + "&nick=" + base64.encode(userName) + "&signature=" + base64.encode(Signature) + "&time=" + (new Date).getTime();;
-				script.onload= function(){parseUsers();startLoop();mBoxCont.scrollTop = mBoxCont.scrollHeight;hasLoaded = true;stopIndicator();};
+				script.onload= function(){parseUsers();startLoop();mBoxCont.scrollTop = mBoxCont.scrollHeight;doHigh = !doHigh;hasLoaded = true;stopIndicator();};
 				body.appendChild(script);
 				displayMessage = false;
 				break;
@@ -488,12 +488,12 @@ scrolledDown = true;
 	function clickable_links(text) //urls
 	{
 		if (!text || text == null || text == undefined) return;
-		//text = text.replace(/http:\/\/www\.omnimaga\.org\//g,"h111://www.omnimaga.org/");
-		//text = text.replace(/http:\/\/ourl\.ca\//g,"h111://ourl.ca/");
-		//text = text.replace(/((h111:\/\/(www\.omnimaga\.org\/|ourl\.ca))[-a-zA-Z0-9@:;%_+.~#?&//=]+)/, '<a target="_top" href="$1">$1</a>');
+		//text = text.replace(/http:\/\/www\.omnimaga\.org\//g,"\x01www.omnimaga.org/");
+		text = text.replace(/http:\/\/ourl\.ca\//g,"\x01ourl.ca/");
+		text = text.replace(/((h111:\/\/(www\.omnimaga\.org\/|ourl\.ca))[-a-zA-Z0-9@:;%_+.~#?&//=]+)/, '<a target="_top" href="$1">$1</a>');
 		text = text.replace(RegExp("(^|.)(((f|ht)(tp|tps):\/\/)[^\\s\x02\x03\x0f\x16\x1d\x1f]*)","g"),'$1<a target="_blank" href="$2">$2</a>');
 		text = text.replace(RegExp("(^|\\s)(www\.[^\\s\x02\x03\x0f\x16\x1d\x1f]*)","g"),'$1<a target="_blank" href="http://$2">$2</a>');
-		//text = text.replace(/h111/g,"http");
+		text = text.replace(RegExp("(^|.)\x01([^\\s\x02\x03\x0f\x16\x1d\x1f]*)","g"),'1<a href="http://$2">http://$2</a>');
 		return text;
 	}
 	function clickable_names(name,isOnline) //omnomirc names
@@ -698,7 +698,7 @@ scrolledDown = true;
 		var script= document.createElement('script');
 		script.type= 'text/javascript';
 		script.src= 'Load.php?count=125&channel=' + getChannelEn() + "&nick=" + base64.encode(userName) + "&signature=" + base64.encode(Signature) + "&time=" + (new Date).getTime();
-		script.onload= function(){mBoxCont.appendChild(messageBox);parseUsers();startLoop();mBoxCont.scrollTop = mBoxCont.scrollHeight;hasLoaded = true;stopIndicator();};
+		script.onload= function(){mBoxCont.appendChild(messageBox);parseUsers();startLoop();mBoxCont.scrollTop = mBoxCont.scrollHeight;doHigh = !doHigh;hasLoaded = true;stopIndicator();};
 		body.appendChild(script);
 	}
 	
