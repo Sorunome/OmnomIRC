@@ -21,6 +21,14 @@
 	include("Source/sql.php");
 	include("Source/sign.php");
 	include("Source/userlist.php");
+	function getUserstuffQuery($nick) {
+		$userSql = mysql_fetch_array(sql_query("SELECT * FROM `irc_userstuff` WHERE name='%s'",strtolower($nick)));
+		if ($userSql["name"]==NULL) {
+			sql_query("INSERT INTO `irc_userstuff` (name) VALUES('%s')",strtolower($nick));
+			$userSql = mysql_fetch_array(sql_query("SELECT * FROM `irc_userstuff` WHERE name='%s'",strtolower($nick)));
+		}
+		return $userSql;
+	}
 	
 	$curLine = $_GET['lineNum'];
 	$channel = "#omnimaga";
@@ -33,6 +41,11 @@
 		$signature = base64_url_decode($_GET['signature']);
 		if (!checkSignature($nick,$signature))
 			$nick = "0";
+		$userSql = getUserstuffQuery($nick);
+		if (strpos($userSql["bans"],base64_url_decode($_GET['channel'])."\n")!==false) {
+			sleep(30);
+			die();
+		}
 	}
 	$pm = false;
 	if ($channel[0] == "*") //PM

@@ -42,6 +42,8 @@ ip 108.174.51.58
 		$userSql = getUserstuffQuery(html_entity_decode(base64_url_decode($_GET['nick'])));
 		if (strpos($userSql["ops"],base64_url_decode($_GET['channel'])."\n")!==false)
 			return true;
+		if ($userSql["globalOp"]==1)
+			return true;
 		return false;
 	}
 	if (!isset($_GET['signature']) || !isset($_GET['nick']) || !isset($_GET['message']) || !isset($_GET['channel']) || !isset($_GET['id'])) die("Missing Required Field");
@@ -60,6 +62,9 @@ ip 108.174.51.58
 	$sendNormal = true;
 	$reload = false;
 	$sendPm = false;
+	$userSql = getUserstuffQuery($nick);
+		if (strpos($userSql["bans"],base64_url_decode($_GET['channel'])."\n")!==false)
+			die("banned");
 	
 	if (substr($parts[0],0,1)=="/") {
 		if (isset($_GET['calc']) && ($parts[0]!="/me" || substr($parts[0],0,2)=="//")) die("Sorry calculator, you can only do /me messages");
@@ -204,6 +209,57 @@ ip 108.174.51.58
 					$sendPm = true;
 				}
 				break;
+			case "ban":
+				$sendNormal = false;
+				if (isOp()) {
+					unset($parts[0]);
+					$userToOp = implode(" ",$parts);
+					$userSql = getUserstuffQuery($userToOp);
+					if (strpos($userSql["bans"],$channel."\n")===false) {
+						$userSql["bans"].=$channel."\n";
+						sql_query("UPDATE `irc_userstuff` SET bans='%s' WHERE name='%s'",$userSql["bans"],strtolower($userToOp));
+						sql_query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES('%s','%s','%s','%s','%s','%s')","+b $userToOp",$nick,$channel,'0','0','mode');
+						sql_query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s','%s')",$nick,"+b $userToOp","mode",$channel,time(),'1');
+					} else {
+						$returnmessage = "\x034ERROR: couldn't ban $userToOp: already banned.";
+					}
+				} else {
+					$returnmessage = "You aren't op";
+					$sendPm = true;
+				}
+				break;
+			case "deban":
+			case "unban":
+				$sendNormal = false;
+				if (isOp()) {
+					unset($parts[0]);
+					$userToOp = implode(" ",$parts);
+					$userSql = getUserstuffQuery($userToOp);
+					$allOpChans = explode("\n","\n".$userSql["bans"]);
+					$deoped = false;
+					for ($i;$i<sizeof($allOpChans);$i++) {
+						echo $allOpChans[$i]." ".$channel."\n";
+						if ($allOpChans[$i]==$channel) {
+							$deoped = true;
+							unset($allOpChans[$i]);
+						}
+					}
+					unset($allOpChans[0]); //whitespace bug
+					$userSql["bans"] = implode("\n",$allOpChans);
+					if ($deoped) {
+						sql_query("UPDATE `irc_userstuff` SET bans='%s' WHERE name='%s'",$userSql["bans"],strtolower($userToOp));
+						sql_query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES('%s','%s','%s','%s','%s','%s')","-b $userToOp",$nick,$channel,'0','0','mode');
+						sql_query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s','%s')",$nick,"-b $userToOp","mode",$channel,time(),'1');
+					} else {
+						$returnmessage = "\x034ERROR: couldn't deban $userToOp: no ban.";
+						$sendPm = true;
+					}
+				} else {
+					$returnmessage = "You aren't op";
+					$sendPm = true;
+				}
+				break;
+			
 			default:
 				if (substr($parts[0],0,2)=="//")
 					$message=substr($message,1);
