@@ -20,7 +20,7 @@ Changelog
 
 3/2/2013
  - Added all text-decoration support I know
- - Known bug: not-clean HTML (<b>text<span>text</b></span>)
+ - Known bug: not-clean HTML (&lt;b&gt;text&lt;span&gt;text&lt;/b&gt;&lt;/span&gt;)
  - Known bug: Inverting inverted text gives same bg color as text color.
  - Fixed URL bug where already parsed urls got re-parsed
 
@@ -75,8 +75,11 @@ Changelog
  - Fixed the userlist
  - Added /topic
  - Added that ourl.ca links don't open in a new tab
+
+17/5/2013
+ - Added local ops with /op and /deop
  
 TODO
 ----
  - Add ops
-<s> - Add channel changing for calculators</s> done!
+ - <s>Add channel changing for calculators</s> done!

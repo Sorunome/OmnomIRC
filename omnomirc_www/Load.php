@@ -69,7 +69,7 @@
 	while ($result = mysql_fetch_array($res))
 	{
 		//Sorunome edit START
-		$userSql = mysql_fetch_array(sql_query("SELECT * FROM `irc_ignorelist` WHERE name='%s'",strtolower($nick)));
+		$userSql = mysql_fetch_array(sql_query("SELECT * FROM `irc_userstuff` WHERE name='%s'",strtolower($nick)));
 		$ignorelist = "";
 		if ($userSql["name"]!=NULL) {
 			$ignorelist = $userSql["ignores"];

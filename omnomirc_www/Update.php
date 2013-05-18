@@ -59,7 +59,7 @@
 		$result = mysql_fetch_array($query);
 		//Sorunome edit START
 		if (!isset($_GET['calc'])) {
-			$userSql = mysql_fetch_array(sql_query("SELECT * FROM `irc_ignorelist` WHERE name='%s'",strtolower($nick)));
+			$userSql = mysql_fetch_array(sql_query("SELECT * FROM `irc_userstuff` WHERE name='%s'",strtolower($nick)));
 			$ignorelist = "";
 			if ($userSql["name"]!=NULL) {
 				$ignorelist = $userSql["ignores"];

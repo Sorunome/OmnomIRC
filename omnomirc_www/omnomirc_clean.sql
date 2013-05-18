@@ -108,12 +108,19 @@ CREATE TABLE IF NOT EXISTS `irc_users` (
 
 -- ---------------------------------------------
 -- Sorunome edit START
-CREATE TABLE IF NOT EXISTS `irc_ignorelist` (
+CREATE TABLE IF NOT EXISTS `irc_userstuff` (
   `usernum` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(45) NOT NULL,
   `ignores` varchar(1024) NOT NULL,
+  `ops` varchar(1024) NOT NULL,
+  `bans` varchar(1024) NOT NULL,
+  `kicks` varchar(1024) NOT NULL,
+  `globalOp` int(10) NOT NULL,
+  `globalBan` int(10) NOT NULL,
   PRIMARY KEY (`usernum`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 AUTO_INCREMENT=1 ;
+
+
 CREATE TABLE IF NOT EXISTS `irc_topics` (
   `channum` int(11) NOT NULL AUTO_INCREMENT,
   `chan` varchar(45) NOT NULL,
