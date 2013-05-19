@@ -47,6 +47,11 @@
 			die();
 		}
 	}
+	if (isset($_GET['high'])) {
+		$numCharsHighlight = (int)$_GET['high'];
+	} else {
+		$numCharsHighlight = 4;
+	}
 	$pm = false;
 	if ($channel[0] == "*") //PM
 	{

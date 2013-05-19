@@ -55,7 +55,7 @@ scrolledDown = true;
 	{
 		if (inRequest)
 			return;
-		url = "Update.php?lineNum=" + curLine + "&channel=" + getChannelEn() + "&nick=" + base64.encode(userName) + "&signature=" + base64.encode(Signature);
+		url = "Update.php?lineNum=" + curLine + "&channel=" + getChannelEn() + "&nick=" + base64.encode(userName) + "&signature=" + base64.encode(Signature) + "&high=" + numCharsHighlight.toString();
 		xmlhttp.open("GET",url,true);
 		if (isBlurred()){
 			setTimeout("xmlhttp.send(null);",2500); //Only query every 2.5 seconds maximum if not foregrounded.
@@ -474,11 +474,11 @@ scrolledDown = true;
 	}
 	function parseHighlight(text) //highlight
 	{
-		if (text.toLowerCase().indexOf(userName.toLowerCase().substr(0,4)) >= 0)
+		if (text.toLowerCase().indexOf(userName.toLowerCase().substr(0,numCharsHighlight)) >= 0)
 		{
 			style = "";
-			if (highRed)
-				style = style + "color:#C73232;";
+			if (!highRed)
+				style = style + "background:none;padding:none;border:none;";
 			if (highBold)
 				style = style + "font-weight:bold;";
 			return '<span class="highlight" style="' + style + '">' + text + "</span>";
@@ -608,6 +608,7 @@ scrolledDown = true;
 		showTime = getOption(10,"F") == "T";
 		doStatusUpdates = getOption(11,"T") == "T";
 		showSmileys = getOption(12,"T") == "T";
+		numCharsHighlight = parseInt(getOption(13,"4"))+1;
 		hasLoaded = false;
 		if (!showSmileys) {
 			document.getElementById('smileyMenuButton').src='smileys/smiley_grey.png';

@@ -78,6 +78,11 @@ Changelog
 
 17/5/2013
  - Added local ops with /op and /deop
+ - Added /ban and /deban, it is only local for channels
+ - Added global ops (only editable over databasemanupulation)
+
+18/5/13
+ - Added a new option: You can select the chars needed for highlighting (1-10)
  
 TODO
 ----
