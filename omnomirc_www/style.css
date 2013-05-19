@@ -261,6 +261,7 @@ table.messageBox {
 	color:#000;
 }
 
+
 #Channels {
 	overflow:hidden;
 	position:absolute;
@@ -396,7 +397,16 @@ input[type=text] {
 	left: calc(99% - 10px);
 	left: -webkit-calc(99% - 10px);
 }
- 
+.arrowButtonHoriz3 > div:nth-child(2) {
+	left:98%;
+	left:calc(99% - 5px);
+	left:-webkit-calc(99% - 5px);
+}
+#UserListContainer .arrowButtonHoriz3 > div:nth-child(2) {
+	left: 90%;
+	left:calc(99% - 10px);
+	left:-webkit-calc(99% - 10px);
+}
 #UserListContainer:hover {
 	left: 90%;
 	height: 98%;

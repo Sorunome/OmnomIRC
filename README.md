@@ -83,6 +83,9 @@ Changelog
 
 18/5/13
  - Added a new option: You can select the chars needed for highlighting (1-10)
+
+19/5/13
+ - Added option to hide/show userlist
  
 TODO
 ----
