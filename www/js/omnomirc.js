@@ -17,8 +17,39 @@
 	You should have received a copy of the GNU General Public License
 	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
-(function(window,undefined){
+(function(window,$,undefined){
 	var $o = window.OmnomIRC = window.$o = function(){
-		
-	};
-})(window);
+		return 'Version: '+$o.version
+	},$i,log=console.log;
+	$.extend($o,{
+		version: '0.1',
+		send: function(msg){
+			if(msg !== ''){
+				$o.event('send',msg);
+			}
+		},
+		event: function(event_name,message){
+			switch(event_name){
+				case 'ready':
+					log('[DOCUMENT_READY]');
+					break;
+				default:
+					log('['+event_name.toUpperCase()+'] '+message);
+			}
+		}
+	});
+	$(document).ready(function(){
+		$i = $('#input');
+		$('#send').click(function(){
+			$o.send($i.val());
+			$i.val('');
+		});
+		$i.keypress(function(e){
+			if(e.keyCode == 13){
+				$o.send($i.val());
+				$i.val('');
+			}
+		});
+		$o.event('ready');
+	});
+})(window,jQuery);

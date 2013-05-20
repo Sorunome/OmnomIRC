@@ -1,203 +1,109 @@
-/*
-    OmnomIRC COPYRIGHT 2010,2011 Netham45
-
-    This file is part of OmnomIRC.
-
-    OmnomIRC is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    OmnomIRC is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
-*/
-/*smiley select start*/
-#smileyselect {
-	position:absolute;
-	width:200px;
-	left:10px;
-	bottom:50px;
-	padding:2px;
-	background-color:rgba(0,0,0, 0.30);*background-color:#D0E0F0;
-	border:1px solid rgba(0,0,0, 0.5);
-	*border:1px solid #D0E0F0;
-	border-radius: 5px;
+html,body{
+	width: 100%;
+	height: 100%;
+	padding: 0;
+	margin: 0;
+	overflow: hidden;
 }
-#smileyselect img {
-	cursor:pointer;
+.fill{
+	width: 100%;
+	height: 100%;
 }
-/*smiley select end*/
-body, td, th , tr		     {font-size: 10px;font-family:verdana,sans-serif;line-height:13px;}
-.highlight			     {border-bottom-style: dashed;border-bottom-width: 1px;}
-.irc-date 
-{
-	color: #000000;
-	font-family:terminal,sans-serif;
-	width:1%;
-	white-space:nowrap;
-	padding-right:2px;
+.table{
+	display: table;
 }
-.irc-topic			     {text-decoration :none;font-size:12;color:#333333;font-family:Arial;border-style:dashed;border-width:1px;width:99%;position:absolute;text-align:center;}
-.irc-green 			     {color: #009200;}
-.irc-black 			     {color: #000000;}
-.irc-brown 			     {color: #7b0000;}
-.irc-navy  			     {color: #00007b;}
-.irc-brick 			     {color: #9c009c;}
-.irc-red   			     {color: #ff0000;}
-.irc-teal 			     {color: #1A5555;}
-
-.fg-white,		.fg-0   ,.fg-00{color: #FFFFFF;}
-.fg-black,		.fg-1   ,.fg-01{color: #000000;}
-.fg-dkBlue,		.fg-2, .quit,.part  ,.fg-02{color: #3636B2;}
-.fg-dkgreen,	.fg-3, .join,.mode,.topic,.nick,.fg-03{color: #2A8C2A;}
-.fg-red,		.fg-4 , .kick ,.fg-04{color: #C33B3B;}
-.fg-dkRed ,		.fg-5 , .pm ,.fg-05{color: #800000;}
-.fg-dkPurple,	.fg-6, .action  ,.fg-06{color: #80267F;}
-.fg-orange,		.fg-7   ,.fg-07{color: #FF7f00;}
-.fg-yellow,		.fg-8   ,.fg-08{color: #FFFF00;}
-.fg-green,		.fg-9   ,.fg-09{color: #3DCC3D;}
-.fg-teal,		.fg-11 {color: #008080;}
-.fg-ltBlue,		.fg-10 {color: #2F8C74;}
-.fg-blue,		.fg-12 {color: #4545E6;}
-.fg-pink,		.fg-13 {color: #B037B0;}
-.fg-dkGray,		.fg-14 {color: #4C4C4C;}
-.fg-ltGray,		.fg-15 {color: #959595;}
-
-.bg-white,		.bg-0   ,.bg-00{background-color: #FFFFFF}/*Placeholder*/
-.bg-black,		.bg-1   ,.bg-01{background-color: #000000;}
-.bg-dkBlue,		.bg-2   ,.bg-02{background-color: #0000FF;}
-.bg-dkgreen,	.bg-3   ,.bg-03{background-color: #00FF00;}
-.bg-red,		.bg-4   ,.bg-04{background-color: #FF0000;}
-.bg-dkRed ,		.bg-5   ,.bg-05{background-color: #844200;}
-.bg-dkPurple,	.bg-6   ,.bg-06{background-color: #8400FF;}
-.bg-orange,		.bg-7   ,.bg-07{background-color: #FF8400;}
-.bg-yellow,		.bg-8   ,.bg-08{background-color: #FFFF00;}
-.bg-green,		.bg-9   ,.bg-09{background-color: #84FF00;}
-.bg-teal,		.bg-10 {background-color: #00FFFF;}
-.bg-ltBlue,		.bg-11 {background-color: #0084FF;}
-.bg-blue,		.bg-12 {background-color: #0048FF;}
-.bg-pink,		.bg-13 {background-color: #B037B0;}
-.bg-dkGray,		.bg-14 {background-color: #4C4C4C;}
-.bg-ltGray,		.bg-15 {background-color: #959595;}
-
-.uName-19 			     {color:#2a8c2a}
-.uName-20 			     {color:#d71c1c}
-.uName-22 			     {color:#80267f}
-.uName-24 			     {color:#d9a641}
-.uName-25 			     {color:#3dcc3d}
-.uName-26 			     {color:#195555}
-.uName-27 			     {color:#2e8c74}
-.uName-28 			     {color:#4545e6}
-.uName-29 			     {color:#b037b0}
-.uName-19,.uName-20,
-.uName-22,.uName-24,
-.uName-25,.uName-26,
-.uName-27,.uName-28,
-.uName-29			     {font-weight:normal;}
-.lineHigh			{
-	background-color:rgba(0,0,0, 0.05);*background-color:#D0E0F0;
-	}
-PRE {
-		font-size: 12px;
-		font-family:verdana,sans-serif;
-		line-height:13px;
-		padding: 0px 0px 0px 0px;
-		margin:0px 0px 0px 0px;
-		border:0px 0px 0px 0px;
-		white-space: pre-wrap;       /* css-3 */
-		white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
-		white-space: -pre-wrap;      /* Opera 4-6 */
-		white-space: -o-pre-wrap;    /* Opera 7 */
-		word-wrap: break-word;       /* Internet Explorer 5.5+ */
-	}
-A:link, A:visited, A:hover, A:active {
-		text-decoration: none;
-		font-weight:500;
-		border-bottom-style: dotted;
-		border-bottom-width: 1px;
-		color:#00F
-	}
-td {
-			white-space: pre-wrap;       /* css-3 */
-		white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
-		white-space: -pre-wrap;      /* Opera 4-6 */
-		white-space: -o-pre-wrap;    /* Opera 7 */
-		word-wrap: break-word;       /* Internet Explorer 5.5+ */
-		width:100%;
+.table-row{
+	display: table-row;
 }
-
-td.chan {
-	-moz-border-radius: 4px;
-	border-radius: 4px;
-	border-style:solid;
-	border-width:0px 1px 0px 1px;
-	border-color:#000;
-	color:#22C;
-	margin-top:10%;
-	cursor: pointer;
-	height:100%;
+.table-caption{
+	display: table-caption;
 }
-td.chan:hover {
-	background-color:#CDF;
+.table-cell{
+	display: table-cell;
 }
-
-td.curchan {
-	-moz-border-radius: 4px;
-	border-radius: 4px;
-	border-style:dotted;
-	border-width:1px 1px 1px 1px;
-	border-color:#69F;
-	height:108%;
-	font-weight:bolder;
-	color:#FFF;
-	padding-bottom:4px;
-	background-color:#69F;
-	height:100%;
-	cursor: pointer;
+.table-column{
+	display: table-column;
 }
-table.chanList {
-	display:inline;
+.table-column-group{
+	display: table-column-group;
 }
-td.name {
-	width:1%;
-	border-style:solid;
-	border-width:0px 1px 0px 0px;
-	border-color:#999;
-	text-align:right;
-	white-space:nowrap;
-	padding-right:2px;
+.table-footer-group{
+	display: table-footer-group;
 }
-tr {
-	width:100%;
-	padding-top:0px;
-	padding-bottom:0px;
-	height:13px;
+.table-row-group{
+	display: table-row-group;
 }
-table.messageBox {
-	border-spacing:0;
-	padding: 0px 0px 2px 0px;
+.table-header-group{
+	display: table-header-group;
 }
-
-.arrowButton {
-	cursor:pointer;
-	color:#525252;
+#main{
+	position: fixed;
+	top: 0;
+	left: 0;
 }
-.arrowButton:hover {
-	color:#000;
+#head{
+	height: 20px;
+	border-bottom-style: solid;
+	transition: height 0.3s;
 }
-.arrowButtonHoriz2 {
-	color:#525252;
+#head:hover{
+	height: 50px;
 }
-.arrowButtonHoriz3 {
-	cursor:pointer;
-	margin:0;
-	padding:0;
+#content{
+	width: 100%;
+	height: 100%;
+	border-top-style: solid;
+	border-bottom-style: solid;
 }
-.arrowButtonHoriz3:hover .arrowButtonHoriz2 {
-	color:#000;
+#users{
+	position: absolute;
+	right: 0;
+	bottom: 0;
+	background-color: white;
+	border-left-style: solid;
+	width: 36px;
+	height: 18px;
+	margin-top: -1px;
+	border-top-style: solid;
+	transition: width 0.5s, height 0.5s;
+}
+#users:hover{
+	width: 150px;
+	height: 100%;
+	z-index: 10;
+}
+#entry{
+	width: 100%;
+	border-top-style: solid;
+	height: 18px;
+}
+#input{
+	width: calc(100% - 74px);
+	height: 16px;
+	margin: 0;
+	padding: 1px;
+	border-style: none;
+	background-color: grey;
+	clear: none;
+	position: absolute;
+	bottom: 0;
+	left: 0;
+}
+#send{
+	clear: none;
+	position: absolute;
+	bottom: 0;
+	right: 36px;
+	width: 36px;
+	border-style: none;
+	border-left-style: solid;
+	background-color: white;
+	transition: background-color 0.2s;
+}
+#send:hover{
+	background-color: grey;
+}
+#content,#head,#users,#entry,#input,#send{
+	border-color: black;
+	border-width: 1px;
 }
