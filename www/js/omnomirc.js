@@ -137,11 +137,9 @@
 		$("#head").hoverIntent({
 			over: function(){
 				$(this).addClass('hovered');
-				$tl.show();
 			},
 			out: function(){
 				$(this).removeClass('hovered');
-				$tl.hide();
 			},
 			timeout: 1000
 		});
