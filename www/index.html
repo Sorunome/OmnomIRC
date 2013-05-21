@@ -5,21 +5,33 @@
 		<meta charset='utf-8'> 
 		<script type="text/javascript" src="js/console-shim-min"></script>
 		<script type="text/javascript" src="js/jquery-1.9.1.min.js"></script>
-		<script type="text/javascript" src="js/jquery-ui-1.10.3.min.js"></script>
+		<script type="text/javascript" src="js/jquery.hoverIntent.minified.js"></script>
 		<script type="text/javascript" src="js/jquery.timago.js"></script>
 		<script type="text/javascript" src="js/jquery.hammer.js"></script>
 		<script type="text/javascript" src="js/omnomirc.js"></script>
 		<link rel="stylesheet" href="css/style.css"></link>
-		<link rel="stylesheet" href="css/ui-lightness/jquery-ui-1.10.3.custom.min.css"></link>
 	</head>
 	<body>
-		<div class="table fill" id="main">
-			<div id="head" class="table-row">Title/Tabs</div>
-			<div class="table-cell" id="content">Content</div>
-			<div class="table-row" id="entry">
-				<input id="input" type="text"/>
-				<button id="send" value="send">send</button>
-				<div id="users">Users</div>
+		<div id="head">
+			<div id="info" class="unselectable">
+				<span id="title"></span>
+				<span id="topic"></span>
+			</div>
+			<div id="tabs-list"></div>
+		</div>
+		<div id="content">
+			<ul id="content-list"></ul>
+		</div>
+		<div id="entry">
+			<input id="input" type="text"/>
+			<button id="send" value="send">send</button>
+			<div id="users">
+				<span class="unselectable">Users</span>
+				<ul id="user-list"></ul>
+			</div>
+			<div id="settings">
+				<span class="unselectable">Settings</span>
+				<ul id="settings-list"></ul>
 			</div>
 		</div>
 	</body>

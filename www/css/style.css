@@ -9,91 +9,101 @@ html,body{
 	width: 100%;
 	height: 100%;
 }
-.table{
-	display: table;
+.unselectable,#tabs-list span.tab{
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
 }
-.table-row{
-	display: table-row;
+#tabs-list span.tab .close-button{
+	float: right;
+	font-weight: bold;
+	font-size: 16px;
+	font-family: Arial,Liberation Sans,DejaVu Sans,sans-serif;
 }
-.table-caption{
-	display: table-caption;
-}
-.table-cell{
-	display: table-cell;
-}
-.table-column{
-	display: table-column;
-}
-.table-column-group{
-	display: table-column-group;
-}
-.table-footer-group{
-	display: table-footer-group;
-}
-.table-row-group{
-	display: table-row-group;
-}
-.table-header-group{
-	display: table-header-group;
-}
-#main{
-	position: fixed;
-	top: 0;
-	left: 0;
+#tabs-list span.tab .close-button:hover{
+	color: red;
 }
 #head{
+	right: 0;
+	top: 0;
+	width: 100%;
 	height: 20px;
 	border-bottom-style: solid;
+	background-color: white;
 	transition: height 0.3s;
+	z-index: 10;
 }
-#head:hover{
-	height: 50px;
+#head.hovered{
+	height: 40px;
+}
+#info{
+	display: table;
+	width: 100%;
+}
+#title{
+	display: table-cell;
+}
+#topic{
+	display: table-cell;
+	text-align: right;
 }
 #content{
 	width: 100%;
-	height: 100%;
-	border-top-style: solid;
-	border-bottom-style: solid;
+	height: calc(100% - 41px);
+	top: 20px;
+	left: 0;
 }
-#users{
-	position: absolute;
-	right: 0;
+#settings,#users{
 	bottom: 0;
+	height: 18px;
 	background-color: white;
 	border-left-style: solid;
-	width: 36px;
-	height: 18px;
-	margin-top: -1px;
 	border-top-style: solid;
-	transition: width 0.5s, height 0.5s;
+	margin-top: -1px;
+	transition: width 0.5s, height 0.5s, right 0.5s;
 }
-#users:hover{
+#settings span,#users span{
+	cursor: pointer;
+}
+#users{
+	right: 0;
+	width: 36px;
+}
+#settings{
+	width: 52px;
+	border-right-style: solid;
+	right: 36px;
+}
+#settings.open,#users.open{
 	width: 150px;
 	height: 100%;
-	z-index: 10;
+	right: 0;
+	z-index: 20;
 }
 #entry{
 	width: 100%;
 	border-top-style: solid;
 	height: 18px;
+	bottom: 0;
 }
 #input{
-	width: calc(100% - 74px);
+	width: calc(100% - 126px);
 	height: 16px;
 	margin: 0;
 	padding: 1px;
 	border-style: none;
 	background-color: grey;
 	clear: none;
-	position: absolute;
 	bottom: 0;
 	left: 0;
 }
 #send{
 	clear: none;
-	position: absolute;
 	bottom: 0;
-	right: 36px;
+	right: 88px;
 	width: 36px;
 	border-style: none;
 	border-left-style: solid;
@@ -103,7 +113,46 @@ html,body{
 #send:hover{
 	background-color: grey;
 }
-#content,#head,#users,#entry,#input,#send{
+#send.clicked{
+	background-color: red;
+}
+#content,#head,#users,#entry,#input,#send,#settings{
 	border-color: black;
 	border-width: 1px;
+	overflow: hidden;
+	position: fixed;
+}
+#content-list,#users-list,#settings-list,#tabs-list{
+	width: 100%;
+	height: 100%;
+	list-style-type: none;
+	margin: 0;
+	padding: 0;
+	overflow: auto;
+}
+#tabs-list{
+	display: table;
+	width: 100%;
+	height: 100%;
+	position: absolute;
+	left: 0;
+	top: 20px;
+	cursor: pointer;
+}
+#tabs-list span.tab{
+	display: table-cell;
+	border-style: solid;
+	border-top-right-radius: 3px;
+	border-top-left-radius: 3px;
+	border-color: black;
+	border-top-style: solid;
+	border-right-style: solid;
+	border-left-style: solid;
+	border-bottom-style: none;
+	border-width: 1px;
+	padding: 0;
+	margin: 0;
+}
+#tabs-list span.tab.clicked{
+	background-color: lightgrey;
 }

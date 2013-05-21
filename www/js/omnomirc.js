@@ -20,12 +20,13 @@
 (function(window,$,undefined){
 	var $o = window.OmnomIRC = window.$o = function(){
 		return 'Version: '+$o.version
-	},$i,log=console.log;
+	},$i,$s,$cl,$tl,log=console.log,tabs=[],selectedTab=0;
 	$.extend($o,{
 		version: '0.1',
 		send: function(msg){
 			if(msg !== ''){
 				$o.event('send',msg);
+				$cl.append($('<li>').text(msg));
 			}
 		},
 		event: function(event_name,message){
@@ -36,20 +37,124 @@
 				default:
 					log('['+event_name.toUpperCase()+'] '+message);
 			}
+		},
+		selectTab: function(id){
+			if(id<tabs.length-1&&id>=0){
+				selectedTab=id;
+			}
+			$tl.children('.clicked').removeClass('clicked');
+			$($tl.children().get(id)).addClass('clicked');
+			$('#title').text(tabs[id].title);
+			$('#topic').text(tabs[id].topic);
+		},
+		tabDOM: function(id){
+			
+		},
+		addTab: function(name,title){
+			tabs.push({
+				name: name,
+				title: title
+			});
+			$tl.append($o.tabObj(tabs.length-1));
+		},
+		removeTab: function(id){
+			tabs.splice(id,1);
+			if(selectedTab==id&&selectedTab>0){
+				selectedTab--;
+			}
+			$o.refreshTabs();
+		},
+		tabObj: function(id){
+			if(typeof id !== 'undefined'){
+				return $('<span>')
+					.addClass('tab')
+					.text(tabs[id].name).click(function(){
+						if($(this).data('id')!=selectedTab){
+							$o.selectTab($(this).data('id'));
+						}
+					})
+					.append(
+						$('<span>')
+							.addClass('close-button')
+							.click(function(){
+								$o.removeTab(id);
+							})
+							.html('&times;')
+					)
+					.data('id',id);
+			}
+		},
+		refreshTabs: function(){
+			$tl.html('');
+			var i,tab;
+			for(i in tabs){
+				tab = $o.tabObj(i);
+				if(i==selectedTab){
+					tab.addClass('clicked');
+					$('#title').text(tabs[i].title);
+					$('#topic').text(tabs[i].topic);
+				}
+				$tl.append(tab);
+			}
 		}
 	});
 	$(document).ready(function(){
 		$i = $('#input');
-		$('#send').click(function(){
+		$s = $('#send');
+		$cl = $('#content-list');
+		$tl = $('#tabs-list');
+		$s.click(function(){
+			if(!$s.hasClass('clicked')){
+				$s.addClass('clicked');
+				setTimeout(function(){
+					$s.removeClass('clicked');
+				},500);
+			}
 			$o.send($i.val());
 			$i.val('');
 		});
 		$i.keypress(function(e){
 			if(e.keyCode == 13){
+				if(!$s.hasClass('clicked')){
+					$s.addClass('clicked');
+					setTimeout(function(){
+						$s.removeClass('clicked');
+					},500);
+				}
 				$o.send($i.val());
 				$i.val('');
 			}
 		});
+		$('#settings, #users').click(function(){
+			$(this).addClass('open');
+		}).hoverIntent({
+			out: function(){
+				$(this).removeClass('open');
+			},
+			timeout: 1000
+		});
+		$("#head").hoverIntent({
+			over: function(){
+				$(this).addClass('hovered');
+				$tl.show();
+			},
+			out: function(){
+				$(this).removeClass('hovered');
+				$tl.hide();
+			},
+			timeout: 1000
+		});
+		$('.unselectable').attr('unselectable','on');
+		//DEBUG
+		for(var i=0;i<10;i++){
+			tabs.push({
+				name: 'Tab '+i,
+				title: 'Tab '+i,
+				topic: 'Topic for tab '+i
+			});
+		}
+		//END DEBUG
+		$o.refreshTabs();
 		$o.event('ready');
 	});
 })(window,jQuery);
