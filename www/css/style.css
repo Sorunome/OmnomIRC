@@ -83,6 +83,9 @@ html,body{
 	right: 0;
 	z-index: 20;
 }
+#settings.open{
+	width: 50%;
+}
 #entry{
 	width: 100%;
 	border-top-style: solid;
