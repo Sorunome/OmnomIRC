@@ -36,6 +36,9 @@ html,body{
 	transition: height 0.3s;
 	z-index: 10;
 }
+#head:hover{
+	height: 24px;
+}
 #head.hovered{
 	height: 40px;
 }
@@ -76,6 +79,9 @@ html,body{
 	width: 52px;
 	border-right-style: solid;
 	right: 36px;
+}
+#settings.hovered,#users.hovered{
+	height: 21px;
 }
 #settings.open,#users.open{
 	width: 150px;

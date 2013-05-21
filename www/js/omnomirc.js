@@ -20,7 +20,7 @@
 (function(window,$,undefined){
 	var $o = window.OmnomIRC = window.$o = function(){
 		return 'Version: '+$o.version
-	},$i,$s,$cl,$tl,log=console.log,tabs=[],selectedTab=0;
+	},$i,$s,$h,$cl,$tl,log=console.log,tabs=[],selectedTab=0;
 	$.extend($o,{
 		version: '0.1',
 		send: function(msg){
@@ -104,6 +104,7 @@
 		$s = $('#send');
 		$cl = $('#content-list');
 		$tl = $('#tabs-list');
+		$h = $('#head');
 		$s.click(function(){
 			if(!$s.hasClass('clicked')){
 				$s.addClass('clicked');
@@ -128,23 +129,28 @@
 		});
 		$('#settings, #users').click(function(){
 			$(this).addClass('open');
-		}).hoverIntent({
-			out: function(){
-				$(this).removeClass('open');
-			},
-			timeout: 1000
+		}).hover(function(){
+			$(this).addClass('hovered');
+		},function(){
+			$(this).removeClass('hovered');
 		}).children('.close-button').click(function(){
 			$(this).parent().removeClass('open');
 			return false;
 		});
-		$("#head").hoverIntent({
+		$('#users').hoverIntent({
+			out: function(){
+				$(this).removeClass('open');
+			},
+			timeout: 1000
+		});
+		$h.hoverIntent({
 			over: function(){
 				setTimeout(function(){
 					$('#head:hover').addClass('hovered');
 				},1000);
 			},
 			out: function(){
-				$(this).removeClass('hovered');
+				$h.removeClass('hovered');
 			},
 			timeout: 1000
 		}).click(function(){
@@ -162,8 +168,9 @@
 		//END DEBUG
 		$o.refreshTabs();
 		$o.event('ready');
+		$h.addClass('hovered');
 		setTimeout(function(){
-			$('#head').removeClass('hovered');
+			$h.removeClass('hovered');
 		},1000);
 	});
 })(window,jQuery);
