@@ -159,3 +159,6 @@ html,body{
 #tabs-list span.tab.clicked{
 	background-color: lightgrey;
 }
+#tabs-list span.tab:hover{
+	background-color: grey;
+}

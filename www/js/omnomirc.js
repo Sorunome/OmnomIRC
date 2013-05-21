@@ -39,6 +39,7 @@
 			}
 		},
 		selectTab: function(id){
+			$o.event('tab_select',id);
 			if(id<tabs.length-1&&id>=0){
 				selectedTab=id;
 			}
