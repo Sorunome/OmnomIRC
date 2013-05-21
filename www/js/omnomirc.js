@@ -133,15 +133,22 @@
 				$(this).removeClass('open');
 			},
 			timeout: 1000
+		}).children('.close-button').click(function(){
+			$(this).parent().removeClass('open');
+			return false;
 		});
 		$("#head").hoverIntent({
 			over: function(){
-				$(this).addClass('hovered');
+				setTimeout(function(){
+					$('#head:hover').addClass('hovered');
+				},1000);
 			},
 			out: function(){
 				$(this).removeClass('hovered');
 			},
 			timeout: 1000
+		}).click(function(){
+			$(this).addClass('hovered');
 		});
 		$('.unselectable').attr('unselectable','on');
 		//DEBUG
@@ -155,5 +162,8 @@
 		//END DEBUG
 		$o.refreshTabs();
 		$o.event('ready');
+		setTimeout(function(){
+			$('#head').removeClass('hovered');
+		},1000);
 	});
 })(window,jQuery);

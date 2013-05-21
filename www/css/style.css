@@ -17,13 +17,13 @@ html,body{
 	-ms-user-select: none;
 	user-select: none;
 }
-#tabs-list span.tab .close-button{
+.close-button{
 	float: right;
 	font-weight: bold;
 	font-size: 16px;
 	font-family: Arial,Liberation Sans,DejaVu Sans,sans-serif;
 }
-#tabs-list span.tab .close-button:hover{
+.close-button:hover{
 	color: red;
 }
 #head{
@@ -84,7 +84,7 @@ html,body{
 	z-index: 20;
 }
 #settings.open{
-	width: 50%;
+	width: 100%;
 }
 #entry{
 	width: 100%;
