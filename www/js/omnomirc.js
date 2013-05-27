@@ -132,17 +132,20 @@
 		});
 		$('#settings, #users').click(function(){
 			$(this).addClass('open');
+			$(this).children('.close-button').show();
 		}).hover(function(){
 			$(this).addClass('hovered');
 		},function(){
 			$(this).removeClass('hovered');
 		}).children('.close-button').click(function(){
 			$(this).parent().removeClass('open');
+			$(this).hide();
 			return false;
-		});
+		}).hide();
 		$('#users').hoverIntent({
 			out: function(){
 				$(this).removeClass('open');
+				$(this).children('.close-button').hide();
 			},
 			timeout: 1000
 		});
