@@ -20,7 +20,7 @@
 (function(window,$,undefined){
 	var $o = window.OmnomIRC = window.$o = function(){
 		return 'Version: '+$o.version
-	},$i,$s,$h,$cl,$tl,log=console.log,tabs=[],selectedTab=0;
+	},$i,$s,$h,$cl,$tl,hht,log=console.log,tabs=[],selectedTab=0;
 	$.extend($o,{
 		version: '0.1',
 		send: function(msg){
@@ -81,6 +81,7 @@
 							.addClass('close-button')
 							.click(function(){
 								$o.removeTab(id);
+								return false;
 							})
 							.html('&times;')
 					)
@@ -149,15 +150,18 @@
 			$('#settings, #users, #head').removeClass('hovered').removeClass('open');
 		});
 		$h.hoverIntent({
-			over: function(){
-				setTimeout(function(){
-					$('#head:hover').addClass('hovered');
-				},1000);
-			},
 			out: function(){
 				$h.removeClass('hovered');
 			},
+			over: function(){},
 			timeout: 1000
+		}).hover(function(){
+			hht = setTimeout(function(){
+				$o.event('timeout','Head HoverIntent timeout');
+				$('#head:hover').addClass('hovered');
+			},1000);
+		},function(){
+			clearInterval(hht);
 		}).click(function(){
 			$(this).addClass('hovered');
 		});

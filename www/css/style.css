@@ -20,7 +20,8 @@ html,body{
 .close-button{
 	float: right;
 	font-weight: bold;
-	font-size: 16px;
+	font-size: 24px;
+	margin-top: -5px;
 	font-family: Arial,Liberation Sans,DejaVu Sans,sans-serif;
 }
 .close-button:hover{
