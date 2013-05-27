@@ -151,6 +151,7 @@
 		});
 		$('#content').click(function(){
 			$('#settings, #users, #head').removeClass('hovered').removeClass('open');
+			$('#settings, #users').children('.close-button').hide()
 		});
 		$h.hoverIntent({
 			out: function(){
