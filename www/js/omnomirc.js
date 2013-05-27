@@ -69,9 +69,11 @@
 			if(typeof id !== 'undefined'){
 				return $('<span>')
 					.addClass('tab')
-					.text(tabs[id].name).click(function(){
+					.text(tabs[id].name)
+					.click(function(){
 						if($(this).data('id')!=selectedTab){
 							$o.selectTab($(this).data('id'));
+							return false;
 						}
 					})
 					.append(
@@ -142,6 +144,9 @@
 				$(this).removeClass('open');
 			},
 			timeout: 1000
+		});
+		$('#content').click(function(){
+			$('#settings, #users, #head').removeClass('hovered').removeClass('open');
 		});
 		$h.hoverIntent({
 			over: function(){
