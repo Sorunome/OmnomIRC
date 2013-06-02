@@ -19,27 +19,107 @@
 */
 (function(window,$,undefined){
 	var $o = window.OmnomIRC = window.$o = function(){
-		return 'Version: '+$o.version
-	},$i,$s,$h,$cl,$tl,hht,log=console.log,tabs=[],selectedTab=0;
+			return 'Version: '+$o.version
+		},
+		event = function(msg,type){
+			type=type==undefined?'event':type;
+			switch(type){
+				case 'ready':type='document_ready';break;
+			}
+			log('['+type.toUpperCase()+'] '+msg);
+		},
+		log=console.log,
+		tabs=[],
+		selectedTab=0,
+		commands = [
+			{
+				cmd: 'help',
+				fn: function(args){
+					var m = 'Commands:',i;
+					for(i in commands){
+						m += ' '+commands[i].cmd;
+					}
+					$o.msg(m);
+				}
+			},
+			{
+				cmd: 'open',
+				fn: function(args){
+					tabs.push({
+						name: args[1],
+						title: args[2],
+						topic: 'Topic for '+args[2]
+					});
+					$o.refreshTabs();
+				}
+			},
+			{
+				cmd: 'clear',
+				fn: function(args){
+					$cl.html('');
+				}
+			},
+			{
+				cmd: 'close',
+				fn: function(args){
+					if(args.length > 1){
+						$o.removeTab(args[1]);
+					}else{
+						$o.removeTab(selectedTab);
+					}
+				}
+			},
+			{
+				cmd: 'tabs',
+				fn: function(args){
+					$o.msg('Tabs:');
+					for(var i in tabs){
+						$o.msg('   ['+i+'] '+tabs[i].name);
+					}
+				}
+			}
+		],
+		$i,$s,$h,$cl,$tl,hht;
 	$.extend($o,{
-		version: '0.1',
+		version: '3.0',
 		send: function(msg){
 			if(msg !== ''){
-				$o.event('send',msg);
-				$cl.append($('<li>').text(msg));
+				if(msg[0] == '/'){
+					var args = msg.split(' '),
+						cmd = args[0].substr(1),
+						i;
+					event(msg,'command');
+					for(i in commands){
+						if(commands[i].cmd == cmd){
+							commands[i].fn(args);
+							return;
+						}
+					}
+					$o.msg(cmd+' is not a valid command.');
+				}else{
+					event(msg,'send');
+					$o.msg({
+						text: msg,
+						user: 'User'
+					});
+				}
+			}
+		},
+		msg: function(msg){
+			switch(typeof msg){
+				case 'string':
+					$cl.append($('<li>').html(msg.htmlentities()));
+					break;
+				case 'object':
+					$cl.append($('<li>').html('&lt;'+msg.user+'&gt;&nbsp;'+msg.text.htmlentities()));
+					break;
 			}
 		},
 		event: function(event_name,message){
-			switch(event_name){
-				case 'ready':
-					log('[DOCUMENT_READY]');
-					break;
-				default:
-					log('['+event_name.toUpperCase()+'] '+message);
-			}
+			event(message,event_name);
 		},
 		selectTab: function(id){
-			$o.event('tab_select',id);
+			event(id,'tab_select');
 			if(id<tabs.length-1&&id>=0){
 				selectedTab=id;
 			}
@@ -52,6 +132,7 @@
 			
 		},
 		addTab: function(name,title){
+			event('Tab added: '+name);
 			tabs.push({
 				name: name,
 				title: title
@@ -59,6 +140,7 @@
 			$tl.append($o.tabObj(tabs.length-1));
 		},
 		removeTab: function(id){
+			event('Tab removed: '+tabs[id].name);
 			tabs.splice(id,1);
 			if(selectedTab==id&&selectedTab>0){
 				selectedTab--;
@@ -69,7 +151,7 @@
 			if(typeof id !== 'undefined'){
 				return $('<span>')
 					.addClass('tab')
-					.text(tabs[id].name)
+					.text(tabs[id].title)
 					.click(function(){
 						if($(this).data('id')!=selectedTab){
 							$o.selectTab($(this).data('id'));
@@ -102,6 +184,9 @@
 			}
 		}
 	});
+	String.prototype.htmlentities = function(){
+		return this.replace(/&/g, '&amp;').replace(/\s/g, '&nbsp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+	};
 	$(document).ready(function(){
 		$i = $('#input');
 		$s = $('#send');
@@ -161,7 +246,7 @@
 			timeout: 1000
 		}).hover(function(){
 			hht = setTimeout(function(){
-				$o.event('timeout','Head HoverIntent timeout');
+				event('Head HoverIntent timeout','timeout');
 				$('#head:hover').addClass('hovered');
 			},1000);
 		},function(){
@@ -173,14 +258,14 @@
 		//DEBUG
 		for(var i=0;i<10;i++){
 			tabs.push({
-				name: 'Tab '+i,
+				name: '#Tab'+i,
 				title: 'Tab '+i,
 				topic: 'Topic for tab '+i
 			});
 		}
 		//END DEBUG
 		$o.refreshTabs();
-		$o.event('ready');
+		event('Date '+new Date,'ready');
 		$h.addClass('hovered');
 		setTimeout(function(){
 			$h.removeClass('hovered');
