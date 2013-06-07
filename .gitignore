@@ -165,3 +165,6 @@ pip-log.txt
 # Config for testing
 config.js
 config.php
+
+# cloud9 files
+.c9revisions
