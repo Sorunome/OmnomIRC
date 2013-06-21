@@ -29,8 +29,25 @@
 			log('['+type.toUpperCase()+'] '+msg);
 		},
 		log=console.log,
-		tabs=[],
+		exists = function(object){
+			return typeof object != 'undefined';
+		},
+		prevent = function(e){
+			e.stopImmediatePropagation();
+			e.stopPropagation();
+			e.preventDefault();
+			return false;
+		},
 		selectedTab=0,
+		settings = {
+			colour: false
+		},
+		tabs = [],
+		properties = {
+			nick: 'User',
+			sig: '',
+			tabs: tabs
+		},
 		commands = [
 			{
 				cmd: 'help',
@@ -72,7 +89,7 @@
 			{
 				cmd: 'tabs',
 				fn: function(args){
-					$o.msg('Tabs:');
+					$o.msg('tabs:');
 					for(var i in tabs){
 						$o.msg('   ['+i+'] '+tabs[i].name);
 					}
@@ -82,6 +99,20 @@
 		$i,$s,$h,$cl,$tl,hht;
 	$.extend($o,{
 		version: '3.0',
+		get: function(name){
+			return exists(settings[name])?settings[name]:false;
+		},
+		set: function(name,value){
+			if(exists(settings[name])){
+				settings[name] = value;
+				return true;
+			}else{
+				return false;
+			}
+		},
+		prop: function(name){
+			return exists(properties[name])?properties[name]:null;
+		},
 		send: function(msg){
 			if(msg !== ''){
 				if(msg[0] == '/'){
@@ -100,7 +131,7 @@
 					event(msg,'send');
 					$o.msg({
 						text: msg,
-						user: 'User'
+						user: properties.nick
 					});
 				}
 			}
@@ -152,10 +183,23 @@
 				return $('<span>')
 					.addClass('tab')
 					.text(tabs[id].title)
-					.click(function(){
-						if($(this).data('id')!=selectedTab){
-							$o.selectTab($(this).data('id'));
-							return false;
+					.mouseup(function(e){
+						switch(e.which){
+							case 1:	// RMB
+								if($(this).data('id')!=selectedTab){
+									$o.selectTab($(this).data('id'));
+									return prevent(e);
+								}
+								break;
+							case 2:	// MMB
+								$(this).children('span.close-button').click();
+								return prevent(e);
+								break;
+							case 3:	// LMB
+								return prevent(e);
+								break;
+							default:
+								return prevent(e);
 						}
 					})
 					.append(
@@ -255,6 +299,36 @@
 			$(this).addClass('hovered');
 		});
 		$('.unselectable').attr('unselectable','on');
+		$.contextMenu({
+			selector: 'span.tab',
+			items: {
+				add: {
+					name: 'New Tab',
+					icon: 'add',
+					callback: function(){
+						$(this).contextMenu('hide');
+						var title = prompt('Title');
+						tabs.push({
+							name: prompt('channel'),
+							title: title,
+							topic: 'Topic for '+title
+						});
+						$o.refreshTabs();
+					}
+				},
+				s1: '',
+				close: {
+					name: 'Close',
+					icon: 'delete',
+					callback: function(){
+						$(this).contextMenu('hide');
+						$o.removeTab($(this).data('id'));
+					}
+				}
+			},
+			zIndex: 99999,
+			trigger: 'right'
+		});
 		//DEBUG
 		for(var i=0;i<10;i++){
 			tabs.push({
