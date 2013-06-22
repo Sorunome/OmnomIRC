@@ -296,7 +296,7 @@
 		});
 		$('.unselectable').attr('unselectable','on');
 		$.contextMenu({
-			selector: 'span.tab',
+			selector: 'div.tab',
 			items: {
 				add: {
 					name: 'New Tab',
