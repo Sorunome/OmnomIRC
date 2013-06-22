@@ -180,7 +180,7 @@
 		},
 		tabObj: function(id){
 			if(typeof id !== 'undefined'){
-				return $('<span>')
+				return $('<div>')
 					.addClass('tab')
 					.text(tabs[id].title)
 					.mouseup(function(e){
@@ -209,6 +209,12 @@
 								$o.removeTab(id);
 								return false;
 							})
+							.css({
+								'position': 'absolute',
+								'background-color': 'inherit',
+								'top': 0,
+								'right': 0
+							})
 							.html('&times;')
 					)
 					.data('id',id);
@@ -225,6 +231,12 @@
 					$('#topic').text(tabs[i].topic);
 				}
 				$tl.append(tab);
+			}
+			if($tl.get(0).scrollHeight-20 != $tl.scrollTop()){
+				$('#tabs-scroll-right').removeClass('disabled');
+			}
+			if($tl.scrollTop() != 0){
+				$('#tabs-scroll-left').removeClass('disabled');
 			}
 		}
 	});
@@ -282,22 +294,6 @@
 			$('#settings, #users, #head').removeClass('hovered').removeClass('open');
 			$('#settings, #users').children('.close-button').hide()
 		});
-		$h.hoverIntent({
-			out: function(){
-				$h.removeClass('hovered');
-			},
-			over: function(){},
-			timeout: 1000
-		}).hover(function(){
-			hht = setTimeout(function(){
-				event('Head HoverIntent timeout','timeout');
-				$('#head:hover').addClass('hovered');
-			},1000);
-		},function(){
-			clearInterval(hht);
-		}).click(function(){
-			$(this).addClass('hovered');
-		});
 		$('.unselectable').attr('unselectable','on');
 		$.contextMenu({
 			selector: 'span.tab',
@@ -329,8 +325,30 @@
 			zIndex: 99999,
 			trigger: 'right'
 		});
+		$('#tabs-scroll-right').click(function(){
+			event('scroll right');
+			$tl.scrollTop(($tl.scrollTop()||0)+20);
+			if($tl.get(0).scrollHeight-20 == $tl.scrollTop()){
+				$('#tabs-scroll-right').addClass('disabled');
+			}
+			$('#tabs-scroll-left').removeClass('disabled');
+		});
+		$('#tabs-scroll-left').click(function(){
+			event('scroll left');
+			$tl.scrollTop(($tl.scrollTop()||0)-20);
+			if($tl.scrollTop() == 0){
+				$('#tabs-scroll-left').addClass('disabled');
+			}
+			$('#tabs-scroll-right').removeClass('disabled');
+		});
+		(function scrollup(){
+			if($tl.scrollTop() != 0){
+				$('#tabs-scroll-left').click();
+				setTimeout(scrollup,10);
+			}
+		})();
 		//DEBUG
-		for(var i=0;i<10;i++){
+		for(var i=0;i<20;i++){
 			tabs.push({
 				name: '#Tab'+i,
 				title: 'Tab '+i,

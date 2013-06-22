@@ -9,7 +9,7 @@ html,body{
 	width: 100%;
 	height: 100%;
 }
-.unselectable,#tabs-list span.tab{
+.unselectable,#tabs-list div.tab{
 	-webkit-touch-callout: none;
 	-webkit-user-select: none;
 	-khtml-user-select: none;
@@ -31,17 +31,11 @@ html,body{
 	right: 0;
 	top: 0;
 	width: 100%;
-	height: 20px;
+	height: 40px;
 	border-bottom-style: solid;
 	background-color: white;
 	transition: height 0.3s;
 	z-index: 10;
-}
-#head:hover{
-	height: 24px;
-}
-#head.hovered{
-	height: 40px;
 }
 #info{
 	display: table;
@@ -56,8 +50,8 @@ html,body{
 }
 #content{
 	width: 100%;
-	height: calc(100% - 41px);
-	top: 20px;
+	height: calc(100% - 61px);
+	top: 41px;
 	left: 0;
 }
 #settings,#users{
@@ -141,16 +135,39 @@ html,body{
 	overflow: auto;
 }
 #tabs-list{
-	display: table;
-	width: 100%;
-	height: 100%;
+	width: calc(100% - 42px);
+	height: 20px;
 	position: absolute;
 	left: 0;
 	top: 20px;
-	cursor: pointer;
+	overflow: hidden;
 }
-#tabs-list span.tab{
-	display: table-cell;
+#tabs-list div.tab{
+	float: left;
+	min-width: 100px;
+	max-width: 200px;
+	height: 19px;
+	overflow: hidden;
+	position: relative;
+}
+#tabs-list div.tab.clicked{
+	background-color: lightgrey;
+}
+#tabs-scroll-left{
+	position: absolute;
+	right: 20px;
+	top: 20px;
+	height: 20px;
+	width: 20px;
+}
+#tabs-scroll-right{
+	position: absolute;
+	right: 0;
+	top: 20px;
+	height: 20px;
+	width: 20px;
+}
+#tabs-list div.tab, #tabs-scroll-right,#tabs-scroll-left{
 	border-style: solid;
 	border-top-right-radius: 3px;
 	border-top-left-radius: 3px;
@@ -162,10 +179,13 @@ html,body{
 	border-width: 1px;
 	padding: 0;
 	margin: 0;
+	background-color: white;
+	cursor: pointer;
+	clear: none;
 }
-#tabs-list span.tab.clicked{
-	background-color: lightgrey;
-}
-#tabs-list span.tab:hover{
+#tabs-list div.tab:hover, #tabs-scroll-right:hover,#tabs-scroll-left:hover{
 	background-color: grey;
+}
+#tabs-scroll-left.disabled, #tabs-scroll-right.disabled{
+	background-color: lightgrey;
 }
