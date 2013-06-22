@@ -69,6 +69,7 @@ html,body{
 #users{
 	right: 0;
 	width: 36px;
+	z-index: 1;
 }
 #settings{
 	width: 52px;
