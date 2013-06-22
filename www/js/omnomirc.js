@@ -342,8 +342,8 @@
 			$('#tabs-scroll-right').removeClass('disabled');
 		});
 		(function scrollup(){
+			$('#tabs-scroll-left').click();
 			if($tl.scrollTop() != 0){
-				$('#tabs-scroll-left').click();
 				setTimeout(scrollup,10);
 			}
 		})();
