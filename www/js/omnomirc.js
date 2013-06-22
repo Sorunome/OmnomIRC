@@ -22,13 +22,15 @@
 			return 'Version: '+$o.version
 		},
 		event = function(msg,type){
-			type=type==undefined?'event':type;
+			type=typeof type == 'undefined'?'event':type;
 			switch(type){
 				case 'ready':type='document_ready';break;
 			}
 			log('['+type.toUpperCase()+'] '+msg);
 		},
-		log=console.log,
+		log = function(){
+				console.log.apply(console,arguments);
+		},
 		exists = function(object){
 			return typeof object != 'undefined';
 		},
@@ -319,6 +321,27 @@
 					callback: function(){
 						$(this).contextMenu('hide');
 						$o.removeTab($(this).data('id'));
+					}
+				}
+			},
+			zIndex: 99999,
+			trigger: 'right'
+		});
+		$.contextMenu({
+			selector: '#tabs-list',
+			items: {
+				add: {
+					name: 'New Tab',
+					icon: 'add',
+					callback: function(){
+						$(this).contextMenu('hide');
+						var title = prompt('Title');
+						tabs.push({
+							name: prompt('channel'),
+							title: title,
+							topic: 'Topic for '+title
+						});
+						$o.refreshTabs();
 					}
 				}
 			},

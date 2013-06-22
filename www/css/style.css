@@ -109,6 +109,9 @@ html,body{
 	bottom: 0;
 	right: 88px;
 	width: 36px;
+	padding: 0;
+	margin: 0;
+	height: 18px;
 	border-style: none;
 	border-left-style: solid;
 	background-color: white;
@@ -124,6 +127,9 @@ html,body{
 	border-color: black;
 	border-width: 1px;
 	overflow: hidden;
+	position: absolute;
+}
+#users,#input,#send,#settings{
 	position: fixed;
 }
 #content-list,#users-list,#settings-list,#tabs-list{
