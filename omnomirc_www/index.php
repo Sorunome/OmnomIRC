@@ -25,15 +25,15 @@ if (strpos($_SERVER['HTTP_USER_AGENT'],"textmode;")===false) {?>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>OmnomIRC V2</title>
 <link rel="stylesheet" type="text/css" href="style.css" />
-<link rel="stylesheet" type="text/css" href="http://www.omnimaga.org/OmnomIRCThemes.php" />
-<script src="config.js"></script>
+<!--<link rel="stylesheet" type="text/css" href="http://www.omnimaga.org/OmnomIRCThemes.php" />-->
+<script src="config.php?js"></script>
 <script src="btoa.js"></script>
 <script type="text/javascript">
 	document.domain=HOSTNAME;
 	
 	function AJAXSend() {
 		Message = document.getElementById("message").value;
-		sendAJAXMessage(userName,Signature,Message,"#Omnimaga",omnimagaUserId);
+		sendAJAXMessage(userName,Signature,Message,"#omnimaga",omnimagaUserId);
 		oldMessages.push(Message);
 		document.getElementById("message").value = "";
 		document.getElementById("message").focus();
@@ -176,12 +176,12 @@ if (strpos($_SERVER['HTTP_USER_AGENT'],"textmode;")===false) {?>
 	}
 	resize();
 </script>
-<script src="http://www.omnimaga.org/checkLogin.php"></script>
+<script src="http://forum.acr.victorz.ca//checkLogin.php"></script>
 <audio id="ding" src="beep.wav" hidden></audio>
 </body>
 </html>
 <?php
 } else {
-	header('Location: http://www.omnimaga.org/checkLogin.php?textmode');
+	header('Location: http://forum.acr.victorz.ca/checkLogin.php?textmode');
 }
 ?>

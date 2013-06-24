@@ -33,9 +33,9 @@ ip 108.174.51.58
 		return $userSql;
 	}
 	function isOp() {
-		$opGroups = array("Support Staff","President","Administrator","Coder Of Tomorrow","Anti-Riot Squad");
+		$opGroups = array("4");
 		
-		$returnPosition = file_get_contents("http://www.omnimaga.org/checkLogin.php?op&u=".$_GET['id']."&nick=".$_GET['nick']);
+		$returnPosition = file_get_contents("http://forum.acr.victorz.ca/checkLogin.php?op&u=".$_GET['id']."&nick=".$_GET['nick']);
 		$returnPosition = substr($returnPosition,3,strlen($returnPosition));
 		if (in_array($returnPosition,$opGroups))
 			return true;
@@ -267,7 +267,7 @@ ip 108.174.51.58
 					$returnmessage = "";
 					$sendNormal = false;
 					$sendPm = true;
-					$returnmessage = "You just lost \x02THE GAME\x02";
+					$returnmessage = "\x02ERROR:\x02 Invalid command.";
 				}
 				break;
 		}

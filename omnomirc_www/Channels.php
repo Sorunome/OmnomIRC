@@ -17,16 +17,15 @@
     You should have received a copy of the GNU General Public License
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
-	include("/path/to/omnomirc_www/folder/Source/sign.php");
+	include("/path/to/Source/sign.php");
 	//Set the channels here.
 	//$channels[]=Array("#channel",AlwaysShow);
 	$channels=Array();
-	$channels[]=Array("#chan1",true);//Default chan, 'cause it's the first in the array.
-	$channels[]=Array("#chan2",true);
+	$channels[]=Array("#acreloaded",true);//Default chan, 'cause it's the first in the array.
 	$exChans=Array();
-	$exChans[]=Array("#chan",false);
-?>
-<?PHP
+	$exChans[]=Array("#acreloadedops",false);
+
+	
 	
 	if (!isset($IRCBOT))
 	{

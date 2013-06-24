@@ -1,7 +1,0 @@
-Step 1: User hits index.php
-Step 2: index.php hits login.php, which will be replacable(SMF,phpBB,etc... versions)
-Step 3: login.php will encrypt user data and send it to the forums (OmnomIRC_Login.php, for example). The forums will decrypt it and check it's validity. This will require my own cookies for user info.
-ALTERNATIVE
-Step 3: login.php will load an iframe to a remote page that will redirect to a local null page. It will then rip the signature from a paramater on the page. This will use the sites' cookies.
-Step 4: OmnomIRC_Login.php will return either a signature for the user, or 'INVALID', based off of the result of its check
-Step 5: If Invalid, go to the forum to login, or own login. If valid, yay!

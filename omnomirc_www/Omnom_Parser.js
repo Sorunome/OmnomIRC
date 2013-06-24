@@ -499,7 +499,7 @@ scrolledDown = true;
 	function clickable_names(name,isOnline) //omnomirc names
 	{
 		if (isOnline == "1")
-			return '<a target="_top" href="http://www.omnimaga.org/index.php?action=ezportal;sa=page;p=13&userSearch=' + name + '">' + colored_names(name) + '</a>';
+			return '<a target="_top" href="http://forum.acr.victorz.ca/memberlist.php?username=' + name + '">' + colored_names(name) + '</a>';
 		if (isOnline == "2")
 			return '<span style="color:#8A5D22">(C)</span> '+colored_names(name);
 		return colored_names(name);
@@ -567,7 +567,7 @@ scrolledDown = true;
 			if (parts[1] == "0") userText = userText + "#" + base64.decode(parts[0]) + "<br/>";
 			if (parts[1] == "1") 
 				userText = userText + '<a target="_top" href="http://www.omnimaga.org/index.php?action=ezportal;sa=page;p=13&userSearch=' +base64.decode(parts[0]) + 
-				'"><img src="http://omnomirc.www.omnimaga.org/omni.png" alt="Omnimaga User" title="Omnimaga User" border=0 width=8 height=8 />' + base64.decode(parts[0]) + '</a><br/>';
+				'"><img src="omni.png" alt="Omnimaga User" title="Omnimaga User" border=0 width=8 height=8 />' + base64.decode(parts[0]) + '</a><br/>';
 			if (parts[1] == "2") userText = userText + "!" + base64.decode(parts[0]) + "<br/>";
 		}
 		userText = userText + "<br/><br/>";

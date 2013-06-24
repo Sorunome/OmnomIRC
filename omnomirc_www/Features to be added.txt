@@ -1,6 +1,0 @@
-Name 			Dependencies
-Login system - 
-Channel Modes - Login System
-Administration - Login System
-Forum Plugins - Login System
-Channel List - 
