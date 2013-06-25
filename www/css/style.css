@@ -5,6 +5,9 @@ html,body{
 	margin: 0;
 	overflow: hidden;
 }
+.unselectable{
+	cursor: default;
+}
 .fill{
 	width: 100%;
 	height: 100%;
