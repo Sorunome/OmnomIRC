@@ -19,7 +19,7 @@
 		$signature = "";
 	}else{
 		$nick = $user_info['name'];
-		$signature = base64_url_encode(mcrypt_encrypt ( MCRYPT_RIJNDAEL_256 , $encriptKeyToUse , $nick , MCRYPT_MODE_ECB));
+		$signature = base64_url_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256 , $encriptKeyToUse , $nick , MCRYPT_MODE_ECB));
 	}
 	ob_end_clean();
 	if(isset($_GET['txt'])){
