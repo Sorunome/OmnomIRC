@@ -487,6 +487,7 @@ scrolledDown = true;
 	}
 	function clickable_links(text) //urls
 	{
+		text = text.replace(/(\x01)/g,"");
 		if (!text || text == null || text == undefined) return;
 		//text = text.replace(/http:\/\/www\.omnimaga\.org\//g,"\x01www.omnimaga.org/");
 		text = text.replace(/http:\/\/ourl\.ca\//g,"\x01ourl.ca/");

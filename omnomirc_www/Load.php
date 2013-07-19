@@ -121,7 +121,7 @@
 	echo "addLine('" . $curMax[0] . ":curline');";
 	//Sorunome edit START
 	$curtopic = mysql_fetch_array(sql_query("SELECT * FROM `irc_topics` WHERE `chan`='%s'",strtolower($channel)));
-	echo "addLine('" . $curMax[0] . ":topic:0:" . time() . "::" . base64_url_encode($curtopic["topic"]) . "');";
+	echo "addLine('" . $curMax[0] . ":topic:0:" . time() . "::" . base64_url_encode(htmlspecialchars($curtopic["topic"])) . "');";
 	//Sorunome edit END
 	$users = Array();
 	
