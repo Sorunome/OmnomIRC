@@ -16,6 +16,7 @@ case 3: //v4
 	echo "#UserListContainer,
 	#smileyselect,
 	#topicbox,
+	#about > div,
 	td.curchan,
 	.linehigh {
 		background: #EBF1F9;
@@ -51,6 +52,7 @@ case 4: //v3
 	echo "#UserListContainer,
 	#smileyselect,
 	#topicbox,
+	#about > div,
 	td.curchan,
 	.linehigh {
 		background: #A8A8A8;
@@ -89,6 +91,7 @@ case 6: //v2.5
 	echo "#UserListContainer,
 	#smileyselect,
 	#topicbox,
+	#about > div,
 	td.curchan,
 	.linehigh {
 		background: #EBEAEA;
@@ -124,6 +127,7 @@ case 7: //v2
 	echo "#UserListContainer,
 	#smileyselect,
 	#topicbox,
+	#about > div,
 	td.curchan,
 	.linehigh {
 		background: #EBEBEB;
@@ -159,6 +163,7 @@ case 8: //v5r
 	echo "#UserListContainer,
 	#smileyselect,
 	#topicbox,
+	#about > div,
 	td.curchan,
 	.linehigh {
 		background: #cacaca;

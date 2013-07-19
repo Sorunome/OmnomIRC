@@ -36,11 +36,11 @@ function updateIndicator() {
 		else
 			indicator.innerHTML+="<div style='padding:0;margin:0;width:3px;height:3px;'></div>";
 	}
-	var temp = indicatorPixels[7];
-	for (i=6;i>=0;i--) {
-		indicatorPixels[(i+1)] = indicatorPixels[i];
+	var temp = indicatorPixels[0];
+	for (i=1;i<=7;i++) {
+		indicatorPixels[(i-1)] = indicatorPixels[i];
 	}
-	indicatorPixels[0] = temp;
+	indicatorPixels[7] = temp;
 }
 function stopIndicator() {
 	clearInterval(indicatorTimer);

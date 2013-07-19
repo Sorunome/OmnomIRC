@@ -25,7 +25,7 @@ if (strpos($_SERVER['HTTP_USER_AGENT'],"textmode;")===false) {?>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>OmnomIRC V2</title>
 <link rel="stylesheet" type="text/css" href="style.css" />
-<!--<link rel="stylesheet" type="text/css" href="http://www.omnimaga.org/OmnomIRCThemes.php" />-->
+<link rel="stylesheet" type="text/css" href="http://www.omnimaga.org/OmnomIRCThemes.php" />
 <script src="config.php?js"></script>
 <script src="btoa.js"></script>
 <script type="text/javascript">
@@ -108,7 +108,7 @@ if (strpos($_SERVER['HTTP_USER_AGENT'],"textmode;")===false) {?>
 	<div style="font-size:12pt;width:12px;height:9pt;bottom:9pt;position:absolute;margin-top:-10pt;margin-left:-10pt;" onmousedown="upIntM = setInterval('document.getElementById(\'mboxCont\').scrollTop += 9;if (mBoxCont.scrollTop+mBoxCont.clientHeight==mBoxCont.scrollHeight)scrolledDown=true;',50);" onmouseout="clearInterval(upIntM);" onmouseup="clearInterval(upIntM);"></div></span>
 
 <div id="UserListContainer">
-	<span style="left:10%;position:relative;font-size:6pt;"><!--<a href="http://omnom.omnimaga.org/irc/efnet/?channel=omnimaga#bottom" target="_TOP">Logs</a><br/>--><a href="http://www.omnimaga.org/OmnomIRC_Full.html" target="_TOP">Full View</a><br/><a id="toggle" href="#" onclick="toggleEnable();">Toggle</a><br/><a href="Options.html" accesskey="o" alt="OmnomIRC Options" title="OmnomIRC Options">Options</a></span>
+	<span style="left:10%;position:relative;font-size:6pt;"><!--<a href="http://omnom.omnimaga.org/irc/efnet/?channel=omnimaga#bottom" target="_TOP">Logs</a><br/>--><a href="http://www.omnimaga.org/OmnomIRC_Full.html" target="_TOP">Full View</a><br/><a id="toggle" href="#" onclick="toggleEnable();">Toggle</a><br/><a href="Options.html" accesskey="o" alt="OmnomIRC Options" title="OmnomIRC Options">Options</a><br/><a alt="About OmnomIRC" onclick="if (document.getElementById('about').style.display=='none'){document.getElementById('about').style.display='';}else{document.getElementById('about').style.display='none';}">About</a><br/><a href="http://ourl.ca/logs" target="_blank" alt="Logs">Logs</a></span>
 	<div id="UserList" style="position:relative;left:10%;height:88%;height:calc(100% - 50px);height:-webkit-calc(100% - 50px);top:1%;width:120%;font-family:verdana,sans-serif;overflow-x:hidden;overflow-y:scroll;">
 	</div>
 	<span class="arrowButtonHoriz3"><div style="width:12px;height:9pt;top:0pt;position:absolute;font-weight:bolder;margin-top:10pt;" class="arrowButtonHoriz2">&#9650;</div>
@@ -118,7 +118,15 @@ if (strpos($_SERVER['HTTP_USER_AGENT'],"textmode;")===false) {?>
 	</div>
 </div>
 </div><img id="smileyMenuButton" src="smileys/smiley.gif" style="cursor:pointer;margin-left:2px;margin-right:2px;" onclick="if(showSmileys){if(document.getElementById('smileyselect').style.display==''){document.getElementById('smileyselect').style.display='none';this.src='smileys/smiley.gif';}else{document.getElementById('smileyselect').style.display='';this.src='smileys/tongue.gif';}}"><form style="Display:inline;" name="irc" action="javascript:void(0)" onSubmit="AJAXSend()"><input autocomplete="off" accesskey="i" type="text" name="message" id="message" size="128" maxlength="256" alt="OmnomIRC" title="OmnomIRC"/><input type="submit" value="Send" id="send" /></form>
-
+<div id="about" style="display:none;"><div style="position: relative; left: -50%;"><span style="position:absolute;z-index:9002;top:1px;right:2px"><a onclick="document.getElementById('about').style.display='none';">Close</a></span>
+	<div style="text-align:center;"><img src="omnomirc.png" alt="omnomirc"></div>
+	<p>OmnomIRC is developed by <a href="http://www.omnimaga.org" alt="Omnimaga" target="_blank">Omnimaga</a></p>
+	<h1>Programmers</h1>
+	<ul><li><a href="http://netham45.org/" target="_blank">Netham45</a></li><li><a href="http://www.sorunome.de" target="_blank">Sorunome</a></li><li><a href="http://eeems.ca/" target="_blank">Eeems</a></li></ul>
+	<h1>Style</h1>
+	<ul><li><a href="http://www.omnimaga.org/index.php?action=profile;u=691" target="_blank">Darl181</a></li></ul>
+	<a href="https://github.com/Sorunome/OmnomIRC2" target="_blank">GitHub</a>
+</div></div>
 <div id="smileyselect" style="display:none;">
 	<img src="smileys/smiley.gif" alt="Smiley" title="Smiley" onclick="replaceText(' :)', document.forms.irc.message); return false;">
 	<img src="smileys/wink.gif" alt="Wink" title="Wink" onclick="replaceText(' ;)', document.forms.irc.message); return false;">
@@ -176,12 +184,12 @@ if (strpos($_SERVER['HTTP_USER_AGENT'],"textmode;")===false) {?>
 	}
 	resize();
 </script>
-<script src="http://forum.acr.victorz.ca//checkLogin.php"></script>
+<script src="http://www.omnimaga.org/checkLogin.php"></script>
 <audio id="ding" src="beep.wav" hidden></audio>
 </body>
 </html>
 <?php
 } else {
-	header('Location: http://forum.acr.victorz.ca/checkLogin.php?textmode');
+	header('Location: http://www.omnimaga.org/checkLogin.php?textmode');
 }
 ?>

@@ -31,6 +31,31 @@
 	cursor:pointer;
 }
 /*smiley select end*/
+/*about start*/
+
+#about {
+	position:absolute;
+	top:50px;
+	width:70%;
+	left:50%;
+}
+#about > div {
+	padding:2px;
+	background: #a1c2ff;
+	border:1px solid #6699ff;
+	border-radius: 5px;
+}
+#about h1 {
+	font-size:1em;
+	margin:0;
+}
+#about ul {
+	list-style-type: none;
+	margin: 3;
+	padding-left: 10;
+}
+/*about end*/
+
 body, td, th , tr		     {font-size: 10px;font-family:verdana,sans-serif;line-height:13px;}
 
 .highlight {
@@ -152,7 +177,7 @@ PRE {
 		white-space: -o-pre-wrap;    /* Opera 7 */
 		word-wrap: break-word;       /* Internet Explorer 5.5+ */
 	}
-A:link, A:visited, A:hover, A:active {
+A:link, A:visited, A:hover, A:active, A {
 		text-decoration: none;
 		font-weight:500;
 		/*border-bottom-style: dotted;
@@ -163,7 +188,8 @@ A:link, A:visited, A:hover, A:active {
         padding: 0;
 	}
 a:hover {
-	text-shadow: 0 0 4px rgba(0, 40, 170, 0.5);    
+	text-shadow: 0 0 4px rgba(0, 40, 170, 0.5);
+	cursor:pointer;
 	}
 td {
 			white-space: pre-wrap;       /* css-3 */

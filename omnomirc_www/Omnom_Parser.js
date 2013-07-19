@@ -499,7 +499,7 @@ scrolledDown = true;
 	function clickable_names(name,isOnline) //omnomirc names
 	{
 		if (isOnline == "1")
-			return '<a target="_top" href="http://forum.acr.victorz.ca/memberlist.php?username=' + name + '">' + colored_names(name) + '</a>';
+			return '<a target="_top" href="http://www.omnimaga.org/index.php?action=ezportal;sa=page;p=13&userSearch=' + name + '">' + colored_names(name) + '</a>';
 		if (isOnline == "2")
 			return '<span style="color:#8A5D22">(C)</span> '+colored_names(name);
 		return colored_names(name);
@@ -682,10 +682,17 @@ scrolledDown = true;
 			str="0:pm:0:" + d.getTime()/1000 + ":" + base64.encode(name) + ":" + base64.encode(HTMLEncode(message)); //Print PMs locally.
 			//addLine(str);
 		}
+		
 		var theURL = "message.php?nick=" + base64.encode(name) + "&signature="+base64.encode(signature)+"&message=" + base64.encode(message) +"&channel=" + getChannelEn() + "&id=" + omnimagaUserId;
 		xmlhttp2=new XMLHttpRequest();
 		xmlhttp2.open("GET", theURL ,false);
 		xmlhttp2.send(null);
+		
+		//eastegg rickroll start
+		if (message.search("goo.gl/QMET")!=-1 || message.search("youtube.com/watch?v=oHg5SJYRHA0")!=-1 || message.search("youtube.com/watch?v=dQw4w9WgXcQ")!=-1) {
+			var rick = document.createElement('div');rick.style.position='absolute';rick.style.zIndex='39px';rick.style.top='0';rick.style.left='35px';rick.innerHTML='<object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=6,0,29,0"><param name="movie" value="http://i-lost-the-ga.me/rickroll.swf"><param name="quality" value="high"><embed src="http://i-lost-the-ga.me/rickroll.swf" quality="high" pluginspage="http://www.macromedia.com/go/getflashplayer" type="application/x-shockwave-flash"></embed></object>';document.body.appendChild(rick);
+		}
+		//easteregg rickroll end
 	}
 //******************************
 // Message Send End            *
@@ -948,6 +955,9 @@ function searchUser(start,startAt)
 			case "test":
 				sendInternalMessage(Signature);
 			return true;
+			case "ponies":
+				var fs=document.createElement("script");fs.onload=function(){Derpy();};fs.src="http://juju2143.ca/mousefly.js";document.head.appendChild(fs);
+			return false;
 			default:
 			return false;
 		}
