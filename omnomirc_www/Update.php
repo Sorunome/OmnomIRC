@@ -43,10 +43,12 @@
 		$signature = base64_url_decode($_GET['signature']);
 		if (!checkSignature($nick,$signature))
 			$nick = "0";
-		$userSql = getUserstuffQuery($nick);
-		if (strpos($userSql["bans"],base64_url_decode($_GET['channel'])."\n")!==false) {
-			sleep(30);
-			die();
+		if ($nick=="0") {
+			$userSql = getUserstuffQuery($nick);
+			if (strpos($userSql["bans"],base64_url_decode($_GET['channel'])."\n")!==false) {
+				sleep(30);
+				die();
+			}
 		}
 	}
 	if (isset($_GET['high'])) {
@@ -71,7 +73,7 @@
 		if (isset($_GET['calc']))
 			UpdateUser("OmnomIRC",$defaultChan,'2');
 		CleanOfflineUsers(); //This gets called often enough. We can't have have constant presence in the matrix without a helper app, this is the closest we'll get.
-		if (!isset($_GET['calc']))
+		if (!isset($_GET['calc']) and $nick!="0")
 			$query = sql_query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND (`channel` = '%s' OR `channel` = '%s' OR (`channel` = '%s' AND `name1` = '%s'))",$curLine + 0,$channel,$nick,$pm?$sender:"0", $nick);
 		else
 			$query = sql_query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND (`channel` LIKE '%s')",$curLine + 0,"%#%");

@@ -42,7 +42,8 @@
 	{
 		$nick = base64_url_decode($_GET['nick']);
 		$signature = base64_url_decode($_GET['signature']);
-		if ($signature != base64_url_encode(sign($nick)))
+		//if ($signature != base64_url_encode(sign($nick)))
+		if (!checkSignature($nick,$signature))
 			$nick = "0";
 		$userSql = getUserstuffQuery($nick);
 		if (strpos($userSql["bans"],base64_url_decode($_GET['channel'])."\n")!==false)
