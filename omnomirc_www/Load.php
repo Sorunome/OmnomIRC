@@ -49,7 +49,8 @@
 		if (strpos($userSql["bans"],base64_url_decode($_GET['channel'])."\n")!==false)
 			die("addLine('999999999999999999999999999:server:0:0:T21ub21JUkM=:RVJST1IgLSBiYW5uZWQ=');");
 	}
-	
+	if ($channel[0]!="*" and $channel[0]!="#" and $channel[0]!="@" and $channel[0]!="&")
+		$channel = "0";
 	
 	if ($channel[0] == "*") //PM
 	{
