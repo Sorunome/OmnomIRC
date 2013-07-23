@@ -34,7 +34,7 @@
 	}
 	ob_start();
 	$count = $_GET['count'];
-	$channel = "#omnimaga";
+	$channel = $defaultChan;
 	if (isset($_GET['channel']))
 		$channel = base64_url_decode($_GET['channel']);
 	$nick = "0";

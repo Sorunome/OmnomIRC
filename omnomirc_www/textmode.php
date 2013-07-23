@@ -9,7 +9,7 @@ include("Source/sql.php");
 include("Source/sign.php");
 include("Source/userlist.php");
 $count = "25";
-$channel = "#omnimaga";
+$channel = $defaultChan;
 $nick = "0";
 if (isset($_GET['login'])) {
 	//session_destroy();
@@ -46,7 +46,7 @@ if (isset($_GET['message'])) {
 				$line .= "<td>* ".htmlspecialchars($result['name1'])." ".htmlspecialchars($result['message'])."</td>";break;
 			case "join":
 				if ($result['Online']=="0")
-					$line .= "<td>* ".htmlspecialchars($result['name1'])." has joined #omnimaga</td>";
+					$line .= "<td>* ".htmlspecialchars($result['name1'])." has joined $channel</td>";
 				break;
 			case "part":
 				if ($result['Online']=="0")

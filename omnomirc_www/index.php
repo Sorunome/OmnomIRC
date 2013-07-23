@@ -183,8 +183,12 @@ if (strpos($_SERVER['HTTP_USER_AGENT'],"textmode;")===false) {?>
 		load();
 	}
 	resize();
+	var body= document.getElementsByTagName('body')[0];
+	var script= document.createElement('script');
+	script.type= 'text/javascript';
+	script.src=CHECKLOGINURL;
+	body.appendChild(script);
 </script>
-<script src="http://www.omnimaga.org/checkLogin.php"></script>
 <audio id="ding" src="beep.wav" hidden></audio>
 </body>
 </html>

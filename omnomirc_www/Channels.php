@@ -20,11 +20,6 @@
 	include("/path/to/Source/sign.php");
 	//Set the channels here.
 	//$channels[]=Array("#channel",AlwaysShow);
-	$channels=Array();
-	$channels[]=Array("#acreloaded",true);//Default chan, 'cause it's the first in the array.
-	$exChans=Array();
-	$exChans[]=Array("#acreloadedops",false);
-
 	
 	
 	if (!isset($IRCBOT))

@@ -31,9 +31,11 @@
 	}
 	
 	$curLine = $_GET['lineNum'];
-	$channel = "#omnimaga";
+	$channel = $defaultChan;
 	if (isset($_GET['channel']))
 		$channel = base64_url_decode($_GET['channel']);
+	if ($channel[0]!="*" and $channel[0]!="#" and $channel[0]!="@" and $channel[0]!="&")
+		$channel = "0";
 	$nick = "0";
 	if (isset($_GET['nick']))
 	{
@@ -67,7 +69,7 @@
 		if ($nick != "0")
 			UpdateUser($nick,$channel,'1');
 		if (isset($_GET['calc']))
-			UpdateUser("OmnomIRC","#acreloaded",'2');
+			UpdateUser("OmnomIRC",$defaultChan,'2');
 		CleanOfflineUsers(); //This gets called often enough. We can't have have constant presence in the matrix without a helper app, this is the closest we'll get.
 		if (!isset($_GET['calc']))
 			$query = sql_query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND (`channel` = '%s' OR `channel` = '%s' OR (`channel` = '%s' AND `name1` = '%s'))",$curLine + 0,$channel,$nick,$pm?$sender:"0", $nick);

@@ -33,9 +33,9 @@ ip 108.174.51.58
 		return $userSql;
 	}
 	function isOp() {
-		$opGroups = array("4");
+		global $opGroups,$checkLoginUrl;
 		
-		$returnPosition = file_get_contents("http://www.omnimaga.org/checkLogin.php?op&u=".$_GET['id']."&nick=".$_GET['nick']);
+		$returnPosition = file_get_contents($checkLoginUrl."?op&u=".$_GET['id']."&nick=".$_GET['nick']);
 		$returnPosition = substr($returnPosition,3,strlen($returnPosition));
 		if (in_array($returnPosition,$opGroups))
 			return true;
