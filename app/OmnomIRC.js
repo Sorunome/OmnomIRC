@@ -1,5 +1,12 @@
-var static = require('node-static'),
-	io = require('socket.io').listen(9000);
+#!node
+var fileServer = (new require('node-static')).Server('./www'),
+	app = require('http').createServer(function(req,res){
+		req.addListener('end',function(){
+			console.log('request made for '+req.url);
+			fileServer.serve(req,res);
+		}).resume();
+	}).listen(80),
+	io = require('socket.io').listen(app);
 io.sockets.on('connection',function(socket){
 	socket.on('join',function(data){
 		socket.join(data.name);
