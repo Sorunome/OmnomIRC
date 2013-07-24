@@ -17,7 +17,7 @@
 	You should have received a copy of the GNU General Public License
 	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
-(function(window,$,undefined){
+(function(window,$,io,undefined){
 	var $o = window.OmnomIRC = window.$o = function(){
 			return 'Version: '+$o.version
 		},
@@ -48,7 +48,12 @@
 		properties = {
 			nick: 'User',
 			sig: '',
-			tabs: tabs
+			tabs: tabs,
+			server: location.origin,
+			autojoin: [
+				'#omnimaga',
+				'#irp'
+			]
 		},
 		commands = [
 			{
@@ -98,15 +103,47 @@
 				}
 			}
 		],
-		$i,$s,$h,$cl,$tl,hht;
+		handles = [
+			{
+				on: 'connect',
+				fn: function(){
+					for(var i in settings.autojoin){
+						socket.emit('join',{name: settings.autojoin[i]});
+					}
+				}
+			},
+			{
+				on: 'join',
+				fn: function(data){
+					$o.addTab(data.name,data.title);
+				}
+			}
+		],
+		socket,$i,$s,$h,$cl,$tl,hht;
 	$.extend($o,{
 		version: '3.0',
+		connect: function(server){
+			if($o.connected()){
+				socket.disconnect();
+			}
+			if(typeof server == 'undefined'){
+				server = settings.server;
+			}
+			socket = io.connect(server);
+			for(var i in handles){
+				socket.on(handles[i].on,handles[i].fn);
+			}
+		},
+		connected: function(){
+			return typeof socket != 'undefined';
+		},
 		get: function(name){
 			return exists(settings[name])?settings[name]:false;
 		},
 		set: function(name,value){
 			if(exists(settings[name])){
 				settings[name] = value;
+				$.localStorage('settings',$.stringify(settings));
 				return true;
 			}else{
 				return false;
@@ -173,10 +210,12 @@
 			$tl.append($o.tabObj(tabs.length-1));
 		},
 		removeTab: function(id){
-			event('Tab removed: '+tabs[id].name);
-			tabs.splice(id,1);
-			if(selectedTab==id&&selectedTab>0){
-				selectedTab--;
+			if(typeof tabs[id] != 'undefined'){
+				event('Tab removed: '+tabs[id].name);
+				tabs.splice(id,1);
+				if(selectedTab==id&&selectedTab>0){
+					selectedTab--;
+				}
 			}
 			$o.refreshTabs();
 		},
@@ -246,6 +285,8 @@
 		return this.replace(/&/g, '&amp;').replace(/\s/g, '&nbsp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 	};
 	$(document).ready(function(){
+		$.extend(settings,$.parseJSON($.localStorage('settings')));
+		$.localStorage('settings',$.stringify(settings));
 		$i = $('#input');
 		$s = $('#send');
 		$cl = $('#content-list');
@@ -371,13 +412,13 @@
 			}
 		})();
 		//DEBUG
-		for(var i=0;i<20;i++){
+		/* for(var i=0;i<20;i++){
 			tabs.push({
 				name: '#Tab'+i,
 				title: 'Tab '+i,
 				topic: 'Topic for tab '+i
 			});
-		}
+		} */
 		//END DEBUG
 		$o.refreshTabs();
 		event('Date '+new Date,'ready');
@@ -385,5 +426,6 @@
 		setTimeout(function(){
 			$h.removeClass('hovered');
 		},1000);
+		$o.connect();
 	});
-})(window,jQuery);
+})(window,jQuery,io);
