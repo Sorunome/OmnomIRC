@@ -108,7 +108,7 @@ if (strpos($_SERVER['HTTP_USER_AGENT'],"textmode;")===false) {?>
 	<div style="font-size:12pt;width:12px;height:9pt;bottom:9pt;position:absolute;margin-top:-10pt;margin-left:-10pt;" onmousedown="upIntM = setInterval('document.getElementById(\'mboxCont\').scrollTop += 9;if (mBoxCont.scrollTop+mBoxCont.clientHeight==mBoxCont.scrollHeight)scrolledDown=true;',50);" onmouseout="clearInterval(upIntM);" onmouseup="clearInterval(upIntM);"></div></span>
 
 <div id="UserListContainer">
-	<span style="left:10%;position:relative;font-size:6pt;"><!--<a href="http://omnom.omnimaga.org/irc/efnet/?channel=omnimaga#bottom" target="_TOP">Logs</a><br/>--><a href="http://www.omnimaga.org/OmnomIRC_Full.html" target="_TOP">Full View</a><br/><a id="toggle" href="#" onclick="toggleEnable();">Toggle</a><br/><a href="Options.html" accesskey="o" alt="OmnomIRC Options" title="OmnomIRC Options">Options</a><br/><a alt="About OmnomIRC" onclick="if (document.getElementById('about').style.display=='none'){document.getElementById('about').style.display='';}else{document.getElementById('about').style.display='none';}">About</a><br/><a href="http://ourl.ca/logs" target="_blank" alt="Logs">Logs</a></span>
+	<span style="left:10%;position:relative;font-size:6pt;"><table id="hotlinks"><tr><td><a href="http://www.omnimaga.org/OmnomIRC_Full.html" target="_TOP">Full View</a></td><td><a id="toggle" href="#" onclick="toggleEnable();">Toggle</a></td></tr><tr><td><a href="Options.html" accesskey="o" alt="OmnomIRC Options" title="OmnomIRC Options">Options</a></td><td><a alt="About OmnomIRC" onclick="if (document.getElementById('about').style.display=='none'){document.getElementById('about').style.display='';}else{document.getElementById('about').style.display='none';}">About</a></td></tr><tr><td><a href="http://ourl.ca/logs" target="_blank" alt="Logs">Logs</a></td></tr></table></span>
 	<div id="UserList" style="position:relative;left:10%;height:88%;height:calc(100% - 50px);height:-webkit-calc(100% - 50px);top:1%;width:120%;font-family:verdana,sans-serif;overflow-x:hidden;overflow-y:scroll;">
 	</div>
 	<span class="arrowButtonHoriz3"><div style="width:12px;height:9pt;top:0pt;position:absolute;font-weight:bolder;margin-top:10pt;" class="arrowButtonHoriz2">&#9650;</div>
@@ -166,7 +166,7 @@ if (strpos($_SERVER['HTTP_USER_AGENT'],"textmode;")===false) {?>
 	<img src="smileys/X_X.gif" alt="x.x" title="x.x" onclick="replaceText(' x.x', document.forms.irc.message); return false;">
 	<img src="smileys/ninja.gif" alt="Get Ninja'd" title="Get Ninja'd" onclick="replaceText(' :ninja:', document.forms.irc.message); return false;">
 </div>
-<div id="indicator" style="position:absolute;z-index:10;margin:0;padding:0;top:0;right:0;"></div>
+<div id="indicator" style="position:absolute;z-index:44;margin:0;padding:0;top:0;right:0;"></div>
 
 <script src="Omnom_Options.js"></script>
 <script src="Omnom_Parser.js"></script>

@@ -56,6 +56,14 @@
 }
 /*about end*/
 
+#hotlinks,#hotlinks td,#hotlinks tr {
+	padding:0;
+	margin:0;
+}
+#hotlinks {
+	width:85px;
+}
+
 body, td, th , tr		     {font-size: 10px;font-family:verdana,sans-serif;line-height:13px;}
 
 .highlight {
@@ -410,6 +418,7 @@ input[type=text] {
     border: 1px solid #6699ff;
     border-radius: 4px 0 0 4px;
     margin-top: 2px;
+	z-index:43;
 /*    box-shadow:  0 0 2px rgba(0, 0, 0, 0.5); */
     transition: left 0.5s 1s, height 0.5s 0.8s;
 	-webkit-transition: left 0.5s 1s, height 0.5s 0.8s;

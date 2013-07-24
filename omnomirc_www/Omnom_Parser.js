@@ -136,7 +136,7 @@ scrolledDown = true;
 		var row = parseMessage(message);
 		if (row)
 			messageBox.appendChild(row);
-		if (doScroll)mBoxCont.scrollTop = mBoxCont.scrollHeight + 50;
+		if (doScroll && scrolledDown)mBoxCont.scrollTop = mBoxCont.scrollHeight + 50;
 	}
 	
 	function parseMessage(message) //type of message
@@ -157,6 +157,9 @@ scrolledDown = true;
 		if (parts[5] != undefined && parts[5] != null)
 		{
 			parsedMessage = parseColors(parts[5]);
+			parsedMessage = parsedMessage.split("  ").join("&nbsp;&nbsp;");
+			parsedMessage = parsedMessage.split("\t").join("&nbsp;&nbsp;&nbsp;&nbsp;");
+			parsedMessage = parsedMessage.split("&nbsp; ").join("&nbsp;&nbsp;");
 			if (parts[5].toLowerCase().indexOf(userName.toLowerCase().substr(0,4)) >= 0 && hasLoaded && notifications && parts[4].toLowerCase() != "new")
 			{
 				showNotification("<" + parts[4] + "> " + parts[5]);
@@ -612,6 +615,69 @@ scrolledDown = true;
 		showSmileys = getOption(12,"T") == "T";
 		numCharsHighlight = parseInt(getOption(13,"3"))+1;
 		hideUserlist = getOption(14,"F") == "T";
+		showScrollBar = getOption(15,"F") == "T";
+		if (showScrollBar) {
+			var scrollBar = document.createElement("div");
+			scrollBar.id="scrollBar";
+			scrollBar.style.width="8px";
+			scrollBar.style.height="100px";
+			scrollBar.style.backgroundColor="#a1c2ff";
+			scrollBar.style.border="1px solid #6699ff"; 
+			scrollBar.style.borderRadius="4px";
+			scrollBar.style.position="absolute";
+			scrollBar.style.zIndex="42";
+			scrollBar.style.left=String(((body.offsetWidth/100)*99)-17)+"px";
+			body.appendChild(scrollBar);
+			scrollBar.prevY=0;
+			scrollBar.isClicked=false;
+			scrollBar.onmousemove = function(e) {
+				var y = e.clientY;
+				var element=document.getElementById('scrollBar');
+				if (element.isClicked) {
+					element.style.top=String(parseInt(element.style.top)+(y-element.prevY))+"px";
+					document.getElementById('mboxCont').scrollTop += (y - element.prevY)*((mBoxCont.scrollHeight-parseInt(mBoxCont.style.height))/(document.getElementsByTagName('body')[0].offsetHeight-parseInt(element.style.height)));
+					if (mBoxCont.scrollTop + mBoxCont.clientHeight == mBoxCont.scrollHeight)
+						scrolledDown = true;
+					else
+						scrolledDown = false;
+					if (parseInt(element.style.top)<0)
+						element.style.top="0px";
+					if (parseInt(element.style.top)>(body.offsetHeight-scrollBar.offsetHeight))
+						element.style.top=String(body.offsetHeight-scrollBar.offsetHeight)+"px";
+				}
+				element.prevY=y;};
+			scrollBar.onmousedown = function() {
+				document.getElementById('scrollBar').isClicked=true;
+			};
+			scrollBar.onmouseup = function() {
+				document.getElementById('scrollBar').isClicked=false;
+			};
+			scrollBar.onmouseout = function() {
+				document.getElementById('scrollBar').isClicked=false;
+			};
+			scrollBar.style.top=String(body.offsetHeight-scrollBar.offsetHeight)+"px";
+			
+			var line = document.createElement("div");
+			line.style.width="1px";
+			line.style.height="100%";
+			line.style.border="none";
+			line.style.backgroundColor="black";
+			line.style.position="absolute";
+			line.style.zIndex="41";
+			line.style.top=0;
+			line.style.left=String(((body.offsetWidth/100)*99)-13)+"px";
+			body.appendChild(line);
+			mboxCont.style.width=String(((body.offsetWidth/100)*99)-22)+"px";
+			var style = document.createElement("style");
+			style.type="text/css";
+			style.innerHTML = ".arrowButtonHoriz3{display:none;}#scrollBar:hover{cursor:pointer;}";
+			body.appendChild(style);
+			
+			if (!hideUserlist) {
+				scrollBar.style.left=String(((body.offsetWidth/100)*90)-17)+"px";
+				line.style.left=String(((body.offsetWidth/100)*90)-13)+"px";
+			}
+		}
 		if (!hideUserlist) {
 			var style = document.createElement("style");
 			style.type="text/css";
@@ -620,7 +686,7 @@ scrolledDown = true;
 								input[type=text]{width:82%;width:calc(91% - 115px);width:-webkit-calc(91% - 115px);}\
 								#mBoxCont{width:90%;}\
 								.arrowButtonHoriz2,.arrowButtonHoriz3 > div:nth-child(2){left:89%;left:calc(90% - 5px);left:-webkit-calc(90% - 5px);}\
-								#UserListContainer{left:90%;height:98%;}";
+								#UserListContainer{left:90%;height:98%;transition:none;-webkit-transition:none;-o-transition-property:none;-o-transition-duration:none;-o-transition-delay:none;}";
 			body.appendChild(style);
 		}
 		hasLoaded = false;

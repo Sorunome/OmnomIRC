@@ -72,6 +72,7 @@ Options:
 12 - show smileys
 13 - highlight number chars
 14 - hide userlist
+15 - show scrollbar
 -->
 <body>
 <table>
@@ -111,15 +112,18 @@ for (var i=0;i<10;i++) {
 }
 </script>
 </select>
-</td></tr>
+</td></tr><tr><td>
+Show Scrollbar:</td><td><script type="text/javascript"> document.write(getHTMLToggle(getOption(15,"F") == "T", "Yes", "No", "setOption(15,\'T\');", "setOption(15,\'F\');"));</script>
+</td>
 <script type="text/javascript">
 if (window.webkitNotifications != undefined && window.webkitNotifications != null && window.webkitNotifications)
 {
-	document.write("<tr><td>Chrome Notifications:</td><td>");
+	document.write("<td style='padding-left:10px;border-right:none;'>Chrome Notifications:</td><td style='border-right:1px solid;'>");
 	document.write(getHTMLToggle(getOption(7,"F") == "T","Yes","No","setAllowNotification();","setOption(7,'F')"));
-	document.write("</td></tr>");
+	document.write("</td>");
 }
 </script>
+</tr>
 </table>
 <a href="#" onclick="clearCookies()">Clear Cookies</a>
 <br/><br/>
