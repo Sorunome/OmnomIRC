@@ -1,4 +1,5 @@
-var io = require('socket.io').listen(9000);
+var static = require('node-static'),
+	io = require('socket.io').listen(9000);
 io.sockets.on('connection',function(socket){
 	socket.on('join',function(data){
 		socket.join(data.name);

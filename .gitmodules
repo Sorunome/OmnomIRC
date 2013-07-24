@@ -1,3 +1,6 @@
-[submodule "server/node_modules/socket.io"]
+[submodule "socket.io"]
 	path = server/node_modules/socket.io
 	url = https://github.com/LearnBoost/socket.io.git
+[submodule "node-static"]
+	path = server/node_modules/node-static
+	url= https://github.com/cloudhead/node-static.git
