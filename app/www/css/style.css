@@ -12,6 +12,9 @@ html,body{
 	width: 100%;
 	height: 100%;
 }
+.cell{
+	display: table-cell;
+}
 .unselectable,#tabs-list div.tab{
 	-webkit-touch-callout: none;
 	-webkit-user-select: none;

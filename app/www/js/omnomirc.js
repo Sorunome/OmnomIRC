@@ -42,18 +42,20 @@
 		},
 		selectedTab=0,
 		settings = {
-			colour: false
+			colour: false,
+			timestamp: false,
+			server: location.origin,
+			autojoin: [
+				'#omnimaga',
+				'#omnimaga-fr',
+				'#irp'
+			]
 		},
 		tabs = [],
 		properties = {
 			nick: 'User',
 			sig: '',
-			tabs: tabs,
-			server: location.origin,
-			autojoin: [
-				'#omnimaga',
-				'#irp'
-			]
+			tabs: tabs
 		},
 		commands = [
 			{
@@ -105,17 +107,78 @@
 		],
 		handles = [
 			{
-				on: 'connect',
+				on: 'authorized',
 				fn: function(){
 					for(var i in settings.autojoin){
-						socket.emit('join',{name: settings.autojoin[i]});
+						socket.emit('join',{
+							name: settings.autojoin[i]
+						});
 					}
 				}
 			},
 			{
 				on: 'join',
 				fn: function(data){
+					event('joined '+data.name);
 					$o.addTab(data.name,data.title);
+					$o.selectTab(tabs.length-1);
+				}
+			},
+			{
+				on: 'reconnect',
+				fn: function(data){
+					event('reconnected');
+					$o.auth();
+				}
+			},
+			{
+				on: 'message',
+				fn: function(data){
+					event('recieved message');
+					var date = new Date(),
+						string,
+						time = date.getTime(),
+						child,
+						i,
+						msg = function(msg){
+							if(!settings.timestamp){
+								string = '<span class="cell"></span>';
+							}else{
+								string = '<span class="cell">[<abbr class="date_'+time+'" title="'+date.toISOString()+'"></abbr>]</span>';
+							}
+							child = $('<li>').html(string+'<span class="cell">'+msg.htmlentities()+'</span>');
+							if(tabs[selectedTab].name == data.room){
+								$cl.append(child);
+							}else{
+								$(tabs[$o.tabIdForName(data.room)].body).append(child);
+							}
+						};
+					if(data.from != 0){
+						msg('	<'+data.from+'>	'+data.message);
+					}else{
+						msg('	* '+data.message);
+					}
+					if(settings.timestamp == 'fuzzy'){
+						$('abbr.date_'+time).timeago();
+					}else{
+						var timestamp = settings.timestamp,
+							i,
+							text='';
+						if(timestamp == 'exact'){
+							timestamp = 'H:m:s t';
+						}
+						for(i=0;i<timestamp.length;i++){
+							switch(timestamp[i]){
+								case 'H':text+=((date.getHours()+11)%12)+1;break;
+								case 'h':text+=date.getHours();break;
+								case 'm':text+=date.getMinutes();break;
+								case 's':text+=date.getSeconds();break;
+								case 't':text+=(date.getHours()>11)?'pm':'am';break;
+								default:text+=timestamp[i];
+							}
+						}
+						$('abbr.date_'+time).text(text);
+					}
 				}
 			}
 		],
@@ -125,28 +188,59 @@
 		connect: function(server){
 			if($o.connected()){
 				socket.disconnect();
+				socket = undefined;
+				delete $o.socket;
 			}
 			if(typeof server == 'undefined'){
 				server = settings.server;
 			}
-			socket = io.connect(server);
+			$o.socket = socket = io.connect(server);
 			for(var i in handles){
 				socket.on(handles[i].on,handles[i].fn);
 			}
+			$o.auth();
+		},
+		auth: function(){
+			socket.emit('auth',{
+				nick: properties.nick
+				// TODO - send authorization info
+			});
 		},
 		connected: function(){
 			return typeof socket != 'undefined';
 		},
-		get: function(name){
-			return exists(settings[name])?settings[name]:false;
+		get: function(name,formatted){
+			if(typeof formatted == 'undefined'){
+				return exists(settings[name])?settings[name]:false;
+			}else{
+				var val = $o.get(name),
+					type;
+				switch(name){
+					case 'autojoin':
+						type = 'Array';break;
+					default:
+						type = typeof val;
+				}
+				return {
+					type: type,
+					val: val
+				};
+			}
 		},
 		set: function(name,value){
 			if(exists(settings[name])){
 				settings[name] = value;
-				$.localStorage('settings',$.stringify(settings));
+				$.localStorage('settings',JSON.stringify(settings));
 				return true;
 			}else{
 				return false;
+			}
+		},
+		renderSettings: function(){
+			var name,setting;
+			for(name in settings){
+				setting = $o.get(name,true);
+				
 			}
 		},
 		prop: function(name){
@@ -168,9 +262,10 @@
 					$o.msg(cmd+' is not a valid command.');
 				}else{
 					event(msg,'send');
-					$o.msg({
-						text: msg,
-						user: properties.nick
+					socket.emit('message',{
+						message: msg,
+						room: tabs[selectedTab].name,
+						from: properties.nick
 					});
 				}
 			}
@@ -189,7 +284,9 @@
 			event(message,event_name);
 		},
 		selectTab: function(id){
-			event(id,'tab_select');
+			event(id+' '+tabs[id].name,'tab_select');
+			var frag = tabs[selectedTab].body = document.createDocumentFragment();
+			$(frag).append($cl.children().clone());
 			if(id<tabs.length-1&&id>=0){
 				selectedTab=id;
 			}
@@ -197,17 +294,38 @@
 			$($tl.children().get(id)).addClass('clicked');
 			$('#title').text(tabs[id].title);
 			$('#topic').text(tabs[id].topic);
+			$cl.html(tabs[id].body);
+		},
+		tabIdForName: function(name){
+			for(var i in tabs){
+				if(tabs[i].name == name){
+					return i;
+				}
+			}
+			return false;
 		},
 		tabDOM: function(id){
 			
 		},
 		addTab: function(name,title){
-			event('Tab added: '+name);
-			tabs.push({
-				name: name,
-				title: title
-			});
-			$tl.append($o.tabObj(tabs.length-1));
+			event('Tab added: '+name+' with title '+title);
+			if(!(function(){
+				for(var i in tabs){
+					if(name==tabs[i].name){
+						return true;
+					}
+				}
+				return false;
+			})()){
+				tabs.push({
+					name: name,
+					title: title,
+					body: document.createDocumentFragment()
+				});
+				$tl.append($o.tabObj(tabs.length-1));
+			}else{
+				console.error('Attempted to add an existing tab');
+			}
 		},
 		removeTab: function(id){
 			if(typeof tabs[id] != 'undefined'){
@@ -218,6 +336,7 @@
 				}
 			}
 			$o.refreshTabs();
+			$cl.html(tabs[selectedTab].body);
 		},
 		tabObj: function(id){
 			if(typeof id !== 'undefined'){
@@ -286,7 +405,7 @@
 	};
 	$(document).ready(function(){
 		$.extend(settings,$.parseJSON($.localStorage('settings')));
-		$.localStorage('settings',$.stringify(settings));
+		$.localStorage('settings',JSON.stringify(settings));
 		$i = $('#input');
 		$s = $('#send');
 		$cl = $('#content-list');
@@ -429,3 +548,14 @@
 		$o.connect();
 	});
 })(window,jQuery,io);
+if (!Date.prototype.toISOString) {
+    Date.prototype.toISOString = function() {
+        function pad(n) { return n < 10 ? '0' + n : n }
+        return this.getUTCFullYear() + '-'
+            + pad(this.getUTCMonth() + 1) + '-'
+            + pad(this.getUTCDate()) + 'T'
+            + pad(this.getUTCHours()) + ':'
+            + pad(this.getUTCMinutes()) + ':'
+            + pad(this.getUTCSeconds()) + 'Z';
+    };
+}
