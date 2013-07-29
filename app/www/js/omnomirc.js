@@ -308,7 +308,7 @@
 					}
 					break;
 			}
-			$(tabs[$o.tabIdForName(tabName)].body).append(frag);
+			$(tabs[$o.tabIdForName(tabName) || selectedTab].body).append(frag);
 			if(typeof tabName == 'undefined' || tabName == tabs[selectedTab].name){
 				$o.selectTab(selectedTab);
 			}
