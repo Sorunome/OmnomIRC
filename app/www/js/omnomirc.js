@@ -59,6 +59,14 @@
 		},
 		commands = [
 			{
+				cmd: 'names',
+				fn: function(args){
+					socket.emit('names',{
+						name: tabs[selectedTab].name
+					});
+				}
+			},
+			{
 				cmd: 'help',
 				fn: function(args){
 					var m = 'Commands:',i;
@@ -120,8 +128,11 @@
 				on: 'join',
 				fn: function(data){
 					event('joined '+data.name);
+					var flag = tabs.length == 0;
 					$o.addTab(data.name,data.title);
-					$o.selectTab(tabs.length-1);
+					if(flag){
+						$o.selectTab(0);
+					}
 				}
 			},
 			{
@@ -144,47 +155,47 @@
 							if(!settings.timestamp){
 								string = '<span class="cell"></span>';
 							}else{
-								string = '<span class="cell">[<abbr class="date_'+time+'" title="'+date.toISOString()+'"></abbr>]</span>';
+								string = '<span class="cell">[<abbr class="date date_'+time+'" title="'+date.toISOString()+'"></abbr>]</span>';
 							}
 							child = $('<li>').html(string+'<span class="cell">'+msg.htmlentities()+'</span>');
-							if(tabs[selectedTab].name == data.room){
-								$cl.append(child);
-							}else{
-								$(tabs[$o.tabIdForName(data.room)].body).append(child);
-							}
+							$o.msg({html:child},data.room);
 						};
 					if(data.from != 0){
 						msg('	<'+data.from+'>	'+data.message);
 					}else{
 						msg('	* '+data.message);
 					}
-					if(settings.timestamp == 'fuzzy'){
-						$('abbr.date_'+time).timeago();
-					}else{
-						var timestamp = settings.timestamp,
-							i,
-							text='';
-						if(timestamp == 'exact'){
-							timestamp = 'H:m:s t';
-						}
-						for(i=0;i<timestamp.length;i++){
-							switch(timestamp[i]){
-								case 'H':text+=((date.getHours()+11)%12)+1;break;
-								case 'h':text+=date.getHours();break;
-								case 'm':text+=date.getMinutes();break;
-								case 's':text+=date.getSeconds();break;
-								case 't':text+=(date.getHours()>11)?'pm':'am';break;
-								default:text+=timestamp[i];
-							}
-						}
-						$('abbr.date_'+time).text(text);
-					}
+					$o.abbrDate('abbr.date_'+time);
 				}
 			}
 		],
 		socket,$i,$s,$h,$cl,$tl,hht;
 	$.extend($o,{
 		version: '3.0',
+		abbrDate: function(selector){
+			if(settings.timestamp == 'fuzzy'){
+				$(selector).timeago();
+			}else{
+				var timestamp = settings.timestamp,
+					i,
+					text='',
+					date = new Date($(selector).attr('title'));
+				if(timestamp == 'exact'){
+					timestamp = 'H:m:s t';
+				}
+				for(i=0;i<timestamp.length;i++){
+					switch(timestamp[i]){
+						case 'H':text+=((date.getHours()+11)%12)+1;break;
+						case 'h':text+=date.getHours();break;
+						case 'm':text+=date.getMinutes();break;
+						case 's':text+=date.getSeconds();break;
+						case 't':text+=(date.getHours()>11)?'pm':'am';break;
+						default:text+=timestamp[i];
+					}
+				}
+				$(selector).text(text);
+			}
+		},
 		connect: function(server){
 			if($o.connected()){
 				socket.disconnect();
@@ -270,14 +281,28 @@
 				}
 			}
 		},
-		msg: function(msg){
+		msg: function(msg,tabName){
+			var frag;
+			if(typeof tabName == 'undefined' || tabName == tabs[selectedTab].name){
+				frag = document.createDocumentFragment();
+			}else{
+				frag = tabs[$o.tabIdForName(tabName)].body;
+			}
 			switch(typeof msg){
 				case 'string':
-					$cl.append($('<li>').html(msg.htmlentities()));
+					$(frag).append($('<li>').html(msg.htmlentities()));
 					break;
 				case 'object':
-					$cl.append($('<li>').html('&lt;'+msg.user+'&gt;&nbsp;'+msg.text.htmlentities()));
+					if(typeof msg.html == 'undefined'){
+						$(frag).append($('<li>').html('&lt;'+msg.user+'&gt;&nbsp;'+msg.text.htmlentities()));
+					}else{
+						$(frag).append(msg.html);
+					}
 					break;
+			}
+			$(tabs[$o.tabIdForName(tabName)].body).append(frag);
+			if(typeof tabName == 'undefined' || tabName == tabs[selectedTab].name){
+				$o.selectTab(selectedTab);
 			}
 		},
 		event: function(event_name,message){
@@ -285,8 +310,6 @@
 		},
 		selectTab: function(id){
 			event(id+' '+tabs[id].name,'tab_select');
-			var frag = tabs[selectedTab].body = document.createDocumentFragment();
-			$(frag).append($cl.children().clone());
 			if(id<tabs.length-1&&id>=0){
 				selectedTab=id;
 			}
@@ -294,7 +317,8 @@
 			$($tl.children().get(id)).addClass('clicked');
 			$('#title').text(tabs[id].title);
 			$('#topic').text(tabs[id].topic);
-			$cl.html(tabs[id].body);
+			$cl.html($(tabs[id].body).clone());
+			$o.abbrDate('abbr.date');
 		},
 		tabIdForName: function(name){
 			for(var i in tabs){
@@ -323,8 +347,9 @@
 					body: document.createDocumentFragment()
 				});
 				$tl.append($o.tabObj(tabs.length-1));
+				$o.refreshTabs();
 			}else{
-				console.error('Attempted to add an existing tab');
+				event('Attempted to add an existing tab');
 			}
 		},
 		removeTab: function(id){

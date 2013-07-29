@@ -84,6 +84,24 @@ io.sockets.on('connection',function(socket){
 		logger.debug('message sent to '+data.room);
 		io.sockets.in(data.room).emit('message',data);
 	});
+	socket.on('names',function(data){
+		var sockets = io.sockets.clients('room'),
+			i;
+		socket.emit('message',{
+			message: data.name+' users:',
+			room: data.name,
+			from: 0
+		});
+		for(i in sockets){
+			socket.get('nick',function(e,nick){
+				socket.emit('message',{
+					message: '	'+nick,
+					room: data.name,
+					from: 0
+				});
+			});
+		}
+	});
 	socket.on('auth',function(data){
 		logger.info(data.nick+' registered');
 		// TODO - authorize
