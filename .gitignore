@@ -169,5 +169,4 @@ config.php
 # cloud9 files
 .c9revisions
 
-app/node_modules/npm-debug.log
-app/node_modules/.bin
+app/node_modules
