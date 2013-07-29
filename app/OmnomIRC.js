@@ -51,7 +51,7 @@ var fs = require('fs'),
 	}).listen(80),
 	io = require('socket.io').listen(app)
 	logger = io.log;
-io.set('log level',2);
+io.set('log level',3);
 io.sockets.on('connection',function(socket){
 	socket.on('join',function(data){
 		socket.join(data.name);

@@ -67,6 +67,14 @@
 				}
 			},
 			{
+				cmd: 'nick',
+				fn: function(args){
+					console.log(args);
+					properties.nick = args[1];
+					$o.auth();
+				}
+			},
+			{
 				cmd: 'help',
 				fn: function(args){
 					var m = 'Commands:',i;
