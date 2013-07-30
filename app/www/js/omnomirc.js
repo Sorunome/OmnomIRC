@@ -69,7 +69,6 @@
 			{
 				cmd: 'nick',
 				fn: function(args){
-					console.log(args);
 					properties.nick = args[1];
 					$o.auth();
 				}
@@ -99,6 +98,7 @@
 				cmd: 'clear',
 				fn: function(args){
 					$cl.html('');
+					tabs[selectedTab].body = document.createDocumentFragment();
 				}
 			},
 			{
@@ -122,6 +122,21 @@
 			}
 		],
 		handles = [
+			{
+				on: 'names',
+				fn: function(data){
+					console.log(data);
+					tabs[$o.tabIdForName(data.room)].names = data.names;
+					if($o.tabIdForName(data.room) == selectedTab){
+						$ul = $('#user-list').html('');
+						for(var i in data.names){
+							$ul.append(
+								$('<li>').text(data.names[i])
+							);
+						}
+					}
+				}
+			},
 			{
 				on: 'authorized',
 				fn: function(){
@@ -325,7 +340,7 @@
 			$($tl.children().get(id)).addClass('clicked');
 			$('#title').text(tabs[id].title);
 			$('#topic').text(tabs[id].topic);
-			$cl.html($(tabs[id].body).clone());
+			$cl.html($(tabs[id].body).clone()).scrollTop($cl[0].scrollHeight);
 			$o.abbrDate('abbr.date');
 		},
 		tabIdForName: function(name){
@@ -352,7 +367,8 @@
 				tabs.push({
 					name: name,
 					title: title,
-					body: document.createDocumentFragment()
+					body: document.createDocumentFragment(),
+					names: []
 				});
 				$tl.append($o.tabObj(tabs.length-1));
 				$o.refreshTabs();
@@ -363,6 +379,9 @@
 		removeTab: function(id){
 			if(typeof tabs[id] != 'undefined'){
 				event('Tab removed: '+tabs[id].name);
+				socket.emit('part',{
+					name: tabs[id].name
+				});
 				tabs.splice(id,1);
 				if(selectedTab==id&&selectedTab>0){
 					selectedTab--;

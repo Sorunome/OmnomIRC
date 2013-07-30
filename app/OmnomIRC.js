@@ -60,6 +60,7 @@ io.sockets.on('connection',function(socket){
 			name: data.name,
 			title: data.title
 		});
+		sendUserList(data.name);
 		socket.get('nick',function(e,nick){
 			logger.debug(nick+' joined '+data.name);
 			io.sockets.in(data.name).emit('message',{
@@ -73,19 +74,26 @@ io.sockets.on('connection',function(socket){
 		socket.leave(data.name);
 		socket.get('nick',function(e,nick){
 			logger.debug(nick+' left '+data.name);
-			io.sockets.in(data.name).emit('message',{
-				message: nick+' parted the channel',
-				room: data.name,
-				from: 0
-			});
+			sendUserList(data.name);
 		});
+	});
+	socket.on('disconnect',function(data){
+		var rooms = io.sockets.manager.rooms,
+			i,
+			room;
+		for(i in rooms){
+			if(rooms[i] != '' && typeof rooms[i] == 'string'){
+				room = rooms[i].substr(1);
+				sendUserList(names);
+			}
+		}
 	});
 	socket.on('message',function(data){
 		logger.debug('message sent to '+data.room);
 		io.sockets.in(data.room).emit('message',data);
 	});
 	socket.on('names',function(data){
-		var sockets = io.sockets.clients('room'),
+		var sockets = io.sockets.clients(data.name),
 			i;
 		socket.emit('message',{
 			message: data.name+' users:',
@@ -93,7 +101,7 @@ io.sockets.on('connection',function(socket){
 			from: 0
 		});
 		for(i in sockets){
-			socket.get('nick',function(e,nick){
+			sockets[i].get('nick',function(e,nick){
 				socket.emit('message',{
 					message: '	'+nick,
 					room: data.name,
@@ -101,6 +109,7 @@ io.sockets.on('connection',function(socket){
 				});
 			});
 		}
+		sendUserList(data.name);
 	});
 	socket.on('auth',function(data){
 		logger.info(data.nick+' registered');
@@ -108,4 +117,23 @@ io.sockets.on('connection',function(socket){
 		socket.set('nick',data.nick);
 		socket.emit('authorized');
 	});
+	var usersInRoom = function(room){
+			var sockets = io.sockets.clients(room),
+				i,
+				ret = [];
+			for(i in sockets){
+				sockets[i].get('nick',function(e,nick){
+					ret.push(nick);
+				});
+			}
+			return ret;
+		},
+		sendUserList = function(room){
+			if(typeof room != 'undefined'){
+				io.sockets.in(room).emit('names',{
+					room: room,
+					names: usersInRoom(room)
+				});
+			}
+		};
 });
