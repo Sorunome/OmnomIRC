@@ -125,15 +125,9 @@
 			{
 				on: 'names',
 				fn: function(data){
-					console.log(data);
 					tabs[$o.tabIdForName(data.room)].names = data.names;
 					if($o.tabIdForName(data.room) == selectedTab){
-						$ul = $('#user-list').html('');
-						for(var i in data.names){
-							$ul.append(
-								$('<li>').text(data.names[i])
-							);
-						}
+						$o.renderUsers();
 					}
 				}
 			},
@@ -277,6 +271,20 @@
 				
 			}
 		},
+		renderUsers: function(){
+			event('Rendering userlist');
+			var $ul = $('#user-list').html(''),
+				i,
+				names = tabs[selectedTab].names;
+			for(i in names){
+				$ul.append(
+					$('<li>').text(names[i])
+				);
+			}
+		},
+		selectedTab: function(){
+			return selectedTab;
+		},
 		prop: function(name){
 			return exists(properties[name])?properties[name]:null;
 		},
@@ -333,7 +341,7 @@
 		},
 		selectTab: function(id){
 			event(id+' '+tabs[id].name,'tab_select');
-			if(id<tabs.length-1&&id>=0){
+			if(id<tabs.length&&id>=0){
 				selectedTab=id;
 			}
 			$tl.children('.clicked').removeClass('clicked');
@@ -342,6 +350,7 @@
 			$('#topic').text(tabs[id].topic);
 			$cl.html($(tabs[id].body).clone()).scrollTop($cl[0].scrollHeight);
 			$o.abbrDate('abbr.date');
+			$o.renderUsers();
 		},
 		tabIdForName: function(name){
 			for(var i in tabs){
@@ -372,6 +381,7 @@
 				});
 				$tl.append($o.tabObj(tabs.length-1));
 				$o.refreshTabs();
+				$o.renderUsers();
 			}else{
 				event('Attempted to add an existing tab');
 			}
@@ -389,6 +399,7 @@
 			}
 			$o.refreshTabs();
 			$cl.html(tabs[selectedTab].body);
+			$o.renderUsers();
 		},
 		tabObj: function(id){
 			if(typeof id !== 'undefined'){
