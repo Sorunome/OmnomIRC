@@ -114,8 +114,10 @@ io.sockets.on('connection',function(socket){
 	socket.on('auth',function(data){
 		logger.info(data.nick+' registered');
 		// TODO - authorize
-		socket.set('nick',data.nick);
-		socket.emit('authorized');
+		socket.set('nick',data.nick.substr(0,12));
+		socket.emit('authorized',{
+			nick: data.nick.substr(0,12)
+		});
 	});
 	var usersInRoom = function(room){
 			var sockets = io.sockets.clients(room),

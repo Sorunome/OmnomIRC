@@ -133,7 +133,8 @@
 			},
 			{
 				on: 'authorized',
-				fn: function(){
+				fn: function(data){
+					properties.nick = data.nick;
 					for(var i in settings.autojoin){
 						socket.emit('join',{
 							name: settings.autojoin[i]
