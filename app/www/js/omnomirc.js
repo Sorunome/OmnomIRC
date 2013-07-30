@@ -67,6 +67,20 @@
 				}
 			},
 			{
+				cmd: 'me',
+				fn: function(args){
+					var i,ret='';
+					for(i=1;i<args.length;i++){
+						ret += args[i];
+					}
+					socket.emit('message',{
+						from: 0,
+						message: properties.nick+' '+ret,
+						room: tabs[selectedTab].name
+					});
+				}
+			},
+			{
 				cmd: 'nick',
 				fn: function(args){
 					properties.nick = args[1];
@@ -260,6 +274,9 @@
 			if(exists(settings[name])){
 				settings[name] = value;
 				$.localStorage('settings',JSON.stringify(settings));
+				switch(name){
+					case 'timestamp':$o.abbrDate('abbr.date');break;
+				}
 				return true;
 			}else{
 				return false;
@@ -349,9 +366,10 @@
 			$($tl.children().get(id)).addClass('clicked');
 			$('#title').text(tabs[id].title);
 			$('#topic').text(tabs[id].topic);
-			$cl.html($(tabs[id].body).clone()).scrollTop($cl[0].scrollHeight);
+			$cl.html($(tabs[id].body).clone());
 			$o.abbrDate('abbr.date');
 			$o.renderUsers();
+			$cl.scrollTop($cl[0].scrollHeight);
 		},
 		tabIdForName: function(name){
 			for(var i in tabs){
