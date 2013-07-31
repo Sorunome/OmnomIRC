@@ -83,7 +83,9 @@ io.sockets.on('connection',function(socket){
 			room;
 		for(i in rooms){
 			if(rooms[i] != '' && typeof rooms[i] == 'string'){
-				room = rooms[i].substr(1);
+				try{
+					room = rooms[i].substr(1);
+				}catch(e){}
 				sendUserList(names);
 			}
 		}
