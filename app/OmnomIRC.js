@@ -141,3 +141,6 @@ io.sockets.on('connection',function(socket){
 			}
 		};
 });
+process.on('uncaughtException',function(e){
+	logger.error(e);
+});
