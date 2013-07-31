@@ -32,6 +32,9 @@ html,body{
 	font-size: 24px;
 	margin-top: -5px;
 	font-family: Arial,Liberation Sans,DejaVu Sans,sans-serif;
+    line-height: 17px;
+    margin-top: 0;
+    display: block;
 }
 .close-button:hover{
 	color: red;
@@ -45,6 +48,9 @@ html,body{
 	background-color: white;
 	transition: height 0.3s;
 	z-index: 10;
+    font-size: 10px;
+    font-family:verdana,sans-serif;
+    background-color: #DFEFFF;
 }
 #info{
 	display: table;
@@ -62,6 +68,13 @@ html,body{
 	height: calc(100% - 61px);
 	top: 41px;
 	left: 0;
+    font-size: 10px;
+    font-family:verdana,sans-serif;
+    line-height:13px;
+    background-color: #DFEFFF;
+}
+#content-list li:nth-child(even) {
+    background-color: #cae4ff;
 }
 #settings,#users{
 	bottom: 0;
@@ -172,13 +185,13 @@ html,body{
 #tabs-list div.tab{
 	float: left;
 	max-width: 200px;
-	height: 19px;
 	overflow: hidden;
 	position: relative;
-
+    height: 18px;
 }
 #tabs-list div.tab.clicked{
-	background-color: lightgrey;
+    background-color: #cae4ff;
+    border: solid 1px #6699ff;
 }
 #tabs-scroll-left{
 	position: absolute;
@@ -203,16 +216,33 @@ html,body{
 	border-right-style: solid;
 	border-left-style: solid;
 	border-bottom-style: none;
+    border: 1px solid rgba(102, 153, 255, 0.3);
+    border-top-color: rgba(102, 153, 255, 0.6);
 	border-width: 1px;
 	padding: 0;
 	margin: 0;
 	background-color: white;
 	cursor: pointer;
 	clear: none;
+
+    display: block;
+    -webkit-box-align: center;
+    -moz-box-align: center;
+    box-align: center;
+    text-align: center;
+    vertical-align: center;
+    line-height: 16px;
+    background-color: #DFEFFF;
+
+}
+
+#tabs-list div.tab{
+    padding-right: 15px;
 }
 #tabs-list div.tab:hover, #tabs-scroll-right:hover,#tabs-scroll-left:hover{
-	background-color: grey;
+    background-color: #cae4ff;
 }
 #tabs-scroll-left.disabled, #tabs-scroll-right.disabled{
-	background-color: lightgrey;
+    background-color: #cae4ff;
+    border: solid 1px #6699ff;
 }
