@@ -171,11 +171,11 @@ html,body{
 }
 #tabs-list div.tab{
 	float: left;
-	min-width: 100px;
 	max-width: 200px;
 	height: 19px;
 	overflow: hidden;
 	position: relative;
+
 }
 #tabs-list div.tab.clicked{
 	background-color: lightgrey;
