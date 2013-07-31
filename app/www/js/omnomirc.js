@@ -205,24 +205,26 @@
 			if(settings.timestamp == 'fuzzy'){
 				$(selector).timeago();
 			}else{
-				var timestamp = settings.timestamp,
-					i,
-					text='',
-					date = new Date($(selector).attr('title'));
-				if(timestamp == 'exact'){
-					timestamp = 'H:m:s t';
-				}
-				for(i=0;i<timestamp.length;i++){
-					switch(timestamp[i]){
-						case 'H':text+=((date.getHours()+11)%12)+1;break;
-						case 'h':text+=date.getHours();break;
-						case 'm':text+=date.getMinutes();break;
-						case 's':text+=date.getSeconds();break;
-						case 't':text+=(date.getHours()>11)?'pm':'am';break;
-						default:text+=timestamp[i];
+				$(selector).each(function(){
+					var timestamp = settings.timestamp,
+						i,
+						text='',
+						date = new Date($(this).attr('title'));
+					if(timestamp == 'exact'){
+						timestamp = 'H:m:s t';
 					}
-				}
-				$(selector).text(text);
+					for(i=0;i<timestamp.length;i++){
+						switch(timestamp[i]){
+							case 'H':text+=((date.getHours()+11)%12)+1;break;
+							case 'h':text+=date.getHours();break;
+							case 'm':text+=date.getMinutes();break;
+							case 's':text+=date.getSeconds();break;
+							case 't':text+=(date.getHours()>11)?'pm':'am';break;
+							default:text+=timestamp[i];
+						}
+					}
+					$(selector).text(text);
+				});
 			}
 		},
 		socket,$i,$s,$h,$cl,$tl,hht;
