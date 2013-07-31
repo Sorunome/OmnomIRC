@@ -1,0 +1,77 @@
+/*
+    Omnimaga Theme
+    Default theme with a blue lobster taste included
+    @author Eiyeron Fulmicendii
+    @email  Eiyeron@gmail.com
+*/
+
+#head {
+    font-size: 10px;
+    font-family:verdana,sans-serif;
+    background-color: #DFEFFF;
+}
+
+/* Tab theming*/
+
+
+/* Setting tabs */
+#tabs-list div.tab, #tabs-scroll-right,#tabs-scroll-left {
+    display: block;
+    -webkit-box-align: center;
+    -moz-box-align: center;
+    box-align: center;
+    text-align: center;
+    vertical-align: center;
+    line-height: 16px;
+    background-color: #DFEFFF;
+    border: 1px solid rgba(102, 153, 255, 0.3);
+    border-top-color: rgba(102, 153, 255, 0.6);
+    border-bottom: none;
+}
+
+/* Setting margin for close button */ 
+#tabs-list div.tab {
+    padding-right: 15px;
+}
+
+/* Setting close button */
+#tabs-list .close-button {
+    line-height: 18px;
+    margin-top: 0;
+    display: block;
+    float: left;
+}
+
+/* border effect when hovering */
+#tabs-list div.tab:hover, #tabs-scroll-right:hover,#tabs-scroll-left:hover {
+    background-color: #cae4ff;
+    border-bottom-color: #cae4ff;
+}
+
+/* Selected tab setting */
+#tabs-list div.tab.clicked{
+    background-color: #cae4ff;
+    border: solid 1px #6699ff;
+}
+
+/* Disabled scroll setting */
+#tabs-scroll-left.disabled, #tabs-scroll-right.disabled{
+    background-color: #cae4ff;
+    border: solid 1px #6699ff;
+}
+
+
+/* Log theming*/
+/* Log container */
+#content {
+    font-size: 10px;
+    font-family:verdana,sans-serif;
+    line-height:13px;
+    background-color: #DFEFFF;
+}
+
+/* Log line theming */
+
+#content-list li:nth-child(even) {
+    background-color: #cae4ff;
+}
