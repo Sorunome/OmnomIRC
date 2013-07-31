@@ -217,8 +217,8 @@
 						switch(timestamp[i]){
 							case 'H':text+=((date.getHours()+11)%12)+1;break;
 							case 'h':text+=date.getHours();break;
-							case 'm':text+=date.getMinutes();break;
-							case 's':text+=date.getSeconds();break;
+							case 'm':text+=(date.getMinutes()>9?'':'0')+date.getMinute();break;
+							case 's':text+=(date.getSeconds()>9?'':'0')+date.getSeconds();break;
 							case 't':text+=(date.getHours()>11)?'pm':'am';break;
 							default:text+=timestamp[i];
 						}
