@@ -190,7 +190,10 @@
 							}else{
 								string = '<span class="cell">[<abbr class="date date_'+time+'" title="'+date.toISOString()+'"></abbr>]</span>';
 							}
-							child = $('<li>').html(string+'<span class="cell">'+msg.htmlentities()+'</span>');
+							child = $('<li>').html(string+'<span class="cell">'+msg.htmlentities().replace(
+								/(https?:\/\/(([-\w\.]+)+(:\d+)?(\/([\w/_\.]*(\?\S+)?)?)?))/g,
+								"<a href=\"$1\" title=\"\">$1</a>"
+							)+'</span>');
 							$o.msg({html:child},data.room);
 						};
 					if(data.from != 0){
@@ -199,6 +202,15 @@
 						msg('	* '+data.message);
 					}
 					abbrDate('abbr.date_'+time);
+				}
+			}
+		],
+		hooks = [
+			{
+				type: 'style',
+				hook: 'load',
+				fn: function(){
+					
 				}
 			}
 		],
@@ -367,7 +379,7 @@
 		},
 		send: function(msg){
 			if(msg !== ''){
-				if(msg[0] == '/'){
+				if(msg[0] == '/' && msg[1] != '/'){
 					var args = msg.split(' '),
 						cmd = args[0].substr(1),
 						i;
