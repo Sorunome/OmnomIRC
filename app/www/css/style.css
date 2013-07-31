@@ -12,6 +12,9 @@ html,body{
 	width: 100%;
 	height: 100%;
 }
+.row{
+	display: table-row;
+}
 .cell{
 	display: table-cell;
 }
@@ -92,7 +95,7 @@ html,body{
 	z-index: 20;
 }
 #settings.open{
-	width: 100%;
+	width: 300px;
 }
 #entry{
 	width: 100%;
@@ -140,12 +143,20 @@ html,body{
 	position: fixed;
 }
 #content-list,#user-list,#settings-list,#tabs-list{
-	width: 100%;
-	height: 100%;
 	list-style-type: none;
 	margin: 0;
 	padding: 0;
 	overflow: auto;
+}
+#content-list,#user-list,#tabs-list{
+	width: 100%;
+	height: 100%;
+}
+#settings-list{
+	display: table;
+}
+#settings-list > li{
+	line-height: 4px;
 }
 #user-list{
 	padding-left: 5px;

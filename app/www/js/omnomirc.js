@@ -197,14 +197,11 @@
 					}else{
 						msg('	* '+data.message);
 					}
-					$o.abbrDate('abbr.date_'+time);
+					abbrDate('abbr.date_'+time);
 				}
 			}
 		],
-		socket,$i,$s,$h,$cl,$tl,hht;
-	$.extend($o,{
-		version: '3.0',
-		abbrDate: function(selector){
+		abbrDate = function(selector){
 			if(settings.timestamp == 'fuzzy'){
 				$(selector).timeago();
 			}else{
@@ -228,6 +225,9 @@
 				$(selector).text(text);
 			}
 		},
+		socket,$i,$s,$h,$cl,$tl,hht;
+	$.extend($o,{
+		version: '3.0',
 		connect: function(server){
 			if($o.connected()){
 				socket.disconnect();
@@ -257,25 +257,31 @@
 				return exists(settings[name])?settings[name]:false;
 			}else{
 				var val = $o.get(name),
-					type;
+					type,
+					values = false;
 				switch(name){
 					case 'autojoin':
-						type = 'Array';break;
+						type = 'array';break;
 					default:
 						type = typeof val;
 				}
 				return {
 					type: type,
-					val: val
+					val: val,
+					values: values,
+					name: name
 				};
 			}
 		},
-		set: function(name,value){
+		set: function(name,value,render){
 			if(exists(settings[name])){
 				settings[name] = value;
 				$.localStorage('settings',JSON.stringify(settings));
 				switch(name){
-					case 'timestamp':$o.abbrDate('abbr.date');break;
+					case 'timestamp':abbrDate('abbr.date');break;
+				}
+				if(typeof render == 'undefined'){
+					$o.renderSettings();
 				}
 				return true;
 			}else{
@@ -283,11 +289,62 @@
 			}
 		},
 		renderSettings: function(){
-			var name,setting;
+			var name,setting,frag = document.createDocumentFragment(),item;
 			for(name in settings){
 				setting = $o.get(name,true);
-				
+				switch(setting.type){
+					case 'array':
+						item = $('<input>')
+									.attr({
+										type: 'text',
+										id: 'setting_'+name
+									})
+									.val(setting.val)
+									.change(function(){
+										$o.set(this.id.substr(8),$(this).val().split(','),false);
+									});
+					break;
+					case 'boolean':
+						item = $('<input>')
+									.attr({
+										type: 'checkbox',
+										id: 'setting_'+name
+									})
+									.change(function(){
+										$o.set(this.id.substr(8),$(this).is(':checked'),false);
+									});
+						if(setting.val){
+							item.attr('checked','checked');
+						}
+					break;
+					case 'number':
+					case 'string':default:
+						item = $('<input>')
+									.attr({
+										type: 'text',
+										id: 'setting_'+name
+									})
+									.val(setting.val)
+									.change(function(){
+										$o.set(this.id.substr(8),$(this).val(),false);
+									});
+				}
+				$(frag).append(
+					$('<li>')
+						.addClass('row')
+						.append(
+							$('<span>')
+								.text(name)
+								.addClass('cell')
+						)
+						.append(
+							$('<span>')
+								.append(item)
+								.addClass('cell')
+						)
+				);
 			}
+			$('#settings-list').html(frag);
 		},
 		renderUsers: function(){
 			event('Rendering userlist');
@@ -367,7 +424,7 @@
 			$('#title').text(tabs[id].title);
 			$('#topic').text(tabs[id].topic);
 			$cl.html($(tabs[id].body).clone());
-			$o.abbrDate('abbr.date');
+			abbrDate('abbr.date');
 			$o.renderUsers();
 			$cl.scrollTop($cl[0].scrollHeight);
 		},
@@ -380,7 +437,7 @@
 			return false;
 		},
 		tabDOM: function(id){
-			
+			return tabs[id].body;
 		},
 		addTab: function(name,title){
 			event('Tab added: '+name+' with title '+title);
@@ -621,12 +678,12 @@
 			});
 		} */
 		//END DEBUG
-		$o.refreshTabs();
 		event('Date '+new Date,'ready');
 		$h.addClass('hovered');
 		setTimeout(function(){
 			$h.removeClass('hovered');
 		},1000);
+		$o.renderSettings();
 		$o.connect();
 	});
 })(window,jQuery,io);
