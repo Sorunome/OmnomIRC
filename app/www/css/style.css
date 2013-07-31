@@ -192,6 +192,7 @@ html,body{
 #tabs-list div.tab.clicked{
     background-color: #cae4ff;
     border: solid 1px #6699ff;
+	border-bottom-width: 0px;
 }
 #tabs-scroll-left{
 	position: absolute;
@@ -208,17 +209,12 @@ html,body{
 	width: 20px;
 }
 #tabs-list div.tab, #tabs-scroll-right,#tabs-scroll-left{
-	border-style: solid;
 	border-top-right-radius: 3px;
 	border-top-left-radius: 3px;
-	border-color: black;
-	border-top-style: solid;
-	border-right-style: solid;
-	border-left-style: solid;
-	border-bottom-style: none;
     border: 1px solid rgba(102, 153, 255, 0.3);
     border-top-color: rgba(102, 153, 255, 0.6);
 	border-width: 1px;
+	border-bottom-width: 0px;
 	padding: 0;
 	margin: 0;
 	background-color: white;
@@ -245,4 +241,6 @@ html,body{
 #tabs-scroll-left.disabled, #tabs-scroll-right.disabled{
     background-color: #cae4ff;
     border: solid 1px #6699ff;
+	border-bottom-width: 0px;
+
 }
