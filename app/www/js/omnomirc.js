@@ -223,7 +223,7 @@
 							default:text+=timestamp[i];
 						}
 					}
-					$(selector).text(text);
+					$(this).text(text);
 				});
 			}
 		},
