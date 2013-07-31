@@ -7,6 +7,11 @@ html,body{
 }
 .unselectable{
 	cursor: default;
+	display: block;
+	margin: auto;
+	margin-bottom: 1em;
+	vertical-align: middle;
+	text-align: center;
 }
 .fill{
 	width: 100%;
@@ -77,6 +82,8 @@ html,body{
     background-color: #cae4ff;
 }
 #settings,#users{
+	font-family: Arial,Liberation Sans,DejaVu Sans,sans-serif;
+	font-size: 12px;
 	bottom: 0;
 	height: 18px;
 	background-color: white;
@@ -92,11 +99,15 @@ html,body{
 	right: 0;
 	width: 36px;
 	z-index: 1;
+	background-color: #cae4ff;
 }
 #settings{
-	width: 52px;
+	width: 50px;
+    border-top-color: rgba(102, 153, 255, 0.6);
 	border-right-style: solid;
 	right: 36px;
+	background-color: #cae4ff;
+
 }
 #settings.hovered,#users.hovered{
 	height: 21px;
@@ -115,6 +126,7 @@ html,body{
 	border-top-style: solid;
 	height: 18px;
 	bottom: 0;
+
 }
 #input{
 	width: calc(100% - 126px);
@@ -122,32 +134,39 @@ html,body{
 	margin: 0;
 	padding: 1px;
 	border-style: none;
-	background-color: grey;
 	clear: none;
 	bottom: 0;
 	left: 0;
+	background-color: #cae4ff;
 }
 #send{
+
 	clear: none;
 	bottom: 0;
 	right: 88px;
-	width: 36px;
+	width: 48px;
 	padding: 0;
+	padding-bottom: 4px;
 	margin: 0;
 	height: 18px;
 	border-style: none;
-	border-left-style: solid;
-	background-color: white;
+	border-left: 1px solid;
+    background-color: #cae4ff;
 	transition: background-color 0.2s;
+	font-family: Arial,Liberation Sans,DejaVu Sans,sans-serif;
+	font-size: 12px;
+	vertical-align: top;
+	text-align: center;
 }
 #send:hover{
-	background-color: grey;
+	background-color: #DFEFFF;
 }
 #send.clicked{
-	background-color: red;
+	background-color: rgba(102, 153, 255, 0.9);
 }
 #content,#head,#users,#entry,#input,#send,#settings{
-	border-color: black;
+ 	border-color: rgba(102, 153, 255, 0.6);
+ 	border-top-color: rgba(102, 153, 255, 0.9);
 	border-width: 1px;
 	overflow: hidden;
 	position: absolute;
@@ -172,7 +191,14 @@ html,body{
 	line-height: 4px;
 }
 #user-list{
-	padding-left: 5px;
+	font-family: Arial,Liberation Sans,DejaVu Sans,sans-serif;
+	font-size: 15px;
+}
+#user-list li:nth-child(even) {
+    background-color: #DFEFFF;
+    border: solid 1px #6699ff;
+    border-left: 0px;
+    border-right: 0px;
 }
 #tabs-list{
 	width: calc(100% - 42px);
