@@ -43,13 +43,14 @@
 		selectedTab=0,
 		settings = {
 			colour: false,
-			timestamp: false,
+			timestamp: '',
 			server: location.origin,
 			autojoin: [
 				'#omnimaga',
 				'#omnimaga-fr',
 				'#irp'
-			]
+			],
+			scrollspeed: 100
 		},
 		tabs = [],
 		properties = {
@@ -184,7 +185,7 @@
 						child,
 						i,
 						msg = function(msg){
-							if(!settings.timestamp){
+							if(settings.timestamp == ''){
 								string = '<span class="cell"></span>';
 							}else{
 								string = '<span class="cell">[<abbr class="date date_'+time+'" title="'+date.toISOString()+'"></abbr>]</span>';
@@ -234,12 +235,11 @@
 			if($o.connected()){
 				socket.disconnect();
 				socket = undefined;
-				delete $o.socket;
 			}
 			if(typeof server == 'undefined'){
 				server = settings.server;
 			}
-			$o.socket = socket = io.connect(server);
+			socket = io.connect(server);
 			for(var i in handles){
 				socket.on(handles[i].on,handles[i].fn);
 			}
@@ -262,8 +262,8 @@
 					type,
 					values = false;
 				switch(name){
-					case 'autojoin':
-						type = 'array';break;
+					case 'autojoin':type = 'array';break;
+					case 'timestamp':type = 'string';break;
 					default:
 						type = typeof val;
 				}
@@ -428,7 +428,12 @@
 			$cl.html($(tabs[id].body).clone());
 			abbrDate('abbr.date');
 			$o.renderUsers();
-			$cl.scrollTop($cl[0].scrollHeight);
+			setTimeout(function scrollContent(){
+				if($cl.scrollTop() < $cl[0].scrollHeight){
+					$cl.scrollTop($cl.scrollTop()+1);
+					setTimeout(scrollContent,settings.scrollspeed);
+				}
+			},settings.scrollspeed);
 		},
 		tabIdForName: function(name){
 			for(var i in tabs){
@@ -688,6 +693,7 @@
 		$o.renderSettings();
 		$o.connect();
 	});
+	delete window.io;
 })(window,jQuery,io);
 if (!Date.prototype.toISOString) {
     Date.prototype.toISOString = function() {
