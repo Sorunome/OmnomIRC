@@ -13,40 +13,49 @@ var fs = require('fs'),
 		req.addListener('end',function(){
 			logger.debug('served static content for '+req.url);
 			var uri = url.parse(req.url).pathname,
-				filename = path.join('./www/',unescape(uri)),
-				stats;
-				try{
-					stats = fs.lstatSync(filename);
-				}catch(e){
-					res.writeHead(404,{
-						'Content-type': 'text/plain'
-					});
-					res.write('404 Not Found\n');
-					res.end();
-					return;
-				}
-				if(stats.isFile()){
-					var fileStream,
-						mimetype = mimeTypes[path.extname(filename).split('.')[1]];
-					res.writeHead(200,{
-						'Content-Type': mimetype
-					});
-					fileStream = fs.createReadStream(filename);
-					fileStream.pipe(res);
-				}else if(stats.isDirectory()){
-					res.writeHead(200,{
-						'Content-Type': 'text/plain'
-					});
-					res.write('Index of '+url+'\n');
-					res.write('TODO, show index');
-					res.end();
-				}else{
-					res.writeHead(500,{
-						'Content-Type': 'text/plain'
-					});
-					res.write('500 Internal server error\n');
-					res.end();
-				}
+				serveFile = function(filename,req,res){
+					try{
+						stats = fs.lstatSync(filename);
+					}catch(e){
+						res.writeHead(404,{
+							'Content-type': 'text/plain'
+						});
+						res.write('404 Not Found\n');
+						res.end();
+						return;
+					}
+					if(stats.isFile()){
+						var fileStream,
+							mimetype = mimeTypes[path.extname(filename).split('.')[1]];
+						res.writeHead(200,{
+							'Content-Type': mimetype
+						});
+						fileStream = fs.createReadStream(filename);
+						fileStream.pipe(res);
+					}else if(stats.isDirectory()){
+						if(fs.existsSync(path.join(filename,'index.html'))){
+							serveFile(path.join(filename,'index.html'),req,res);
+						}else if(fs.existsSync(path.join(filename,'index.htm'))){
+							serveFile(path.join(filename,'index.htm'),req,res);
+						}else if(fs.existsSync(path.join(filename,'index.txt'))){
+							serveFile(path.join(filename,'index.txt'),req,res);
+						}else{
+							res.writeHead(200,{
+								'Content-Type': 'text/plain'
+							});
+							res.write('Index of '+url+'\n');
+							res.write('TODO, show index');
+							res.end();
+						}
+					}else{
+						res.writeHead(500,{
+							'Content-Type': 'text/plain'
+						});
+						res.write('500 Internal server error\n');
+						res.end();
+					}
+				};
+			serveFile(path.join('./www/',unescape(uri)),req,res);
 		}).resume();
 	}).listen(80),
 	io = require('socket.io').listen(app)
