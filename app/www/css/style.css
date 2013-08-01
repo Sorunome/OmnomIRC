@@ -18,6 +18,11 @@ html,body{
 .cell{
 	display: table-cell;
 }
+.date_cell{
+	word-wrap: normal;
+	white-space: pre;
+	word-break: keep-all;
+}
 .unselectable,#tabs-list div.tab{
 	-webkit-touch-callout: none;
 	-webkit-user-select: none;
@@ -136,8 +141,11 @@ html,body{
 #content,#head,#users,#entry,#input,#send,#settings{
 	border-color: black;
 	border-width: 1px;
-	overflow: hidden;
 	position: absolute;
+	overflow: hidden;
+}
+#content{
+	overflow-y: scroll;
 }
 #users,#input,#send,#settings{
 	position: fixed;
@@ -146,14 +154,18 @@ html,body{
 	list-style-type: none;
 	margin: 0;
 	padding: 0;
-	overflow: auto;
+	overflow-y: auto;
+	word-wrap: break-word;
+	white-space: pre-wrap;
+	word-break: break-all;
 }
 #content-list,#user-list,#tabs-list{
 	width: 100%;
 	height: 100%;
 }
-#settings-list{
+#content-list,#settings-list{
 	display: table;
+	table-layout: fixed;
 }
 #settings-list > li{
 	line-height: 4px;
