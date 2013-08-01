@@ -94,6 +94,10 @@ io.sockets.on('connection',function(socket){
 		logger.debug('message sent to '+data.room);
 		io.sockets.in(data.room).emit('message',data);
 	});
+	socket.on('echo',function(data){
+		logger.debug('echoing to '+data.room);
+		socket.emit('message',data);
+	});
 	socket.on('names',function(data){
 		var sockets = io.sockets.clients(data.name),
 			i;

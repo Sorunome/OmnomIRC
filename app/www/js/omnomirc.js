@@ -43,20 +43,24 @@
 		selectedTab=0,
 		settings = {
 			colour: false,
-			timestamp: '',
+			timestamp: 'exact',
 			server: location.origin,
 			autojoin: [
 				'#omnimaga',
 				'#omnimaga-fr',
 				'#irp'
 			],
-			scrollspeed: 100
+			scrollspeed: 100,
+			theme: 'default'
 		},
 		tabs = [],
 		properties = {
 			nick: 'User',
 			sig: '',
-			tabs: tabs
+			tabs: tabs,
+			themes: [
+				'default'
+			]
 		},
 		commands = [
 			{
@@ -69,6 +73,7 @@
 			},
 			{
 				cmd: 'me',
+				help: 'Say something in third person',
 				fn: function(args){
 					var i,ret='';
 					for(i=1;i<args.length;i++){
@@ -91,11 +96,23 @@
 			{
 				cmd: 'help',
 				fn: function(args){
-					var m = 'Commands:',i;
-					for(i in commands){
-						m += ' '+commands[i].cmd;
+					if(typeof args[1] == 'undefined'){
+						var m = 'Commands:',i;
+						for(i in commands){
+							m += ' '+commands[i].cmd;
+						}
+						$o.msg(m);
+					}else{
+						var i,cmd;
+						for(i in commands){
+							cmd = commands[i];
+							if(cmd.cmd == args[1] && typeof cmd.help != 'undefined'){
+								$o.msg('Command /'+cmd.cmd+': '+cmd.help);
+								return;
+							}
+						}
+						$o.send('/help');
 					}
-					$o.msg(m);
 				}
 			},
 			{
@@ -109,14 +126,19 @@
 					$o.refreshTabs();
 				}
 			},
-			{
+			{ // clear
 				cmd: 'clear',
 				fn: function(args){
 					$cl.html('');
 					tabs[selectedTab].body = document.createDocumentFragment();
+					socket.emit('echo',{
+						room: tabs[selectedTab].name,
+						message: 'messages cleared',
+						name: 0
+					});
 				}
 			},
-			{
+			{ // close
 				cmd: 'close',
 				fn: function(args){
 					if(args.length > 1){
@@ -126,7 +148,7 @@
 					}
 				}
 			},
-			{
+			{ // tabs
 				cmd: 'tabs',
 				fn: function(args){
 					$o.msg('tabs:');
@@ -185,11 +207,7 @@
 						child,
 						i,
 						msg = function(msg){
-							if(settings.timestamp == ''){
-								string = '<span class="cell"></span>';
-							}else{
-								string = '<span class="cell">[<abbr class="date date_'+time+'" title="'+date.toISOString()+'"></abbr>]</span>';
-							}
+							string = '<span class="cell date_cell">[<abbr class="date date_'+time+'" title="'+date.toISOString()+'"></abbr>]</span>';
 							child = $('<li>').html(string+'<span class="cell">'+msg.htmlentities().replace(
 								/(https?:\/\/(([-\w\.]+)+(:\d+)?(\/([\w/_\.]*(\?\S+)?)?)?))/g,
 								"<a href=\"$1\" title=\"\">$1</a>"
@@ -202,6 +220,12 @@
 						msg('	* '+data.message);
 					}
 					abbrDate('abbr.date_'+time);
+					if(settings.timestamp == ''){
+						$('.date_cell').css('visibility','hidden');
+					}else{
+						$('.date_cell').css('visibility','visible');
+					}
+					
 				}
 			}
 		],
@@ -237,12 +261,35 @@
 						}
 					}
 					$(this).text(text);
-				});
+				}).timeago('dispose');
 			}
 		},
 		socket,$i,$s,$h,$cl,$tl,hht;
 	$.extend($o,{
 		version: '3.0',
+		register: {
+			theme: function(name){
+				if(-1==$.inArray(properties.themes,name)){
+					properties.themes.push(name);
+					return true;
+				}
+				return false;
+			},
+			command: function(name,fn,help){
+				if(-1==$.inArray(commands,name)){
+					var o = {
+						cmd: name,
+						fn: fn
+					};
+					if(typeof help != 'undefined'){
+						o.help = help;
+					}
+					commands.push(o);
+					return true;
+				}
+				return false;
+			}
+		},
 		connect: function(server){
 			if($o.connected()){
 				socket.disconnect();
@@ -274,6 +321,10 @@
 					type,
 					values = false;
 				switch(name){
+					case 'theme':
+						type = 'select';
+						values = properties.themes;
+						break;
 					case 'autojoin':type = 'array';break;
 					case 'timestamp':type = 'string';break;
 					default:
@@ -292,7 +343,14 @@
 				settings[name] = value;
 				$.localStorage('settings',JSON.stringify(settings));
 				switch(name){
-					case 'timestamp':abbrDate('abbr.date');break;
+					case 'timestamp':
+						abbrDate('abbr.date');
+						if(settings.timestamp == ''){
+							$('.date_cell').css('visibility','hidden');
+						}else{
+							$('.date_cell').css('visibility','visible');
+						}
+					break;
 				}
 				if(typeof render == 'undefined'){
 					$o.renderSettings();
@@ -426,6 +484,18 @@
 					break;
 			}
 			$(tabs[$o.tabIdForName(tabName) || selectedTab].body).append(frag);
+			var scroll = [],i,html;
+			for(i in tabs){
+				html = '';
+				$(tabs[i].body).children().each(function(){
+					html += this.outerHTML;
+				});
+				scroll.push({
+					name: tabs[i].name,
+					body: html
+				});
+			}
+			$.localStorage('tabs',scroll);
 			if(typeof tabName == 'undefined' || tabName == tabs[selectedTab].name){
 				$o.selectTab(selectedTab);
 			}
@@ -473,10 +543,31 @@
 				}
 				return false;
 			})()){
+				var scroll = $.localStorage('tabs'),
+					i,
+					frag = document.createDocumentFragment();
+				for(i in scroll){
+					if(scroll[i].name == name){
+						$(frag)
+							.append(scroll[i].body)
+							.append(
+								$('<li>').html('<span class="to_remove">-- loaded old scrollback --</span>')
+							)
+							.children()
+							.children('.remove')
+							.remove();
+						$(frag)
+							.children()
+							.children('.to_remove')
+							.removeClass('to_remove')
+							.addClass('remove');
+						event('loading old tab scrollback for '+name);
+					}
+				}
 				tabs.push({
 					name: name,
 					title: title,
-					body: document.createDocumentFragment(),
+					body: frag,
 					names: []
 				});
 				$tl.append($o.tabObj(tabs.length-1));
