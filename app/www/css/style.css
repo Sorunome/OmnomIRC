@@ -193,7 +193,7 @@ html,body{
 	list-style-type: none;
 	margin: 0;
 	padding: 0;
-	overflow: auto;
+	overflow-y: auto;
 }
 #content-list,#user-list,#tabs-list{
 	width: 100%;
