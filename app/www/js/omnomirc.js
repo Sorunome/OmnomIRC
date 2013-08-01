@@ -51,7 +51,8 @@
 				'#irp'
 			],
 			scrollspeed: 100,
-			theme: 'default'
+			theme: 'default',
+			nick: 'User'
 		},
 		tabs = [],
 		properties = {
@@ -63,7 +64,7 @@
 			]
 		},
 		commands = [
-			{
+			{ // names
 				cmd: 'names',
 				fn: function(args){
 					socket.emit('names',{
@@ -71,7 +72,7 @@
 					});
 				}
 			},
-			{
+			{ // me
 				cmd: 'me',
 				help: 'Say something in third person',
 				fn: function(args){
@@ -86,11 +87,10 @@
 					});
 				}
 			},
-			{
+			{ // nick
 				cmd: 'nick',
 				fn: function(args){
-					properties.nick = args[1];
-					$o.auth();
+					$o.set('nick',args[1]);
 				}
 			},
 			{
@@ -308,8 +308,12 @@
 			$o.auth();
 		},
 		auth: function(){
+			if(settings.nick == ''){
+				$o.set('nick','User');
+				return;
+			}
 			socket.emit('auth',{
-				nick: properties.nick
+				nick: settings.nick
 				// TODO - send authorization info
 			});
 		},
@@ -353,6 +357,9 @@
 						}else{
 							$('.date_cell').css('visibility','visible');
 						}
+					break;
+					case 'nick':
+						$o.auth();
 					break;
 				}
 				if(typeof render == 'undefined'){
