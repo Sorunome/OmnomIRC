@@ -288,6 +288,9 @@
 					return true;
 				}
 				return false;
+			},
+			plugin: function(){
+				
 			}
 		},
 		connect: function(server){
@@ -487,7 +490,8 @@
 				});
 				scroll.push({
 					name: tabs[i].name,
-					body: html
+					body: html,
+					date: new Date().toString()
 				});
 			}
 			$.localStorage('tabs',scroll);
@@ -511,9 +515,11 @@
 			abbrDate('abbr.date');
 			$o.renderUsers();
 			setTimeout(function scrollContent(){
-				if($cl.scrollTop() < $cl[0].scrollHeight){
-					$cl.scrollTop($cl.scrollTop()+1);
+				if($c.scrollTop() < $c[0].scrollHeight){
+					$c.scrollTop($c.scrollTop()+1);
 					setTimeout(scrollContent,settings.scrollspeed);
+				}else{
+					event('scrolling stopped');
 				}
 			},settings.scrollspeed);
 		},
@@ -543,10 +549,11 @@
 					frag = document.createDocumentFragment();
 				for(i in scroll){
 					if(scroll[i].name == name){
+						scroll[i].body = $(scroll[i].body).slice(-10);
 						$(frag)
 							.append(scroll[i].body)
 							.append(
-								$('<li>').html('<span class="to_remove">-- loaded old scrollback --</span>')
+								$('<li>').html('<span class="to_remove">-- loaded old scrollback for '+scroll[i].date+' --</span>')
 							)
 							.children()
 							.children('.remove')
@@ -556,7 +563,7 @@
 							.children('.to_remove')
 							.removeClass('to_remove')
 							.addClass('remove');
-						event('loading old tab scrollback for '+name);
+						event('loading old tab scrollback for '+name+' last saved +'+scroll[i].date);
 					}
 				}
 				tabs.push({
@@ -658,6 +665,7 @@
 		$i = $('#input');
 		$s = $('#send');
 		$cl = $('#content-list');
+		$c = $('#content');
 		$tl = $('#tabs-list');
 		$h = $('#head');
 		$s.click(function(){
