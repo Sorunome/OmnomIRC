@@ -81,11 +81,22 @@ html,body{
 #content-list li:nth-child(even) {
     background-color: #cae4ff;
 }
+#content-list a, #content-list a:hover, #content-list a:active , #content-list a:active, #content-list a:link {
+	color:blue;
+	text-decoration: none;
+	border-bottom: 1px solid rgba(0, 0, 255, 0.3);
+
+}
+#content-list a:hover {
+	text-decoration: none;
+	text-shadow: 0 0 4px rgba(0, 40, 170, 0.5);
+}
+
 #settings,#users{
 	font-family: Arial,Liberation Sans,DejaVu Sans,sans-serif;
 	font-size: 12px;
 	bottom: 0;
-	height: 18px;
+	height: 19px;
 	background-color: white;
 	border-left-style: solid;
 	border-top-style: solid;
@@ -124,13 +135,13 @@ html,body{
 #entry{
 	width: 100%;
 	border-top-style: solid;
-	height: 18px;
+	height: 19px;
 	bottom: 0;
 
 }
 #input{
 	width: calc(100% - 126px);
-	height: 16px;
+	height: 17px;
 	margin: 0;
 	padding: 1px;
 	border-style: none;
@@ -148,10 +159,10 @@ html,body{
 	padding: 0;
 	padding-bottom: 4px;
 	margin: 0;
-	height: 18px;
+	height: 19px;
 	border-style: none;
 	border-left: 1px solid;
-    background-color: #cae4ff;
+	background-color: #cae4ff;
 	transition: background-color 0.2s;
 	font-family: Arial,Liberation Sans,DejaVu Sans,sans-serif;
 	font-size: 12px;
@@ -164,6 +175,10 @@ html,body{
 #send.clicked{
 	background-color: rgba(102, 153, 255, 0.9);
 }
+#popup-title, #send {
+	font-variant: small-caps;
+}
+
 #content,#head,#users,#entry,#input,#send,#settings{
  	border-color: rgba(102, 153, 255, 0.6);
  	border-top-color: rgba(102, 153, 255, 0.9);
@@ -214,6 +229,7 @@ html,body{
 	overflow: hidden;
 	position: relative;
     height: 18px;
+    margin-bottom: -1px;
 }
 #tabs-list div.tab.clicked{
     background-color: #cae4ff;
