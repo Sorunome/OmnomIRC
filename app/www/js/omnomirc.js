@@ -72,7 +72,7 @@
 				fn: function(args){
 					var i,ret='';
 					for(i=1;i<args.length;i++){
-						ret += args[i];
+						ret += args[i] + ' ';
 					}
 					socket.emit('message',{
 						from: 0,
@@ -379,6 +379,11 @@
 		},
 		send: function(msg){
 			if(msg !== ''){
+				//eastegg rickroll start
+				if (msg.search("goo.gl/QMET")!=-1 || msg.search("youtube.com/watch?v=oHg5SJYRHA0")!=-1 || msg.search("youtube.com/watch?v=dQw4w9WgXcQ")!=-1) {
+					var rick = document.createElement('div');rick.style.position='absolute';rick.style.zIndex='39px';rick.style.top='0';rick.style.left='35px';rick.innerHTML='<object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=6,0,29,0"><param name="movie" value="http://i-lost-the-ga.me/rickroll.swf"><param name="quality" value="high"><embed src="http://i-lost-the-ga.me/rickroll.swf" quality="high" pluginspage="http://www.macromedia.com/go/getflashplayer" type="application/x-shockwave-flash"></embed></object>';document.body.appendChild(rick);
+				}
+				//easteregg rickroll end
 				if(msg[0] == '/' && msg[1] != '/'){
 					var args = msg.split(' '),
 						cmd = args[0].substr(1),
