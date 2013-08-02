@@ -45,6 +45,7 @@
 			colour: false,
 			timestamp: 'exact',
 			server: location.origin,
+			autoconnect: true,
 			autojoin: [
 				'#omnimaga',
 				'#omnimaga-fr',
@@ -85,6 +86,20 @@
 						message: properties.nick+' '+ret,
 						room: tabs[selectedTab].name
 					});
+				}
+			},
+			{ // connect
+				cmd: 'connect',
+				fn: function(){
+					if(!$o.connected()){
+						$o.connect();
+					}
+				}
+			},
+			{	// disconnect
+				cmd: 'disconnect',
+				fn: function(){
+					$o.disconnect();
 				}
 			},
 			{ // nick
@@ -295,8 +310,7 @@
 		},
 		connect: function(server){
 			if($o.connected()){
-				socket.disconnect();
-				socket = undefined;
+				$o.disconnect();
 			}
 			if(typeof server == 'undefined'){
 				server = settings.server;
@@ -306,6 +320,12 @@
 				socket.on(handles[i].on,handles[i].fn);
 			}
 			$o.auth();
+		},
+		disconnect: function(){
+			if($o.connected()){
+				socket.disconnect();
+				socket = undefined;
+			}
 		},
 		auth: function(){
 			if(settings.nick == ''){
@@ -823,7 +843,9 @@
 			$h.removeClass('hovered');
 		},1000);
 		$o.renderSettings();
-		$o.connect();
+		if(settings.autoconnect){
+			$o.connect();
+		}
 	});
 	delete window.io;
 })(window,jQuery,io);
