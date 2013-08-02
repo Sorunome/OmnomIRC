@@ -2,6 +2,7 @@
 var fs = require('fs'),
 	url = require('url'),
 	path = require('path'),
+	vm = require('vm'),
 	mimeTypes = {
 		'html': 'text/html',
 		'js': 'text/javascript',
@@ -54,8 +55,52 @@ var fs = require('fs'),
 						res.write('500 Internal server error\n');
 						res.end();
 					}
-				};
-			serveFile(path.join('./www/',unescape(uri)),req,res);
+				},
+				filepath = unescape(uri);
+			if(filepath.substr(0,5) == '/api/'){
+				filepath = path.join('./api/',filepath.substr(5));
+				logger.debug('Attempting to run api script '+filepath);
+				if(fs.existsSync(filepath)){
+					fs.readFile(filepath,function(e,data){
+						if(e){
+							logger.error(e);
+							res.end('null;');
+						}else{
+							var output = '',
+								sandbox = {
+									log: function(text){
+										output += text;
+									},
+									error: function(msg){
+										logger.error(msg);
+									},
+									info: function(msg){
+										logger.info(msg);
+									},
+									debug: function(msg){
+										logger.debug(msg);
+									},
+									head: {
+										'Content-Type': 'text/javascript'
+									},
+									returnCode: 200,
+									vm: vm,
+									fs: fs
+								};
+							vm.runInNewContext(data,sandbox,filepath);
+							res.writeHead(sandbox.returnCode,sandbox.head);
+							res.end(output);
+						}
+					});
+				}else{
+					res.writeHead(404,{
+						'Content-Type': 'text/javascript'
+					});
+					res.end('null;');
+				}
+			}else{
+				serveFile(path.join('./www/',filepath),req,res);
+			}
 		}).resume();
 	}).listen(80),
 	io = require('socket.io').listen(app)

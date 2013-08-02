@@ -78,7 +78,7 @@
 				fn: function(args){
 					var i,ret='';
 					for(i=1;i<args.length;i++){
-						ret += args[i];
+						ret += ' '+args[i];
 					}
 					socket.emit('message',{
 						from: 0,
@@ -375,6 +375,20 @@
 			for(name in settings){
 				setting = $o.get(name,true);
 				switch(setting.type){
+					case 'select':
+						item = $('<select>')
+									.attr('id','setting_'+name)
+									.change(function(){
+										$o.set(this.id.substr(8),$(this).find(':selected').text(),false);
+									});
+						for(var i in setting.values){
+							item.append(
+								$('<option>')
+									.text(setting.values[i])
+							);
+						}
+						item.find(':contains('+setting.val+')').attr('selected','selected');
+					break;
 					case 'array':
 						item = $('<input>')
 									.attr({
