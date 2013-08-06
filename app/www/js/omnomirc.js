@@ -45,13 +45,15 @@
 			colour: false,
 			timestamp: 'exact',
 			server: location.origin,
+			autoconnect: true,
 			autojoin: [
 				'#omnimaga',
 				'#omnimaga-fr',
 				'#irp'
 			],
 			scrollspeed: 100,
-			theme: 'default'
+			theme: 'default',
+			nick: 'User'
 		},
 		tabs = [],
 		properties = {
@@ -63,7 +65,7 @@
 			]
 		},
 		commands = [
-			{
+			{ // names
 				cmd: 'names',
 				fn: function(args){
 					socket.emit('names',{
@@ -71,13 +73,13 @@
 					});
 				}
 			},
-			{
+			{ // me
 				cmd: 'me',
 				help: 'Say something in third person',
 				fn: function(args){
 					var i,ret='';
 					for(i=1;i<args.length;i++){
-						ret += args[i] + ' ';
+						ret += ' '+args[i];
 					}
 					socket.emit('message',{
 						from: 0,
@@ -86,11 +88,24 @@
 					});
 				}
 			},
-			{
+			{ // connect
+				cmd: 'connect',
+				fn: function(){
+					if(!$o.connected()){
+						$o.connect();
+					}
+				}
+			},
+			{	// disconnect
+				cmd: 'disconnect',
+				fn: function(){
+					$o.disconnect();
+				}
+			},
+			{ // nick
 				cmd: 'nick',
 				fn: function(args){
-					properties.nick = args[1];
-					$o.auth();
+					$o.set('nick',args[1]);
 				}
 			},
 			{
@@ -288,12 +303,14 @@
 					return true;
 				}
 				return false;
+			},
+			plugin: function(){
+				
 			}
 		},
 		connect: function(server){
 			if($o.connected()){
-				socket.disconnect();
-				socket = undefined;
+				$o.disconnect();
 			}
 			if(typeof server == 'undefined'){
 				server = settings.server;
@@ -304,9 +321,19 @@
 			}
 			$o.auth();
 		},
+		disconnect: function(){
+			if($o.connected()){
+				socket.disconnect();
+				socket = undefined;
+			}
+		},
 		auth: function(){
+			if(settings.nick == ''){
+				$o.set('nick','User');
+				return;
+			}
 			socket.emit('auth',{
-				nick: properties.nick
+				nick: settings.nick
 				// TODO - send authorization info
 			});
 		},
@@ -351,6 +378,9 @@
 							$('.date_cell').css('visibility','visible');
 						}
 					break;
+					case 'nick':
+						$o.auth();
+					break;
 				}
 				if(typeof render == 'undefined'){
 					$o.renderSettings();
@@ -365,6 +395,20 @@
 			for(name in settings){
 				setting = $o.get(name,true);
 				switch(setting.type){
+					case 'select':
+						item = $('<select>')
+									.attr('id','setting_'+name)
+									.change(function(){
+										$o.set(this.id.substr(8),$(this).find(':selected').text(),false);
+									});
+						for(var i in setting.values){
+							item.append(
+								$('<option>')
+									.text(setting.values[i])
+							);
+						}
+						item.find(':contains('+setting.val+')').attr('selected','selected');
+					break;
 					case 'array':
 						item = $('<input>')
 									.attr({
@@ -492,7 +536,8 @@
 				});
 				scroll.push({
 					name: tabs[i].name,
-					body: html
+					body: html,
+					date: new Date().toString()
 				});
 			}
 			$.localStorage('tabs',scroll);
@@ -516,9 +561,11 @@
 			abbrDate('abbr.date');
 			$o.renderUsers();
 			setTimeout(function scrollContent(){
-				if($cl.scrollTop() < $cl[0].scrollHeight){
-					$cl.scrollTop($cl.scrollTop()+1);
+				if($c.scrollTop() < $c[0].scrollHeight){
+					$c.scrollTop($c.scrollTop()+1);
 					setTimeout(scrollContent,settings.scrollspeed);
+				}else{
+					event('scrolling stopped');
 				}
 			},settings.scrollspeed);
 		},
@@ -548,10 +595,11 @@
 					frag = document.createDocumentFragment();
 				for(i in scroll){
 					if(scroll[i].name == name){
+						scroll[i].body = $(scroll[i].body).slice(-10);
 						$(frag)
 							.append(scroll[i].body)
 							.append(
-								$('<li>').html('<span class="to_remove">-- loaded old scrollback --</span>')
+								$('<li>').html('<span class="to_remove">-- loaded old scrollback for '+scroll[i].date+' --</span>')
 							)
 							.children()
 							.children('.remove')
@@ -561,7 +609,7 @@
 							.children('.to_remove')
 							.removeClass('to_remove')
 							.addClass('remove');
-						event('loading old tab scrollback for '+name);
+						event('loading old tab scrollback for '+name+' last saved +'+scroll[i].date);
 					}
 				}
 				tabs.push({
@@ -663,6 +711,7 @@
 		$i = $('#input');
 		$s = $('#send');
 		$cl = $('#content-list');
+		$c = $('#content');
 		$tl = $('#tabs-list');
 		$h = $('#head');
 		$s.click(function(){
@@ -799,7 +848,9 @@
 			$h.removeClass('hovered');
 		},1000);
 		$o.renderSettings();
-		$o.connect();
+		if(settings.autoconnect){
+			$o.connect();
+		}
 	});
 	delete window.io;
 })(window,jQuery,io);
