@@ -64,6 +64,12 @@
 	width:85px;
 }
 
+
+#scrollBar {
+	background-color:#a1c2ff;
+	border:1px solid #6699ff;
+}
+
 body, td, th , tr		     {font-size: 10px;font-family:verdana,sans-serif;line-height:13px;}
 
 .highlight {

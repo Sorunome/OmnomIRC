@@ -477,7 +477,7 @@ scrolledDown = true;
 	}
 	function parseHighlight(text) //highlight
 	{
-		if (text.toLowerCase().indexOf(userName.toLowerCase().substr(0,numCharsHighlight)) >= 0)
+		if (text.toLowerCase().indexOf(userName.toLowerCase().substr(0,numCharsHighlight)) >= 0 && userName != "Guest")
 		{
 			style = "";
 			if (!highRed)
@@ -621,12 +621,11 @@ scrolledDown = true;
 			scrollBar.id="scrollBar";
 			scrollBar.style.width="8px";
 			scrollBar.style.height="100px";
-			scrollBar.style.backgroundColor="#a1c2ff";
-			scrollBar.style.border="1px solid #6699ff"; 
 			scrollBar.style.borderRadius="4px";
 			scrollBar.style.position="absolute";
 			scrollBar.style.zIndex="42";
 			scrollBar.style.left=String(((body.offsetWidth/100)*99)-17)+"px";
+			scrollBar.style.cursor="pointer";
 			body.appendChild(scrollBar);
 			scrollBar.prevY=0;
 			scrollBar.isClicked=false;
@@ -648,14 +647,30 @@ scrolledDown = true;
 				element.prevY=y;};
 			scrollBar.onmousedown = function() {
 				document.getElementById('scrollBar').isClicked=true;
+				document.getElementById('scrollArea').style.display="";
 			};
 			scrollBar.onmouseup = function() {
 				document.getElementById('scrollBar').isClicked=false;
+				document.getElementById('scrollArea').style.display="none";
 			};
-			scrollBar.onmouseout = function() {
+			/*scrollBar.onmouseout = function() {
 				document.getElementById('scrollBar').isClicked=false;
-			};
+			};*/
 			scrollBar.style.top=String(body.offsetHeight-scrollBar.offsetHeight)+"px";
+			var scrollArea = document.createElement("div");
+			scrollArea.id="scrollArea";
+			scrollArea.style.display="none";
+			scrollArea.style.width="100%";
+			scrollArea.style.height="100%";
+			scrollArea.style.position="absolute";
+			scrollArea.style.left="0px";
+			scrollArea.style.top="0px";
+			scrollArea.style.zIndex="100";
+			scrollArea.style.cursor="pointer";
+			body.appendChild(scrollArea);
+			scrollArea.onmousemove = scrollBar.onmousemove;
+			scrollArea.onmouseup = scrollBar.onmouseup;
+			scrollArea.onmouseout = scrollBar.onmouseup;
 			
 			var line = document.createElement("div");
 			line.style.width="1px";
@@ -670,7 +685,7 @@ scrolledDown = true;
 			mboxCont.style.width=String(((body.offsetWidth/100)*99)-22)+"px";
 			var style = document.createElement("style");
 			style.type="text/css";
-			style.innerHTML = ".arrowButtonHoriz3{display:none;}#scrollBar:hover{cursor:pointer;}";
+			style.innerHTML = ".arrowButtonHoriz3{display:none;}";
 			body.appendChild(style);
 			
 			if (!hideUserlist) {

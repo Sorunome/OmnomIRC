@@ -17,6 +17,7 @@ case 3: //v4
 	#smileyselect,
 	#topicbox,
 	#about > div,
+	#scrollBar,
 	td.curchan,
 	.linehigh {
 		background: #EBF1F9;
@@ -53,6 +54,7 @@ case 4: //v3
 	#smileyselect,
 	#topicbox,
 	#about > div,
+	#scrollBar,
 	td.curchan,
 	.linehigh {
 		background: #A8A8A8;
@@ -92,6 +94,7 @@ case 6: //v2.5
 	#smileyselect,
 	#topicbox,
 	#about > div,
+	#scrollBar,
 	td.curchan,
 	.linehigh {
 		background: #EBEAEA;
@@ -128,6 +131,7 @@ case 7: //v2
 	#smileyselect,
 	#topicbox,
 	#about > div,
+	#scrollBar,
 	td.curchan,
 	.linehigh {
 		background: #EBEBEB;
@@ -164,6 +168,7 @@ case 8: //v5r
 	#smileyselect,
 	#topicbox,
 	#about > div,
+	#scrollBar,
 	td.curchan,
 	.linehigh {
 		background: #cacaca;

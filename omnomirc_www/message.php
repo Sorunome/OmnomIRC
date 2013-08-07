@@ -46,17 +46,20 @@ ip 108.174.51.58
 			return true;
 		return false;
 	}
+	function removeLinebrakes($s) {
+		return str_replace("\0","",str_replace("\r","",str_replace("\n","",$s)));
+	}
 	if (!isset($_GET['signature']) || !isset($_GET['nick']) || !isset($_GET['message']) || !isset($_GET['channel']) || !isset($_GET['id'])) die("Missing Required Field");
 	if (strlen($_GET['message']) < 4) die("Bad message");
 	if (!(checkSignature($_GET['nick'],$_GET['signature'],true) || (isset($_GET['calc']) && $_GET['passwd']=='ah8re3wieChacieSo7ap'))) die("Bad signature");
 	
 	
-	$message = base64_url_decode(str_replace(" ","+",$_GET['message']));
+	$message = removeLinebrakes(base64_url_decode(str_replace(" ","+",$_GET['message'])));
 	$type = "message";
 	$message = str_replace(array("\r", "\r\n", "\n"), ' ', $message);
 	$parts = explode(" ",$message);
 	if (strlen($message) <= 0) die("Bad message");
-	$nick = html_entity_decode(base64_url_decode($_GET['nick']));
+	$nick = html_entity_decode(removeLinebrakes(base64_url_decode($_GET['nick'])));
 	$channel = base64_url_decode($_GET['channel']);
 	$pm = false;
 	$sendNormal = true;
