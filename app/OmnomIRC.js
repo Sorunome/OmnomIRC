@@ -35,9 +35,9 @@ if(cluster.isMaster){
 }else{
 	var RedisStore = require('socket.io/lib/stores/redis'),
 		redis  = require('socket.io/node_modules/redis'),
-		pub    = redis.createClient(options.redis.port,options.redis.hostname),
-		sub    = redis.createClient(options.redis.port,options.redis.hostname),
-		client = redis.createClient(options.redis.port,options.redis.hostname),
+		pub    = redis.createClient(options.redis.port,options.redis.host),
+		sub    = redis.createClient(options.redis.port,options.redis.host),
+		client = redis.createClient(options.redis.port,options.redis.host),
 		mimeTypes = {
 			'html': 'text/html',
 			'js': 'text/javascript',
