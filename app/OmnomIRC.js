@@ -168,7 +168,7 @@ if(cluster.isMaster){
 					try{
 						room = rooms[i].substr(1);
 					}catch(e){}
-					sendUserList(names);
+					sendUserList(room);
 				}
 			}
 		});
@@ -183,21 +183,14 @@ if(cluster.isMaster){
 		socket.on('names',function(data){
 			var sockets = io.sockets.clients(data.name),
 				i;
-			socket.emit('message',{
-				message: data.name+' users:',
-				room: data.name,
-				from: 0
-			});
-			for(i in sockets){
-				sockets[i].get('nick',function(e,nick){
-					socket.emit('message',{
-						message: '	'+nick,
-						room: data.name,
-						from: 0
-					});
+			runWithUserList(data.name,function(users){
+				socket.emit('message',{
+					message: data.name+" users:\n"+users.join("\n\t"),
+					room: data.name,
+					from: 0
 				});
-			}
-			sendUserList(data.name);
+				sendUserList(data.name);
+			});
 		});
 		socket.on('auth',function(data){
 			logger.info(data.nick+' registered');
@@ -207,22 +200,36 @@ if(cluster.isMaster){
 				nick: data.nick.substr(0,12)
 			});
 		});
-		var usersInRoom = function(room){
+		var runWithUserList = function(room,callback){
 				var sockets = io.sockets.clients(room),
-					i,
-					ret = [];
-				for(i in sockets){
-					sockets[i].get('nick',function(e,nick){
-						ret.push(nick);
-					});
-				}
-				return ret;
+					i = 0,
+					ret = [],
+					getNext = function(){
+						if(i < sockets.length){
+							sockets[i].get('nick',function(e,nick){
+								if(e){
+									logger.error(e);
+									ret.push('');
+								}else{
+									logger.debug(room+' '+nick);
+									ret.push(nick);
+								}
+								i++;
+								getNext();
+							});
+						}else{
+							callback(ret);
+						}
+					};
+				getNext();
 			},
 			sendUserList = function(room){
 				if(typeof room != 'undefined'){
-					io.sockets.in(room).emit('names',{
-						room: room,
-						names: usersInRoom(room)
+					runWithUserList(room,function(users){
+						io.sockets.in(room).emit('names',{
+							room: room,
+							names: users
+						});
 					});
 				}
 			};
