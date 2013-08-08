@@ -26,6 +26,7 @@ var fs = require('fs'),
 						return;
 					}
 					if(stats.isFile()){
+            if(typeof fs.existsSync == 'undefined') fs.existsSync = path.existsSync;
 						var fileStream,
 							mimetype = mimeTypes[path.extname(filename).split('.')[1]];
 						res.writeHead(200,{
@@ -34,11 +35,11 @@ var fs = require('fs'),
 						fileStream = fs.createReadStream(filename);
 						fileStream.pipe(res);
 					}else if(stats.isDirectory()){
-						if(path.existsSync(path.join(filename,'index.html'))){
+						if(fs.existsSync(path.join(filename,'index.html'))){
 							serveFile(path.join(filename,'index.html'),req,res);
-						}else if(path.existsSync(path.join(filename,'index.htm'))){
+						}else if(fs.existsSync(path.join(filename,'index.htm'))){
 							serveFile(path.join(filename,'index.htm'),req,res);
-						}else if(path.existsSync(path.join(filename,'index.txt'))){
+						}else if(fs.existsSync(path.join(filename,'index.txt'))){
 							serveFile(path.join(filename,'index.txt'),req,res);
 						}else{
 							res.writeHead(200,{
@@ -60,7 +61,7 @@ var fs = require('fs'),
 			if(filepath.substr(0,5) == '/api/'){
 				filepath = path.join('./api/',filepath.substr(5));
 				logger.debug('Attempting to run api script '+filepath);
-				if(path.existsSync(filepath)){
+				if(fs.existsSync(filepath)){
 					fs.readFile(filepath,function(e,data){
 						if(e){
 							logger.error(e);
