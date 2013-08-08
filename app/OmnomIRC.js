@@ -264,5 +264,9 @@ if(cluster.isMaster){
 	});
 }
 process.on('uncaughtException',function(e){
-	logger.error(e);
+	if(typeof logger != 'undefined'){
+		logger.error(e);
+	}else{
+		console.error(e);
+	}
 });
