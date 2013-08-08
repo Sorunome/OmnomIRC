@@ -170,3 +170,4 @@ config.php
 .c9revisions
 
 app/node_modules
+app/options.json

@@ -4,7 +4,27 @@ var fs = require('fs'),
 	path = require('path'),
 	vm = require('vm'),
 	toobusy = function(){return false;},//require('toobusy'),
-	cluster = require('cluster');
+	cluster = require('cluster'),
+	options = (function(){
+		var defaults = {
+				port: 80,
+				loglevel: 3,
+				redis: {
+					port: 6379,
+					host: 'localhost'
+				}
+			},
+			options;
+		try{
+			options = JSON.parse(fs.readFileSync('./options.json'));
+			for(var i in options){
+				defaults[i] = options[i];
+			}
+		}catch(e){
+			console.warn('Using default settings. Please create options.js');
+		}
+		return defaults;
+	})();
 if(cluster.isMaster){
 	for(var i=0;i<require('os').cpus().length;i++){
 		cluster.fork();
@@ -15,9 +35,9 @@ if(cluster.isMaster){
 }else{
 	var RedisStore = require('socket.io/lib/stores/redis'),
 		redis  = require('socket.io/node_modules/redis'),
-		pub    = redis.createClient(),
-		sub    = redis.createClient(),
-		client = redis.createClient(),
+		pub    = redis.createClient(options.redis.port,options.redis.host),
+		sub    = redis.createClient(options.redis.port,options.redis.host),
+		client = redis.createClient(options.redis.port,options.redis.host),
 		mimeTypes = {
 			'html': 'text/html',
 			'js': 'text/javascript',
@@ -125,10 +145,18 @@ if(cluster.isMaster){
 					serveFile(path.join('./www/',filepath),req,res);
 				}
 			}).resume();
-		}).listen(80),
+		}).listen(options.port),
 		io = require('socket.io').listen(app)
 		logger = io.log;
-	io.set('log level',3);
+	io.set('log level',options.loglevel);
+	if(typeof options.redis.password != 'undefined'){
+		var eh = function(e){
+			throw e;
+		};
+		pub.auth(options.redis.ppassword,eh);
+		sub.auth(options.redis.ppassword,eh);
+		client.auth(options.redis.ppassword,eh);
+	}
 	io.set('store', new RedisStore({
 		redisPub : pub,
 		redisSub : sub,
