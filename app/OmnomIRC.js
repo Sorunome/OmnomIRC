@@ -34,11 +34,11 @@ var fs = require('fs'),
 						fileStream = fs.createReadStream(filename);
 						fileStream.pipe(res);
 					}else if(stats.isDirectory()){
-						if(fs.existsSync(path.join(filename,'index.html'))){
+						if(path.existsSync(path.join(filename,'index.html'))){
 							serveFile(path.join(filename,'index.html'),req,res);
-						}else if(fs.existsSync(path.join(filename,'index.htm'))){
+						}else if(path.existsSync(path.join(filename,'index.htm'))){
 							serveFile(path.join(filename,'index.htm'),req,res);
-						}else if(fs.existsSync(path.join(filename,'index.txt'))){
+						}else if(path.existsSync(path.join(filename,'index.txt'))){
 							serveFile(path.join(filename,'index.txt'),req,res);
 						}else{
 							res.writeHead(200,{
@@ -60,7 +60,7 @@ var fs = require('fs'),
 			if(filepath.substr(0,5) == '/api/'){
 				filepath = path.join('./api/',filepath.substr(5));
 				logger.debug('Attempting to run api script '+filepath);
-				if(fs.existsSync(filepath)){
+				if(path.existsSync(filepath)){
 					fs.readFile(filepath,function(e,data){
 						if(e){
 							logger.error(e);
