@@ -25,6 +25,7 @@ var fs = require('fs'),
 		}
 		return defaults;
 	})();
+if(typeof fs.existsSync == 'undefined') fs.existsSync = path.existsSync; // legacy support
 if(cluster.isMaster){
 	for(var i=0;i<require('os').cpus().length;i++){
 		cluster.fork();
