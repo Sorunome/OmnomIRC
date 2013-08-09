@@ -5,15 +5,17 @@ var fs = require('fs'),
 	vm = require('vm'),
 	toobusy = function(){return false;},//require('toobusy'),
 	cluster = require('cluster'),
-	options = (function(){
+	options = global.options = (function(){
 		var defaults = {
 				port: 80,
 				loglevel: 3,
 				redis: {
 					port: 6379,
 					host: 'localhost'
-				}
+				},
+				debug: false
 			},
+			i,
 			options;
 		process.chdir(__dirname);
 		try{
@@ -24,7 +26,15 @@ var fs = require('fs'),
 		}catch(e){
 			console.warn('Using default settings. Please create options.json');
 		}
-		return defaults;
+		options = {};
+		for(i in  defaults){
+			Object.defineProperty(options,i,{
+				value: defaults[i],
+				enumerable: true,
+				writable: false
+			});
+		}
+		return options;
 	})();
 if(typeof fs.existsSync == 'undefined') fs.existsSync = path.existsSync; // legacy support
 if(cluster.isMaster){
@@ -34,6 +44,14 @@ if(cluster.isMaster){
 	cluster.on('exit', function(worker, code, signal) {
 		console.log('worker ' + worker.process.pid + ' died');
 	});
+	if(options.debug){
+		require('repl').start({
+			prompt: '> ',
+			useGlobal: true
+		}).on('exit',function(){
+			process.exit();
+		});
+	}
 }else{
 	var RedisStore = require('socket.io/lib/stores/redis'),
 		redis  = require('socket.io/node_modules/redis'),
