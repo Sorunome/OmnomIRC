@@ -214,7 +214,7 @@ if(cluster.isMaster){
 				i;
 			runWithUserList(data.name,function(users){
 				socket.emit('message',{
-					message: data.name+" users:\n"+users.join("\n\t"),
+					message: data.name+" users:\n\t\t"+users.filter(function(n){return n}).join("\n\t\t"),
 					room: data.name,
 					from: 0
 				});

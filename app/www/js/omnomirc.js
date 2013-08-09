@@ -223,10 +223,14 @@
 						i,
 						msg = function(msg){
 							string = '<span class="cell date_cell">[<abbr class="date date_'+time+'" title="'+date.toISOString()+'"></abbr>]</span>';
-							child = $('<li>').html(string+'<span class="cell">'+msg.htmlentities().replace(
-								/(https?:\/\/(([-\w\.]+)+(:\d+)?(\/([\w/_\.]*(\?\S+)?)?)?))/g,
-								"<a href=\"$1\" title=\"\">$1</a>"
-							)+'</span>');
+							child = $('<li>').html(string+'<span class="cell">'+
+								msg
+									.htmlentities()
+									.replace(
+										/(https?:\/\/(([-\w\.]+)+(:\d+)?(\/([\w/_\.]*(\?\S+)?)?)?))/g,
+										"<a href=\"$1\" title=\"\">$1</a>"
+									)
+							+'</span>');
 							$o.msg({html:child},data.room);
 						};
 					if(data.from != 0){
@@ -698,7 +702,14 @@
 		}
 	});
 	String.prototype.htmlentities = function(){
-		return this.replace(/&/g, '&amp;').replace(/\s/g, '&nbsp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+		return this
+			.replace(/&/g, '&amp;')
+			.replace(/</g, '&lt;')
+			.replace(/>/g, '&gt;')
+			.replace(/\n/g,'<br/>')
+			.replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;')
+			.replace(/\s/g, '&nbsp;')
+			.replace(/"/g, '&quot;');
 	};
 	$(document).ready(function(){
 		$.extend(settings,$.parseJSON($.localStorage('settings')));
