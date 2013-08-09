@@ -108,7 +108,7 @@
 					$o.set('nick',args[1]);
 				}
 			},
-			{
+			{ // help
 				cmd: 'help',
 				fn: function(args){
 					if(typeof args[1] == 'undefined'){
@@ -130,15 +130,10 @@
 					}
 				}
 			},
-			{
+			{ // open
 				cmd: 'open',
 				fn: function(args){
-					tabs.push({
-						name: args[1],
-						title: args[2],
-						topic: 'Topic for '+args[2]
-					});
-					$o.refreshTabs();
+					$o.addTab(args[1]);
 				}
 			},
 			{ // clear
@@ -174,16 +169,16 @@
 			}
 		],
 		handles = [
-			{
+			{ // names
 				on: 'names',
 				fn: function(data){
-					tabs[$o.tabIdForName(data.room)].names = data.names;
+					tabs[$o.tabIdForName(data.room)].users = data.names;
 					if($o.tabIdForName(data.room) == selectedTab){
 						$o.renderUsers();
 					}
 				}
 			},
-			{
+			{ // authorized
 				on: 'authorized',
 				fn: function(data){
 					properties.nick = data.nick;
@@ -194,25 +189,25 @@
 					}
 				}
 			},
-			{
+			{ // join
 				on: 'join',
 				fn: function(data){
 					event('joined '+data.name);
 					var flag = tabs.length == 0;
-					$o.addTab(data.name,data.title);
+					$o.addTab(data.name);
 					if(flag){
 						$o.selectTab(0);
 					}
 				}
 			},
-			{
+			{ // reconnect
 				on: 'reconnect',
 				fn: function(data){
 					event('reconnected');
 					$o.auth();
 				}
 			},
-			{
+			{ // message
 				on: 'message',
 				fn: function(data){
 					event('recieved message');
@@ -470,7 +465,7 @@
 			event('Rendering userlist');
 			var $ul = $('#user-list').html(''),
 				i,
-				names = tabs[selectedTab].names;
+				names = tabs[selectedTab].users;
 			for(i in names){
 				$ul.append(
 					$('<li>').text(names[i])
@@ -554,7 +549,7 @@
 			}
 			$tl.children('.clicked').removeClass('clicked');
 			$($tl.children().get(id)).addClass('clicked');
-			$('#title').text(tabs[id].title);
+			$('#title').text(tabs[id].name);
 			$('#topic').text(tabs[id].topic);
 			$cl.html($(tabs[id].body).clone());
 			abbrDate('abbr.date');
@@ -579,8 +574,8 @@
 		tabDOM: function(id){
 			return tabs[id].body;
 		},
-		addTab: function(name,title){
-			event('Tab added: '+name+' with title '+title);
+		addTab: function(name){
+			event('Tab added: '+name);
 			if(!(function(){
 				for(var i in tabs){
 					if(name==tabs[i].name){
@@ -591,7 +586,8 @@
 			})()){
 				var scroll = $.localStorage('tabs'),
 					i,
-					frag = document.createDocumentFragment();
+					frag = document.createDocumentFragment(),
+					id = tabs.length;
 				for(i in scroll){
 					if(scroll[i].name == name){
 						scroll[i].body = $(scroll[i].body).slice(-10);
@@ -613,11 +609,13 @@
 				}
 				tabs.push({
 					name: name,
-					title: title,
 					body: frag,
-					names: []
+					users: [],
+					close: function(){
+						$o.removeTab(id);
+					}
 				});
-				$tl.append($o.tabObj(tabs.length-1));
+				$tl.append($o.tabObj(id));
 				$o.refreshTabs();
 				$o.renderUsers();
 			}else{
@@ -643,7 +641,7 @@
 			if(typeof id !== 'undefined'){
 				return $('<div>')
 					.addClass('tab')
-					.text(tabs[id].title)
+					.text(tabs[id].name)
 					.mouseup(function(e){
 						switch(e.which){
 							case 1:	// RMB
@@ -688,7 +686,7 @@
 				tab = $o.tabObj(i);
 				if(i==selectedTab){
 					tab.addClass('clicked');
-					$('#title').text(tabs[i].title);
+					$('#title').text(tabs[i].name);
 					$('#topic').text(tabs[i].topic);
 				}
 				$tl.append(tab);
@@ -774,13 +772,7 @@
 					icon: 'add',
 					callback: function(){
 						$(this).contextMenu('hide');
-						var title = prompt('Title');
-						tabs.push({
-							name: prompt('channel'),
-							title: title,
-							topic: 'Topic for '+title
-						});
-						$o.refreshTabs();
+						$o.addTab(prompt('Channel'));
 					}
 				},
 				s1: '',
@@ -804,13 +796,7 @@
 					icon: 'add',
 					callback: function(){
 						$(this).contextMenu('hide');
-						var title = prompt('Title');
-						tabs.push({
-							name: prompt('channel'),
-							title: title,
-							topic: 'Topic for '+title
-						});
-						$o.refreshTabs();
+						$o.addTab(prompt('channel'));
 					}
 				}
 			},

@@ -15,6 +15,7 @@ var fs = require('fs'),
 				}
 			},
 			options;
+		process.chdir(__dirname);
 		try{
 			options = JSON.parse(fs.readFileSync('./options.json'));
 			for(var i in options){
@@ -168,8 +169,7 @@ if(cluster.isMaster){
 			socket.join(data.name);
 			data.title = data.name;
 			socket.emit('join',{
-				name: data.name,
-				title: data.title
+				name: data.name
 			});
 			sendUserList(data.name);
 			socket.get('nick',function(e,nick){
