@@ -21,7 +21,7 @@ var fs = require('fs'),
 				defaults[i] = options[i];
 			}
 		}catch(e){
-			console.warn('Using default settings. Please create options.js');
+			console.warn('Using default settings. Please create options.json');
 		}
 		return defaults;
 	})();
