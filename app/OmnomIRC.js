@@ -1,4 +1,5 @@
 #!node
+process.chdir(__dirname);
 var fs = require('fs'),
 	url = require('url'),
 	path = require('path'),
@@ -17,7 +18,6 @@ var fs = require('fs'),
 			},
 			i,
 			options;
-		process.chdir(__dirname);
 		try{
 			options = JSON.parse(fs.readFileSync('./options.json'));
 			for(var i in options){
