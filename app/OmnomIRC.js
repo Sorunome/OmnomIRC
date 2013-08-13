@@ -259,8 +259,7 @@ if(cluster.isMaster){
 							sockets[i].get('nick',function(e,nick){
 								if(e){
 									logger.error(e);
-									ret.push('');
-								}else{
+								}else if(!inArray(ret,nick)){
 									logger.debug(room+' '+nick);
 									ret.push(nick);
 								}
@@ -272,6 +271,14 @@ if(cluster.isMaster){
 						}
 					};
 				getNext();
+			},
+			inArray = function(arr,val){
+				for(var i in arr){
+					if(arr[i] == val){
+						return true;
+					}
+				}
+				return false;
 			},
 			sendUserList = function(room){
 				if(typeof room != 'undefined'){
