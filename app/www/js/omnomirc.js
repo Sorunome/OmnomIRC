@@ -144,7 +144,7 @@
 					socket.emit('echo',{
 						room: tabs[selectedTab].name,
 						message: 'messages cleared',
-						name: 0
+						from: 0
 					});
 				}
 			},
@@ -152,9 +152,9 @@
 				cmd: 'close',
 				fn: function(args){
 					if(args.length > 1){
-						$o.removeTab(args[1]);
+						$o.ui.tabs.remove(args[1]);
 					}else{
-						$o.removeTab(selectedTab);
+						$o.ui.tabs.remove(selectedTab);
 					}
 				}
 			},
@@ -172,10 +172,22 @@
 			{ // names
 				on: 'names',
 				fn: function(data){
-					tabs[$o.ui.tabs.idForName(data.room)].users = data.names;
+					var tab = tabs[$o.ui.tabs.idForName(data.room)],
+						users = tab.users,
+						i;
+					tab.users = data.names;
 					if($o.ui.tabs.idForName(data.room) == selectedTab){
 						$o.ui.render.users();
 					}
+					$(users).each(function(i,v){
+						if(-1 == $.inArray(tab.users,v) && v != null){
+							socket.emit('echo',{
+								room: tabs[selectedTab].name,
+								message: v+' left the room',
+								from: 0
+							});
+						}
+					});
 				}
 			},
 			{ // authorized
@@ -466,7 +478,7 @@
 							body: frag,
 							users: [],
 							close: function(){
-								$o.removeTab(id);
+								$o.ui.tabs.remove(id);
 							},
 							select: function(){
 								$o.ui.tabs.select(id);
@@ -480,6 +492,9 @@
 					}
 				},
 				remove: function(name){
+					if(typeof name == 'number'){
+						name = tabs[name].name;
+					}
 					for(var id=0;id<tabs.length;id++){
 						if(tabs[id].name == name){
 							event('Tab removed: '+tabs[id].name);
@@ -542,7 +557,7 @@
 								$('<span>')
 									.addClass('close-button')
 									.click(function(){
-										$o.removeTab(id);
+										$o.ui.tabs.remove(id);
 										return false;
 									})
 									.css({
@@ -819,7 +834,7 @@
 					icon: 'delete',
 					callback: function(){
 						$(this).contextMenu('hide');
-						$o.removeTab($(this).data('id'));
+						$o.ui.tabs.remove($(this).data('id'));
 					}
 				}
 			},
