@@ -180,12 +180,14 @@
 						$o.ui.render.users();
 					}
 					$(users).each(function(i,v){
-						if(-1 == $.inArray(tab.users,v) && v != null){
-							socket.emit('echo',{
-								room: tabs[selectedTab].name,
-								message: v+' left the room',
-								from: 0
-							});
+						if(v != null){
+							if(tab.users.indexOf(v.trim()) == -1){
+								socket.emit('echo',{
+									room: tabs[selectedTab].name,
+									message: v+' left the room',
+									from: 0
+								});
+							}
 						}
 					});
 				}
@@ -256,7 +258,7 @@
 			}
 		],
 		hooks = [
-			{
+			{	// load - style
 				type: 'style',
 				hook: 'load',
 				fn: function(){
@@ -264,6 +266,19 @@
 				}
 			}
 		],
+		runHook(name){
+			var i,hook;
+			for(i in hooks){
+				hook = hooks[i];
+				if(hook.hook == name){
+					with({
+						// Sandbox
+					}){
+						hook.fn();
+					}
+				}
+			}
+		},
 		version = '3.0',
 		abbrDate = function(selector){
 			if(settings.timestamp == 'fuzzy'){
