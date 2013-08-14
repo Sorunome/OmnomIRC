@@ -509,20 +509,21 @@
 						tabs.push({
 							name: name,
 							body: frag,
-							users: [],
-							close: function(){
-								$o.ui.tabs.remove(id);
-							},
-							select: function(){
-								$o.ui.tabs.select(id);
-							},
+							date: new Date(),
 							send: function(msg){
 								$o.chat.send(msg,tabs[id].name);
 							},
+							close: function(){
+								$o.ui.tabs.remove(id);
+							},
+							users: [],
 							names: function(){
 								socket.emit('names',{
 									name: tabs[id].name
 								});
+							},
+							select: function(){
+								$o.ui.tabs.select(id);
 							},
 							clear: function(){
 								$cl.html('');
