@@ -266,7 +266,7 @@
 				}
 			}
 		],
-		runHook(name){
+		runHook = function(name){
 			var i,hook;
 			for(i in hooks){
 				hook = hooks[i];

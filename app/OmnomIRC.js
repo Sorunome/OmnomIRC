@@ -232,7 +232,7 @@ if(cluster.isMaster){
 				i;
 			runWithUserList(data.name,function(users){
 				var temp = [],i;
-				for(i in users) i && temp.push(users[i]);
+				for(i in users) i && i != null && temp.push(users[i]);
 				users = temp;
 				socket.emit('message',{
 					message: data.name+" users:\n\t\t"+users.join("\n\t\t"),
