@@ -139,13 +139,7 @@
 			{ // clear
 				cmd: 'clear',
 				fn: function(args){
-					$cl.html('');
-					tabs[selectedTab].body = document.createDocumentFragment();
-					socket.emit('echo',{
-						room: tabs[selectedTab].name,
-						message: 'messages cleared',
-						from: 0
-					});
+					tabs[selectedTab].clear();
 				}
 			},
 			{ // close
@@ -219,6 +213,30 @@
 				fn: function(data){
 					event('reconnected');
 					$o.chat.auth();
+					socket.emit('echo',{
+						room: tabs[selectedTab].name,
+						from: 0,
+						message: 'reconnected'
+					});
+				}
+			},
+			{ // connect
+				on: 'connect',
+				fn: function(data){
+					event('connected');
+					$o.chat.auth();
+					socket.emit('echo',{
+						room: tabs[selectedTab].name,
+						from: 0,
+						message: 'connected'
+					});
+				}
+			},
+			{ // disconnect
+				on: 'disconnect',
+				fn: function(data){
+					event('disconnected');
+					tabs[selectedTab].send('* disconnected');
 				}
 			},
 			{ // message
@@ -497,6 +515,23 @@
 							},
 							select: function(){
 								$o.ui.tabs.select(id);
+							},
+							send: function(msg){
+								$o.chat.send(msg,tabs[id].name);
+							},
+							names: function(){
+								socket.emit('names',{
+									name: tabs[id].name
+								});
+							},
+							clear: function(){
+								$cl.html('');
+								tabs[id].body = document.createDocumentFragment();
+								socket.emit('echo',{
+									room: tabs[id].name,
+									message: 'messages cleared',
+									from: 0
+								});
 							}
 						});
 						$tl.append($o.ui.tabs.obj(id));
@@ -893,15 +928,6 @@
 				setTimeout(scrollup,10);
 			}
 		})();
-		//DEBUG
-		/* for(var i=0;i<20;i++){
-			tabs.push({
-				name: '#Tab'+i,
-				title: 'Tab '+i,
-				topic: 'Topic for tab '+i
-			});
-		} */
-		//END DEBUG
 		event('Date '+new Date,'ready');
 		$h.addClass('hovered');
 		setTimeout(function(){
