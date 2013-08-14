@@ -28,6 +28,16 @@
 			}
 			log('['+type.toUpperCase()+'] '+msg);
 		},
+		emit = window.emit = function(type,data){
+			if($o.chat.connected()){
+				socket.emit.apply(socket,arguments);
+			}else{
+				if(tabs.length > 0){
+					$o.msg('Disconnected, cannot do anything');
+				}
+			}
+		},
+		noop = function(){},
 		log = function(){
 				console.log.apply(console,arguments);
 		},
@@ -68,8 +78,8 @@
 			{ // names
 				cmd: 'names',
 				fn: function(args){
-					socket.emit('names',{
-						name: tabs[selectedTab].name
+					emit('names',{
+						name: $o.ui.tabs.current().name
 					});
 				}
 			},
@@ -81,10 +91,10 @@
 					for(i=1;i<args.length;i++){
 						ret += ' '+args[i];
 					}
-					socket.emit('message',{
+					emit('message',{
 						from: 0,
 						message: properties.nick+' '+ret,
-						room: tabs[selectedTab].name
+						room: $o.ui.tabs.current().name
 					});
 				}
 			},
@@ -139,7 +149,7 @@
 			{ // clear
 				cmd: 'clear',
 				fn: function(args){
-					tabs[selectedTab].clear();
+					$o.ui.tabs.current().clear();
 				}
 			},
 			{ // close
@@ -176,8 +186,8 @@
 					$(users).each(function(i,v){
 						if(v != null){
 							if(tab.users.indexOf(v.trim()) == -1){
-								socket.emit('echo',{
-									room: tabs[selectedTab].name,
+								emit('echo',{
+									room: $o.ui.tabs.current().name,
 									message: v+' left the room',
 									from: 0
 								});
@@ -191,7 +201,7 @@
 				fn: function(data){
 					properties.nick = data.nick;
 					for(var i in settings.autojoin){
-						socket.emit('join',{
+						emit('join',{
 							name: settings.autojoin[i]
 						});
 					}
@@ -212,9 +222,10 @@
 				on: 'reconnect',
 				fn: function(data){
 					event('reconnected');
+					properties.connected = true;
 					$o.chat.auth();
-					socket.emit('echo',{
-						room: tabs[selectedTab].name,
+					emit('echo',{
+						room: $o.ui.tabs.current().name,
 						from: 0,
 						message: 'reconnected'
 					});
@@ -224,9 +235,10 @@
 				on: 'connect',
 				fn: function(data){
 					event('connected');
+					properties.connected = true;
 					$o.chat.auth();
-					socket.emit('echo',{
-						room: tabs[selectedTab].name,
+					emit('echo',{
+						room: $o.ui.tabs.current().name,
 						from: 0,
 						message: 'connected'
 					});
@@ -236,7 +248,8 @@
 				on: 'disconnect',
 				fn: function(data){
 					event('disconnected');
-					tabs[selectedTab].send('* disconnected');
+					properties.connected = false;
+					$o.msg('* disconnected');
 				}
 			},
 			{ // message
@@ -442,7 +455,7 @@
 					event('Rendering userlist');
 					var $ul = $('#user-list').html(''),
 						i,
-						names = tabs[selectedTab].users;
+						names = $o.ui.tabs.current().users;
 					for(i in names){
 						$ul.append(
 							$('<li>').text(names[i])
@@ -450,7 +463,7 @@
 					}
 				},
 				tab: function(){
-					$cl.html($(tabs[selectedTab].body).clone());
+					$cl.html($($o.ui.tabs.current().body).clone());
 				},
 				tablist: function(){
 					$tl.html('');
@@ -511,15 +524,15 @@
 							body: frag,
 							date: new Date(),
 							send: function(msg){
-								$o.chat.send(msg,tabs[id].name);
+								$o.chat.send(msg,$o.ui.tabs.tab(id).name);
 							},
 							close: function(){
 								$o.ui.tabs.remove(id);
 							},
 							users: [],
 							names: function(){
-								socket.emit('names',{
-									name: tabs[id].name
+								emit('names',{
+									name: $o.ui.tabs.tab(id).name
 								});
 							},
 							select: function(){
@@ -527,9 +540,9 @@
 							},
 							clear: function(){
 								$cl.html('');
-								tabs[id].body = document.createDocumentFragment();
-								socket.emit('echo',{
-									room: tabs[id].name,
+								$o.ui.tabs.tab(id).body = document.createDocumentFragment();
+								emit('echo',{
+									room: $o.ui.tabs.tab(id).name,
 									message: 'messages cleared',
 									from: 0
 								});
@@ -547,10 +560,10 @@
 						name = tabs[name].name;
 					}
 					for(var id=0;id<tabs.length;id++){
-						if(tabs[id].name == name){
-							event('Tab removed: '+tabs[id].name);
-							socket.emit('part',{
-								name: tabs[id].name
+						if($o.ui.tabs.tab(id).name == name){
+							event('Tab removed: '+$o.ui.tabs.tab(id).name);
+							emit('part',{
+								name: $o.ui.tabs.tab(id).name
 							});
 							tabs.splice(id,1);
 							if(selectedTab==id&&selectedTab>0){
@@ -560,7 +573,7 @@
 						}
 					}
 					$o.ui.render.tablist();
-					$cl.html(tabs[selectedTab].body);
+					$cl.html($o.ui.tabs.current().body);
 					$o.ui.render.users();
 				},
 				selected: function(){
@@ -584,7 +597,7 @@
 					if(typeof id !== 'undefined'){
 						return $('<div>')
 							.addClass('tab')
-							.text(tabs[id].name)
+							.text($o.ui.tabs.tab(id).name)
 							.mouseup(function(e){
 								switch(e.which){
 									case 1:	// RMB
@@ -623,15 +636,15 @@
 					}
 				},
 				select: function(id){
-					event(id+' '+tabs[id].name,'tab_select');
+					event(id+' '+$o.ui.tabs.tab(id).name,'tab_select');
 					if(id<tabs.length&&id>=0){
 						selectedTab=id;
 					}
 					$tl.children('.clicked').removeClass('clicked');
 					$($tl.children().get(id)).addClass('clicked');
-					$('#title').text(tabs[id].name);
-					$('#topic').text(tabs[id].topic);
-					$cl.html($(tabs[id].body).clone());
+					$('#title').text($o.ui.tabs.tab(id).name);
+					$('#topic').text($o.ui.tabs.tab(id).topic);
+					$cl.html($($o.ui.tabs.tab(id).body).clone());
 					abbrDate('abbr.date');
 					$o.ui.render.users();
 					setTimeout(function scrollContent(){
@@ -642,8 +655,25 @@
 							event('scrolling stopped');
 						}
 					},settings.scrollspeed);
+				},
+				current: function(){
+					if(tabs.length > 0 && tabs.length > selectedTab){
+						return tabs[selectedTab];
+					}else{
+						return {
+							name: '',
+							body: document.createDocumentFragment(),
+							date: new Date(),
+							send: noop,
+							close: noop,
+							users: [],
+							names: noop,
+							select: noop,
+							clear: noop
+						}
+					}
 				}
-			}
+			},
 		},
 		chat: {
 			connect: function(server){
@@ -653,7 +683,7 @@
 				if(typeof server == 'undefined'){
 					server = settings.server;
 				}
-				socket = io.connect(server);
+				socket = window.socket =  io.connect(server);
 				for(var i in handles){
 					socket.on(handles[i].on,handles[i].fn);
 				}
@@ -662,15 +692,14 @@
 			disconnect: function(){
 				if($o.chat.connected()){
 					socket.disconnect();
-					socket = undefined;
 				}
 			},
 			connected: function(){
-				return typeof socket != 'undefined';
+				return typeof socket == 'undefined'?false:properties.connected;
 			},
 			send: function(msg,room){
 				if(typeof room == 'undefined'){
-					room = tabs[selectedTab].name;
+					room = $o.ui.tabs.current().name;
 				}
 				if(msg !== ''){
 					if(msg[0] == '/' && msg[1] != '/'){
@@ -687,7 +716,7 @@
 						$o.msg(cmd+' is not a valid command.');
 					}else{
 						event(msg,'send');
-						socket.emit('message',{
+						emit('message',{
 							message: msg,
 							room: room,
 							from: properties.nick
@@ -700,7 +729,7 @@
 					$o.set('nick','User');
 					return;
 				}
-				socket.emit('auth',{
+				emit('auth',{
 					nick: settings.nick
 					// TODO - send authorization info
 				});				
@@ -764,7 +793,7 @@
 		},
 		msg: function(msg,tabName){
 			var frag;
-			if(typeof tabName == 'undefined' || tabName == tabs[selectedTab].name){
+			if(typeof tabName == 'undefined' || tabName == $o.ui.tabs.current().name){
 				frag = document.createDocumentFragment();
 			}else{
 				frag = tabs[$o.ui.tabs.idForName(tabName)].body;
@@ -781,7 +810,9 @@
 					}
 					break;
 			}
-			$(tabs[$o.ui.tabs.idForName(tabName) || selectedTab].body).append(frag);
+			if(tabs.length > 0){
+				$(tabs[$o.ui.tabs.idForName(tabName) || selectedTab].body).append(frag);
+			}
 			var scroll = [],i,html;
 			for(i in tabs){
 				html = '';
@@ -795,7 +826,7 @@
 				});
 			}
 			$.localStorage('tabs',scroll);
-			if(typeof tabName == 'undefined' || tabName == tabs[selectedTab].name){
+			if(typeof tabName == 'undefined' || tabName == $o.ui.tabs.current().name){
 				$o.ui.tabs.select(selectedTab);
 			}
 		},
