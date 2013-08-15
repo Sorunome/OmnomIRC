@@ -176,7 +176,7 @@
 			{ // names
 				on: 'names',
 				fn: function(data){
-					var tab = tabs[$o.ui.tabs.idForName(data.room)],
+					var tab = $o.ui.tabs.tab(data.room),
 						users = tab.users,
 						i;
 					tab.users = data.names;
@@ -588,13 +588,25 @@
 					return false;
 				},
 				tab: function(id){
+					if(typeof id == 'string' && !id.isNumber()){
+						id = $o.ui.tabs.idForName(id);
+						if(!id) return false;
+					}
 					return typeof tabs[id] == 'undefined'?false:tabs[id];
 				},
 				dom: function(id){
+					if(typeof id == 'string' && !id.isNumber()){
+						id = $o.ui.tabs.idForName(id);
+						if(!id) return false;
+					}
 					return typeof tabs[id] == 'undefined'?false:tabs[id].body;
 				},
 				obj: function(id){
 					if(typeof id !== 'undefined'){
+						if(typeof id == 'string' && !id.isNumber()){
+							id = $o.ui.tabs.idForName(id);
+							if(!id) return;
+						}
 						return $('<div>')
 							.addClass('tab')
 							.text($o.ui.tabs.tab(id).name)
@@ -636,6 +648,10 @@
 					}
 				},
 				select: function(id){
+					if(typeof id == 'string' && !id.isNumber()){
+						id = $o.ui.tabs.idForName(id);
+						if(!id) return false;
+					}
 					event(id+' '+$o.ui.tabs.tab(id).name,'tab_select');
 					if(id<tabs.length&&id>=0){
 						selectedTab=id;
@@ -796,7 +812,7 @@
 			if(typeof tabName == 'undefined' || tabName == $o.ui.tabs.current().name){
 				frag = document.createDocumentFragment();
 			}else{
-				frag = tabs[$o.ui.tabs.idForName(tabName)].body;
+				frag = $o.ui.tabs.tab(tabName).body;
 			}
 			switch(typeof msg){
 				case 'string':
@@ -811,7 +827,7 @@
 					break;
 			}
 			if(tabs.length > 0){
-				$(tabs[$o.ui.tabs.idForName(tabName) || selectedTab].body).append(frag);
+				$($o.ui.tabs.tab(tabName) || $o.ui.tabs.current().body).append(frag);
 			}
 			var scroll = [],i,html;
 			for(i in tabs){
@@ -982,4 +998,7 @@ if (!Date.prototype.toISOString) {
             + pad(this.getUTCMinutes()) + ':'
             + pad(this.getUTCSeconds()) + 'Z';
     };
+}
+if(!String.prototype.isNumber){
+	String.prototype.isNumber = function(){return /^\d+$/.test(this);}
 }
