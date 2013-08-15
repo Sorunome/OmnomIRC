@@ -809,25 +809,28 @@
 		},
 		msg: function(msg,tabName){
 			var frag;
-			if(typeof tabName == 'undefined' || tabName == $o.ui.tabs.current().name){
+			console.log(tabName);
+			if(typeof tabName == 'undefined' || tabName == $o.ui.tabs.current().name || typeof $o.ui.tabs.tab(tabName).body == 'undefined'){
 				frag = document.createDocumentFragment();
 			}else{
 				frag = $o.ui.tabs.tab(tabName).body;
 			}
-			switch(typeof msg){
-				case 'string':
-					$(frag).append($('<li>').html(msg.htmlentities()));
-					break;
-				case 'object':
-					if(typeof msg.html == 'undefined'){
-						$(frag).append($('<li>').html('&lt;'+msg.user+'&gt;&nbsp;'+msg.text.htmlentities()));
-					}else{
-						$(frag).append(msg.html);
-					}
-					break;
-			}
+			try{
+				switch(typeof msg){
+					case 'string':
+						$(frag).append($('<li>').html(msg.htmlentities()));
+						break;
+					case 'object':
+						if(typeof msg.html == 'undefined'){
+							$(frag).append($('<li>').html('&lt;'+msg.user+'&gt;&nbsp;'+msg.text.htmlentities()));
+						}else{
+							$(frag).append(msg.html);
+						}
+						break;
+				}
+			}catch(e){event('Failed to add message','error')}
 			if(tabs.length > 0){
-				$($o.ui.tabs.tab(tabName) || $o.ui.tabs.current().body).append(frag);
+				$($o.ui.tabs.tab(tabName).body || $o.ui.tabs.current().body).append(frag);
 			}
 			var scroll = [],i,html;
 			for(i in tabs){
