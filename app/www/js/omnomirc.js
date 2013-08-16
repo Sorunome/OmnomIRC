@@ -23,11 +23,13 @@
 			return 'Version: '+version;
 		},
 		event = function(msg,type){
-			type=typeof type == 'undefined'?'event':type;
-			switch(type){
-				case 'ready':type='document_ready';break;
+			if(settings.debug){
+				type=typeof type == 'undefined'?'event':type;
+				switch(type){
+					case 'ready':type='document_ready';break;
+				}
+				log('['+type.toUpperCase()+'] '+msg);
 			}
-			log('['+type.toUpperCase()+'] '+msg);
 		},
 		emit = window.emit = function(type,data){
 			if($o.chat.connected()){
@@ -54,6 +56,7 @@
 		selectedTab=0,
 		settings = {
 			colour: false,
+			debug: false,
 			timestamp: 'exact',
 			server: location.origin,
 			autoconnect: true,
@@ -810,7 +813,6 @@
 		},
 		msg: function(msg,tabName){
 			var frag;
-			console.log(tabName);
 			if(typeof tabName == 'undefined' || tabName == $o.ui.tabs.current().name || typeof $o.ui.tabs.tab(tabName).body == 'undefined'){
 				frag = document.createDocumentFragment();
 			}else{
