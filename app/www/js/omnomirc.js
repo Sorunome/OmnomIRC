@@ -18,6 +18,7 @@
 	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
 (function(window,$,io,undefined){
+	"use strict";
 	var $o = window.OmnomIRC = window.$o = function(){
 			return 'Version: '+version;
 		},
@@ -293,20 +294,20 @@
 				type: 'style',
 				hook: 'load',
 				fn: function(){
-					
+					// STUB
 				}
 			}
 		],
+		currentPlugin = 0,
 		runHook = function(name){
-			var i,hook;
+			var i,hook,sanbox = {
+				// Sandbox
+			};
 			for(i in hooks){
 				hook = hooks[i];
 				if(hook.hook == name){
-					with({
-						// Sandbox
-					}){
-						hook.fn();
-					}
+				
+					(new Function('with(sandbox){hook.fn();}'))();
 				}
 			}
 		},
@@ -337,7 +338,7 @@
 				}).timeago('dispose');
 			}
 		},
-		socket,$i,$s,$h,$cl,$tl,hht;
+		socket,$i,$s,$h,$cl,$c,$tl,hht;
 	$.extend($o,{
 		version: function(){
 			return version;
@@ -989,7 +990,7 @@
 			$o.chat.connect();
 		}
 	});
-	delete window.io;
+	window.io = null;
 })(window,jQuery,io);
 if (!Date.prototype.toISOString) {
     Date.prototype.toISOString = function() {

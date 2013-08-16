@@ -14,7 +14,12 @@ var fs = require('fs'),
 					port: 6379,
 					host: 'localhost'
 				},
-				debug: false
+				debug: false,
+				paths: {
+					www: './www/',
+					api: './api/',
+					plugins: './plugins/'
+				}
 			},
 			i,
 			options;
@@ -121,7 +126,7 @@ if(cluster.isMaster){
 					},
 					filepath = unescape(uri);
 				if(filepath.substr(0,5) == '/api/'){
-					filepath = path.join('./api/',filepath.substr(5));
+					filepath = path.join(options.paths.api,filepath.substr(5));
 					logger.debug('Attempting to run api script '+filepath);
 					if(fs.existsSync(filepath)){
 						fs.readFile(filepath,function(e,data){
@@ -162,7 +167,7 @@ if(cluster.isMaster){
 						res.end('null;');
 					}
 				}else{
-					serveFile(path.join('./www/',filepath),req,res);
+					serveFile(path.join(options.paths.www,filepath),req,res);
 				}
 			}).resume();
 		}).listen(options.port),
