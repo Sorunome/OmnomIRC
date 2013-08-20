@@ -298,19 +298,25 @@
 				hook: 'load',
 				fn: function(){
 					// STUB
+					event('testing == '+testing,'debug');
 				}
 			}
 		],
 		currentPlugin = 0,
 		runHook = function(name){
-			var i,hook,sanbox = {
-				// Sandbox
+			var i,hook,fn,sandbox = {
+				testing: 'test'
 			};
 			for(i in hooks){
 				hook = hooks[i];
 				if(hook.hook == name){
-				
-					(new Function('with(sandbox){hook.fn();}'))();
+					fn = (hook.fn+'').replace(/\/\/.+?(?=\n|\r|$)|\/\*[\s\S]+?\*\//g,'').replace(/\"/g,'\\"').replace(/\n/g,'').replace(/\r/g,'');
+					fn = 'eval("with(this){('+fn+')();}");';
+					try{
+						(new Function(fn)).call(sandbox);
+					}catch(e){
+						event('Hook failed to run: '+e+"\nFunction that ran: "+fn,'hook_error');
+					}
 				}
 			}
 		},
@@ -342,6 +348,8 @@
 			}
 		},
 		socket,$i,$s,$h,$cl,$c,$tl,hht;
+		
+		runHook('load');
 	$.extend($o,{
 		version: function(){
 			return version;
