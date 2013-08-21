@@ -37,6 +37,7 @@ html,body{
 	font-size: 24px;
 	margin-top: -5px;
 	font-family: Arial,Liberation Sans,DejaVu Sans,sans-serif;
+	cursor: pointer;
 }
 .close-button:hover{
 	color: red;
@@ -62,11 +63,25 @@ html,body{
 	display: table-cell;
 	text-align: right;
 }
-#content{
+#content,#console-log{
 	width: 100%;
 	height: calc(100% - 61px);
 	top: 41px;
 	left: 0;
+}
+#console-log{
+	display: none;
+}
+#console-log-pre{
+	height: 100%;
+	margin: 0;
+	padding: 2px;
+}
+#console-log-controls{
+	position: absolute;
+	bottom: 22px;
+	width: 100%;
+	overflow: hidden;
 }
 #settings,#users{
 	bottom: 0;
@@ -78,6 +93,12 @@ html,body{
 	transition: width 0.5s, height 0.5s, right 0.5s;
 }
 #settings span,#users span{
+	cursor: pointer;
+}
+#settings.open span,#users.open.span{
+	cursor: default;
+}
+#settings.open span.close-button,#users.open span.close-button{
 	cursor: pointer;
 }
 #users{
@@ -138,13 +159,13 @@ html,body{
 #send.clicked{
 	background-color: red;
 }
-#content,#head,#users,#entry,#input,#send,#settings{
+#console-log,#content,#head,#users,#entry,#input,#send,#settings{
 	border-color: black;
 	border-width: 1px;
 	position: absolute;
 	overflow: hidden;
 }
-#content{
+#console-log,#content{
 	overflow-y: scroll;
 }
 #users,#input,#send,#settings{

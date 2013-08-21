@@ -461,6 +461,41 @@
 								)
 						);
 					}
+					if(settings.debug){
+						$(frag).append(
+							$('<li>')
+								.addClass('row')
+								.attr('id','console-log-controls')
+								.append(
+									$('<span>')
+										.text('Debug Log')
+										.addClass('cell')
+								)
+								.append(
+									$('<span>')
+										.addClass('cell')
+										.append(
+											$('<button>')
+												.text('Show')
+												.click(function(){
+													$(this).text($('#console-log').is(':visible')?'Show':'Hide');
+													$('#console-log').toggle();
+													$('#console-log-clear').toggle();
+													$('#content').toggle();
+												})
+										)
+										.append(
+											$('<button>')
+												.text('Clear')
+												.attr('id','console-log-clear')
+												.hide()
+												.click(function(){
+													$('#console-log-pre').html('');
+												})
+										)
+								)
+						);
+					}
 					$('#settings-list').html(frag);
 				},
 				users: function(){
@@ -803,6 +838,11 @@
 					break;
 					case 'nick':
 						$o.chat.auth();
+					break;
+					case 'debug':
+						if(typeof render != 'undefined'){
+							$o.ui.render.settings();
+						}
 					break;
 				}
 				if(typeof render == 'undefined'){
