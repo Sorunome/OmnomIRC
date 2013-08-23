@@ -495,6 +495,10 @@
 										)
 								)
 						);
+					}else{
+						$('#console-log-pre').html('');
+						$('#console-log').hide();
+						$('#content').show();
 					}
 					$('#settings-list').html(frag);
 				},

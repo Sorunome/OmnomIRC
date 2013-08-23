@@ -28,7 +28,7 @@
 			}).append($('<pre>').attr('id','console-log-pre'));
 		}
 		d.children('pre').each(function(){
-			$(this).html($(this).html()+""+msg+"<br/>");
+			$(this).html($(this).html()+""+msg+"<br/>").scrollTop($(this).height());
 		});
 		return msg;
 	};
