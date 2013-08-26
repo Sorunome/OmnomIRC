@@ -191,10 +191,24 @@
 						if(v != null){
 							if(tab.users.indexOf(v.trim()) == -1){
 								emit('echo',{
-									room: $o.ui.tabs.current().name,
+									room: data.room,
 									message: v+' left the room',
 									from: 0
 								});
+								runHook('part',[
+									v,
+									data.room
+								]);
+							}
+						}
+					});
+					$(tab.users).each(function(i,v){
+						if(v != null){
+							if(users.indexOf(v.trim()) == -1){
+								runHook('join',[
+									v,
+									data.room
+								]);
 							}
 						}
 					});
@@ -209,6 +223,7 @@
 							name: settings.autojoin[i]
 						});
 					}
+					runHook('authorized');
 				}
 			},
 			{ // join
@@ -228,6 +243,7 @@
 					event('reconnected');
 					properties.connected = true;
 					$o.chat.auth();
+					runHook('reconnect');
 					emit('echo',{
 						room: $o.ui.tabs.current().name,
 						from: 0,
@@ -241,6 +257,7 @@
 					event('connected');
 					properties.connected = true;
 					$o.chat.auth();
+					runHook('connect');
 					emit('echo',{
 						room: $o.ui.tabs.current().name,
 						from: 0,
@@ -253,6 +270,7 @@
 				fn: function(data){
 					event('disconnected');
 					properties.connected = false;
+					runHook('disconnected');
 					$o.msg('* disconnected');
 				}
 			},
@@ -288,7 +306,11 @@
 					}else{
 						$('.date_cell').css('visibility','visible');
 					}
-					
+					runHook('message',[
+						data.message,
+						data.from,
+						data.room
+					]);
 				}
 			}
 		],
@@ -303,22 +325,27 @@
 			}
 		],
 		currentPlugin = 0,
-		runHook = function(name){
-			var i,hook,fn,sandbox = {
+		runHook = function(name,args){
+			var i,r,hook,fn,sandbox = {
 				testing: 'test'
 			};
+			args=typeof args == 'undefined'?[]?args;
 			for(i in hooks){
 				hook = hooks[i];
 				if(hook.hook == name){
 					fn = (hook.fn+'').replace(/\/\/.+?(?=\n|\r|$)|\/\*[\s\S]+?\*\//g,'').replace(/\"/g,'\\"').replace(/\n/g,'').replace(/\r/g,'');
-					fn = 'eval("with(this){('+fn+')();}");';
+					fn = 'eval("with(this){r = ('+fn+').apply(this,args);}");';
 					try{
 						(new Function(fn)).call(sandbox);
 					}catch(e){
 						event('Hook failed to run: '+e+"\nFunction that ran: "+fn,'hook_error');
 					}
 				}
+				if(r == false){
+					break;
+				}
 			}
+			return r;
 		},
 		version = '3.0',
 		abbrDate = function(selector){
@@ -348,8 +375,6 @@
 			}
 		},
 		socket,$i,$s,$h,$cl,$c,$tl,hht;
-		
-		runHook('load');
 	$.extend($o,{
 		version: function(){
 			return version;
@@ -358,6 +383,7 @@
 			theme: function(name){
 				if(-1==$.inArray(properties.themes,name)){
 					properties.themes.push(name);
+					runHook('theme',[name]);
 					return true;
 				}
 				return false;
@@ -829,6 +855,14 @@
 		},
 		set: function(name,value,render){
 			if(exists(settings[name])){
+				if(!runHook('setting',[
+					name,
+					settings[name],
+					value,
+					$o.get(name,true).values
+				])){
+					return false;
+				}
 				settings[name] = value;
 				$.localStorage('settings',JSON.stringify(settings));
 				switch(name){
@@ -1045,6 +1079,7 @@
 		}
 	});
 	window.io = null;
+	runHook('load');
 })(window,jQuery,io);
 if (!Date.prototype.toISOString) {
     Date.prototype.toISOString = function() {
