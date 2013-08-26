@@ -315,6 +315,13 @@
 			}
 		],
 		hooks = [
+			{
+				type: '',
+				hook: 'setting',
+				fn: function(name){
+					return name != 'colour';
+				}
+			},
 			{	// load - style
 				type: 'style',
 				hook: 'load',
@@ -672,7 +679,7 @@
 						id = $o.ui.tabs.idForName(id);
 						if(!id) return false;
 					}
-					return exits(tabs[id])?tabs[id]:false;
+					return exists(tabs[id])?tabs[id]:false;
 				},
 				dom: function(id){
 					if(typeof id == 'string' && !id.isNumber()){
