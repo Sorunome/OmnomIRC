@@ -24,7 +24,7 @@
 		},
 		event = function(msg,type){
 			if(settings.debug){
-				type=typeof type == 'undefined'?'event':type;
+				type=exists(type)?type:'event';
 				switch(type){
 					case 'ready':type='document_ready';break;
 				}
@@ -125,7 +125,7 @@
 			{ // help
 				cmd: 'help',
 				fn: function(args){
-					if(typeof args[1] == 'undefined'){
+					if(exists(args[1])){
 						var m = 'Commands:',i;
 						for(i in commands){
 							m += ' '+commands[i].cmd;
@@ -135,7 +135,7 @@
 						var i,cmd;
 						for(i in commands){
 							cmd = commands[i];
-							if(cmd.cmd == args[1] && typeof cmd.help != 'undefined'){
+							if(cmd.cmd == args[1] && exists(cmd.help)){
 								$o.msg('Command /'+cmd.cmd+': '+cmd.help);
 								return;
 							}
@@ -326,17 +326,17 @@
 		],
 		currentPlugin = 0,
 		runHook = function(name,args){
-			var i,r,hook,fn,sandbox = {
+			var i,r=true,hook,fn,sandbox = {
 				testing: 'test'
 			};
-			args=typeof args == 'undefined'?[]:args;
+			args=exists(args)?args:[];
 			for(i in hooks){
 				hook = hooks[i];
 				if(hook.hook == name){
 					fn = (hook.fn+'').replace(/\/\/.+?(?=\n|\r|$)|\/\*[\s\S]+?\*\//g,'').replace(/\"/g,'\\"').replace(/\n/g,'').replace(/\r/g,'');
-					fn = 'eval("with(this){r = ('+fn+').apply(this,args);}");';
+					fn = 'var ret = true;eval("with(this){ret = ('+fn+').apply(this,arguments);}");return ret;';
 					try{
-						(new Function(fn)).call(sandbox);
+						r = (new Function(fn)).apply(sandbox,args);
 					}catch(e){
 						event('Hook failed to run: '+e+"\nFunction that ran: "+fn,'hook_error');
 					}
@@ -394,7 +394,7 @@
 						cmd: name,
 						fn: fn
 					};
-					if(typeof help != 'undefined'){
+					if(exists(help)){
 						o.help = help;
 					}
 					commands.push(o);
@@ -409,7 +409,10 @@
 				// STUB
 			},
 			hook: function(event,fn){
-				
+				hooks.push({
+					hook: event,
+					fn: fn
+				})
 			}
 		},
 		hook: function(event,fn){
@@ -669,7 +672,7 @@
 						id = $o.ui.tabs.idForName(id);
 						if(!id) return false;
 					}
-					return typeof tabs[id] == 'undefined'?false:tabs[id];
+					return exits(tabs[id])?tabs[id]:false;
 				},
 				dom: function(id){
 					if(typeof id == 'string' && !id.isNumber()){
@@ -679,7 +682,7 @@
 					return typeof tabs[id] == 'undefined'?false:tabs[id].body;
 				},
 				obj: function(id){
-					if(typeof id !== 'undefined'){
+					if(exists(id)){
 						if(typeof id == 'string' && !id.isNumber()){
 							id = $o.ui.tabs.idForName(id);
 							if(!id) return;
@@ -773,7 +776,7 @@
 				if($o.chat.connected()){
 					$o.disconnect();
 				}
-				if(typeof server == 'undefined'){
+				if(!exists(server)){
 					server = settings.server;
 				}
 				socket = window.socket =  io.connect(server);
@@ -788,10 +791,10 @@
 				}
 			},
 			connected: function(){
-				return typeof socket == 'undefined'?false:properties.connected;
+				return exists(socket)?properties.connected:false;
 			},
 			send: function(msg,room){
-				if(typeof room == 'undefined'){
+				if(!exists(room)){
 					room = $o.ui.tabs.current().name;
 				}
 				if(msg !== ''){
@@ -829,7 +832,7 @@
 			}
 		},
 		get: function(name,formatted){
-			if(typeof formatted == 'undefined'){
+			if(!exists(formatted)){
 				return exists(settings[name])?settings[name]:false;
 			}else{
 				var val = $o.get(name),
@@ -861,6 +864,9 @@
 					value,
 					$o.get(name,true).values
 				])){
+					if(exists(render)){
+						$o.ui.render.settings();
+					}
 					return false;
 				}
 				settings[name] = value;
@@ -878,16 +884,19 @@
 						$o.chat.auth();
 					break;
 					case 'debug':
-						if(typeof render != 'undefined'){
+						if(exists(render)){
 							$o.ui.render.settings();
 						}
 					break;
 				}
-				if(typeof render == 'undefined'){
+				if(exists(render)){
 					$o.ui.render.settings();
 				}
 				return true;
 			}else{
+				if(exists(render)){
+					$o.ui.render.settings();
+				}
 				return false;
 			}
 		},
@@ -899,7 +908,7 @@
 		},
 		msg: function(msg,tabName){
 			var frag;
-			if(typeof tabName == 'undefined' || tabName == $o.ui.tabs.current().name || typeof $o.ui.tabs.tab(tabName).body == 'undefined'){
+			if(!exists(tabName) || tabName == $o.ui.tabs.current().name || !exists($o.ui.tabs.tab(tabName).body)){
 				frag = document.createDocumentFragment();
 			}else{
 				frag = $o.ui.tabs.tab(tabName).body;
@@ -910,7 +919,7 @@
 						$(frag).append($('<li>').html(msg.htmlentities()));
 						break;
 					case 'object':
-						if(typeof msg.html == 'undefined'){
+						if(!exists(msg.html)){
 							$(frag).append($('<li>').html('&lt;'+msg.user+'&gt;&nbsp;'+msg.text.htmlentities()));
 						}else{
 							$(frag).append(msg.html);
@@ -934,7 +943,7 @@
 				});
 			}
 			$.localStorage('tabs',scroll);
-			if(typeof tabName == 'undefined' || tabName == $o.ui.tabs.current().name){
+			if(!exists(tabName) || tabName == $o.ui.tabs.current().name){
 				$o.ui.tabs.select(selectedTab);
 			}
 		},
