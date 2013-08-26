@@ -18,16 +18,29 @@
 	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
 (function(window,$,io,undefined){
+	"use strict";
 	var $o = window.OmnomIRC = window.$o = function(){
-			return 'Version: '+$o.version
+			return 'Version: '+version;
 		},
 		event = function(msg,type){
-			type=typeof type == 'undefined'?'event':type;
-			switch(type){
-				case 'ready':type='document_ready';break;
+			if(settings.debug){
+				type=typeof type == 'undefined'?'event':type;
+				switch(type){
+					case 'ready':type='document_ready';break;
+				}
+				log('['+type.toUpperCase()+'] '+msg);
 			}
-			log('['+type.toUpperCase()+'] '+msg);
 		},
+		emit = window.emit = function(type,data){
+			if($o.chat.connected()){
+				socket.emit.apply(socket,arguments);
+			}else{
+				if(tabs.length > 0){
+					$o.msg('Disconnected, cannot do anything');
+				}
+			}
+		},
+		noop = function(){},
 		log = function(){
 				console.log.apply(console,arguments);
 		},
@@ -43,6 +56,7 @@
 		selectedTab=0,
 		settings = {
 			colour: false,
+			debug: false,
 			timestamp: 'exact',
 			server: location.origin,
 			autoconnect: true,
@@ -68,8 +82,8 @@
 			{ // names
 				cmd: 'names',
 				fn: function(args){
-					socket.emit('names',{
-						name: tabs[selectedTab].name
+					emit('names',{
+						name: $o.ui.tabs.current().name
 					});
 				}
 			},
@@ -81,22 +95,22 @@
 					for(i=1;i<args.length;i++){
 						ret += ' '+args[i];
 					}
-					socket.emit('message',{
+					emit('message',{
 						from: 0,
 						message: properties.nick+' '+ret,
-						room: tabs[selectedTab].name
+						room: $o.ui.tabs.current().name
 					});
 				}
 			},
 			{ // connect
 				cmd: 'connect',
 				fn: function(){
-					if(!$o.connected()){
-						$o.connect();
+					if(!$o.chat.connected()){
+						$o.chat.connect();
 					}
 				}
 			},
-			{	// disconnect
+			{ // disconnect
 				cmd: 'disconnect',
 				fn: function(){
 					$o.disconnect();
@@ -108,7 +122,7 @@
 					$o.set('nick',args[1]);
 				}
 			},
-			{
+			{ // help
 				cmd: 'help',
 				fn: function(args){
 					if(typeof args[1] == 'undefined'){
@@ -130,36 +144,25 @@
 					}
 				}
 			},
-			{
+			{ // open
 				cmd: 'open',
 				fn: function(args){
-					tabs.push({
-						name: args[1],
-						title: args[2],
-						topic: 'Topic for '+args[2]
-					});
-					$o.refreshTabs();
+					$o.ui.tabs.add(args[1]);
 				}
 			},
 			{ // clear
 				cmd: 'clear',
 				fn: function(args){
-					$cl.html('');
-					tabs[selectedTab].body = document.createDocumentFragment();
-					socket.emit('echo',{
-						room: tabs[selectedTab].name,
-						message: 'messages cleared',
-						name: 0
-					});
+					$o.ui.tabs.current().clear();
 				}
 			},
 			{ // close
 				cmd: 'close',
 				fn: function(args){
 					if(args.length > 1){
-						$o.removeTab(args[1]);
+						$o.ui.tabs.remove(args[1]);
 					}else{
-						$o.removeTab(selectedTab);
+						$o.ui.tabs.remove(selectedTab);
 					}
 				}
 			},
@@ -174,45 +177,86 @@
 			}
 		],
 		handles = [
-			{
+			{ // names
 				on: 'names',
 				fn: function(data){
-					tabs[$o.tabIdForName(data.room)].names = data.names;
-					if($o.tabIdForName(data.room) == selectedTab){
-						$o.renderUsers();
+					var tab = $o.ui.tabs.tab(data.room),
+						users = tab.users,
+						i;
+					tab.users = data.names;
+					if($o.ui.tabs.idForName(data.room) == selectedTab){
+						$o.ui.render.users();
 					}
+					$(users).each(function(i,v){
+						if(v != null){
+							if(tab.users.indexOf(v.trim()) == -1){
+								emit('echo',{
+									room: $o.ui.tabs.current().name,
+									message: v+' left the room',
+									from: 0
+								});
+							}
+						}
+					});
 				}
 			},
-			{
+			{ // authorized
 				on: 'authorized',
 				fn: function(data){
 					properties.nick = data.nick;
 					for(var i in settings.autojoin){
-						socket.emit('join',{
+						emit('join',{
 							name: settings.autojoin[i]
 						});
 					}
 				}
 			},
-			{
+			{ // join
 				on: 'join',
 				fn: function(data){
 					event('joined '+data.name);
 					var flag = tabs.length == 0;
-					$o.addTab(data.name,data.title);
+					$o.ui.tabs.add(data.name);
 					if(flag){
-						$o.selectTab(0);
+						$o.ui.tabs.select(0);
 					}
 				}
 			},
-			{
+			{ // reconnect
 				on: 'reconnect',
 				fn: function(data){
 					event('reconnected');
-					$o.auth();
+					properties.connected = true;
+					$o.chat.auth();
+					emit('echo',{
+						room: $o.ui.tabs.current().name,
+						from: 0,
+						message: 'reconnected'
+					});
 				}
 			},
-			{
+			{ // connect
+				on: 'connect',
+				fn: function(data){
+					event('connected');
+					properties.connected = true;
+					$o.chat.auth();
+					emit('echo',{
+						room: $o.ui.tabs.current().name,
+						from: 0,
+						message: 'connected'
+					});
+				}
+			},
+			{ // disconnect
+				on: 'disconnect',
+				fn: function(data){
+					event('disconnected');
+					properties.connected = false;
+					$o.msg('* disconnected');
+				}
+			},
+			{ // message
 				on: 'message',
 				fn: function(data){
 					event('recieved message');
@@ -249,14 +293,34 @@
 			}
 		],
 		hooks = [
-			{
+			{	// load - style
 				type: 'style',
 				hook: 'load',
 				fn: function(){
-					
+					// STUB
+					event('testing == '+testing,'debug');
 				}
 			}
 		],
+		currentPlugin = 0,
+		runHook = function(name){
+			var i,hook,fn,sandbox = {
+				testing: 'test'
+			};
+			for(i in hooks){
+				hook = hooks[i];
+				if(hook.hook == name){
+					fn = (hook.fn+'').replace(/\/\/.+?(?=\n|\r|$)|\/\*[\s\S]+?\*\//g,'').replace(/\"/g,'\\"').replace(/\n/g,'').replace(/\r/g,'');
+					fn = 'eval("with(this){('+fn+')();}");';
+					try{
+						(new Function(fn)).call(sandbox);
+					}catch(e){
+						event('Hook failed to run: '+e+"\nFunction that ran: "+fn,'hook_error');
+					}
+				}
+			}
+		},
+		version = '3.0',
 		abbrDate = function(selector){
 			if(settings.timestamp == 'fuzzy'){
 				$(selector).timeago();
@@ -283,9 +347,13 @@
 				}).timeago('dispose');
 			}
 		},
-		socket,$i,$s,$h,$cl,$tl,hht;
+		socket,$i,$s,$h,$cl,$c,$tl,hht;
+		
+		runHook('load');
 	$.extend($o,{
-		version: '3.0',
+		version: function(){
+			return version;
+		},
 		register: {
 			theme: function(name){
 				if(-1==$.inArray(properties.themes,name)){
@@ -309,40 +377,430 @@
 				return false;
 			},
 			plugin: function(){
+				// STUB
+			},
+			setting: function(name,defaultVal,validate,values){
+				// STUB
+			},
+			hook: function(event,fn){
 				
 			}
 		},
-		connect: function(server){
-			if($o.connected()){
-				$o.disconnect();
-			}
-			if(typeof server == 'undefined'){
-				server = settings.server;
-			}
-			socket = io.connect(server);
-			for(var i in handles){
-				socket.on(handles[i].on,handles[i].fn);
-			}
-			$o.auth();
+		hook: function(event,fn){
+			$o.register.hook(event,fn);
 		},
-		disconnect: function(){
-			if($o.connected()){
-				socket.disconnect();
-				socket = undefined;
-			}
+		ui: {
+			render: {
+				settings: function(){
+					var name,setting,frag = document.createDocumentFragment(),item;
+					for(name in settings){
+						setting = $o.get(name,true);
+						switch(setting.type){
+							case 'select':
+								item = $('<select>')
+											.attr('id','setting_'+name)
+											.change(function(){
+												$o.set(this.id.substr(8),$(this).find(':selected').text(),false);
+											});
+								for(var i in setting.values){
+									item.append(
+										$('<option>')
+											.text(setting.values[i])
+									);
+								}
+								item.find(':contains('+setting.val+')').attr('selected','selected');
+							break;
+							case 'array':
+								item = $('<input>')
+											.attr({
+												type: 'text',
+												id: 'setting_'+name
+											})
+											.val(setting.val)
+											.change(function(){
+												$o.set(this.id.substr(8),$(this).val().split(','),false);
+											});
+							break;
+							case 'boolean':
+								item = $('<input>')
+											.attr({
+												type: 'checkbox',
+												id: 'setting_'+name
+											})
+											.change(function(){
+												$o.set(this.id.substr(8),$(this).is(':checked'),false);
+											});
+								if(setting.val){
+									item.attr('checked','checked');
+								}
+							break;
+							case 'number':
+							case 'string':default:
+								item = $('<input>')
+											.attr({
+												type: 'text',
+												id: 'setting_'+name
+											})
+											.val(setting.val)
+											.change(function(){
+												$o.set(this.id.substr(8),$(this).val(),false);
+											});
+						}
+						$(frag).append(
+							$('<li>')
+								.addClass('row')
+								.append(
+									$('<span>')
+										.text(name)
+										.addClass('cell')
+								)
+								.append(
+									$('<span>')
+										.append(item)
+										.addClass('cell')
+								)
+						);
+					}
+					if(settings.debug){
+						$(frag).append(
+							$('<li>')
+								.addClass('row')
+								.attr('id','console-log-controls')
+								.append(
+									$('<span>')
+										.text('Debug Log')
+										.addClass('cell')
+								)
+								.append(
+									$('<span>')
+										.addClass('cell')
+										.append(
+											$('<button>')
+												.text('Show')
+												.click(function(){
+													$(this).text($('#console-log').is(':visible')?'Show':'Hide');
+													$('#console-log').toggle();
+													$('#console-log-clear').toggle();
+													$('#content').toggle();
+												})
+										)
+										.append(
+											$('<button>')
+												.text('Clear')
+												.attr('id','console-log-clear')
+												.hide()
+												.click(function(){
+													$('#console-log-pre').html('');
+												})
+										)
+								)
+						);
+					}else{
+						$('#console-log-pre').html('');
+						$('#console-log').hide();
+						$('#content').show();
+					}
+					$('#settings-list').html(frag);
+				},
+				users: function(){
+					event('Rendering userlist');
+					var $ul = $('#user-list').html(''),
+						i,
+						names = $o.ui.tabs.current().users;
+					for(i in names){
+						$ul.append(
+							$('<li>').text(names[i])
+						);
+					}
+				},
+				tab: function(){
+					$cl.html($($o.ui.tabs.current().body).clone());
+				},
+				tablist: function(){
+					$tl.html('');
+					var i,tab;
+					for(i in tabs){
+						tab = $o.ui.tabs.obj(i);
+						if(i==selectedTab){
+							tab.addClass('clicked');
+							$('#title').text(tabs[i].name);
+							$('#topic').text(tabs[i].topic);
+						}
+						$tl.append(tab);
+					}
+					if($tl.get(0).scrollHeight-20 != $tl.scrollTop()){
+						$('#tabs-scroll-right').removeClass('disabled');
+					}
+					if($tl.scrollTop() != 0){
+						$('#tabs-scroll-left').removeClass('disabled');
+					}
+				}
+			},
+			tabs: {
+				add: function(name){
+					event('Tab added: '+name);
+					if(!(function(){
+						for(var i in tabs){
+							if(name==tabs[i].name){
+								return true;
+							}
+						}
+						return false;
+					})()){
+						var scroll = $.localStorage('tabs'),
+							i,
+							frag = document.createDocumentFragment(),
+							id = tabs.length;
+						for(i in scroll){
+							if(scroll[i].name == name){
+								scroll[i].body = $(scroll[i].body).slice(-10);
+								$(frag)
+									.append(scroll[i].body)
+									.append(
+										$('<li>').html('<span class="to_remove">-- loaded old scrollback for '+scroll[i].date+' --</span>')
+									)
+									.children()
+									.children('.remove')
+									.remove();
+								$(frag)
+									.children()
+									.children('.to_remove')
+									.removeClass('to_remove')
+									.addClass('remove');
+								event('loading old tab scrollback for '+name+' last saved +'+scroll[i].date);
+							}
+						}
+						tabs.push({
+							name: name,
+							body: frag,
+							date: new Date(),
+							send: function(msg){
+								$o.chat.send(msg,$o.ui.tabs.tab(id).name);
+							},
+							close: function(){
+								$o.ui.tabs.remove(id);
+							},
+							users: [],
+							names: function(){
+								emit('names',{
+									name: $o.ui.tabs.tab(id).name
+								});
+							},
+							select: function(){
+								$o.ui.tabs.select(id);
+							},
+							clear: function(){
+								$cl.html('');
+								$o.ui.tabs.tab(id).body = document.createDocumentFragment();
+								emit('echo',{
+									room: $o.ui.tabs.tab(id).name,
+									message: 'messages cleared',
+									from: 0
+								});
+							}
+						});
+						$tl.append($o.ui.tabs.obj(id));
+						$o.ui.render.tablist();
+						$o.ui.render.users();
+					}else{
+						event('Attempted to add an existing tab');
+					}
+				},
+				remove: function(name){
+					if(typeof name == 'number'){
+						name = tabs[name].name;
+					}
+					for(var id=0;id<tabs.length;id++){
+						if($o.ui.tabs.tab(id).name == name){
+							event('Tab removed: '+$o.ui.tabs.tab(id).name);
+							emit('part',{
+								name: $o.ui.tabs.tab(id).name
+							});
+							tabs.splice(id,1);
+							if(selectedTab==id&&selectedTab>0){
+								selectedTab--;
+							}
+							break;
+						}
+					}
+					$o.ui.render.tablist();
+					$cl.html($o.ui.tabs.current().body);
+					$o.ui.render.users();
+				},
+				selected: function(){
+					return selectedTab;
+				},
+				idForName: function(name){
+					for(var i in tabs){
+						if(tabs[i].name == name){
+							return i;
+						}
+					}
+					return false;
+				},
+				tab: function(id){
+					if(typeof id == 'string' && !id.isNumber()){
+						id = $o.ui.tabs.idForName(id);
+						if(!id) return false;
+					}
+					return typeof tabs[id] == 'undefined'?false:tabs[id];
+				},
+				dom: function(id){
+					if(typeof id == 'string' && !id.isNumber()){
+						id = $o.ui.tabs.idForName(id);
+						if(!id) return false;
+					}
+					return typeof tabs[id] == 'undefined'?false:tabs[id].body;
+				},
+				obj: function(id){
+					if(typeof id !== 'undefined'){
+						if(typeof id == 'string' && !id.isNumber()){
+							id = $o.ui.tabs.idForName(id);
+							if(!id) return;
+						}
+						return $('<div>')
+							.addClass('tab')
+							.text($o.ui.tabs.tab(id).name)
+							.mouseup(function(e){
+								switch(e.which){
+									case 1:	// RMB
+										if($(this).data('id')!=selectedTab){
+											$o.ui.tabs.select($(this).data('id'));
+											return prevent(e);
+										}
+										break;
+									case 2:	// MMB
+										$(this).children('span.close-button').click();
+										return prevent(e);
+										break;
+									case 3:	// LMB
+										return prevent(e);
+										break;
+									default:
+										return prevent(e);
+								}
+							})
+							.append(
+								$('<span>')
+									.addClass('close-button')
+									.click(function(){
+										$o.ui.tabs.remove(id);
+										return false;
+									})
+									.css({
+										'position': 'absolute',
+										'background-color': 'inherit',
+										'top': 0,
+										'right': 0
+									})
+									.html('&times;')
+							)
+							.data('id',id);
+					}
+				},
+				select: function(id){
+					if(typeof id == 'string' && !id.isNumber()){
+						id = $o.ui.tabs.idForName(id);
+						if(!id) return false;
+					}
+					event(id+' '+$o.ui.tabs.tab(id).name,'tab_select');
+					if(id<tabs.length&&id>=0){
+						selectedTab=id;
+					}
+					$tl.children('.clicked').removeClass('clicked');
+					$($tl.children().get(id)).addClass('clicked');
+					$('#title').text($o.ui.tabs.tab(id).name);
+					$('#topic').text($o.ui.tabs.tab(id).topic);
+					$cl.html($($o.ui.tabs.tab(id).body).clone());
+					abbrDate('abbr.date');
+					$o.ui.render.users();
+					setTimeout(function scrollContent(){
+						if($c.scrollTop() < $c[0].scrollHeight){
+							$c.scrollTop($c.scrollTop()+1);
+							setTimeout(scrollContent,settings.scrollspeed);
+						}else{
+							event('scrolling stopped');
+						}
+					},settings.scrollspeed);
+				},
+				current: function(){
+					if(tabs.length > 0 && tabs.length > selectedTab){
+						return tabs[selectedTab];
+					}else{
+						return {
+							name: '',
+							body: document.createDocumentFragment(),
+							date: new Date(),
+							send: noop,
+							close: noop,
+							users: [],
+							names: noop,
+							select: noop,
+							clear: noop
+						}
+					}
+				}
+			},
 		},
-		auth: function(){
-			if(settings.nick == ''){
-				$o.set('nick','User');
-				return;
+		chat: {
+			connect: function(server){
+				if($o.chat.connected()){
+					$o.disconnect();
+				}
+				if(typeof server == 'undefined'){
+					server = settings.server;
+				}
+				socket = window.socket =  io.connect(server);
+				for(var i in handles){
+					socket.on(handles[i].on,handles[i].fn);
+				}
+				$o.chat.auth();
+			},
+			disconnect: function(){
+				if($o.chat.connected()){
+					socket.disconnect();
+				}
+			},
+			connected: function(){
+				return typeof socket == 'undefined'?false:properties.connected;
+			},
+			send: function(msg,room){
+				if(typeof room == 'undefined'){
+					room = $o.ui.tabs.current().name;
+				}
+				if(msg !== ''){
+					if(msg[0] == '/' && msg[1] != '/'){
+						var args = msg.split(' '),
+							cmd = args[0].substr(1),
+							i;
+						event(msg,'command');
+						for(i in commands){
+							if(commands[i].cmd == cmd){
+								commands[i].fn(args);
+								return;
+							}
+						}
+						$o.msg(cmd+' is not a valid command.');
+					}else{
+						event(msg,'send');
+						emit('message',{
+							message: msg,
+							room: room,
+							from: properties.nick
+						});
+					}
+				}
+			},
+			auth: function(){
+				if(settings.nick == ''){
+					$o.set('nick','User');
+					return;
+				}
+				emit('auth',{
+					nick: settings.nick
+					// TODO - send authorization info
+				});				
 			}
-			socket.emit('auth',{
-				nick: settings.nick
-				// TODO - send authorization info
-			});
-		},
-		connected: function(){
-			return typeof socket != 'undefined';
 		},
 		get: function(name,formatted){
 			if(typeof formatted == 'undefined'){
@@ -383,155 +841,52 @@
 						}
 					break;
 					case 'nick':
-						$o.auth();
+						$o.chat.auth();
+					break;
+					case 'debug':
+						if(typeof render != 'undefined'){
+							$o.ui.render.settings();
+						}
 					break;
 				}
 				if(typeof render == 'undefined'){
-					$o.renderSettings();
+					$o.ui.render.settings();
 				}
 				return true;
 			}else{
 				return false;
 			}
 		},
-		renderSettings: function(){
-			var name,setting,frag = document.createDocumentFragment(),item;
-			for(name in settings){
-				setting = $o.get(name,true);
-				switch(setting.type){
-					case 'select':
-						item = $('<select>')
-									.attr('id','setting_'+name)
-									.change(function(){
-										$o.set(this.id.substr(8),$(this).find(':selected').text(),false);
-									});
-						for(var i in setting.values){
-							item.append(
-								$('<option>')
-									.text(setting.values[i])
-							);
-						}
-						item.find(':contains('+setting.val+')').attr('selected','selected');
-					break;
-					case 'array':
-						item = $('<input>')
-									.attr({
-										type: 'text',
-										id: 'setting_'+name
-									})
-									.val(setting.val)
-									.change(function(){
-										$o.set(this.id.substr(8),$(this).val().split(','),false);
-									});
-					break;
-					case 'boolean':
-						item = $('<input>')
-									.attr({
-										type: 'checkbox',
-										id: 'setting_'+name
-									})
-									.change(function(){
-										$o.set(this.id.substr(8),$(this).is(':checked'),false);
-									});
-						if(setting.val){
-							item.attr('checked','checked');
-						}
-					break;
-					case 'number':
-					case 'string':default:
-						item = $('<input>')
-									.attr({
-										type: 'text',
-										id: 'setting_'+name
-									})
-									.val(setting.val)
-									.change(function(){
-										$o.set(this.id.substr(8),$(this).val(),false);
-									});
-				}
-				$(frag).append(
-					$('<li>')
-						.addClass('row')
-						.append(
-							$('<span>')
-								.text(name)
-								.addClass('cell')
-						)
-						.append(
-							$('<span>')
-								.append(item)
-								.addClass('cell')
-						)
-				);
-			}
-			$('#settings-list').html(frag);
-		},
-		renderUsers: function(){
-			event('Rendering userlist');
-			var $ul = $('#user-list').html(''),
-				i,
-				names = tabs[selectedTab].names;
-			for(i in names){
-				$ul.append(
-					$('<li>').text(names[i])
-				);
-			}
-		},
-		selectedTab: function(){
-			return selectedTab;
-		},
 		prop: function(name){
 			return exists(properties[name])?properties[name]:null;
 		},
 		send: function(msg){
-			if(msg !== ''){
-				//eastegg rickroll start
-				if (msg.search("goo.gl/QMET")!=-1 || msg.search("youtube.com/watch?v=oHg5SJYRHA0")!=-1 || msg.search("youtube.com/watch?v=dQw4w9WgXcQ")!=-1) {
-					var rick = document.createElement('div');rick.style.position='absolute';rick.style.zIndex='39px';rick.style.top='0';rick.style.left='35px';rick.innerHTML='<object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=6,0,29,0"><param name="movie" value="http://i-lost-the-ga.me/rickroll.swf"><param name="quality" value="high"><embed src="http://i-lost-the-ga.me/rickroll.swf" quality="high" pluginspage="http://www.macromedia.com/go/getflashplayer" type="application/x-shockwave-flash"></embed></object>';document.body.appendChild(rick);
-				}
-				//easteregg rickroll end
-				if(msg[0] == '/' && msg[1] != '/'){
-					var args = msg.split(' '),
-						cmd = args[0].substr(1),
-						i;
-					event(msg,'command');
-					for(i in commands){
-						if(commands[i].cmd == cmd){
-							commands[i].fn(args);
-							return;
-						}
-					}
-					$o.msg(cmd+' is not a valid command.');
-				}else{
-					event(msg,'send');
-					socket.emit('message',{
-						message: msg,
-						room: tabs[selectedTab].name,
-						from: properties.nick
-					});
-				}
-			}
+			$o.chat.send(msg);
 		},
 		msg: function(msg,tabName){
 			var frag;
-			if(typeof tabName == 'undefined' || tabName == tabs[selectedTab].name){
+			if(typeof tabName == 'undefined' || tabName == $o.ui.tabs.current().name || typeof $o.ui.tabs.tab(tabName).body == 'undefined'){
 				frag = document.createDocumentFragment();
 			}else{
-				frag = tabs[$o.tabIdForName(tabName)].body;
+				frag = $o.ui.tabs.tab(tabName).body;
 			}
-			switch(typeof msg){
-				case 'string':
-					$(frag).append($('<li>').html(msg.htmlentities()));
-					break;
-				case 'object':
-					if(typeof msg.html == 'undefined'){
-						$(frag).append($('<li>').html('&lt;'+msg.user+'&gt;&nbsp;'+msg.text.htmlentities()));
-					}else{
-						$(frag).append(msg.html);
-					}
-					break;
+			try{
+				switch(typeof msg){
+					case 'string':
+						$(frag).append($('<li>').html(msg.htmlentities()));
+						break;
+					case 'object':
+						if(typeof msg.html == 'undefined'){
+							$(frag).append($('<li>').html('&lt;'+msg.user+'&gt;&nbsp;'+msg.text.htmlentities()));
+						}else{
+							$(frag).append(msg.html);
+						}
+						break;
+				}
+			}catch(e){event('Failed to add message','error')}
+			if(tabs.length > 0){
+				$($o.ui.tabs.tab(tabName).body || $o.ui.tabs.current().body).append(frag);
 			}
-			$(tabs[$o.tabIdForName(tabName) || selectedTab].body).append(frag);
 			var scroll = [],i,html;
 			for(i in tabs){
 				html = '';
@@ -545,165 +900,12 @@
 				});
 			}
 			$.localStorage('tabs',scroll);
-			if(typeof tabName == 'undefined' || tabName == tabs[selectedTab].name){
-				$o.selectTab(selectedTab);
+			if(typeof tabName == 'undefined' || tabName == $o.ui.tabs.current().name){
+				$o.ui.tabs.select(selectedTab);
 			}
 		},
 		event: function(event_name,message){
 			event(message,event_name);
-		},
-		selectTab: function(id){
-			event(id+' '+tabs[id].name,'tab_select');
-			if(id<tabs.length&&id>=0){
-				selectedTab=id;
-			}
-			$tl.children('.clicked').removeClass('clicked');
-			$($tl.children().get(id)).addClass('clicked');
-			$('#title').text(tabs[id].title);
-			$('#topic').text(tabs[id].topic);
-			$cl.html($(tabs[id].body).clone());
-			abbrDate('abbr.date');
-			$o.renderUsers();
-			setTimeout(function scrollContent(){
-				if($c.scrollTop() < $c[0].scrollHeight){
-					$c.scrollTop($c.scrollTop()+1);
-					setTimeout(scrollContent,settings.scrollspeed);
-				}else{
-					event('scrolling stopped');
-				}
-			},settings.scrollspeed);
-		},
-		tabIdForName: function(name){
-			for(var i in tabs){
-				if(tabs[i].name == name){
-					return i;
-				}
-			}
-			return false;
-		},
-		tabDOM: function(id){
-			return tabs[id].body;
-		},
-		addTab: function(name,title){
-			event('Tab added: '+name+' with title '+title);
-			if(!(function(){
-				for(var i in tabs){
-					if(name==tabs[i].name){
-						return true;
-					}
-				}
-				return false;
-			})()){
-				var scroll = $.localStorage('tabs'),
-					i,
-					frag = document.createDocumentFragment();
-				for(i in scroll){
-					if(scroll[i].name == name){
-						scroll[i].body = $(scroll[i].body).slice(-10);
-						$(frag)
-							.append(scroll[i].body)
-							.append(
-								$('<li>').html('<span class="to_remove">-- loaded old scrollback for '+scroll[i].date+' --</span>')
-							)
-							.children()
-							.children('.remove')
-							.remove();
-						$(frag)
-							.children()
-							.children('.to_remove')
-							.removeClass('to_remove')
-							.addClass('remove');
-						event('loading old tab scrollback for '+name+' last saved +'+scroll[i].date);
-					}
-				}
-				tabs.push({
-					name: name,
-					title: title,
-					body: frag,
-					names: []
-				});
-				$tl.append($o.tabObj(tabs.length-1));
-				$o.refreshTabs();
-				$o.renderUsers();
-			}else{
-				event('Attempted to add an existing tab');
-			}
-		},
-		removeTab: function(id){
-			if(typeof tabs[id] != 'undefined'){
-				event('Tab removed: '+tabs[id].name);
-				socket.emit('part',{
-					name: tabs[id].name
-				});
-				tabs.splice(id,1);
-				if(selectedTab==id&&selectedTab>0){
-					selectedTab--;
-				}
-			}
-			$o.refreshTabs();
-			$cl.html(tabs[selectedTab].body);
-			$o.renderUsers();
-		},
-		tabObj: function(id){
-			if(typeof id !== 'undefined'){
-				return $('<div>')
-					.addClass('tab')
-					.text(tabs[id].title)
-					.mouseup(function(e){
-						switch(e.which){
-							case 1:	// RMB
-								if($(this).data('id')!=selectedTab){
-									$o.selectTab($(this).data('id'));
-									return prevent(e);
-								}
-								break;
-							case 2:	// MMB
-								$(this).children('span.close-button').click();
-								return prevent(e);
-								break;
-							case 3:	// LMB
-								return prevent(e);
-								break;
-							default:
-								return prevent(e);
-						}
-					})
-					.append(
-						$('<span>')
-							.addClass('close-button')
-							.click(function(){
-								$o.removeTab(id);
-								return false;
-							})
-							.css({
-								'position': 'absolute',
-								'background-color': 'inherit',
-								'top': 0,
-								'right': 0
-							})
-							.html('&times;')
-					)
-					.data('id',id);
-			}
-		},
-		refreshTabs: function(){
-			$tl.html('');
-			var i,tab;
-			for(i in tabs){
-				tab = $o.tabObj(i);
-				if(i==selectedTab){
-					tab.addClass('clicked');
-					$('#title').text(tabs[i].title);
-					$('#topic').text(tabs[i].topic);
-				}
-				$tl.append(tab);
-			}
-			if($tl.get(0).scrollHeight-20 != $tl.scrollTop()){
-				$('#tabs-scroll-right').removeClass('disabled');
-			}
-			if($tl.scrollTop() != 0){
-				$('#tabs-scroll-left').removeClass('disabled');
-			}
 		}
 	});
 	String.prototype.htmlentities = function(){
@@ -779,13 +981,7 @@
 					icon: 'add',
 					callback: function(){
 						$(this).contextMenu('hide');
-						var title = prompt('Title');
-						tabs.push({
-							name: prompt('channel'),
-							title: title,
-							topic: 'Topic for '+title
-						});
-						$o.refreshTabs();
+						$o.ui.tabs.add(prompt('Channel'));
 					}
 				},
 				s1: '',
@@ -794,7 +990,7 @@
 					icon: 'delete',
 					callback: function(){
 						$(this).contextMenu('hide');
-						$o.removeTab($(this).data('id'));
+						$o.ui.tabs.remove($(this).data('id'));
 					}
 				}
 			},
@@ -809,13 +1005,7 @@
 					icon: 'add',
 					callback: function(){
 						$(this).contextMenu('hide');
-						var title = prompt('Title');
-						tabs.push({
-							name: prompt('channel'),
-							title: title,
-							topic: 'Topic for '+title
-						});
-						$o.refreshTabs();
+						$o.ui.tabs.add(prompt('channel'));
 					}
 				}
 			},
@@ -844,26 +1034,17 @@
 				setTimeout(scrollup,10);
 			}
 		})();
-		//DEBUG
-		/* for(var i=0;i<20;i++){
-			tabs.push({
-				name: '#Tab'+i,
-				title: 'Tab '+i,
-				topic: 'Topic for tab '+i
-			});
-		} */
-		//END DEBUG
 		event('Date '+new Date,'ready');
 		$h.addClass('hovered');
 		setTimeout(function(){
 			$h.removeClass('hovered');
 		},1000);
-		$o.renderSettings();
+		$o.ui.render.settings();
 		if(settings.autoconnect){
-			$o.connect();
+			$o.chat.connect();
 		}
 	});
-	delete window.io;
+	window.io = null;
 })(window,jQuery,io);
 if (!Date.prototype.toISOString) {
     Date.prototype.toISOString = function() {
@@ -875,4 +1056,7 @@ if (!Date.prototype.toISOString) {
             + pad(this.getUTCMinutes()) + ':'
             + pad(this.getUTCSeconds()) + 'Z';
     };
+}
+if(!String.prototype.isNumber){
+	String.prototype.isNumber = function(){return /^\d+$/.test(this);}
 }

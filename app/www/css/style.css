@@ -45,6 +45,7 @@ html,body{
     line-height: 17px;
     margin-top: 0;
     display: block;
+	cursor: pointer;
 }
 .close-button:hover{
 	color: red;
@@ -73,7 +74,7 @@ html,body{
 	display: table-cell;
 	text-align: right;
 }
-#content{
+#content,#console-log{
 	width: 100%;
 	height: calc(100% - 61px);
 	top: 41px;
@@ -97,6 +98,22 @@ html,body{
 	text-shadow: 0 0 4px rgba(0, 40, 170, 0.5);
 }
 
+#console-log{
+    font-size: 14px;
+	display: none;
+}
+#console-log-pre{
+	height: 100%;
+	margin: 0;
+	padding: 2px;
+}
+#console-log-controls{
+	position: absolute;
+	bottom: 22px;
+	width: 100%;
+	overflow: hidden;
+}
+
 #settings,#users{
 	font-family: Arial,Liberation Sans,DejaVu Sans,sans-serif;
 	font-size: 12px;
@@ -109,6 +126,12 @@ html,body{
 	transition: width 0.5s, height 0.5s, right 0.5s;
 }
 #settings span,#users span{
+	cursor: pointer;
+}
+#settings.open span,#users.open.span{
+	cursor: default;
+}
+#settings.open span.close-button,#users.open span.close-button{
 	cursor: pointer;
 }
 #users{
@@ -191,14 +214,14 @@ html,body{
 	font-variant: small-caps;
 }
 
-#content,#head,#users,#entry,#input,#send,#settings{
+#console-log,#content,#head,#users,#entry,#input,#send,#settings{
  	border-color: rgba(102, 153, 255, 0.6);
  	border-top-color: rgba(102, 153, 255, 0.9);
 	border-width: 1px;
 	position: absolute;
 	overflow: hidden;
 }
-#content{
+#console-log,#content{
 	overflow-y: scroll;
 }
 #users,#input,#send,#settings{
@@ -228,7 +251,7 @@ html,body{
 	font-family: Arial,Liberation Sans,DejaVu Sans,sans-serif;
 	font-size: 15px;
 }
-#user-list li:nth-child(even) {
+#user-list li:nth-child(even){
     background-color: #DFEFFF;
     border: solid 1px #6699ff;
     border-left: 0px;

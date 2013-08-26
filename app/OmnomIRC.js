@@ -1,19 +1,27 @@
 #!node
+process.chdir(__dirname);
 var fs = require('fs'),
 	url = require('url'),
 	path = require('path'),
 	vm = require('vm'),
 	toobusy = function(){return false;},//require('toobusy'),
 	cluster = require('cluster'),
-	options = (function(){
+	options = global.options = (function(){
 		var defaults = {
 				port: 80,
 				loglevel: 3,
 				redis: {
 					port: 6379,
 					host: 'localhost'
+				},
+				debug: false,
+				paths: {
+					www: './www/',
+					api: './api/',
+					plugins: './plugins/'
 				}
 			},
+			i,
 			options;
 		try{
 			options = JSON.parse(fs.readFileSync('./options.json'));
@@ -21,9 +29,17 @@ var fs = require('fs'),
 				defaults[i] = options[i];
 			}
 		}catch(e){
-			console.warn('Using default settings. Please create options.js');
+			console.warn('Using default settings. Please create options.json');
 		}
-		return defaults;
+		options = {};
+		for(i in  defaults){
+			Object.defineProperty(options,i,{
+				value: defaults[i],
+				enumerable: true,
+				writable: false
+			});
+		}
+		return options;
 	})();
 if(typeof fs.existsSync == 'undefined') fs.existsSync = path.existsSync; // legacy support
 if(cluster.isMaster){
@@ -33,6 +49,14 @@ if(cluster.isMaster){
 	cluster.on('exit', function(worker, code, signal) {
 		console.log('worker ' + worker.process.pid + ' died');
 	});
+	if(options.debug){
+		require('repl').start({
+			prompt: '> ',
+			useGlobal: true
+		}).on('exit',function(){
+			process.exit();
+		});
+	}
 }else{
 	var RedisStore = require('socket.io/lib/stores/redis'),
 		redis  = require('socket.io/node_modules/redis'),
@@ -103,7 +127,7 @@ if(cluster.isMaster){
 					},
 					filepath = unescape(uri);
 				if(filepath.substr(0,5) == '/api/'){
-					filepath = path.join('./api/',filepath.substr(5));
+					filepath = path.join(options.paths.api,filepath.substr(5));
 					logger.debug('Attempting to run api script '+filepath);
 					if(fs.existsSync(filepath)){
 						fs.readFile(filepath,function(e,data){
@@ -144,7 +168,7 @@ if(cluster.isMaster){
 						res.end('null;');
 					}
 				}else{
-					serveFile(path.join('./www/',filepath),req,res);
+					serveFile(path.join(options.paths.www,filepath),req,res);
 				}
 			}).resume();
 		}).listen(options.port),
@@ -169,8 +193,7 @@ if(cluster.isMaster){
 			socket.join(data.name);
 			data.title = data.name;
 			socket.emit('join',{
-				name: data.name,
-				title: data.title
+				name: data.name
 			});
 			sendUserList(data.name);
 			socket.get('nick',function(e,nick){
@@ -215,7 +238,7 @@ if(cluster.isMaster){
 				i;
 			runWithUserList(data.name,function(users){
 				var temp = [],i;
-				for(i in users) i && temp.push(users[i]);
+				for(i in users) i && i != null && temp.push(users[i]);
 				users = temp;
 				socket.emit('message',{
 					message: data.name+" users:\n\t\t"+users.join("\n\t\t"),
@@ -242,8 +265,7 @@ if(cluster.isMaster){
 							sockets[i].get('nick',function(e,nick){
 								if(e){
 									logger.error(e);
-									ret.push('');
-								}else{
+								}else if(!inArray(ret,nick)){
 									logger.debug(room+' '+nick);
 									ret.push(nick);
 								}
@@ -255,6 +277,14 @@ if(cluster.isMaster){
 						}
 					};
 				getNext();
+			},
+			inArray = function(arr,val){
+				for(var i in arr){
+					if(arr[i] == val){
+						return true;
+					}
+				}
+				return false;
 			},
 			sendUserList = function(room){
 				if(typeof room != 'undefined'){
