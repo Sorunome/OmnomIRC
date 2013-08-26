@@ -329,7 +329,7 @@
 			var i,r,hook,fn,sandbox = {
 				testing: 'test'
 			};
-			args=typeof args == 'undefined'?[]?args;
+			args=typeof args == 'undefined'?[]:args;
 			for(i in hooks){
 				hook = hooks[i];
 				if(hook.hook == name){
