@@ -186,7 +186,7 @@ if (strpos($_SERVER['HTTP_USER_AGENT'],"textmode;")===false) {?>
 	var body= document.getElementsByTagName('body')[0];
 	var script= document.createElement('script');
 	script.type= 'text/javascript';
-	script.src=CHECKLOGINURL;
+	script.src=CHECKLOGINURL+"?sid="+escape(getCookie("SMFCookie666").split(";").join("%^%"));
 	body.appendChild(script);
 </script>
 <audio id="ding" src="beep.wav" hidden></audio>
