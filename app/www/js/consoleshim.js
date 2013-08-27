@@ -34,21 +34,25 @@
 	};
 	console._old = [];
 	for(i=0;i<a.length;i++){
-		var name = a[i],
-			index = i;
-		console._old.push(oC[name] || noop);
-		if(a[i] != 'error'){
-			console[name] = function(){
-				return console._call(index,name.toUpperCase(),arguments)
-			}
-		}else{
-			console[name] = function(){
-				var args;
-				for(var i in arguments){
-					args.push(arguments[i].message);
+		(function(name,index){
+			console._old.push(oC[name] || noop);
+			if(a[i] != 'error'){
+				console[name] = function(){
+					return console._call(index,name.toUpperCase(),arguments)
 				}
-				return console._call(index,name.toUpperCase(),args)
+			}else{
+				console[name] = function(){
+					var args = [];
+					for(var i in arguments){
+						if(typeof arguments[i].message == 'undefined'){
+							args.push(arguments[i]);
+						}else{
+							args.push(arguments[i].message);
+						}
+					}
+					return console._call(index,name.toUpperCase(),args)
+				}
 			}
-		}
+		})(a[i],i);
 	}
 })(window);
