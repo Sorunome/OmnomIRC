@@ -616,6 +616,17 @@ scrolledDown = true;
 		numCharsHighlight = parseInt(getOption(13,"3"))+1;
 		hideUserlist = getOption(14,"F") == "T";
 		showScrollBar = getOption(15,"F") == "T";
+		if (!hideUserlist) {
+			var style = document.createElement("style");
+			style.type="text/css";
+			style.innerHTML = "#topicbox{width:88%;width:calc(88% - 5px);width:-webkit-calc(88% - 5px);}\
+								#Channels{width:88%;}\
+								input[type=text]{width:82%;width:calc(91% - 115px);width:-webkit-calc(91% - 115px);}\
+								#mBoxCont{width:90%;}\
+								.arrowButtonHoriz2,.arrowButtonHoriz3 > div:nth-child(2){left:89%;left:calc(90% - 5px);left:-webkit-calc(90% - 5px);}\
+								#UserListContainer{left:90%;height:98%;transition:none;-webkit-transition:none;-o-transition-property:none;-o-transition-duration:none;-o-transition-delay:none;}";
+			body.appendChild(style);
+		}
 		if (showScrollBar) {
 			var scrollBar = document.createElement("div");
 			scrollBar.id="scrollBar";
@@ -691,18 +702,8 @@ scrolledDown = true;
 			if (!hideUserlist) {
 				scrollBar.style.left=String(((body.offsetWidth/100)*90)-17)+"px";
 				line.style.left=String(((body.offsetWidth/100)*90)-13)+"px";
+				mboxCont.style.width=String(((body.offsetWidth/100)*90)-22)+"px";
 			}
-		}
-		if (!hideUserlist) {
-			var style = document.createElement("style");
-			style.type="text/css";
-			style.innerHTML = "#topicbox{width:88%;width:calc(88% - 5px);width:-webkit-calc(88% - 5px);}\
-								#Channels{width:88%;}\
-								input[type=text]{width:82%;width:calc(91% - 115px);width:-webkit-calc(91% - 115px);}\
-								#mBoxCont{width:90%;}\
-								.arrowButtonHoriz2,.arrowButtonHoriz3 > div:nth-child(2){left:89%;left:calc(90% - 5px);left:-webkit-calc(90% - 5px);}\
-								#UserListContainer{left:90%;height:98%;transition:none;-webkit-transition:none;-o-transition-property:none;-o-transition-duration:none;-o-transition-delay:none;}";
-			body.appendChild(style);
 		}
 		hasLoaded = false;
 		if (!showSmileys) {
