@@ -54,21 +54,8 @@
 			return false;
 		},
 		selectedTab=0,
-		settings = {
-			colour: false,
-			debug: false,
-			timestamp: 'exact',
-			server: location.origin,
-			autoconnect: true,
-			autojoin: [
-				'#omnimaga',
-				'#omnimaga-fr',
-				'#irp'
-			],
-			scrollspeed: 100,
-			theme: 'default',
-			nick: 'User'
-		},
+		settings = {},
+		settingsConf = {},
 		tabs = [],
 		properties = {
 			nick: 'User',
@@ -412,8 +399,24 @@
 			plugin: function(){
 				// STUB
 			},
-			setting: function(name,defaultVal,validate,values){
-				// STUB
+			setting: function(name,type,val,validate,values,callback){
+				if(!exists(settings[name])){
+					validate = exists(validate)?validate:function(){};
+					values = exists(values)?values:false;
+					callback = exists(callback)?callback:function(){};
+					settings[name] = val;
+					settingsConf[name] = {
+						validate: validate,
+						callback: callback,
+						type: type,
+						values: values,
+						default: val,
+						name: name
+					}
+					return true;
+				}else{
+					return false;
+				}
 			},
 			hook: function(event,fn){
 				hooks.push({
@@ -842,29 +845,36 @@
 			if(!exists(formatted)){
 				return exists(settings[name])?settings[name]:false;
 			}else{
-				var val = $o.get(name),
-					type,
-					values = false;
-				switch(name){
-					case 'theme':
-						type = 'select';
-						values = properties.themes;
-						break;
-					case 'autojoin':type = 'array';break;
-					case 'timestamp':type = 'string';break;
-					default:
-						type = typeof val;
+				if(exists(settingsConf[name]) && exists(settings[name])){
+					var r = $.extend({},settingsConf[name]);
+					r.val = settings[name];
+					r.validate = undefined;
+					r.callback = undefined;
+					delete r['validate'];
+					delete r['callback'];
+					return r;
+				}else{
+					return false;
 				}
-				return {
-					type: type,
-					val: val,
-					values: values,
-					name: name
-				};
 			}
 		},
 		set: function(name,value,render){
 			if(exists(settings[name])){
+				var setting;
+				if(exists(settingsConf[name])){
+					setting = $.extend({},settingsConf[name]);
+				}else{
+					setting = {
+						val: setting[name],
+						callback: function(){},
+						validate: function(){},
+						values: undefined,
+						type: typeof setting[name]
+					}
+				}
+				if(setting.validate(setting[name],value,setting.values,name) == false){
+					return false;
+				}
 				if(!runHook('setting',[
 					name,
 					settings[name],
@@ -878,24 +888,7 @@
 				}
 				settings[name] = value;
 				$.localStorage('settings',JSON.stringify(settings));
-				switch(name){
-					case 'timestamp':
-						abbrDate('abbr.date');
-						if(settings.timestamp == ''){
-							$('.date_cell').css('visibility','hidden');
-						}else{
-							$('.date_cell').css('visibility','visible');
-						}
-					break;
-					case 'nick':
-						$o.chat.auth();
-					break;
-					case 'debug':
-						if(exists(render)){
-							$o.ui.render.settings();
-						}
-					break;
-				}
+				setting.callback(value,name,exists(render));
 				if(exists(render)){
 					$o.ui.render.settings();
 				}
@@ -956,6 +949,71 @@
 		},
 		event: function(event_name,message){
 			event(message,event_name);
+		}
+	});
+	(function(settings){
+		var i,s;
+		for(i in settings){
+			s = settings[i];
+			$o.register.setting(i,s.type,s.val,s['validate'],s['values'],s['callback']);
+		}
+	})({
+		colour: {
+			type: 'boolean',
+			val: false
+		},
+		debug: {
+			type: 'boolean',
+			val: false,
+			callback: function(v,s,r){
+				if(r){
+					$o.ui.render.settings();
+				}
+			}
+		},
+		timestamp: {
+			type: 'string',
+			val: 'exact',
+			callback: function(v,s){
+				abbrDate('abbr.date');
+				if(v == ''){
+					$('.date_cell').css('visibility','hidden');
+				}else{
+					$('.date_cell').css('visibility','visible');
+				}
+			}
+		},
+		server: {
+			type: 'string',
+			val: location.origin
+		},
+		autoconnect: {
+			type: 'boolean',
+			val: true
+		},
+		autojoin: {
+			type: 'array',
+			val: [
+				'#omnimaga',
+				'#omnimaga-fr',
+				'#irp'
+			]
+		},
+		scrollspeed: {
+			type: 'number',
+			val: 100
+		},
+		theme: {
+			type: 'select',
+			val: 'default',
+			values: properties.themes
+		},
+		nick: {
+			type: 'string',
+			val: 'User',
+			callback: function(){
+				$o.chat.auth();
+			}
 		}
 	});
 	String.prototype.htmlentities = function(){
