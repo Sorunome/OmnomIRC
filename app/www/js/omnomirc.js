@@ -1151,6 +1151,26 @@
 		if(settings.autoconnect){
 			$o.chat.connect();
 		}
+		// Check for script updates and update if required
+		(function checkScripts(){
+			for(var i in document.scripts){
+				(function(el,src){
+					if(exists(src) && el.innerHTML == ''){
+						$.ajax(src,{
+							success: function(source){
+								if(exists($(el).data('source')) && $(el).data('source') != source){
+									event('Reloading','update');
+									location.reload();
+								}
+								$(el).data('source',source);
+							},
+							dataType: 'text'
+						});
+					}
+				})(document.scripts[i],document.scripts[i].src);
+			}
+			setTimeout(checkScripts,1000);
+		})();
 	});
 	window.io = null;
 	runHook('load');
