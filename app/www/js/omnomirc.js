@@ -299,20 +299,12 @@
 				}
 			}
 		],
-		hooks = [
-			{
-				type: '',
+		hooks = window.hooks = [
+			{	// setting - setting
+				type: 'setting',
 				hook: 'setting',
 				fn: function(name){
 					return name != 'colour';
-				}
-			},
-			{	// load - style
-				type: 'style',
-				hook: 'load',
-				fn: function(){
-					// STUB
-					event('testing == '+testing,'debug');
 				}
 			}
 		],
@@ -416,10 +408,12 @@
 					return false;
 				}
 			},
-			hook: function(event,fn){
+			hook: function(event,fn,type){
+				type=exists(type)?type:'hook';
 				hooks.push({
 					hook: event,
-					fn: fn
+					fn: fn,
+					type: type
 				})
 			}
 		},
@@ -875,7 +869,7 @@
 				}
 				if(
 					(exists(setting.values) && $.inArray(value,setting.values) == -1) ||
-					setting.validate(setting[name],value,setting.values,name) == false ||
+					setting.validate(settings[name],value,setting.values,name) == false ||
 					!runHook('setting',[
 						name,
 						settings[name],
@@ -1009,18 +1003,52 @@
 			type: 'select',
 			val: 'default',
 			values: properties.themes,
+			validate: function(o,n,v,s){
+				runHook('untheme',[o,n]);
+			},
 			callback: function(v,s,r){
-				if($('link[id="theme-style"]').attr('href') != 'data/themes/'+v+'/style.css' || $('script[id="theme-script"]').attr('src') != 'data/themes/'+v+'/script.js'){
+				if($('link[id="theme-style"]').attr('href') != 'data/themes/'+v+'/style.css'){
 					event('Loading theme '+v);
+					runHook('theme',[v]);
 					$('link[id="theme-style"]').attr({
 						id: 'theme-style',
 						rel: 'stylesheet',
 						href: 'data/themes/'+v+'/style.css'
 					});
-					$('script[id="theme-script"]').attr({
-						id: 'theme-script',
-						type: 'text/javascript',
-						src: 'data/themes/'+v+'/script.js'
+					var i,h;
+					for(i in hooks){
+						h = hooks[i];
+						if(h.type == 'style'){
+							hooks.splice(i,1);
+						}
+					}
+					$.ajax('data/themes/'+v+'/script.js',{
+						dataType: 'text',
+						success: function(data){
+							var sandbox = {
+									load: function(fn){
+										fn();
+									},
+									unload: function(fn){
+										$o.register.hook('untheme',"function(o,n){if(o == '"+v+"'){("+(fn+'').replace(/\/\/.+?(?=\n|\r|$)|\/\*[\s\S]+?\*\//g,'').replace(/\"/g,'\\"').replace(/\n/g,'').replace(/\r/g,'')+")();}}",'style');
+									},
+									alert: noop,
+									confirm: noop,
+									prompt: noop,
+									$: window.jQuery,
+									$o: window.OmnomIRC,
+									OmnomIRC: window.OmnomIRC,
+									document: {}
+								},
+								fn = data.replace(/\/\/.+?(?=\n|\r|$)|\/\*[\s\S]+?\*\//g,'').replace(/\"/g,'\\"').replace(/\n/g,'').replace(/\r/g,'');
+							sandbox.window = sandbox;
+							fn = 'eval("with(this){(function(theme){'+fn+'}).apply(this);}");';
+							try{
+								r = (new Function(fn)).apply(sandbox);
+							}catch(e){
+								event('Theme script failed to run: '+e+"\nFunction that ran: "+fn,'script_error');
+							}
+						}
 					});
 				}
 			}
@@ -1191,7 +1219,7 @@
 			for(i in s){
 				(function(el,href){
 					if(exists(href) && el.innerHTML == ''){
-						$.ajax(src,{
+						$.ajax(href,{
 							success: function(source){
 								if(exists($(el).data('source')) && $(el).data('source') != source){
 									event('Updating CSS','update');
