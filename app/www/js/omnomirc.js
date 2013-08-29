@@ -1003,7 +1003,7 @@
 		},
 		scrollspeed: {
 			type: 'number',
-			val: 100
+			val: 10
 		},
 		theme: {
 			type: 'select',

@@ -1,0 +1,254 @@
+html,body{
+	width: 100%;
+	height: 100%;
+	padding: 0;
+	margin: 0;
+	overflow: hidden;
+	color: white;
+	background-color: black;
+}
+.unselectable{
+	cursor: default;
+}
+.fill{
+	width: 100%;
+	height: 100%;
+}
+.row{
+	display: table-row;
+}
+.cell{
+	display: table-cell;
+}
+.date_cell{
+	word-wrap: normal;
+	white-space: pre;
+	word-break: keep-all;
+}
+.unselectable,#tabs-list div.tab{
+	-webkit-touch-callout: none;
+	-webkit-user-select: none;
+	-khtml-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	user-select: none;
+}
+.close-button{
+	float: right;
+	font-weight: bold;
+	font-size: 24px;
+	margin-top: -5px;
+	font-family: Arial,Liberation Sans,DejaVu Sans,sans-serif;
+	cursor: pointer;
+}
+.close-button:hover{
+	color: red;
+}
+#head{
+	right: 0;
+	top: 0;
+	width: 100%;
+	height: 40px;
+	border-bottom-style: solid;
+	background-color: black;
+	transition: height 0.3s;
+	z-index: 10;
+}
+#info{
+	display: table;
+	width: 100%;
+}
+#title{
+	display: table-cell;
+}
+#topic{
+	display: table-cell;
+	text-align: right;
+}
+#content,#console-log{
+	width: 100%;
+	height: calc(100% - 61px);
+	top: 41px;
+	left: 0;
+}
+#console-log{
+	display: none;
+}
+#console-log-pre{
+	height: 100%;
+	margin: 0;
+	padding: 2px;
+}
+#console-log-controls{
+	position: absolute;
+	bottom: 22px;
+	width: 100%;
+	overflow: hidden;
+}
+#settings,#users{
+	bottom: 0;
+	height: 18px;
+	background-color: black;
+	border-left-style: solid;
+	border-top-style: solid;
+	margin-top: -1px;
+	transition: width 0.5s, height 0.5s, right 0.5s;
+}
+#settings span,#users span{
+	cursor: pointer;
+}
+#settings.open span,#users.open.span{
+	cursor: default;
+}
+#settings.open span.close-button,#users.open span.close-button{
+	cursor: pointer;
+}
+#users{
+	right: 0;
+	width: 36px;
+	z-index: 1;
+}
+#settings{
+	width: 52px;
+	border-right-style: solid;
+	right: 36px;
+}
+#settings.hovered,#users.hovered{
+	height: 21px;
+}
+#settings.open,#users.open{
+	width: 150px;
+	height: 100%;
+	right: 0;
+	z-index: 20;
+}
+#settings.open{
+	width: 300px;
+}
+#entry{
+	width: 100%;
+	border-top-style: solid;
+	height: 18px;
+	bottom: 0;
+}
+#input{
+	width: calc(100% - 126px);
+	height: 16px;
+	margin: 0;
+	padding: 1px;
+	border-style: none;
+	background-color: grey;
+	clear: none;
+	bottom: 0;
+	left: 0;
+}
+#send{
+	clear: none;
+	bottom: 0;
+	right: 88px;
+	width: 36px;
+	padding: 0;
+	margin: 0;
+	height: 18px;
+	border-style: none;
+	border-left-style: solid;
+	background-color: black;
+	color: white;
+	transition: background-color 0.2s;
+}
+#send:hover{
+	background-color: grey;
+}
+#send.clicked{
+	background-color: red;
+}
+#console-log,#content,#head,#users,#entry,#input,#send,#settings{
+	border-color: white;
+	border-width: 1px;
+	position: absolute;
+	overflow: hidden;
+}
+#console-log,#content{
+	overflow-y: scroll;
+}
+#users,#input,#send,#settings{
+	position: fixed;
+}
+#content-list,#user-list,#settings-list,#tabs-list{
+	list-style-type: none;
+	margin: 0;
+	padding: 0;
+	overflow-y: auto;
+	word-wrap: break-word;
+	white-space: pre-wrap;
+	word-break: break-all;
+}
+#content-list,#user-list,#tabs-list{
+	width: 100%;
+	height: 100%;
+}
+#content-list,#settings-list{
+	display: table;
+	table-layout: fixed;
+}
+#settings-list > li{
+	line-height: 4px;
+}
+#user-list{
+	padding-left: 5px;
+}
+#tabs-list{
+	width: calc(100% - 42px);
+	height: 20px;
+	position: absolute;
+	left: 0;
+	top: 20px;
+	overflow: hidden;
+}
+#tabs-list div.tab{
+	float: left;
+	min-width: 100px;
+	max-width: 200px;
+	height: 19px;
+	overflow: hidden;
+	position: relative;
+}
+#tabs-list div.tab.clicked{
+	background-color: darkgrey;
+}
+#tabs-scroll-left{
+	position: absolute;
+	right: 20px;
+	top: 20px;
+	height: 20px;
+	width: 20px;
+}
+#tabs-scroll-right{
+	position: absolute;
+	right: 0;
+	top: 20px;
+	height: 20px;
+	width: 20px;
+}
+#tabs-list div.tab, #tabs-scroll-right,#tabs-scroll-left{
+	border-style: solid;
+	border-top-right-radius: 3px;
+	border-top-left-radius: 3px;
+	border-color: white;
+	border-top-style: solid;
+	border-right-style: solid;
+	border-left-style: solid;
+	border-bottom-style: none;
+	border-width: 1px;
+	padding: 0;
+	margin: 0;
+	background-color: black;
+	cursor: pointer;
+	clear: none;
+}
+#tabs-list div.tab:hover, #tabs-scroll-right:hover,#tabs-scroll-left:hover{
+	background-color: grey;
+}
+#tabs-scroll-left.disabled, #tabs-scroll-right.disabled{
+	background-color: darkgrey;
+}
