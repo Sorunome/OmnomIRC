@@ -96,7 +96,6 @@ if(cluster.isMaster){
 						if(stats.isFile()){
 							var fileStream,
 								mimetype = mimeTypes[path.extname(filename).split('.')[1]];
-
 							res.writeHead(200,{
 								'Content-Type': mimetype
 							});
