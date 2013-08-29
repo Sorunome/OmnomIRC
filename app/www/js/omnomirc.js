@@ -819,6 +819,9 @@
 						}
 						$o.msg(cmd+' is not a valid command.');
 					}else{
+						if(msg[0]+msg[1] == '//'){
+							msg = msg.substr(1);
+						}
 						event(msg,'send');
 						emit('message',{
 							message: msg,
