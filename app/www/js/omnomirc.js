@@ -24,7 +24,7 @@
 		},
 		event = function(msg,type){
 			if(settings.debug){
-				type=typeof type == 'undefined'?'event':type;
+				type=exists(type)?type:'event';
 				switch(type){
 					case 'ready':type='document_ready';break;
 				}
@@ -54,29 +54,14 @@
 			return false;
 		},
 		selectedTab=0,
-		settings = {
-			colour: false,
-			debug: false,
-			timestamp: 'exact',
-			server: location.origin,
-			autoconnect: true,
-			autojoin: [
-				'#omnimaga',
-				'#omnimaga-fr',
-				'#irp'
-			],
-			scrollspeed: 100,
-			theme: 'default',
-			nick: 'User'
-		},
+		settings = {},
+		settingsConf = {},
 		tabs = [],
 		properties = {
 			nick: 'User',
 			sig: '',
 			tabs: tabs,
-			themes: [
-				'default'
-			]
+			themes: []
 		},
 		commands = [
 			{ // names
@@ -125,7 +110,7 @@
 			{ // help
 				cmd: 'help',
 				fn: function(args){
-					if(typeof args[1] == 'undefined'){
+					if(exists(args[1])){
 						var m = 'Commands:',i;
 						for(i in commands){
 							m += ' '+commands[i].cmd;
@@ -135,7 +120,7 @@
 						var i,cmd;
 						for(i in commands){
 							cmd = commands[i];
-							if(cmd.cmd == args[1] && typeof cmd.help != 'undefined'){
+							if(cmd.cmd == args[1] && exists(cmd.help)){
 								$o.msg('Command /'+cmd.cmd+': '+cmd.help);
 								return;
 							}
@@ -191,10 +176,24 @@
 						if(v != null){
 							if(tab.users.indexOf(v.trim()) == -1){
 								emit('echo',{
-									room: $o.ui.tabs.current().name,
+									room: data.room,
 									message: v+' left the room',
 									from: 0
 								});
+								runHook('part',[
+									v,
+									data.room
+								]);
+							}
+						}
+					});
+					$(tab.users).each(function(i,v){
+						if(v != null){
+							if(users.indexOf(v.trim()) == -1){
+								runHook('join',[
+									v,
+									data.room
+								]);
 							}
 						}
 					});
@@ -209,6 +208,7 @@
 							name: settings.autojoin[i]
 						});
 					}
+					runHook('authorized');
 				}
 			},
 			{ // join
@@ -228,6 +228,7 @@
 					event('reconnected');
 					properties.connected = true;
 					$o.chat.auth();
+					runHook('reconnect');
 					emit('echo',{
 						room: $o.ui.tabs.current().name,
 						from: 0,
@@ -241,6 +242,7 @@
 					event('connected');
 					properties.connected = true;
 					$o.chat.auth();
+					runHook('connect');
 					emit('echo',{
 						room: $o.ui.tabs.current().name,
 						from: 0,
@@ -253,6 +255,7 @@
 				fn: function(data){
 					event('disconnected');
 					properties.connected = false;
+					runHook('disconnected');
 					$o.msg('* disconnected');
 				}
 			},
@@ -288,11 +291,22 @@
 					}else{
 						$('.date_cell').css('visibility','visible');
 					}
-					
+					runHook('message',[
+						data.message,
+						data.from,
+						data.room
+					]);
 				}
 			}
 		],
 		hooks = [
+			{
+				type: '',
+				hook: 'setting',
+				fn: function(name){
+					return name != 'colour';
+				}
+			},
 			{	// load - style
 				type: 'style',
 				hook: 'load',
@@ -303,22 +317,27 @@
 			}
 		],
 		currentPlugin = 0,
-		runHook = function(name){
-			var i,hook,fn,sandbox = {
+		runHook = function(name,args){
+			var i,r=true,hook,fn,sandbox = {
 				testing: 'test'
 			};
+			args=exists(args)?args:[];
 			for(i in hooks){
 				hook = hooks[i];
 				if(hook.hook == name){
 					fn = (hook.fn+'').replace(/\/\/.+?(?=\n|\r|$)|\/\*[\s\S]+?\*\//g,'').replace(/\"/g,'\\"').replace(/\n/g,'').replace(/\r/g,'');
-					fn = 'eval("with(this){('+fn+')();}");';
+					fn = 'var ret = true;eval("with(this){ret = ('+fn+').apply(this,arguments);}");return ret;';
 					try{
-						(new Function(fn)).call(sandbox);
+						r = (new Function(fn)).apply(sandbox,args);
 					}catch(e){
 						event('Hook failed to run: '+e+"\nFunction that ran: "+fn,'hook_error');
 					}
 				}
+				if(r == false){
+					break;
+				}
 			}
+			return r;
 		},
 		version = '3.0',
 		abbrDate = function(selector){
@@ -348,8 +367,6 @@
 			}
 		},
 		socket,$i,$s,$h,$cl,$c,$tl,hht;
-		
-		runHook('load');
 	$.extend($o,{
 		version: function(){
 			return version;
@@ -358,6 +375,7 @@
 			theme: function(name){
 				if(-1==$.inArray(properties.themes,name)){
 					properties.themes.push(name);
+					runHook('theme',[name]);
 					return true;
 				}
 				return false;
@@ -368,7 +386,7 @@
 						cmd: name,
 						fn: fn
 					};
-					if(typeof help != 'undefined'){
+					if(exists(help)){
 						o.help = help;
 					}
 					commands.push(o);
@@ -379,11 +397,30 @@
 			plugin: function(){
 				// STUB
 			},
-			setting: function(name,defaultVal,validate,values){
-				// STUB
+			setting: function(name,type,val,validate,values,callback){
+				if(!exists(settings[name])){
+					validate = exists(validate)?validate:function(){};
+					values = exists(values)?values:undefined;
+					callback = exists(callback)?callback:function(){};
+					settings[name] = val;
+					settingsConf[name] = {
+						validate: validate,
+						callback: callback,
+						type: type,
+						values: values,
+						default: val,
+						name: name
+					}
+					return true;
+				}else{
+					return false;
+				}
 			},
 			hook: function(event,fn){
-				
+				hooks.push({
+					hook: event,
+					fn: fn
+				})
 			}
 		},
 		hook: function(event,fn){
@@ -400,7 +437,7 @@
 								item = $('<select>')
 											.attr('id','setting_'+name)
 											.change(function(){
-												$o.set(this.id.substr(8),$(this).find(':selected').text(),false);
+												$o.set(this.id.substr(8),$(this).find(':selected').text().trim(),false);
 											});
 								for(var i in setting.values){
 									item.append(
@@ -643,7 +680,7 @@
 						id = $o.ui.tabs.idForName(id);
 						if(!id) return false;
 					}
-					return typeof tabs[id] == 'undefined'?false:tabs[id];
+					return exists(tabs[id])?tabs[id]:false;
 				},
 				dom: function(id){
 					if(typeof id == 'string' && !id.isNumber()){
@@ -653,7 +690,7 @@
 					return typeof tabs[id] == 'undefined'?false:tabs[id].body;
 				},
 				obj: function(id){
-					if(typeof id !== 'undefined'){
+					if(exists(id)){
 						if(typeof id == 'string' && !id.isNumber()){
 							id = $o.ui.tabs.idForName(id);
 							if(!id) return;
@@ -747,7 +784,7 @@
 				if($o.chat.connected()){
 					$o.disconnect();
 				}
-				if(typeof server == 'undefined'){
+				if(!exists(server)){
 					server = settings.server;
 				}
 				socket = window.socket =  io.connect(server);
@@ -762,10 +799,10 @@
 				}
 			},
 			connected: function(){
-				return typeof socket == 'undefined'?false:properties.connected;
+				return exists(socket)?properties.connected:false;
 			},
 			send: function(msg,room){
-				if(typeof room == 'undefined'){
+				if(!exists(room)){
 					room = $o.ui.tabs.current().name;
 				}
 				if(msg !== ''){
@@ -803,57 +840,62 @@
 			}
 		},
 		get: function(name,formatted){
-			if(typeof formatted == 'undefined'){
+			if(!exists(formatted)){
 				return exists(settings[name])?settings[name]:false;
 			}else{
-				var val = $o.get(name),
-					type,
-					values = false;
-				switch(name){
-					case 'theme':
-						type = 'select';
-						values = properties.themes;
-						break;
-					case 'autojoin':type = 'array';break;
-					case 'timestamp':type = 'string';break;
-					default:
-						type = typeof val;
+				if(exists(settingsConf[name]) && exists(settings[name])){
+					var r = $.extend({},settingsConf[name]);
+					r.val = settings[name];
+					r.validate = undefined;
+					r.callback = undefined;
+					delete r['validate'];
+					delete r['callback'];
+					return r;
+				}else{
+					return false;
 				}
-				return {
-					type: type,
-					val: val,
-					values: values,
-					name: name
-				};
 			}
 		},
 		set: function(name,value,render){
 			if(exists(settings[name])){
+				var setting;
+				if(exists(settingsConf[name])){
+					setting = $.extend({},settingsConf[name]);
+				}else{
+					setting = {
+						val: setting[name],
+						callback: function(){},
+						validate: function(){},
+						values: undefined,
+						type: typeof setting[name]
+					}
+				}
+				if(
+					(exists(setting.values) && $.inArray(value,setting.values) == -1) ||
+					setting.validate(setting[name],value,setting.values,name) == false ||
+					!runHook('setting',[
+						name,
+						settings[name],
+						value,
+						$o.get(name,true).values
+					])
+				){
+					if(exists(render)){
+						$o.ui.render.settings();
+					}
+					return false;
+				}
 				settings[name] = value;
 				$.localStorage('settings',JSON.stringify(settings));
-				switch(name){
-					case 'timestamp':
-						abbrDate('abbr.date');
-						if(settings.timestamp == ''){
-							$('.date_cell').css('visibility','hidden');
-						}else{
-							$('.date_cell').css('visibility','visible');
-						}
-					break;
-					case 'nick':
-						$o.chat.auth();
-					break;
-					case 'debug':
-						if(typeof render != 'undefined'){
-							$o.ui.render.settings();
-						}
-					break;
-				}
-				if(typeof render == 'undefined'){
+				setting.callback(value,name,exists(render));
+				if(exists(render)){
 					$o.ui.render.settings();
 				}
 				return true;
 			}else{
+				if(exists(render)){
+					$o.ui.render.settings();
+				}
 				return false;
 			}
 		},
@@ -865,7 +907,7 @@
 		},
 		msg: function(msg,tabName){
 			var frag;
-			if(typeof tabName == 'undefined' || tabName == $o.ui.tabs.current().name || typeof $o.ui.tabs.tab(tabName).body == 'undefined'){
+			if(!exists(tabName) || tabName == $o.ui.tabs.current().name || !exists($o.ui.tabs.tab(tabName).body)){
 				frag = document.createDocumentFragment();
 			}else{
 				frag = $o.ui.tabs.tab(tabName).body;
@@ -876,7 +918,7 @@
 						$(frag).append($('<li>').html(msg.htmlentities()));
 						break;
 					case 'object':
-						if(typeof msg.html == 'undefined'){
+						if(!exists(msg.html)){
 							$(frag).append($('<li>').html('&lt;'+msg.user+'&gt;&nbsp;'+msg.text.htmlentities()));
 						}else{
 							$(frag).append(msg.html);
@@ -900,12 +942,92 @@
 				});
 			}
 			$.localStorage('tabs',scroll);
-			if(typeof tabName == 'undefined' || tabName == $o.ui.tabs.current().name){
+			if(!exists(tabName) || tabName == $o.ui.tabs.current().name){
 				$o.ui.tabs.select(selectedTab);
 			}
 		},
 		event: function(event_name,message){
 			event(message,event_name);
+		}
+	});
+	(function(settings){
+		var i,s;
+		for(i in settings){
+			s = settings[i];
+			$o.register.setting(i,s.type,s.val,s['validate'],s['values'],s['callback']);
+		}
+	})({
+		colour: {
+			type: 'boolean',
+			val: false
+		},
+		debug: {
+			type: 'boolean',
+			val: false,
+			callback: function(v,s,r){
+				if(r){
+					$o.ui.render.settings();
+				}
+			}
+		},
+		timestamp: {
+			type: 'string',
+			val: 'exact',
+			callback: function(v,s){
+				abbrDate('abbr.date');
+				if(v == ''){
+					$('.date_cell').css('visibility','hidden');
+				}else{
+					$('.date_cell').css('visibility','visible');
+				}
+			}
+		},
+		server: {
+			type: 'string',
+			val: location.origin
+		},
+		autoconnect: {
+			type: 'boolean',
+			val: true
+		},
+		autojoin: {
+			type: 'array',
+			val: [
+				'#omnimaga',
+				'#omnimaga-fr',
+				'#irp'
+			]
+		},
+		scrollspeed: {
+			type: 'number',
+			val: 100
+		},
+		theme: {
+			type: 'select',
+			val: 'default',
+			values: properties.themes,
+			callback: function(v,s,r){
+				if($('link[id="theme-style"]').attr('href') != 'data/themes/'+v+'/style.css' || $('script[id="theme-script"]').attr('src') != 'data/themes/'+v+'/script.js'){
+					event('Loading theme '+v);
+					$('link[id="theme-style"]').attr({
+						id: 'theme-style',
+						rel: 'stylesheet',
+						href: 'data/themes/'+v+'/style.css'
+					});
+					$('script[id="theme-script"]').attr({
+						id: 'theme-script',
+						type: 'text/javascript',
+						src: 'data/themes/'+v+'/script.js'
+					});
+				}
+			}
+		},
+		nick: {
+			type: 'string',
+			val: 'User',
+			callback: function(){
+				$o.chat.auth();
+			}
 		}
 	});
 	String.prototype.htmlentities = function(){
@@ -921,6 +1043,7 @@
 	$(document).ready(function(){
 		$.extend(settings,$.parseJSON($.localStorage('settings')));
 		$.localStorage('settings',JSON.stringify(settings));
+		settingsConf['theme'].callback(settings['theme'],'theme',true);
 		$i = $('#input');
 		$s = $('#send');
 		$cl = $('#content-list');
@@ -1043,8 +1166,29 @@
 		if(settings.autoconnect){
 			$o.chat.connect();
 		}
+		// Check for script updates and update if required
+		(function checkScripts(){
+			for(var i in document.scripts){
+				(function(el,src){
+					if(exists(src) && el.innerHTML == ''){
+						$.ajax(src,{
+							success: function(source){
+								if(exists($(el).data('source')) && $(el).data('source') != source){
+									event('Reloading','update');
+									location.reload();
+								}
+								$(el).data('source',source);
+							},
+							dataType: 'text'
+						});
+					}
+				})(document.scripts[i],document.scripts[i].src);
+			}
+			setTimeout(checkScripts,1000*30);
+		})();
 	});
 	window.io = null;
+	runHook('load');
 })(window,jQuery,io);
 if (!Date.prototype.toISOString) {
     Date.prototype.toISOString = function() {
