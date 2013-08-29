@@ -1008,26 +1008,21 @@
 			val: 'default',
 			values: properties.themes,
 			callback: function(v,s,r){
+				$('link[id="theme-style"]').remove();
+				$('script[id="theme-script"]').remove();
 				$('head').append(
-					$('style').attr('id','theme-transition').html('*{transition-duration:2s;}')
-				).append(
 					$('link').attr({
-						id: 'theme-style-new',
+						id: 'theme-style',
 						rel: 'stylesheet',
 						href: 'data/themes/'+v+'/style.css'
 					})
 				).append(
 					$('script').attr({
-						id: 'theme-script-new',
+						id: 'theme-script',
 						type: 'text/javascript',
 						src: 'data/themes/'+v+'/script.js'
 					})
 				);
-				$('link[id="theme-style"]').remove();
-				$('link[id="theme-style-new"]').attr('id','theme-style');
-				$('script[id="theme-script"]').remove();
-				$('script[id="theme-script-new"]').attr('id','theme-script');
-				$('script[id="theme-transition"]').remove();
 			}
 		},
 		nick: {
