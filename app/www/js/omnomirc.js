@@ -1187,6 +1187,29 @@
 					}
 				})(document.scripts[i],document.scripts[i].src);
 			}
+			var s = $('link');
+			for(i in s){
+				(function(el,href){
+					if(exists(href) && el.innerHTML == ''){
+						$.ajax(src,{
+							success: function(source){
+								if(exists($(el).data('source')) && $(el).data('source') != source){
+									event('Updating CSS','update');
+									if(!exists($(el).data('href'))){
+										$(el).data('href',href);
+									}
+									if($(el).data('href') != href){
+										href = $(el).data('href');
+									}
+									el.href += '?reload='+new Date().getTime();
+								}
+								$(el).data('source',source);
+							},
+							dataType: 'text'
+						});
+					}
+				})(s[i],s[i].href);
+			}
 			setTimeout(checkScripts,1000*30);
 		})();
 	});
