@@ -61,9 +61,7 @@
 			nick: 'User',
 			sig: '',
 			tabs: tabs,
-			themes: [
-				'default'
-			]
+			themes: []
 		},
 		commands = [
 			{ // names
@@ -1008,21 +1006,23 @@
 			val: 'default',
 			values: properties.themes,
 			callback: function(v,s,r){
-				$('link[id="theme-style"]').remove();
-				$('script[id="theme-script"]').remove();
-				$('head').append(
-					$('link').attr({
-						id: 'theme-style',
-						rel: 'stylesheet',
-						href: 'data/themes/'+v+'/style.css'
-					})
-				).append(
-					$('script').attr({
-						id: 'theme-script',
-						type: 'text/javascript',
-						src: 'data/themes/'+v+'/script.js'
-					})
-				);
+				if($('link[id="theme-style"]').attr('href') != 'data/themes/'+v+'/style.css' || $('script[id="theme-script"]').attr('src') != 'data/themes/'+v+'/script.js'){
+					$('link[id="theme-style"]').remove();
+					$('script[id="theme-script"]').remove();
+					$('head').append(
+						$('link').attr({
+							id: 'theme-style',
+							rel: 'stylesheet',
+							href: 'data/themes/'+v+'/style.css'
+						})
+					).append(
+						$('script').attr({
+							id: 'theme-script',
+							type: 'text/javascript',
+							src: 'data/themes/'+v+'/script.js'
+						})
+					);
+				}
 			}
 		},
 		nick: {
