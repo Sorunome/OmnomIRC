@@ -311,8 +311,16 @@
 		currentPlugin = 0,
 		runHook = function(name,args){
 			var i,r=true,hook,fn,sandbox = {
-				testing: 'test'
+				document: {},
+				alert: noop,
+				confirm: noop,
+				prompt: noop,
+				jQuery: window.jQuery,
+				$: window.jQuery,
+				$o: window.OmnomIRC,
+				OmnomIRC: window.OmnomIRC
 			};
+			sandbox.window = sandbox;
 			args=exists(args)?args:[];
 			for(i in hooks){
 				hook = hooks[i];
@@ -1038,7 +1046,8 @@
 									$: window.jQuery,
 									$o: window.OmnomIRC,
 									OmnomIRC: window.OmnomIRC,
-									document: {}
+									document: {},
+									location: {}
 								},
 								fn = data.replace(/\/\/.+?(?=\n|\r|$)|\/\*[\s\S]+?\*\//g,'').replace(/\"/g,'\\"').replace(/\n/g,'').replace(/\r/g,'');
 							sandbox.window = sandbox;
