@@ -1006,7 +1006,29 @@
 		theme: {
 			type: 'select',
 			val: 'default',
-			values: properties.themes
+			values: properties.themes,
+			callback: function(v,s,r){
+				$('head').append(
+					$('style').attr('id','theme-transition').html('*{transition-duration:2s;}')
+				).append(
+					$('link').attr({
+						id: 'theme-style-new',
+						rel: 'stylesheet',
+						href: 'data/themes/'+v+'/style.css'
+					})
+				).append(
+					$('script').attr({
+						id: 'theme-script-new',
+						type: 'text/javascript',
+						src: 'data/themes/'+v+'/script.js'
+					})
+				);
+				$('link[id="theme-style"]').remove();
+				$('link[id="theme-style-new"]').attr('id','theme-style');
+				$('script[id="theme-script"]').remove();
+				$('script[id="theme-script-new"]').attr('id','theme-script');
+				$('script[id="theme-transition"]').remove();
+			}
 		},
 		nick: {
 			type: 'string',
@@ -1029,6 +1051,7 @@
 	$(document).ready(function(){
 		$.extend(settings,$.parseJSON($.localStorage('settings')));
 		$.localStorage('settings',JSON.stringify(settings));
+		settingsConf['theme'].callback(settings['theme'],'theme',true);
 		$i = $('#input');
 		$s = $('#send');
 		$cl = $('#content-list');
