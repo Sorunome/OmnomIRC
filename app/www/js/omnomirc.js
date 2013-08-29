@@ -400,7 +400,7 @@
 			setting: function(name,type,val,validate,values,callback){
 				if(!exists(settings[name])){
 					validate = exists(validate)?validate:function(){};
-					values = exists(values)?values:false;
+					values = exists(values)?values:undefined;
 					callback = exists(callback)?callback:function(){};
 					settings[name] = val;
 					settingsConf[name] = {
@@ -437,7 +437,7 @@
 								item = $('<select>')
 											.attr('id','setting_'+name)
 											.change(function(){
-												$o.set(this.id.substr(8),$(this).find(':selected').text(),false);
+												$o.set(this.id.substr(8),$(this).find(':selected').text().trim(),false);
 											});
 								for(var i in setting.values){
 									item.append(
@@ -870,15 +870,16 @@
 						type: typeof setting[name]
 					}
 				}
-				if(setting.validate(setting[name],value,setting.values,name) == false){
-					return false;
-				}
-				if(!runHook('setting',[
-					name,
-					settings[name],
-					value,
-					$o.get(name,true).values
-				])){
+				if(
+					(exists(setting.values) && $.inArray(value,setting.values) == -1) ||
+					setting.validate(setting[name],value,setting.values,name) == false ||
+					!runHook('setting',[
+						name,
+						settings[name],
+						value,
+						$o.get(name,true).values
+					])
+				){
 					if(exists(render)){
 						$o.ui.render.settings();
 					}
@@ -1007,21 +1008,17 @@
 			values: properties.themes,
 			callback: function(v,s,r){
 				if($('link[id="theme-style"]').attr('href') != 'data/themes/'+v+'/style.css' || $('script[id="theme-script"]').attr('src') != 'data/themes/'+v+'/script.js'){
-					$('link[id="theme-style"]').remove();
-					$('script[id="theme-script"]').remove();
-					$('head').append(
-						$('link').attr({
-							id: 'theme-style',
-							rel: 'stylesheet',
-							href: 'data/themes/'+v+'/style.css'
-						})
-					).append(
-						$('script').attr({
-							id: 'theme-script',
-							type: 'text/javascript',
-							src: 'data/themes/'+v+'/script.js'
-						})
-					);
+					event('Loading theme '+v);
+					$('link[id="theme-style"]').attr({
+						id: 'theme-style',
+						rel: 'stylesheet',
+						href: 'data/themes/'+v+'/style.css'
+					});
+					$('script[id="theme-script"]').attr({
+						id: 'theme-script',
+						type: 'text/javascript',
+						src: 'data/themes/'+v+'/script.js'
+					});
 				}
 			}
 		},
@@ -1187,7 +1184,7 @@
 					}
 				})(document.scripts[i],document.scripts[i].src);
 			}
-			setTimeout(checkScripts,1000);
+			setTimeout(checkScripts,1000*30);
 		})();
 	});
 	window.io = null;
