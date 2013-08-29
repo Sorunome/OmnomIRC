@@ -752,7 +752,7 @@
 					abbrDate('abbr.date');
 					$o.ui.render.users();
 					setTimeout(function scrollContent(){
-						if($c.scrollTop() < $c[0].scrollHeight){
+						if($c.scrollTop()+$c.height() < $c.prop('scrollHeight')){
 							$c.scrollTop($c.scrollTop()+1);
 							setTimeout(scrollContent,settings.scrollspeed);
 						}else{
