@@ -309,18 +309,24 @@
 			}
 		],
 		currentPlugin = 0,
+		Sandbox = window.Sandbox = function(sandbox){
+			var i,o = {};
+			for(i in window){
+				o[i] = undefined;
+			}
+			o.window = o;
+			for(i in sandbox){
+				o[i] = sandbox[i];
+			}
+			return o;
+		},
 		runHook = function(name,args){
-			var i,r=true,hook,fn,sandbox = {
-				document: {},
-				alert: noop,
-				confirm: noop,
-				prompt: noop,
+			var i,r=true,hook,fn,sandbox = new Sandbox({
 				jQuery: window.jQuery,
 				$: window.jQuery,
 				$o: window.OmnomIRC,
 				OmnomIRC: window.OmnomIRC
-			};
-			sandbox.window = sandbox;
+			});
 			args=exists(args)?args:[];
 			for(i in hooks){
 				hook = hooks[i];
@@ -394,7 +400,7 @@
 				}
 				return false;
 			},
-			plugin: function(){
+			plugin: function(name,start,stop){
 				// STUB
 			},
 			setting: function(name,type,val,validate,values,callback){
@@ -1033,22 +1039,17 @@
 					$.ajax('data/themes/'+v+'/script.js',{
 						dataType: 'text',
 						success: function(data){
-							var sandbox = {
+							var sandbox = new Sandbox({
 									load: function(fn){
 										fn();
 									},
 									unload: function(fn){
 										$o.register.hook('untheme',"function(o,n){if(o == '"+v+"'){("+(fn+'').replace(/\/\/.+?(?=\n|\r|$)|\/\*[\s\S]+?\*\//g,'').replace(/\"/g,'\\"').replace(/\n/g,'').replace(/\r/g,'')+")();}}",'style');
 									},
-									alert: noop,
-									confirm: noop,
-									prompt: noop,
 									$: window.jQuery,
 									$o: window.OmnomIRC,
 									OmnomIRC: window.OmnomIRC,
-									document: {},
-									location: {}
-								},
+								}),
 								fn = data.replace(/\/\/.+?(?=\n|\r|$)|\/\*[\s\S]+?\*\//g,'').replace(/\"/g,'\\"').replace(/\n/g,'').replace(/\r/g,'');
 							sandbox.window = sandbox;
 							fn = 'eval("with(this){(function(theme){'+fn+'}).apply(this);}");';
