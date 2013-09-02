@@ -1,9 +1,4 @@
-import threading
-import SocketServer
-import urllib2
-import base64
-import time
-import struct
+import threading,SocketServer,urllib2,base64,time,struct,HTMLParser
 print "OmnomIRC Calcnet bridge by Sorunome"
 print "Starting..."
 PASSWD="PASSWD"
@@ -38,11 +33,11 @@ class checkingUpdates ( threading.Thread ):
 			for i in range(0,len(lines)):
 				if lines[i].find(":")!=-1:
 					curline=lines[i].split(":")[1]
-					channel=lines[i].split(":")[2]
+					channel=HTMLParser.HTMLParser().unescape(lines[i].split(":")[2])
 					message=""
 					for j in range(0,len(lines[i].split(":"))-3):
 						message=message+lines[i].split(":")[j+3]+":"
-					message=message[:-1]
+					message=HTMLParser.HTMLParser().unescape(message[:-1])
 					print "New message from "+channel+": "+message
 				
 					for j in range(0,len(connectedCalcs)):

@@ -148,21 +148,21 @@
 				switch (strtolower($result['type'])) {
 				case "pm":
 				case "message":
-					echo $addStr.$result['line_number'].":".$result['channel'].":".$result['name1'].":".$result['message'];break;
+					echo $addStr.$result['line_number'].":".htmlspecialchars($result['channel']).":".htmlspecialchars($result['name1']).":".htmlspecialchars($result['message']);break;
 				case "action":
-					echo $addStr.$result['line_number'].":".$result['channel'].":*".$result['name1']." ".$result['message'];break;
+					echo $addStr.$result['line_number'].":".htmlspecialchars($result['channel']).":*".htmlspecialchars($result['name1'])." ".htmlspecialchars($result['message']);break;
 				case "join":
-					if ($result['Online']!='1')echo $addStr.$result['line_number'].":".$result['channel'].":*".$result['name1']." has joined ".$result['channel'];else echo $addStr.$result['line_number']."::";break;
+					if ($result['Online']!='1')echo $addStr.$result['line_number'].":".htmlspecialchars($result['channel']).":*".htmlspecialchars($result['name1'])." has joined ".htmlspecialchars($result['channel']);else echo $addStr.$result['line_number']."::";break;
 				case "part":
-					if ($result['Online']!='1')echo $addStr.$result['line_number'].":".$result['channel'].":*".$result['name1']." has parted ".$result['channel'];else echo $addStr.$result['line_number']."::";break;
+					if ($result['Online']!='1')echo $addStr.$result['line_number'].":".htmlspecialchars($result['channel']).":*".htmlspecialchars($result['name1'])." has parted ".htmlspecialchars($result['channel']);else echo $addStr.$result['line_number']."::";break;
 				case "quit":
 					if ($result['Online']!='1')echo $addStr.$result['line_number'].":".$result['channel'].":*".$result['name1']." has quit (".$result['message'].")";else echo $addStr.$result['line_number']."::";break;
 				case "mode":
-					echo $addStr.$result['line_number'].":".$result['channel'].":*".$result['name1']." has set mode ".$result['message'];break;
+					echo $addStr.$result['line_number'].":".htmlspecialchars($result['channel']).":*".htmlspecialchars($result['name1'])." has set mode ".htmlspecialchars($result['message']);break;
 				case "nick":
-					echo $addStr.$result['line_number'].":".$result['channel'].":*".$result['name1']." has changed nick to ".$result['name2'];break;
+					echo $addStr.$result['line_number'].":".htmlspecialchars($result['channel']).":*".htmlspecialchars($result['name1'])." has changed nick to ".htmlspecialchars($result['name2']);break;
 				case "topic":
-					echo $addStr.$result['line_number'].":".$result['channel'].":*".$result['name1']." has set topic to ".$result['message'];break;
+					echo $addStr.$result['line_number'].":".htmlspecialchars($result['channel']).":*".htmlspecialchars($result['name1'])." has set topic to ".htmlspecialchars($result['message']);break;
 				default:
 					echo $addStr.$result['line_number']."::";break;
 				}

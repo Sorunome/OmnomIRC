@@ -160,7 +160,7 @@ scrolledDown = true;
 			parsedMessage = parsedMessage.split("  ").join("&nbsp;&nbsp;");
 			parsedMessage = parsedMessage.split("\t").join("&nbsp;&nbsp;&nbsp;&nbsp;");
 			parsedMessage = parsedMessage.split("&nbsp; ").join("&nbsp;&nbsp;");
-			if (parts[5].toLowerCase().indexOf(userName.toLowerCase().substr(0,4)) >= 0 && hasLoaded && notifications && parts[4].toLowerCase() != "new")
+			if (parts[5].toLowerCase().indexOf(userName.toLowerCase().substr(0,4)) >= 0 && hasLoaded && notifications && parts[4].toLowerCase() != "new" && parts[4].toLowerCase() != "omnom")
 			{
 				showNotification("<" + parts[4] + "> " + parts[5]);
 				if (highDing)
@@ -169,7 +169,7 @@ scrolledDown = true;
 				}
 			}
 		}
-		if ((type == "message" || type == "action") && parts[4].toLowerCase() != "new")
+		if ((type == "message" || type == "action") && parts[4].toLowerCase() != "new" && parts[4].toLowerCase() != "omnom")
 		{
 			parsedMessage = parseHighlight(parsedMessage);
 		}
