@@ -31,7 +31,7 @@
 				log('['+type.toUpperCase()+'] '+msg);
 			}
 		},
-		emit = window.emit = function(type,data){
+		emit = function(type,data){
 			if($o.chat.connected()){
 				socket.emit.apply(socket,arguments);
 			}else{
@@ -299,7 +299,7 @@
 				}
 			}
 		],
-		hooks = window.hooks = [
+		hooks = [
 			{	// setting - setting
 				type: 'setting',
 				hook: 'setting',
@@ -308,8 +308,9 @@
 				}
 			}
 		],
+		plugins = [],
 		currentPlugin = 0,
-		Sandbox = window.Sandbox = function(sandbox){
+		Sandbox = function(sandbox){
 			var i,o = {};
 			for(i in window){
 				o[i] = undefined;
@@ -400,8 +401,14 @@
 				}
 				return false;
 			},
-			plugin: function(name,start,stop){
-				// STUB
+			plugin: function(name){
+				if(!exists(plugins[name])){
+					plugins[name]({
+						name: name
+					});
+					return true;
+				}
+				return false;
 			},
 			setting: function(name,type,val,validate,values,callback){
 				if(!exists(settings[name])){
@@ -429,6 +436,34 @@
 					fn: fn,
 					type: type
 				})
+			}
+		},
+		plugin: {
+			register: function(name){
+				return $o.register.plugin(name);
+			},
+			start: function(name){
+				if(exists(name)){
+					// STUB
+				}else{
+					return false;
+				}
+			},
+			stop: function(name){
+				if(exists(name)){
+					// STUB
+				}else{
+					return false;
+				}
+			},
+			remove: function(name){
+				if($o.plugin.stop(name)){
+					plugin[name] = undefined;
+					delete plugin[name];
+					return true;
+				}else{
+					return false;
+				}
 			}
 		},
 		hook: function(event,fn){
