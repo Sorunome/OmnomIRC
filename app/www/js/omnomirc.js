@@ -309,6 +309,10 @@
 			}
 		],
 		plugins = [],
+		pluginSandbox = {
+			$: window.jQuery,
+			jQuery: window.jQuery
+		},
 		currentPlugin = 0,
 		Sandbox = function(sandbox){
 			var i,o = {};
@@ -411,7 +415,9 @@
 			plugin: function(name){
 				if(!exists(plugins[name])){
 					plugins[name]({
-						name: name
+						name: name,
+						loaded: false,
+						started: false
 					});
 					return true;
 				}
@@ -450,15 +456,40 @@
 				return $o.register.plugin(name);
 			},
 			start: function(name){
-				if(exists(name)){
-					// STUB
+				if(exists(plugins[name])){
+					var plugin = plugins[name];
+					if(plugin.started){
+						$o.plugin.stop(name);
+					}
+					if(!plugin.loaded){
+						$.ajax('',{
+							dataType: 'text',
+							success: function(data){
+								plugin.script = data;
+								runWithSandbox(data,pluginSandbox);
+								plugin.started = true;
+							}
+						});
+					}else{
+						runWithSandbox(plugin.script,pluginSandbox);
+						plugin.started = true;
+					}
+					return true;
 				}else{
 					return false;
 				}
 			},
 			stop: function(name){
-				if(exists(name)){
-					// STUB
+				if(exists(plugins[name])){
+					var i;
+					for(i in hooks){
+						if(hooks[i].type == 'plugin' && hooks[i].plugin == name){
+							hooks.spice(i,1);
+						}
+					}
+					// TODO, remove other things
+					plugins[name] = undefined;
+					delete plugins[name];
 				}else{
 					return false;
 				}
@@ -1106,6 +1137,7 @@
 			}
 		}
 	});
+	$.extend(pluginSandbox,$o);
 	String.prototype.htmlentities = function(){
 		return this
 			.replace(/&/g, '&amp;')
