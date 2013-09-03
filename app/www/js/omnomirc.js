@@ -322,27 +322,34 @@
 			return o;
 		},
 		runHook = function(name,args){
-			var i,r=true,hook,fn,sandbox = new Sandbox({
+			var i,r=true,hook,fn,sandbox = {
 				jQuery: window.jQuery,
 				$: window.jQuery,
 				$o: window.OmnomIRC,
 				OmnomIRC: window.OmnomIRC
-			});
+			};
 			args=exists(args)?args:[];
 			for(i in hooks){
 				hook = hooks[i];
 				if(hook.hook == name){
-					fn = (hook.fn+'').replace(/\/\/.+?(?=\n|\r|$)|\/\*[\s\S]+?\*\//g,'').replace(/\"/g,'\\"').replace(/\n/g,'').replace(/\r/g,'');
-					fn = 'var ret = true;eval("with(this){ret = ('+fn+').apply(this,arguments);}");return ret;';
-					try{
-						r = (new Function(fn)).apply(sandbox,args);
-					}catch(e){
-						event('Hook failed to run: '+e+"\nFunction that ran: "+fn,'hook_error');
-					}
+					r = runInSandbox(hook.fn,sandbox,args);
 				}
 				if(r == false){
 					break;
 				}
+			}
+			return r;
+		},
+		runInSandbox = function(fn,sandbox,args){
+			args = exists(args)?args:[];
+			sandbox = sandbox instanceof Sandbox?sandbox:new Sandbox(sandbox);
+			var r = false;
+			fn = (fn+'').replace(/\/\/.+?(?=\n|\r|$)|\/\*[\s\S]+?\*\//g,'').replace(/\"/g,'\\"').replace(/\n/g,'').replace(/\r/g,'');
+			fn = 'var ret = true;eval("with(this){ret = ('+fn+').apply(this,arguments);}");return ret;';
+			try{
+				r = (new Function(fn)).apply(sandbox,args);
+			}catch(e){
+				event('Sandboxed function failed to run: '+e+"\nFunction that ran: "+fn,'sandbox_error');
 			}
 			return r;
 		},
@@ -1074,25 +1081,18 @@
 					$.ajax('data/themes/'+v+'/script.js',{
 						dataType: 'text',
 						success: function(data){
-							var sandbox = new Sandbox({
-									load: function(fn){
-										fn();
-									},
-									unload: function(fn){
-										$o.register.hook('untheme',"function(o,n){if(o == '"+v+"'){("+(fn+'').replace(/\/\/.+?(?=\n|\r|$)|\/\*[\s\S]+?\*\//g,'').replace(/\"/g,'\\"').replace(/\n/g,'').replace(/\r/g,'')+")();}}",'style');
-									},
-									$: window.jQuery,
-									$o: window.OmnomIRC,
-									OmnomIRC: window.OmnomIRC,
-								}),
-								fn = data.replace(/\/\/.+?(?=\n|\r|$)|\/\*[\s\S]+?\*\//g,'').replace(/\"/g,'\\"').replace(/\n/g,'').replace(/\r/g,'');
-							sandbox.window = sandbox;
-							fn = 'eval("with(this){(function(theme){'+fn+'}).apply(this);}");';
-							try{
-								r = (new Function(fn)).apply(sandbox);
-							}catch(e){
-								event('Theme script failed to run: '+e+"\nFunction that ran: "+fn,'script_error');
-							}
+							var sandbox = {
+								load: function(fn){
+									fn();
+								},
+								unload: function(fn){
+									$o.register.hook('untheme',"function(o,n){if(o == '"+v+"'){("+(fn+'').replace(/\/\/.+?(?=\n|\r|$)|\/\*[\s\S]+?\*\//g,'').replace(/\"/g,'\\"').replace(/\n/g,'').replace(/\r/g,'')+")();}}",'style');
+								},
+								$: window.jQuery,
+								$o: window.OmnomIRC,
+								OmnomIRC: window.OmnomIRC,
+							};
+							runInSandbox(data,sandbox);
 						}
 					});
 				}
