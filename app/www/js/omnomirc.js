@@ -336,7 +336,7 @@
 			for(i in hooks){
 				hook = hooks[i];
 				if(hook.hook == name){
-					r = runInSandbox(hook.fn,sandbox,args);
+					r = runInSandbox(hook.fn,sandbox,args,true);
 				}
 				if(r == false){
 					break;
@@ -344,11 +344,14 @@
 			}
 			return r;
 		},
-		runInSandbox = function(fn,sandbox,args){
+		runInSandbox = function(fn,sandbox,args,isFn){
 			args = exists(args)?args:[];
 			sandbox = sandbox instanceof Sandbox?sandbox:new Sandbox(sandbox);
 			var r = false;
 			fn = (fn+'').replace(/\/\/.+?(?=\n|\r|$)|\/\*[\s\S]+?\*\//g,'').replace(/\"/g,'\\"').replace(/\n/g,'').replace(/\r/g,'');
+			if(!exists(isFn) || !isFn){
+				fn = 'function(){'+fn+'}';
+			}
 			fn = 'var ret = true;eval("with(this){ret = ('+fn+').apply(this,arguments);}");return ret;';
 			try{
 				r = (new Function(fn)).apply(sandbox,args);
@@ -414,11 +417,11 @@
 			},
 			plugin: function(name){
 				if(!exists(plugins[name])){
-					plugins[name]({
+					plugins[name] = {
 						name: name,
 						loaded: false,
 						started: false
-					});
+					};
 					return true;
 				}
 				return false;
@@ -461,17 +464,18 @@
 					if(plugin.started){
 						$o.plugin.stop(name);
 					}
+					event('Starting plugin '+name);
 					if(!plugin.loaded){
-						$.ajax('',{
+						$.ajax('data/plugins/'+name+'/script.js',{
 							dataType: 'text',
 							success: function(data){
 								plugin.script = data;
-								runWithSandbox(data,pluginSandbox);
+								runInSandbox(data,pluginSandbox);
 								plugin.started = true;
 							}
 						});
 					}else{
-						runWithSandbox(plugin.script,pluginSandbox);
+						runInSandbox(plugin.script,pluginSandbox);
 						plugin.started = true;
 					}
 					return true;
@@ -481,6 +485,7 @@
 			},
 			stop: function(name){
 				if(exists(plugins[name])){
+					event('Stopping plugin '+name);
 					var i;
 					for(i in hooks){
 						if(hooks[i].type == 'plugin' && hooks[i].plugin == name){
@@ -502,6 +507,9 @@
 				}else{
 					return false;
 				}
+			},
+			dir: function(name){
+				return 'data/plugins/'+name+'/';
 			}
 		},
 		hook: function(event,fn){
