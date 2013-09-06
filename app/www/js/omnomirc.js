@@ -202,6 +202,7 @@
 			{ // authorized
 				on: 'authorized',
 				fn: function(data){
+					event('Authorized');
 					properties.nick = data.nick;
 					for(var i in settings.autojoin){
 						emit('join',{
@@ -873,6 +874,7 @@
 				if($o.chat.connected()){
 					$o.disconnect();
 				}
+				event('Connecting');
 				if(!exists(server)){
 					server = settings.server;
 				}
@@ -884,6 +886,7 @@
 			},
 			disconnect: function(){
 				if($o.chat.connected()){
+					event('Disconnecting');
 					socket.disconnect();
 				}
 			},

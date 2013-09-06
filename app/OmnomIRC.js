@@ -5,7 +5,36 @@ var fs = require('fs'),
 	path = require('path'),
 	vm = require('vm'),
 	toobusy = function(){return false;},//require('toobusy'),
+	noop = function(){},
 	cluster = require('cluster'),
+	ircClient = require('node-irc'),
+	logger = {
+		log: function(msg){
+			if(options.loglevel > 2){
+				console.log(msg);
+			}
+		},
+		debug: function(msg){
+			if(options.loglevel > 2){
+				console.log('DEBUG - '+msg);
+			}
+		},
+		warn: function(msg){
+			if(options.loglevel > 1){
+				console.log('WARN - '+msg);
+			}
+		},
+		info: function(msg){
+			if(options.loglevel > 1){
+				console.log('INFO - '+msg);
+			}
+		},
+		error: function(msg){
+			if(options.loglevel > 0){
+				console.error(msg);
+			}
+		}
+	},
 	options = global.options = (function(){
 		var defaults = {
 				port: 80,
@@ -19,17 +48,36 @@ var fs = require('fs'),
 					www: './www/',
 					api: './api/',
 					plugins: './plugins/'
+				},
+				irc: {
+					host: 'irp.irc.omnimaga.org',
+					port: 6667,
+					nick: 'oirc3',
+					name: 'OmnomIRC3',
+					channels: [
+						'#omnimaga'
+					],
+					messages: {
+						quit: 'Server closed'
+					}
 				}
 			},
 			i,
 			options;
 		try{
 			options = JSON.parse(fs.readFileSync('./options.json'));
-			for(var i in options){
-				defaults[i] = options[i];
-			}
+			defaults = (function merge(options,defaults){
+				for(var i in options){
+					if(typeof defaults[i] != 'object' || defaults[i] instanceof Array){
+						defaults[i] = options[i];
+					}else{
+						defaults[i] = merge(options[i],defaults[i]);
+					}
+				}
+				return defaults
+			})(options,defaults);
 		}catch(e){
-			console.warn('Using default settings. Please create options.json');
+			logger.warn('Using default settings. Please create options.json');
 		}
 		options = {};
 		for(i in  defaults){
@@ -43,21 +91,86 @@ var fs = require('fs'),
 	})();
 if(typeof fs.existsSync == 'undefined') fs.existsSync = path.existsSync; // legacy support
 if(cluster.isMaster){
-	for(var i=0;i<require('os').cpus().length;i++){
-		cluster.fork();
-	}
+	var iWorker;
 	cluster.on('exit', function(worker, code, signal) {
 		console.log('worker ' + worker.process.pid + ' died');
 	});
+	iWorker = global.iw = cluster.fork();
+	iWorker.on('online',function(){
+		logger.info('First worker online');
+		iWorker.send('S');
+	});
+	for(var i=1;i<require('os').cpus().length;i++){
+		cluster.fork().on('online',function(){
+			logger.info('Child socket worker online');
+		});
+	}
+	for(i in cluster.workers){
+		var worker = cluster.workers[i];
+		worker.on('message',function(msg){
+			var c = msg[0];
+			msg = msg.substr(1);
+			logger.debug('Parent recieved command '+c+' with message '+msg);
+			switch(c){
+				case 'M':
+					iWorker.send('M'+msg);
+				break;
+			}
+		});
+	}
 	if(options.debug){
 		require('repl').start({
 			prompt: '> ',
 			useGlobal: true
 		}).on('exit',function(){
+			for(var i in cluster.workers){
+				cluster.workers[i].send('Q');
+			}
 			process.exit();
 		});
 	}
 }else{
+	process.on('message',function(msg){
+		var c = msg[0];
+		msg = msg.substr(1);
+		logger.debug('Child recieved command '+c+' with message '+msg);
+		switch(c){
+			case 'Q':
+				if(typeof app != 'undefined' && typeof irc == 'undefined'){
+					app.close();
+				}else if(typeof irc != 'undefined'){
+					irc.quit(options.irc.messages.quit);
+				}
+			break;
+			case 'M':
+				if(typeof irc != 'undefined'){
+					msg = JSON.parse(msg);
+					irc.say(msg.room,'<'+msg.from+'>	'+msg.message);
+				}
+			break;
+			case 'S':
+				logger.info('Child starting irc');
+				irc = new ircClient(options.irc.host,options.irc.port,options.irc.nick,options.irc.name);
+				irc.on('ready',function(){
+					logger.info('Connected to IRC');
+					for(var i in options.irc.channels){
+						irc.join(options.irc.channels[i]);
+					}
+				});
+				irc.on('CHANMSG',function(d){
+					console.log(d);
+					io.sockets.in(d.receiver).emit('message',{
+						message: d.message,
+						room: d.reciever,
+						from: d.sender
+					})
+				});
+				irc.connect();
+				logger.debug('Connecting to IRC');	
+			break;
+		}
+	});
+	logger.info('Child starting socket.io');
 	var RedisStore = require('socket.io/lib/stores/redis'),
 		redis  = require('socket.io/node_modules/redis'),
 		pub    = redis.createClient(options.redis.port,options.redis.host),
@@ -171,9 +284,9 @@ if(cluster.isMaster){
 				}
 			}).resume();
 		}).listen(options.port),
-		io = require('socket.io').listen(app)
-		logger = io.log;
+		io = require('socket.io').listen(app);
 	io.set('log level',options.loglevel);
+	io.log = logger;
 	if(typeof options.redis.password != 'undefined'){
 		var eh = function(e){
 			throw e;
@@ -227,6 +340,7 @@ if(cluster.isMaster){
 		socket.on('message',function(data){
 			logger.debug('message sent to '+data.room);
 			io.sockets.in(data.room).emit('message',data);
+			process.send('M'+JSON.stringify(data));
 		});
 		socket.on('echo',function(data){
 			logger.debug('echoing to '+data.room);
