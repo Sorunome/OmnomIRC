@@ -110,7 +110,7 @@
 			{ // help
 				cmd: 'help',
 				fn: function(args){
-					if(exists(args[1])){
+					if(!exists(args[1])){
 						var m = 'Commands:',i;
 						for(i in commands){
 							m += ' '+commands[i].cmd;
@@ -125,7 +125,6 @@
 								return;
 							}
 						}
-						$o.send('/help');
 					}
 				}
 			},
