@@ -312,7 +312,8 @@
 		plugins = [],
 		pluginSandbox = {
 			$: window.jQuery,
-			jQuery: window.jQuery
+			jQuery: window.jQuery,
+			$o: $o
 		},
 		currentPlugin = 0,
 		Sandbox = function(sandbox){
@@ -915,11 +916,13 @@
 							msg = msg.substr(1);
 						}
 						event(msg,'send');
-						emit('message',{
-							message: msg,
-							room: room,
-							from: properties.nick
-						});
+						if(runHook('send',[msg,room])){
+							emit('message',{
+								message: msg,
+								room: room,
+								from: properties.nick
+							});
+						}
 					}
 				}
 			},
