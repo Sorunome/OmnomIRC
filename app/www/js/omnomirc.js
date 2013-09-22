@@ -1137,6 +1137,7 @@
 								OmnomIRC: window.OmnomIRC,
 							};
 							runInSandbox(data,sandbox);
+							runHook('themechange',[v]);
 						}
 					});
 				}
