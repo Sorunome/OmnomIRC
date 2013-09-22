@@ -743,6 +743,7 @@
 						$tl.append($o.ui.tabs.obj(id));
 						$o.ui.render.tablist();
 						$o.ui.render.users();
+						runHook('addtab',[$o.ui.tabs.tab(id)]);
 					}else{
 						event('Attempted to add an existing tab');
 					}
@@ -753,6 +754,7 @@
 					}
 					for(var id=0;id<tabs.length;id++){
 						if($o.ui.tabs.tab(id).name == name){
+							runHook('removetab',[$o.ui.tabs.tab(id)]);
 							event('Tab removed: '+$o.ui.tabs.tab(id).name);
 							emit('part',{
 								name: $o.ui.tabs.tab(id).name
@@ -1348,9 +1350,9 @@
 			}
 			setTimeout(checkScripts,1000*30);
 		})();
+		runHook('load');
 	});
 	window.io = null;
-	runHook('load');
 })(window,jQuery,io);
 if (!Date.prototype.toISOString) {
     Date.prototype.toISOString = function() {
