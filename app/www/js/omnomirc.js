@@ -848,7 +848,7 @@
 					}
 					event(id+' '+$o.ui.tabs.tab(id).name,'tab_select');
 					if(id<tabs.length&&id>=0){
-						runHook('tabswitch',[id,selectedTab]);
+						runHook('tabswitch',[$o.ui.tabs.tab(id),$o.ui.tabs.current()]);
 						selectedTab=id;
 					}
 					$tl.children('.clicked').removeClass('clicked');
