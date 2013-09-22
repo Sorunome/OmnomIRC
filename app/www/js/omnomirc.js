@@ -510,9 +510,6 @@
 							hooks.spice(i,1);
 						}
 					}
-					// TODO, remove other things
-					plugins[name] = undefined;
-					delete plugins[name];
 				}else{
 					return false;
 				}
