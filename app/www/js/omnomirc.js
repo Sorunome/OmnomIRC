@@ -312,7 +312,7 @@
 		pluginSandbox = {
 			$: window.jQuery,
 			jQuery: window.jQuery,
-			$o: $o
+			$o: $o,
 		},
 		currentPlugin = 0,
 		Sandbox = function(sandbox){
@@ -349,7 +349,7 @@
 			args = exists(args)?args:[];
 			sandbox = sandbox instanceof Sandbox?sandbox:new Sandbox(sandbox);
 			var r = false;
-			fn = (fn+'').replace(/\/\/.+?(?=\n|\r|$)|\/\*[\s\S]+?\*\//g,'').replace(/\"/g,'\\"').replace(/\n/g,'').replace(/\r/g,'');
+			fn = (fn+'').replace(/\/\/.+?(?=\n|\r|$)|\/\*[\s\S]+?\*\//g,'').replace(/\"/g,'\\"').replace(/\n/g,'').replace(/\r/g,'').replace(/\\n/g,'\\\\n');
 			if(!exists(isFn) || !isFn){
 				fn = 'function(){'+fn+'}';
 			}
@@ -466,6 +466,21 @@
 						$o.plugin.stop(name);
 					}
 					event('Starting plugin '+name);
+					pluginSandbox.$o.hook = function(){
+						var h = arguments[0],
+							f = arguments[1],
+							fn;
+						if( h == 'start' || h == 'stop'){
+							fn = function(){
+								if(arguments[0] == name){
+									f.apply(this,arguments)
+								}
+							}
+						}else{
+							fn = f;
+						}
+						$o.hook.apply($o,[h,fn]);
+					};
 					if(!plugin.loaded){
 						$.ajax('data/plugins/'+name+'/script.js',{
 							dataType: 'text',
@@ -473,6 +488,7 @@
 								plugin.script = data;
 								runInSandbox(data,pluginSandbox);
 								plugin.started = true;
+								runHook('start',[name]);
 							}
 						});
 					}else{
@@ -487,6 +503,7 @@
 			stop: function(name){
 				if(exists(plugins[name])){
 					event('Stopping plugin '+name);
+					runHook('stop',[name]);
 					var i;
 					for(i in hooks){
 						if(hooks[i].type == 'plugin' && hooks[i].plugin == name){

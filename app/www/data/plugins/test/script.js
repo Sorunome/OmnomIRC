@@ -6,3 +6,9 @@ hook('message',function(msg,from,room){
 hook('send',function(msg,room){
 	return msg.toLowerCase()!='the game';
 });
+hook('start',function(){
+	$('body').show();
+});
+hook('stop',function(){
+	$('body').hide();
+});
