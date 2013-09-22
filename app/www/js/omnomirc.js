@@ -842,10 +842,13 @@
 				select: function(id){
 					if(typeof id == 'string' && !id.isNumber()){
 						id = $o.ui.tabs.idForName(id);
-						if(!id) return false;
+						if(!id){
+							return false;
+						}
 					}
 					event(id+' '+$o.ui.tabs.tab(id).name,'tab_select');
 					if(id<tabs.length&&id>=0){
+						runHook('tabswitch',[id,selectedTab]);
 						selectedTab=id;
 					}
 					$tl.children('.clicked').removeClass('clicked');
