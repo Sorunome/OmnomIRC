@@ -39,6 +39,7 @@ var fs = require('fs'),
 		var defaults = {
 				port: 80,
 				loglevel: 3,
+				threads: require('os').cpus().length,
 				redis: {
 					port: 6379,
 					host: 'localhost'
@@ -100,7 +101,7 @@ if(cluster.isMaster){
 		logger.info('First worker online');
 		iWorker.send('S');
 	});
-	for(var i=1;i<require('os').cpus().length;i++){
+	for(var i=1;i<options.threads;i++){
 		cluster.fork().on('online',function(){
 			logger.info('Child socket worker online');
 		});
@@ -159,11 +160,7 @@ if(cluster.isMaster){
 				});
 				irc.on('CHANMSG',function(d){
 					console.log(d);
-					io.sockets.in(d.receiver).emit('message',{
-						message: d.message,
-						room: d.reciever,
-						from: d.sender
-					})
+					message(d.reciever,d.sender,d.message);
 				});
 				irc.connect();
 				logger.debug('Connecting to IRC');	
@@ -310,11 +307,7 @@ if(cluster.isMaster){
 			sendUserList(data.name);
 			socket.get('nick',function(e,nick){
 				logger.debug(nick+' joined '+data.name);
-				io.sockets.in(data.name).emit('message',{
-					message: nick+' joined the channel',
-					room: data.name,
-					from: 0
-				});
+				fromServer(data.name,nick+' joined the channel');
 			});
 		});
 		socket.on('part',function(data){
@@ -353,11 +346,7 @@ if(cluster.isMaster){
 				var temp = [],i;
 				for(i in users) i && i != null && temp.push(users[i]);
 				users = temp;
-				socket.emit('message',{
-					message: data.name+" users:\n\t\t"+users.join("\n\t\t"),
-					room: data.name,
-					from: 0
-				});
+				fromServer(data.name,data.name+" users:\n\t\t"+users.join("\n\t\t"),socket);
 				sendUserList(data.name);
 			});
 		});
@@ -408,6 +397,26 @@ if(cluster.isMaster){
 						});
 					});
 				}
+			},
+			message = function(room,from,message,socket){
+				if(typeof socket == 'undefined'){
+					socket = io.sockets.in(room);
+				}
+				socket.emit('message',{
+					message: message,
+					room: room,
+					from: from
+				})
+			},
+			fromServer = function(room,message,socket){
+				if(typeof socket == 'undefined'){
+					socket = io.sockets.in(room);
+				}
+				socket.emit('message',{
+					message: message,
+					room: room,
+					from: 0
+				});
 			};
 	});
 }
