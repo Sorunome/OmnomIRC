@@ -146,7 +146,9 @@ if(cluster.isMaster){
 			case 'M':
 				if(typeof irc != 'undefined'){
 					msg = JSON.parse(msg);
-					irc.say(msg.room,'<'+msg.from+'> '+msg.message);
+					if(msg.message){
+						irc.say(msg.room,'<'+msg.from+'> '+msg.message);
+					}
 				}
 			break;
 			case 'S':
