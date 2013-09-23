@@ -1,3 +1,20 @@
+if(typeof $.fn.selectRange !-'undefined'){
+	$.fn.selectRange = function(start, end) {
+		return this.each(function() {
+			if(this.setSelectionRange) {
+				this.focus();
+				this.setSelectionRange(start, end);
+			} else if(this.createTextRange) {
+				var range = this.createTextRange();
+				range.collapse(true);
+				range.moveEnd('character', end);
+				range.moveStart('character', start);
+				range.select();
+			}
+		});
+	};
+
+}
 $("#input").keydown(function(e){
 	var oldMessages = [],
 		room = room = $o.ui.tabs.current().name,
@@ -28,7 +45,7 @@ $("#input").keydown(function(e){
 			break;
 		}
 		temp = $('#input').val().length;
-		$('#input').selectRange(temp-1,temp);
+		$('#input').selectRange(temp,temp);
 	}
 });
 $('#input').data({
@@ -54,7 +71,6 @@ hook("load",function(){
 	$('#input').data('oldMessageCounter',oldMessages.length);
 });
 hook("send",function(msg,room){
-	$o.event("Old Messages","New message in room "+room);
 	var oldMessages = [],
 		temp = $.localStorage('oldMessages-'+room);
 	if (temp!=null){
