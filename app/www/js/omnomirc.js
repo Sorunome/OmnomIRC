@@ -61,7 +61,8 @@
 			nick: 'User',
 			sig: '',
 			tabs: tabs,
-			themes: []
+			themes: [],
+			origins: []
 		},
 		commands = [
 			{ // names
@@ -313,7 +314,7 @@
 		pluginSandbox = {
 			$: window.jQuery,
 			jQuery: window.jQuery,
-			$o: $o,
+			$o: $o
 		},
 		currentPlugin = 0,
 		Sandbox = function(sandbox){
@@ -936,11 +937,18 @@
 						}
 						event(msg,'send');
 						if(runHook('send',[msg,room])){
+							var origin = -1;
+							for(var i in $o.prop('origins')){
+								if ($o.prop('origins')[i][1]=='OmnomIRC'){
+									origin = i;
+									break;
+								}
+							}
 							emit('message',{
 								message: msg,
 								room: room,
 								from: properties.nick,
-								origin: 0
+								origin: origin
 							});
 						}
 					}
@@ -1184,6 +1192,12 @@
 			.replace(/"/g, '&quot;');
 	};
 	$(document).ready(function(){
+		$.ajax('api/origins.js',{
+			dataType: 'json',
+			success:function(data){
+				properties.origins = data;
+			}
+		});
 		$.extend(settings,$.parseJSON($.localStorage('settings')));
 		$.localStorage('settings',JSON.stringify(settings));
 		settingsConf['theme'].callback(settings['theme'],'theme',true);

@@ -64,7 +64,8 @@ var fs = require('fs'),
 				},
 				origins: [
 					['O','OmnomIRC'],
-					['#','IRC']
+					['#','IRC'],
+					['S','Server']
 				]
 			},
 			i,
@@ -367,7 +368,7 @@ if(cluster.isMaster){
 				var temp = [],i;
 				for(i in users) i && i != null && temp.push(users[i]);
 				users = temp;
-				fromServer(data.name,data.name+" users:\n\t\t"+users.join("\n\t\t"),socket,0);
+				fromServer(data.name,data.name+" users:\n\t\t"+users.join("\n\t\t"),socket);
 				sendUserList(data.name);
 			});
 		});
@@ -418,8 +419,7 @@ if(cluster.isMaster){
 						});
 					});
 				}
-			},
-			message = function(room,from,message,origin,socket){
+			},message = function(room,from,message,origin,socket){
 				if(typeof socket == 'undefined'){
 					socket = io.sockets.in(room);
 				}
@@ -430,7 +430,7 @@ if(cluster.isMaster){
 					origin: origin
 				})
 			},
-			fromServer = function(room,message,socket,source){
+			fromServer = function(room,message,socket){
 				if(typeof socket == 'undefined'){
 					socket = io.sockets.in(room);
 				}
@@ -438,7 +438,7 @@ if(cluster.isMaster){
 					message: message,
 					room: room,
 					from: 0,
-					source: 1
+					origin: 2
 				});
 			};
 	});
