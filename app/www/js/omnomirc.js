@@ -294,7 +294,8 @@
 					runHook('message',[
 						data.message,
 						data.from,
-						data.room
+						data.room,
+						data.origin
 					]);
 				}
 			}
@@ -938,7 +939,8 @@
 							emit('message',{
 								message: msg,
 								room: room,
-								from: properties.nick
+								from: properties.nick,
+								origin: 0
 							});
 						}
 					}

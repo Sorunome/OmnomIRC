@@ -61,7 +61,11 @@ var fs = require('fs'),
 					messages: {
 						quit: 'Server closed'
 					}
-				}
+				},
+				origins: [
+					['O','OmnomIRC'],
+					['#','IRC']
+				]
 			},
 			i,
 			options;
@@ -135,6 +139,7 @@ if(cluster.isMaster){
 		var c = msg[0];
 		msg = msg.substr(1);
 		logger.debug('Child recieved command '+c+' with message '+msg);
+		
 		switch(c){
 			case 'Q':
 				if(typeof app != 'undefined' && typeof irc == 'undefined'){
@@ -147,7 +152,7 @@ if(cluster.isMaster){
 				if(typeof irc != 'undefined'){
 					msg = JSON.parse(msg);
 					if(msg.message){
-						irc.say(msg.room,'<'+msg.from+'> '+msg.message);
+						irc.say(msg.room,'('+options.origins[msg.origin][0]+')'+'<'+msg.from+'> '+msg.message);
 					}
 				}
 			break;
@@ -158,12 +163,25 @@ if(cluster.isMaster){
 					logger.info('Connected to IRC');
 					for(var i in options.irc.channels){
 						irc.join(options.irc.channels[i]);
+						//irc.client.send('WHO %s\n',options.irc.channels[i]);
 					}
 				});
 				irc.on('CHANMSG',function(d){
 					console.log(d);
-					message(d.reciever,d.sender,d.message);
+					var origin = -1;
+					for(var i in options.origins){
+						if (options.origins[i][1]=='IRC'){
+							origin = i;
+							break;
+						}
+					}
+					message(d.reciever,d.sender,d.message,origin);
 				});
+				/*irc.addListener('names',function(chan,nicks){
+					for(var i in nicks){
+						logger.debug('[NICKS] Channel '+chan+' '+nicks[i]);
+					}
+				});*/
 				irc.connect();
 				logger.debug('Connecting to IRC');	
 			break;
@@ -265,7 +283,8 @@ if(cluster.isMaster){
 										},
 										returnCode: 200,
 										vm: vm,
-										fs: fs
+										fs: fs,
+										options: options
 									};
 								vm.runInNewContext(data,sandbox,filepath);
 								res.writeHead(sandbox.returnCode,sandbox.head);
@@ -348,7 +367,7 @@ if(cluster.isMaster){
 				var temp = [],i;
 				for(i in users) i && i != null && temp.push(users[i]);
 				users = temp;
-				fromServer(data.name,data.name+" users:\n\t\t"+users.join("\n\t\t"),socket);
+				fromServer(data.name,data.name+" users:\n\t\t"+users.join("\n\t\t"),socket,0);
 				sendUserList(data.name);
 			});
 		});
@@ -400,24 +419,26 @@ if(cluster.isMaster){
 					});
 				}
 			},
-			message = function(room,from,message,socket){
+			message = function(room,from,message,origin,socket){
 				if(typeof socket == 'undefined'){
 					socket = io.sockets.in(room);
 				}
 				socket.emit('message',{
 					message: message,
 					room: room,
-					from: from
+					from: from,
+					origin: origin
 				})
 			},
-			fromServer = function(room,message,socket){
+			fromServer = function(room,message,socket,source){
 				if(typeof socket == 'undefined'){
 					socket = io.sockets.in(room);
 				}
 				socket.emit('message',{
 					message: message,
 					room: room,
-					from: 0
+					from: 0,
+					source: 1
 				});
 			};
 	});
