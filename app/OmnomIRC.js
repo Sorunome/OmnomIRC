@@ -63,7 +63,6 @@ var fs = require('fs'),
 					}
 				},
 				origins: [
-					['S','Server'],
 					['O','OmnomIRC'],
 					['#','IRC']
 				]
@@ -80,6 +79,7 @@ var fs = require('fs'),
 						defaults[i] = merge(options[i],defaults[i]);
 					}
 				}
+				defaults.origins.unshift(['S','Server']);
 				return defaults
 			})(options,defaults);
 		}catch(e){
