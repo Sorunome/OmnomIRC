@@ -319,7 +319,7 @@
 			$: window.jQuery,
 			jQuery: window.jQuery,
 			$o: $o,
-			documentFragment: document.documentFragment
+			documentFragment: document.createDocumentFragment
 		},
 		currentPlugin = 0,
 		Sandbox = function(sandbox){
