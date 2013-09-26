@@ -79,12 +79,13 @@ var fs = require('fs'),
 						defaults[i] = merge(options[i],defaults[i]);
 					}
 				}
-				defaults.origins.unshift(['S','Server']);
 				return defaults
 			})(options,defaults);
 		}catch(e){
-			logger.warn('Using default settings. Please create options.json');
+			console.warn('Using default settings. Please create options.json');
+			console.error(e);
 		}
+		defaults.origins.unshift(['S','Server']);
 		options = {};
 		for(i in  defaults){
 			Object.defineProperty(options,i,{
