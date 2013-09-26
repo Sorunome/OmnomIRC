@@ -319,7 +319,9 @@
 			$: window.jQuery,
 			jQuery: window.jQuery,
 			$o: $o,
-			documentFragment: document.createDocumentFragment
+			fragment: function(){
+				return document.createDocumentFragment();
+			}
 		},
 		currentPlugin = 0,
 		Sandbox = function(sandbox){
