@@ -85,7 +85,7 @@ var fs = require('fs'),
 			console.warn('Using default settings. Please create options.json');
 			console.error(e);
 		}
-		defaults.origins.unshift(['S','Server']);
+		defaults.origins.unshift(['S','Server'],['?','Unknown']);
 		options = {};
 		for(i in  defaults){
 			Object.defineProperty(options,i,{
@@ -101,8 +101,8 @@ var fs = require('fs'),
 			if(options.orgins[i][1] == name){
 				return i;
 			}
-			return 0;
 		}
+		return 1;
 	};
 if(typeof fs.existsSync == 'undefined') fs.existsSync = path.existsSync; // legacy support
 if(cluster.isMaster){
