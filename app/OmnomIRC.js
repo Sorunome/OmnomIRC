@@ -83,7 +83,8 @@ var fs = require('fs'),
 				return defaults
 			})(options,defaults);
 		}catch(e){
-			logger.warn('Using default settings. Please create options.json');
+			console.warn('Using default settings. Please create options.json');
+			console.error(e);
 		}
 		defaults.origins.unshift(['S','Server']);
 		options = {};
