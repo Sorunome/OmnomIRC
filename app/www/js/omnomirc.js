@@ -318,7 +318,8 @@
 		pluginSandbox = {
 			$: window.jQuery,
 			jQuery: window.jQuery,
-			$o: $o
+			$o: $o,
+			documentFragment: document.documentFragment
 		},
 		currentPlugin = 0,
 		Sandbox = function(sandbox){
