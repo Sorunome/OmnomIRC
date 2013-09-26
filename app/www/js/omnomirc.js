@@ -318,11 +318,7 @@
 		pluginSandbox = {
 			$: window.jQuery,
 			jQuery: window.jQuery,
-			$o: $o,
-			test: "hello world",
-			fragment: function(){
-				return document.createDocumentFragment();
-			}
+			$o: $o
 		},
 		currentPlugin = 0,
 		Sandbox = function(sandbox){
@@ -333,6 +329,11 @@
 			o.window = o;
 			for(i in sandbox){
 				o[i] = sandbox[i];
+			}
+			if(!exists(o.fragment)){
+				o.fragment = function(){
+					return document.createDocumentFragment();
+				};
 			}
 			return o;
 		},
