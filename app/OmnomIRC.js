@@ -103,8 +103,8 @@ var fs = require('fs'),
 			if(options.origins[i][1] == name){
 				return i;
 			}
-			return 0;
 		}
+		return 0;
 	};
 if(typeof fs.existsSync == 'undefined') fs.existsSync = path.existsSync; // legacy support
 if(cluster.isMaster){
@@ -426,7 +426,6 @@ if(cluster.isMaster){
 				}
 			},
 			message = function(room,from,message,origin,socket){
-				console.log('sending');
 				if(typeof socket == 'undefined'){
 					socket = io.sockets.in(room);
 				}
