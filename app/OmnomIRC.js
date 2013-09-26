@@ -148,7 +148,6 @@ if(cluster.isMaster){
 	process.on('message',function(msg){
 		var c = msg[0];
 		msg = msg.substr(1);
-		logger.debug('Child recieved command '+c+' with message '+msg);
 		
 		switch(c){
 			case 'Q':
