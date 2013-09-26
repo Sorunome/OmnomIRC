@@ -36,7 +36,6 @@ var fs = require('fs'),
 		}
 	},
 	options = global.options = (function(){
-		console.log('parsing options');
 		var defaults = {
 				port: 80,
 				loglevel: 3,
@@ -95,7 +94,6 @@ var fs = require('fs'),
 				writable: false
 			});
 		}
-		console.log('done parsing options');
 		return options;
 	})(),
 	origin = function(name){
