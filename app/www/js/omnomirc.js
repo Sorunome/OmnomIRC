@@ -83,6 +83,7 @@
 					}
 					emit('message',{
 						from: 0,
+						origin: 0,
 						message: properties.nick+' '+ret,
 						room: $o.ui.tabs.current().name
 					});
@@ -178,7 +179,8 @@
 								emit('echo',{
 									room: data.room,
 									message: v+' left the room',
-									from: 0
+									from: 0,
+									origin: 0
 								});
 								runHook('part',[
 									v,
@@ -233,6 +235,7 @@
 					emit('echo',{
 						room: $o.ui.tabs.current().name,
 						from: 0,
+						origin: 0,
 						message: 'reconnected'
 					});
 				}
@@ -247,6 +250,7 @@
 					emit('echo',{
 						room: $o.ui.tabs.current().name,
 						from: 0,
+						origin: 0,
 						message: 'connected'
 					});
 				}
@@ -389,6 +393,14 @@
 					$(this).text(text);
 				}).timeago('dispose');
 			}
+		},
+		origin = function(name){
+			for(var i in properties.origins){
+				if(name == properties.origins[i][1]){
+					return i;
+				}
+			}
+			return 0;
 		},
 		socket,$i,$s,$h,$cl,$c,$tl,hht;
 	$.extend($o,{
@@ -738,7 +750,8 @@
 								emit('echo',{
 									room: $o.ui.tabs.tab(id).name,
 									message: 'messages cleared',
-									from: 0
+									from: 0,
+									origin: 0
 								});
 							}
 						});
@@ -937,18 +950,11 @@
 						}
 						event(msg,'send');
 						if(runHook('send',[msg,room])){
-							var origin = -1;
-							for(var i in $o.prop('origins')){
-								if ($o.prop('origins')[i][1]=='OmnomIRC'){
-									origin = i;
-									break;
-								}
-							}
 							emit('message',{
 								message: msg,
 								room: room,
 								from: properties.nick,
-								origin: origin
+								origin: origin('OmnomIRC')
 							});
 						}
 					}

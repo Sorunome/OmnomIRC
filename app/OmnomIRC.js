@@ -63,9 +63,9 @@ var fs = require('fs'),
 					}
 				},
 				origins: [
+					['S','Server'],
 					['O','OmnomIRC'],
-					['#','IRC'],
-					['S','Server']
+					['#','IRC']
 				]
 			},
 			i,
@@ -94,7 +94,15 @@ var fs = require('fs'),
 			});
 		}
 		return options;
-	})();
+	})(),
+	origin = function(name){
+		for(var i in options.origins){
+			if(options.orgins[i][1] == name){
+				return i;
+			}
+			return 0;
+		}
+	};
 if(typeof fs.existsSync == 'undefined') fs.existsSync = path.existsSync; // legacy support
 if(cluster.isMaster){
 	var iWorker;
@@ -139,8 +147,7 @@ if(cluster.isMaster){
 	process.on('message',function(msg){
 		var c = msg[0];
 		msg = msg.substr(1);
-		logger.debug('Child recieved command '+c+' with message '+msg);
-		
+		logger.debug('Child recieved command '+c+' with message '+msg);		
 		switch(c){
 			case 'Q':
 				if(typeof app != 'undefined' && typeof irc == 'undefined'){
@@ -169,16 +176,10 @@ if(cluster.isMaster){
 				});
 				irc.on('CHANMSG',function(d){
 					console.log(d);
-					var origin = -1;
-					for(var i in options.origins){
-						if (options.origins[i][1]=='IRC'){
-							origin = i;
-							break;
-						}
-					}
-					message(d.reciever,d.sender,d.message,origin);
+					message(d.reciever,d.sender,d.message,origin('IRC'));
 				});
-				/*irc.addListener('names',function(chan,nicks){
+				// Beginnings of names handler
+				/*irc.on('names',function(chan,nicks){
 					for(var i in nicks){
 						logger.debug('[NICKS] Channel '+chan+' '+nicks[i]);
 					}
