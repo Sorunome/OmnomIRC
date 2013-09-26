@@ -1,6 +1,7 @@
-hook('message',function(msg,from,room){
+hook('message',function(msg,from,room,origin){
 	if(msg =='funny'){
-		$o.chat.send('Not funny',room);
+		$o.event('test','yay');
+		$o.chat.send(origin,room);
 	}
 });
 hook('send',function(msg,room){

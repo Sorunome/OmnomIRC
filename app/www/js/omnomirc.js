@@ -61,7 +61,8 @@
 			nick: 'User',
 			sig: '',
 			tabs: tabs,
-			themes: []
+			themes: [],
+			origins: []
 		},
 		commands = [
 			{ // names
@@ -82,6 +83,7 @@
 					}
 					emit('message',{
 						from: 0,
+						origin: 0,
 						message: properties.nick+' '+ret,
 						room: $o.ui.tabs.current().name
 					});
@@ -177,7 +179,8 @@
 								emit('echo',{
 									room: data.room,
 									message: v+' left the room',
-									from: 0
+									from: 0,
+									origin: 0
 								});
 								runHook('part',[
 									v,
@@ -232,6 +235,7 @@
 					emit('echo',{
 						room: $o.ui.tabs.current().name,
 						from: 0,
+						origin: 0,
 						message: 'reconnected'
 					});
 				}
@@ -246,6 +250,7 @@
 					emit('echo',{
 						room: $o.ui.tabs.current().name,
 						from: 0,
+						origin: 0,
 						message: 'connected'
 					});
 				}
@@ -294,7 +299,8 @@
 					runHook('message',[
 						data.message,
 						data.from,
-						data.room
+						data.room,
+						data.origin
 					]);
 				}
 			}
@@ -312,7 +318,7 @@
 		pluginSandbox = {
 			$: window.jQuery,
 			jQuery: window.jQuery,
-			$o: $o,
+			$o: $o
 		},
 		currentPlugin = 0,
 		Sandbox = function(sandbox){
@@ -387,6 +393,14 @@
 					$(this).text(text);
 				}).timeago('dispose');
 			}
+		},
+		origin = function(name){
+			for(var i in properties.origins){
+				if(name == properties.origins[i][1]){
+					return i;
+				}
+			}
+			return 1;
 		},
 		socket,$i,$s,$h,$cl,$c,$tl,hht;
 	$.extend($o,{
@@ -736,7 +750,8 @@
 								emit('echo',{
 									room: $o.ui.tabs.tab(id).name,
 									message: 'messages cleared',
-									from: 0
+									from: 0,
+									origin: 0
 								});
 							}
 						});
@@ -938,7 +953,8 @@
 							emit('message',{
 								message: msg,
 								room: room,
-								from: properties.nick
+								from: properties.nick,
+								origin: origin('OmnomIRC')
 							});
 						}
 					}
@@ -1182,6 +1198,12 @@
 			.replace(/"/g, '&quot;');
 	};
 	$(document).ready(function(){
+		$.ajax('api/origins.js',{
+			dataType: 'json',
+			success:function(data){
+				properties.origins = data;
+			}
+		});
 		$.extend(settings,$.parseJSON($.localStorage('settings')));
 		$.localStorage('settings',JSON.stringify(settings));
 		settingsConf['theme'].callback(settings['theme'],'theme',true);
