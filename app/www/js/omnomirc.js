@@ -400,7 +400,7 @@
 					return i;
 				}
 			}
-			return 0;
+			return 1;
 		},
 		socket,$i,$s,$h,$cl,$c,$tl,hht;
 	$.extend($o,{
