@@ -149,6 +149,17 @@ if(cluster.isMaster){
 		var c = msg[0];
 		msg = msg.substr(1);
 		
+			message = function(room,from,message,origin,socket){
+				if(typeof socket == 'undefined'){
+					socket = io.sockets.in(room);
+				}
+				socket.emit('message',{
+					message: message,
+					room: room,
+					from: from,
+					origin: origin
+				})
+			};
 		switch(c){
 			case 'Q':
 				if(typeof app != 'undefined' && typeof irc == 'undefined'){
@@ -421,17 +432,6 @@ if(cluster.isMaster){
 						});
 					});
 				}
-			},
-			message = function(room,from,message,origin,socket){
-				if(typeof socket == 'undefined'){
-					socket = io.sockets.in(room);
-				}
-				socket.emit('message',{
-					message: message,
-					room: room,
-					from: from,
-					origin: origin
-				})
 			},
 			fromServer = function(room,message,socket){
 				if(typeof socket == 'undefined'){

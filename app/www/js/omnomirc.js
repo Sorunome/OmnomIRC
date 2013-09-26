@@ -319,6 +319,7 @@
 			$: window.jQuery,
 			jQuery: window.jQuery,
 			$o: $o,
+			test: "hello world",
 			fragment: function(){
 				return document.createDocumentFragment();
 			}
@@ -1173,6 +1174,7 @@
 								$: window.jQuery,
 								$o: window.OmnomIRC,
 								OmnomIRC: window.OmnomIRC,
+								test: "test"
 							};
 							runInSandbox(data,sandbox);
 							runHook('themechange',[v]);

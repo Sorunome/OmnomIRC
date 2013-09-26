@@ -64,6 +64,8 @@ hook("send",function(msg,room){
 	}
 	$.localStorage('oldMessages-'+room,oldMessages.join("\n"));
 	$('#input').data('oldMessageCounter',oldMessages.length);
+	//$o.event('OldMessages','added old message');
+	return true;
 });
 hook("stop",function(name){
 	$('#input').off(oldMessagesKeyHandle);
