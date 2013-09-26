@@ -36,6 +36,7 @@ var fs = require('fs'),
 		}
 	},
 	options = global.options = (function(){
+		console.log('parsing options');
 		var defaults = {
 				port: 80,
 				loglevel: 3,
@@ -79,12 +80,12 @@ var fs = require('fs'),
 						defaults[i] = merge(options[i],defaults[i]);
 					}
 				}
-				defaults.origins.unshift(['S','Server']);
 				return defaults
 			})(options,defaults);
 		}catch(e){
 			logger.warn('Using default settings. Please create options.json');
 		}
+		defaults.origins.unshift(['S','Server']);
 		options = {};
 		for(i in  defaults){
 			Object.defineProperty(options,i,{
@@ -93,11 +94,12 @@ var fs = require('fs'),
 				writable: false
 			});
 		}
+		console.log('done parsing options');
 		return options;
 	})(),
 	origin = function(name){
 		for(var i in options.origins){
-			if(options.orgins[i][1] == name){
+			if(options.origins[i][1] == name){
 				return i;
 			}
 			return 0;
@@ -147,7 +149,8 @@ if(cluster.isMaster){
 	process.on('message',function(msg){
 		var c = msg[0];
 		msg = msg.substr(1);
-		logger.debug('Child recieved command '+c+' with message '+msg);		
+		logger.debug('Child recieved command '+c+' with message '+msg);
+		
 		switch(c){
 			case 'Q':
 				if(typeof app != 'undefined' && typeof irc == 'undefined'){
@@ -420,7 +423,9 @@ if(cluster.isMaster){
 						});
 					});
 				}
-			},message = function(room,from,message,origin,socket){
+			},
+			message = function(room,from,message,origin,socket){
+				console.log('sending');
 				if(typeof socket == 'undefined'){
 					socket = io.sockets.in(room);
 				}
