@@ -20,6 +20,11 @@ ip 108.174.51.58
     You should have received a copy of the GNU General Public License
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
+//ini_set('display_errors',1);
+//ini_set('display_startup_errors',1);
+//set_error_handler("error_function");
+//error_reporting(-1);
+
 	include("Source/cachefix.php"); //This must be the first line in every file.
 	include("Source/sql.php");
 	include("Source/sign.php");
@@ -300,6 +305,10 @@ ip 108.174.51.58
 	if (isset($_GET['textmode'])) {
 		session_start();
 		echo "<html><head><meta http-equiv=\"refresh\" content=\"1;url=textmode.php?update=".$_SESSION['curline']."\"></head><body>Sending message...</body></html>";
+	} else {
+		$temp = mysql_fetch_array(sql_query("SELECT MAX(line_number) FROM irc_lines"));
+		//var_dump($temp[0]);
+		file_put_contents("/run/omnomirc_curid",$temp[0]);
 	}
 	//sorunome edit END
 ?>

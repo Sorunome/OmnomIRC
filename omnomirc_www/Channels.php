@@ -20,7 +20,8 @@
 	include("/path/to/Source/sign.php");
 	//Set the channels here.
 	//$channels[]=Array("#channel",AlwaysShow);
-	
+	//$channels = Array();
+	//$channels[] = Array("#omnimaga",true);
 	
 	if (!isset($IRCBOT))
 	{

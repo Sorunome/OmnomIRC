@@ -66,6 +66,10 @@
 	$countBeforeQuit = 0;
 	while (true)
 	{
+		if (file_get_contents("/run/omnomirc_curid")<=$curline) {
+			usleep(500000);
+			continue;
+		}
 		if ($countBeforeQuit++ == 50)//Timeout after 25 seconds.
 			die();
 		if ($nick != "0")

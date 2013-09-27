@@ -40,7 +40,10 @@ if (strpos($_SERVER['HTTP_USER_AGENT'],"textmode;")===false) {?>
 		if (oldMessages.length>20)
 			oldMessages.shift();
 		messageCounter = oldMessages.length;
-		setCookie("oldMessages-"+getChannelEn(),oldMessages.join("\n"),30);
+		if (supports_html5_storage())
+			localStorage.setItem("oldMessages-"+getChannelEn(),oldMessages.join("\n"));
+		else
+			setCookie("oldMessages-"+getChannelEn(),oldMessages.join("\n"),30);
 	}
 	
 	function resize()
