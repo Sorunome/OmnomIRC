@@ -66,7 +66,7 @@
 	$countBeforeQuit = 0;
 	while (true)
 	{
-		if (file_get_contents("/run/omnomirc_curid")<=$curline) {
+		if (file_get_contents("/run/omnomirc_curid")<=$curLine) {
 			usleep(500000);
 			continue;
 		}
