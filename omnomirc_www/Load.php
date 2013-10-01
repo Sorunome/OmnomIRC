@@ -59,11 +59,12 @@
 		$res = sql_query("SELECT x.* FROM (
 													SELECT * FROM `irc_lines` 
 													WHERE 
-													(`channel` = '%s'
+													((`channel` = '%s'
 													AND `name1` = '%s')
 													OR
 													(`channel` = '%s'
-													AND `name1` = '%s')
+													AND `name1` = '%s'))
+														AND NOT ((`type` = 'join' OR `type` = 'part') AND `Online` = 1)
 													ORDER BY `line_number` DESC 
 													LIMIT %s
 												) AS x
@@ -73,7 +74,8 @@
 	{
 		$res = sql_query("SELECT x.* FROM (
 													SELECT * FROM `irc_lines` 
-													WHERE `channel` = '%s' OR `channel` = '%s'
+													WHERE (`channel` = '%s' OR `channel` = '%s')
+														AND NOT ((`type` = 'join' OR `type` = 'part') AND `Online` = 1)
 													ORDER BY `line_number` DESC 
 													LIMIT %s
 												) AS x

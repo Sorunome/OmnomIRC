@@ -66,12 +66,12 @@
 	$countBeforeQuit = 0;
 	while (true)
 	{
+		if ($countBeforeQuit++ == 50)//Timeout after 25 seconds.
+			die();
 		if (file_get_contents("/run/omnomirc_curid")<=$curLine) {
 			usleep(500000);
 			continue;
 		}
-		if ($countBeforeQuit++ == 50)//Timeout after 25 seconds.
-			die();
 		if ($nick != "0")
 			UpdateUser($nick,$channel,'1');
 		if (isset($_GET['calc']))

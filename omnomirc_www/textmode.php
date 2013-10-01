@@ -23,7 +23,8 @@ if (isset($_GET['message'])) {
 	header("Location: message.php?textmode&nick=".base64_url_encode($_SESSION['nick'])."&signature=".base64_url_encode($_SESSION['sig'])."&message=".base64_url_encode($_POST['message'])."&channel=I29tbmltYWdh&id=".$_SESSION['id']);
 } else {
 	
-	if (isset($_GET['update'])) {
+	if (isset($_GET['update']) && isset($_SESSION['curline'])) {
+		$pm = false;
 		$query = sql_query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND (`channel` = '%s' OR `channel` = '%s' OR (`channel` = '%s' AND `name1` = '%s'))",$_SESSION['curline'] + 0,$channel,$nick,$pm?$sender:"0", $nick);
 	} else {
 		$_SESSION['curline'] = 0;
@@ -66,7 +67,10 @@ if (isset($_GET['message'])) {
 				$line .= "<td>* ".htmlspecialchars($result['name1'])." has changed topic to ".htmlspecialchars($result["message"])."</td>";break;
 		}
 		$_SESSION['curline'] = $result['line_number'];
-		$_SESSION['content'] = $line."</tr>".$_SESSION['content'];
+		if(isset($_SESSION['content']))
+			$_SESSION['content'] = $line."</tr>".$_SESSION['content'];
+		else
+			$_SESSION = $line."</tr>";
 	}
 	echo "<html><head><meta http-equiv=\"refresh\" content=\"5;url=textmode.php?update=".$_SESSION['curline']."\"></head><body><a href=\"textmode.php?message=".$_SESSION['curline']."\" autofocus>Click here to write a message</a><table>".$_SESSION['content']."</table></body></html>";
 }

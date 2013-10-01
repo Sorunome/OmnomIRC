@@ -189,7 +189,7 @@ if (strpos($_SERVER['HTTP_USER_AGENT'],"textmode;")===false) {?>
 	var body= document.getElementsByTagName('body')[0];
 	var script= document.createElement('script');
 	script.type= 'text/javascript';
-	script.src=CHECKLOGINURL+"?sid="+escape(getCookie("SMFCookie666").split(";").join("%^%"));
+	script.src=CHECKLOGINURL+<?php echo '"?sid='.urlencode(htmlspecialchars(str_replace(";","%^%",$_COOKIE['__cfduid']))).';"'."\n"; ?>;
 	body.appendChild(script);
 </script>
 <audio id="ding" src="beep.wav" hidden></audio>
@@ -197,6 +197,5 @@ if (strpos($_SERVER['HTTP_USER_AGENT'],"textmode;")===false) {?>
 </html>
 <?php
 } else {
-	header('Location: http://www.omnimaga.org/checkLogin.php?textmode');
-}
+	header('Location: http://www.omnimaga.org/checkLogin.php?textmode&sid='.urlencode(htmlspecialchars(str_replace(";","%^%",$_COOKIE['__cfduid']))));}
 ?>
