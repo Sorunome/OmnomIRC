@@ -42,6 +42,11 @@ html,body{
 .close-button:hover{
 	color: red;
 }
+.container{
+	overflow: auto;
+	padding: 0;
+	margin: 0;
+}
 #head{
 	right: 0;
 	top: 0;
@@ -78,8 +83,6 @@ html,body{
 	padding: 2px;
 }
 #console-log-controls{
-	position: absolute;
-	bottom: 22px;
 	width: 100%;
 	overflow: hidden;
 }
@@ -110,6 +113,10 @@ html,body{
 	width: 52px;
 	border-right-style: solid;
 	right: 36px;
+}
+#users div.container, #settings div.container{
+	height: calc(100% - 29px);
+	width: 100%;
 }
 #settings.hovered,#users.hovered{
 	height: 21px;
