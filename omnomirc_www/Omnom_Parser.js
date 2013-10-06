@@ -55,7 +55,7 @@ scrolledDown = true;
 	{
 		if (inRequest)
 			return;
-		url = "Update.php?lineNum=" + curLine + "&channel=" + getChannelEn() + "&nick=" + base64.encode(userName) + "&signature=" + base64.encode(Signature) + "&high=" + numCharsHighlight.toString();
+		url = "Update.php?lineNum=" + curLine + "&channel=" + getChannelEn() + "&nick=" + base64.encode(userName) + "&signature=" + base64.encode(Signature) + "&high=" + numCharsHighlight.toString() + "&time=" + (new Date().getTime()).toString();
 		xmlhttp.open("GET",url,true);
 		if (isBlurred()){
 			setTimeout("xmlhttp.send(null);",2500); //Only query every 2.5 seconds maximum if not foregrounded.

@@ -17,7 +17,7 @@ if(!isset($_GET['op'])) {
 		header('Content-type: text/plain');
 	elseif (!isset($_GET['textmode']))
 		header('Content-type: text/javascript');
-	if ($user_info['is_guest'] || is_not_banned() || htmlspecialchars(str_replace(";","%^%",$_COOKIE['__cfduid']))!=$_GET['sid']) {
+	if ($user_info['is_guest'] || is_not_banned() || (isset($_GET['sid']) && htmlspecialchars(str_replace(";","%^%",$_COOKIE['__cfduid']))!=$_GET['sid']) || !isset($_GET['sid'])) {
 		$nick = "Guest";
 		$signature = "";
 	} else {
