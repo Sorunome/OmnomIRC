@@ -33,7 +33,11 @@
 		return $userSql;
 	}
 	ob_start();
-	$count = $_GET['count'];
+	if(isset($_GET['count']))
+		$count = $_GET['count'];
+	else
+		$count = 1;
+
 	$channel = $defaultChan;
 	if (isset($_GET['channel']))
 		$channel = base64_url_decode($_GET['channel']);

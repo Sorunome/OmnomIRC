@@ -285,6 +285,7 @@ function userLeave($username,$channel)
 		unset($userList[$channel][$pos]);
 	}
 	sql_query("DELETE FROM `irc_users` WHERE `username` = '%s' AND `channel` = '%s' AND online='0'",$username,$channel);
+	echo "==USER PART==";
 }
 
 function userQuit($username,$message,$socketToExclude)
@@ -302,6 +303,7 @@ function userQuit($username,$message,$socketToExclude)
 	}
 	addLine($username,'',"quit",$message,'');
 	sql_query("DELETE FROM `irc_users` WHERE `username` = '%s' AND online='0'",$username);
+	echo "==USER QUIT==";
 }
 function userNick($oldNick,$newNick,$socketToExclude)
 {
