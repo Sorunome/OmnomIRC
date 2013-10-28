@@ -7,7 +7,7 @@ Installation
 3. change config.php so that it fits your config, for $signature_key put a random string
 4. copy the correct checkLogin file to your server where the forum is located and change $encriptKeyToUse to the $signature_key you set in config.php
 5. in Channels.php change line 20 to the ABSOLUTE path of your file
-6. Modify the Bot File OmnomIRC.php: lines 23,24,27,28,29,35,137 and (if needed) 347,348
+6. Modify the Bot File OmnomIRC.php: add the absolute file path to the root of your html document
 7. Modify the bot File TopicBot.php: lines 23,24,29,107,112 and (if needed) 140,141
 8. Make sure that TopicBot will get op in your irc chans for topic sync
 9. change the paths in initscript.sh to match your paths + user + group and use absolute paths to the bot files
