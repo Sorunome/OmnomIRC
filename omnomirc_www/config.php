@@ -23,7 +23,7 @@ if (isset($_GET['js'])) {
 	echo "HOSTNAME = '$hostname';\nSEARCHNAMESURL='$searchNamesUrl'\nCHECKLOGINURL='$checkLoginUrl'";
 }
 
-if($IRCBOT){
+if(isset($IRCBOT) && $IRCBOT){
 	$servers = Array();
 	$servers[] = Array("<first irc server>",6667);
 	$servers[] = Array("<second irc server>",6667);
