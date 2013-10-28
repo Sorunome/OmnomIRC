@@ -85,9 +85,11 @@ scrolledDown = true;
 					return;
 				}
 			}
-			if (xmlhttp.status == 200) addLines(xmlhttp.responseText); //Filter out 500s from timeouts
-			errorCount = 0;
-			sendRequest();
+			if (xmlhttp.status == 200){
+				addLines(xmlhttp.responseText);
+				errorCount = 0;
+				sendRequest();
+			}
 		}
 	}
 	
@@ -106,14 +108,11 @@ scrolledDown = true;
 //******************************
 // Start Parser                *
 //******************************
-	function addLines(message)
-	{
-		parts = message.split("\n");
-		for (var i=0;i<parts.length;i++)
-		{
-			if (parts[i].length > 2)
-			{
-				addLine(parts[i]);
+	function addLines(message){
+		var lineParts = message.split("\n");
+		for (var i=0;i<lineParts.length;i++){
+			if (lineParts[i].length > 2){
+				addLine(lineParts[i]);
 			}
 		}
 	}

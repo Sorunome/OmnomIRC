@@ -292,7 +292,7 @@ function userQuit($username,$message,$socketToExclude)
 		$pos = array_search($username,$channel);
 		if ($pos)
 		{
-			sendLine("PRIVMSG $chanName :(#) *$username has quit $chanName($message)",$socketToExclude);
+			sendLine("PRIVMSG $chanName :(#)* $username has quit $chanName ($message))",$socketToExclude);
 			addLine($username,'',"quit",$message,$chanName);
 			unset($userList[$chanName][$pos]);
 		}
@@ -308,7 +308,7 @@ function userNick($oldNick,$newNick,$socketToExclude)
 		$pos = array_search($oldNick,$channel);
 		if ($pos)
 		{
-			sendLine("PRIVMSG $chanName :(#) *$oldNick has changed nicks to $newNick",$socketToExclude);
+			sendLine("PRIVMSG $chanName :(#)* $oldNick has changed nicks to $newNick",$socketToExclude);
 			addLine($oldNick,$newNick,"nick",'',$chanName);
 			$userList[$chanName][$pos] = $newNick;
 		}
