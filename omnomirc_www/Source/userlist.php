@@ -14,9 +14,9 @@
 			if ($row['time'] < strtotime('-1 minute')) //First time they joined in a minute.
 				notifyJoin($nick,$channel);
 		}
-		elseif(defined($username)) //Insert
+		elseif(defined($nick)) //Insert
 		{
-			$tempSql = mysql_fetch_array(sql_query("SELECT * FROM irc_users WHERE username='%s' AND channel='%s' AND online='1'",$username,$channel));
+			$tempSql = mysql_fetch_array(sql_query("SELECT * FROM irc_users WHERE username='%s' AND channel='%s' AND online='1'",$nick,$channel));
 			if (!isset($tempSql['username']) || $tempSql['username']==NULL){
 				sql_query("INSERT INTO `irc_users` (`username`,`channel`,`time`,`online`) VALUES('%s','%s','%s',1)",$nick,$channel,time());
 				notifyJoin($nick,$channel);
