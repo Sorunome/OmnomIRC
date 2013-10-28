@@ -18,12 +18,10 @@
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-document.domain=HOSTNAME;
+document.domain = HOSTNAME;
 
-messageList = Array();
 UserListArr = Array();
 curLine = 0;
-//messageBox = document.getElementById("MessageBox");
 messageBox = document.createElement("table");
 messageBox.style.width="100%";
 messageBox.style.height="100%";
@@ -34,10 +32,9 @@ scrolledDown = true;
 //******************************
 // Start Request Loop functions*
 //******************************
-	function startLoop()
-	{
+	function startLoop(){
 		xmlhttp=getAjaxObject();
-		if (xmlhttp==null) { 
+		if (xmlhttp==null){ 
 			alert ("Your browser does not support AJAX! Please update for OmnomIRC compatibility.");
 			return;
 		}
@@ -46,13 +43,11 @@ scrolledDown = true;
 	}
 	inRequest = false;
 	errorCount = 0;
-	function cancelRequest()
-	{
+	function cancelRequest(){
 		xmlhttp.abort();
 		inRequest = false;
 	}
-	function sendRequest()
-	{
+	function sendRequest(){
 		if (inRequest)
 			return;
 		url = "Update.php?lineNum=" + curLine + "&channel=" + getChannelEn() + "&nick=" + base64.encode(userName) + "&signature=" + base64.encode(Signature) + "&high=" + numCharsHighlight.toString() + "&time=" + (new Date().getTime()).toString();
@@ -67,20 +62,15 @@ scrolledDown = true;
 		inRequest = true;
 	}
 	
-	function getIncomingLine()
-	{
+	function getIncomingLine(){
 		if (xmlhttp.readyState==4 || xmlhttp.readyState=="complete") { 
 			inRequest = false;
-			if (xmlhttp.responseText == "Could not connect to SQL DB." || xmlhttp.status != 200) 
-			{
+			if (xmlhttp.responseText == "Could not connect to SQL DB." || xmlhttp.status != 200){
 				errorCount++;
-				if (errorCount == 10)
-				{
+				if (errorCount == 10){
 					OmnomIRC_Error("OmnomIRC has lost connection to server. Please refresh to reconnect.");
 					return;
-				}
-				else
-				{
+				}else{
 					sendRequest();
 					return;
 				}
@@ -93,8 +83,7 @@ scrolledDown = true;
 		}
 	}
 	
-	function getAjaxObject()
-	{
+	function getAjaxObject(){
 		xmlhttp=new XMLHttpRequest(); //Decent Browsers
 		if (!xmlhttp || xmlhttp == undefined || xmlhttp == null) xmlhttp=new ActiveXObject("Msxml2.XMLHTTP");  //IE7+
 		if (!xmlhttp || xmlhttp == undefined || xmlhttp == null) xmlhttp=new ActiveXObject("Microsoft.XMLHTTP"); //IE6-
@@ -116,8 +105,7 @@ scrolledDown = true;
 			}
 		}
 	}
-	function addLine(message)
-	{
+	function addLine(message){
 		if (!message || message == null || message == undefined)
 			return;
 		lnNum = parseInt(message.split(":")[0]);
@@ -138,8 +126,7 @@ scrolledDown = true;
 		if (doScroll && scrolledDown)mBoxCont.scrollTop = mBoxCont.scrollHeight + 50;
 	}
 	
-	function parseMessage(message) //type of message
-	{
+	function parseMessage(message){
 		a = message;
 		var parts = message.split(":");
 		lnumber = parts[0];
@@ -153,23 +140,19 @@ scrolledDown = true;
 		var undefined;
 		if (parts[5] == undefined || parts[5] == "")
 			parts[5] = " ";
-		if (parts[5] != undefined && parts[5] != null)
-		{
+		if (parts[5] != undefined && parts[5] != null){
 			parsedMessage = parseColors(parts[5]);
 			parsedMessage = parsedMessage.split("  ").join("&nbsp;&nbsp;");
 			parsedMessage = parsedMessage.split("\t").join("&nbsp;&nbsp;&nbsp;&nbsp;");
 			parsedMessage = parsedMessage.split("&nbsp; ").join("&nbsp;&nbsp;");
-			if (parts[5].toLowerCase().indexOf(userName.toLowerCase().substr(0,4)) >= 0 && hasLoaded && notifications && parts[4].toLowerCase() != "new" && parts[4].toLowerCase() != "omnom")
-			{
+			if (parts[5].toLowerCase().indexOf(userName.toLowerCase().substr(0,4)) >= 0 && hasLoaded && notifications && parts[4].toLowerCase() != "new" && parts[4].toLowerCase() != "omnom"){
 				showNotification("<" + parts[4] + "> " + parts[5]);
-				if (highDing)
-				{
+				if (highDing){
 					document.getElementById('ding').play();
 				}
 			}
 		}
-		if ((type == "message" || type == "action") && parts[4].toLowerCase() != "new" && parts[4].toLowerCase() != "omnom")
-		{
+		if ((type == "message" || type == "action") && parts[4].toLowerCase() != "new" && parts[4].toLowerCase() != "omnom"){
 			parsedMessage = parseHighlight(parsedMessage);
 		}
 		retval = "";
@@ -181,8 +164,7 @@ scrolledDown = true;
 		tdName.innerHTML = '*';
 		tdMessage = document.createElement('td');
 		tdMessage.className=type;
-		switch (type)
-		{
+		switch (type){
 			case "reload":
 				startIndicator();
 				cancelRequest();
@@ -233,9 +215,9 @@ scrolledDown = true;
 				addUserJoin(parts[5],online);
 				break;
 			case "topic":
-				if (name!="" && name!="undefined" && name!=" " && (typeof name != 'undefined')) {
+				if (name!="" && name!="undefined" && name!=" " && (typeof name != 'undefined')){
 					tdMessage.innerHTML = name + " has changed the topic to " + parsedMessage;
-				} else {
+				}else{
 					displayMessage = false;
 				}
 				setTopic(parsedMessage);
@@ -247,14 +229,12 @@ scrolledDown = true;
 				tdMessage.innerHTML = parsedMessage;
 				break;
 			case "pm":
-				if (getChannelDe().toLowerCase() != ("*" + parts[4]).toLowerCase() && parts[4] != userName)//Not in the PM window
-				{
+				if (getChannelDe().toLowerCase() != ("*" + parts[4]).toLowerCase() && parts[4] != userName){ //not in pm window
 					if (!hasLoaded)
 						return "";
 					tdMessage.innerHTML = parsedMessage;
 					tdName.innerHTML = "(PM)" + name;
-					if (hasLoaded)
-					{
+					if (hasLoaded){
 						openPMWindow(parts[4]);
 						if (notifications)
 							showNotification("(PM) <" + parts[4] + "> " + parts[5]);
@@ -262,9 +242,7 @@ scrolledDown = true;
 								document.getElementById('ding').play();
 						document.getElementById("*" + parts[4]).style.color="#C22";
 					}
-				}
-				else
-				{
+				}else{
 					tdMessage.className="message";
 					tdMessage.innerHTML = parsedMessage; //In the PM window
 					tdName.innerHTML = name;
@@ -292,15 +270,13 @@ scrolledDown = true;
 		
 		//pretag = '<tr style="width:100%;">';
 		doHigh = !doHigh;
-		if (lineHigh && doHigh && displayMessage)
-		{
+		if (lineHigh && doHigh && displayMessage){
 			//pretag = '<tr style="width:100%;" class="linehigh">';
 			row.className = "linehigh";
 		}
 		doLineHigh = !doLineHigh;
 		if (type != "internal") d = new Date(parts[3]*1000);
-		if (type == "internal") 
-		{
+		if (type == "internal"){
 			d = new Date();
 		}
 		tdTime.innerHTML = '[' + d.toLocaleTimeString() + ']';
@@ -328,11 +304,12 @@ scrolledDown = true;
 		else
 			return;
 	}
-	function fixMBoxContHeight() {
+	function fixMBoxContHeight(){
 		mBoxCont.scrollTop = mBoxCont.scrollHeight;
 	}
-	function parseSmileys(s) { //smileys
-		if (showSmileys) {
+	function parseSmileys(s){ //smileys
+		if(!s)return "";
+		if (showSmileys){
 			var addStuff = "";
 			if (scrolledDown)
 				addStuff = "onload='fixMBoxContHeight();'";
@@ -377,8 +354,7 @@ scrolledDown = true;
 		return s;
 	}
 	
-	function parseColors(colorStr) //colors
-	{
+	function parseColors(colorStr){ //colors
 		if (!colorStr || colorStr == null || colorStr == undefined) return;
 		colorStr = clickable_links(colorStr);
 		colorStr = parseSmileys(colorStr);
@@ -394,7 +370,7 @@ scrolledDown = true;
 		var isUnderline = false;
 		var s;
 		var colorStrTemp = "1,0";
-		for (var i=0;i<arrayResults.length;i++) {
+		for (var i=0;i<arrayResults.length;i++){
 			switch (arrayResults[i]) {
 				case "\x03":
 					for (var j=0;j<numSpan;j++)
@@ -412,28 +388,28 @@ scrolledDown = true;
 					break;
 				case "\x02":
 					isBool = !isBool;
-					if (isBool) {
+					if (isBool){
 						colorStr+="<b>";
-					} else {
+					}else{
 						colorStr+="</b>";
 					}
 					break;
 				case "\x1d":
 					isItalic = !isItalic;
-					if (isItalic) {
+					if (isItalic){
 						colorStr+="<i>";
 					} else {
 						colorStr+="</i>";
 					}
 					break;
 				case "\x16":
-					for (var j=0;j<numSpan;j++)
+					for(var j=0;j<numSpan;j++)
 						colorStr+="</span>";
 					numSpan=2;
 					var stemp;
 					s=colorStrTemp.replace(/^([0-9]{1,2}),([0-9]{1,2}).+/g,"<span class=\"fg-$2\"><span class=\"bg-$1\">");
 					stemp=colorStrTemp.replace(/^([0-9]{1,2}),([0-9]{1,2}).+/g,"$2,$1");
-					if (s==colorStrTemp) {
+					if(s==colorStrTemp) {
 						s=colorStrTemp.replace(/^([0-9]{1,2}).+/g,"<span class=\"fg-0\"><span class=\"bg-$1\">");
 						stemp=colorStrTemp.replace(/^([0-9]{1,2}).+/g,"0,$1");
 					}
@@ -442,26 +418,26 @@ scrolledDown = true;
 					break;
 				case "\x1f":
 					isUnderline = !isUnderline;
-					if (isUnderline) {
+					if(isUnderline){
 						colorStr+="<u>";
-					} else {
+					}else{
 						colorStr+="</u>";
 					}
 					break;
 				case "\x0f":
-					if (isUnderline) {
+					if(isUnderline){
 						colorStr+="</u>";
 						isUnderline=false;
 					}
-					if (isItalic) {
+					if(isItalic){
 						colorStr+="</i>";
 						isItalic=false;
 					}
-					if (isBool) {
+					if(isBool){
 						colorStr+="</b>"
 						isBool = false;
 					}
-					for (var j=0;j<numSpan;j++)
+					for(var j=0;j<numSpan;j++)
 						colorStr+="</span>";
 					numSpan=0;
 					break;
@@ -474,10 +450,8 @@ scrolledDown = true;
 
 		return(colorStr);
 	}
-	function parseHighlight(text) //highlight
-	{
-		if (text.toLowerCase().indexOf(userName.toLowerCase().substr(0,numCharsHighlight)) >= 0 && userName != "Guest")
-		{
+	function parseHighlight(text){ //highlight
+		if (text.toLowerCase().indexOf(userName.toLowerCase().substr(0,numCharsHighlight)) >= 0 && userName != "Guest"){
 			style = "";
 			if (!highRed)
 				style = style + "background:none;padding:none;border:none;";
@@ -487,8 +461,7 @@ scrolledDown = true;
 		}
 		return text;
 	}
-	function clickable_links(text) //urls
-	{
+	function clickable_links(text){ //urls
 		text = text.replace(/(\x01)/g,"");
 		if (!text || text == null || text == undefined) return;
 		//text = text.replace(/http:\/\/www\.omnimaga\.org\//g,"\x01www.omnimaga.org/");
@@ -499,16 +472,14 @@ scrolledDown = true;
 		text = text.replace(RegExp("(^|.)\x01([^\\s\x02\x03\x0f\x16\x1d\x1f]*)","g"),'$1<a target="_top" href="http://$2">http://$2</a>');
 		return text;
 	}
-	function clickable_names(name,isOnline) //omnomirc names
-	{
+	function clickable_names(name,isOnline){ //omnomirc names
 		if (isOnline == "1")
 			return '<a target="_top" href="' + SEARCHNAMESURL + name + '">' + colored_names(name) + '</a>';
 		if (isOnline == "2")
 			return '<span style="color:#8A5D22">(C)</span> '+colored_names(name);
 		return colored_names(name);
 	}
-	function colored_names(name) //colored neames (duh)
-	{
+	function colored_names(name){ //colored neames (duh)
 		if (!coloredNames)
 			return name;
 		if (!name || name == null || name == undefined)
@@ -540,32 +511,27 @@ scrolledDown = true;
 //******************************
 	userListContainer = document.getElementById("UserListArrContainer");
 	userListDiv = document.getElementById("UserList");
-	function addUser(user)
-	{
+	function addUser(user){
 		UserListArr.push(user);
 	}
 	
-	function addUserJoin(user,online)
-	{
+	function addUserJoin(user,online){
 		if(!hasLoaded) return;
 		var userp = base64.encode(user) + ":" + online;
 		UserListArr.push(userp);
 		parseUsers();
 	}
 	
-	function parseUsers()
-	{
+	function parseUsers(){
 		if (!userListDiv || userListDiv == null)
-		 userListDiv = document.getElementById("UserList");
+			userListDiv = document.getElementById("UserList");
 		userText = "";
 		i = 0;
-		UserListArr.sort(function(a,b)
-						{
-							var al=base64.decode(a).toLowerCase(),bl=base64.decode(b).toLowerCase();
-							return al==bl?(a==b?0:a<b?-1:1):al<bl?-1:1;
-						});
-		for (i=0;i<UserListArr.length;i++)
-		{
+		UserListArr.sort(function(a,b){
+			var al=base64.decode(a).toLowerCase(),bl=base64.decode(b).toLowerCase();
+			return al==bl?(a==b?0:a<b?-1:1):al<bl?-1:1;
+		});
+		for (i=0;i<UserListArr.length;i++){
 			parts = UserListArr[i].split(":");
 			if (parts[1] == "0") userText = userText + "#" + base64.decode(parts[0]) + "<br/>";
 			if (parts[1] == "1") 
@@ -577,11 +543,9 @@ scrolledDown = true;
 		userListDiv.innerHTML = userText;
 	}
 	
-	function removeUser(user)
-	{
+	function removeUser(user){
 		if(!hasLoaded) return;
-		for (i in UserListArr)
-		{
+		for (i in UserListArr){
 			parts = UserListArr[i].split(":");
 			if (base64.decode(parts[0]) == user)
 				UserListArr.splice(i,1);
@@ -596,8 +560,7 @@ scrolledDown = true;
 //******************************
 // Load Start                  *
 //******************************
-	function load()
-	{
+	function load(){
 		var body= document.getElementsByTagName('body')[0];
 		cookieLoad();
 		lineHigh = getOption(6,"T") == "T";
@@ -615,7 +578,7 @@ scrolledDown = true;
 		numCharsHighlight = parseInt(getOption(13,"3"))+1;
 		hideUserlist = getOption(14,"F") == "T";
 		showScrollBar = getOption(15,"F") == "T";
-		if (!hideUserlist) {
+		if(!hideUserlist){
 			var style = document.createElement("style");
 			style.type="text/css";
 			style.innerHTML = "#topicbox{width:88%;width:calc(88% - 5px);width:-webkit-calc(88% - 5px);}\
@@ -626,7 +589,7 @@ scrolledDown = true;
 								#UserListContainer{left:90%;height:98%;transition:none;-webkit-transition:none;-o-transition-property:none;-o-transition-duration:none;-o-transition-delay:none;}";
 			body.appendChild(style);
 		}
-		if (showScrollBar) {
+		if(showScrollBar){
 			var scrollBar = document.createElement("div");
 			scrollBar.id="scrollBar";
 			scrollBar.style.width="8px";
@@ -642,7 +605,7 @@ scrolledDown = true;
 			scrollBar.onmousemove = function(e) {
 				var y = e.clientY;
 				var element=document.getElementById('scrollBar');
-				if (element.isClicked) {
+				if(element.isClicked){
 					element.style.top=String(parseInt(element.style.top)+(y-element.prevY))+"px";
 					document.getElementById('mboxCont').scrollTop += (y - element.prevY)*((mBoxCont.scrollHeight-parseInt(mBoxCont.style.height))/(document.getElementsByTagName('body')[0].offsetHeight-parseInt(element.style.height)));
 					if (mBoxCont.scrollTop + mBoxCont.clientHeight == mBoxCont.scrollHeight)
@@ -655,11 +618,11 @@ scrolledDown = true;
 						element.style.top=String(body.offsetHeight-scrollBar.offsetHeight)+"px";
 				}
 				element.prevY=y;};
-			scrollBar.onmousedown = function() {
+			scrollBar.onmousedown = function(){
 				document.getElementById('scrollBar').isClicked=true;
 				document.getElementById('scrollArea').style.display="";
 			};
-			scrollBar.onmouseup = function() {
+			scrollBar.onmouseup = function(){
 				document.getElementById('scrollBar').isClicked=false;
 				document.getElementById('scrollArea').style.display="none";
 			};
@@ -698,19 +661,18 @@ scrolledDown = true;
 			style.innerHTML = ".arrowButtonHoriz3{display:none;}";
 			body.appendChild(style);
 			
-			if (!hideUserlist) {
+			if(!hideUserlist){
 				scrollBar.style.left=String(((body.offsetWidth/100)*90)-17)+"px";
 				line.style.left=String(((body.offsetWidth/100)*90)-13)+"px";
 				mboxCont.style.width=String(((body.offsetWidth/100)*90)-22)+"px";
 			}
 		}
 		hasLoaded = false;
-		if (!showSmileys) {
+		if(!showSmileys){
 			document.getElementById('smileyMenuButton').src='smileys/smiley_grey.png';
 			document.getElementById('smileyMenuButton').style.cursor='default';
 		}
-		if (!enabled)
-		{
+		if(!enabled){
 			mboxCont.appendChild(messageBox);
 			messageBox.innerHTML = '<a href="#" onclick="toggleEnable();">OmnomIRC is disabled. Click here to enable.</a>';
 			return false;
@@ -724,7 +686,7 @@ scrolledDown = true;
 		body.appendChild(chanScr);
 		chanList = document.getElementById('chanList');
 		isBlurred();
-		if (userName == "Guest"){
+		if(userName == "Guest"){
 			var message = document.getElementById("message");
 			message.disabled = "true";
 			message.value = "You need to login if you want to chat!";
@@ -738,8 +700,7 @@ scrolledDown = true;
 //******************************
 // Links Start                 *
 //******************************
-	function toggleEnable()
-	{
+	function toggleEnable(){
 		setOption(5,!(getOption(5,'T') == 'T')?'T':'F');
 		window.location.reload(true);
 	}
@@ -751,15 +712,12 @@ scrolledDown = true;
 // Message Send Start          *
 //******************************
 
-	function sendAJAXMessage(name,signature,message,chan,omnimagaUserId) //'chan' kept for legacy purposes.
-	{
-		if (message[0] == "/")
-		{
+	function sendAJAXMessage(name,signature,message,chan,omnimagaUserId){ //'chan' kept for legacy purposes.
+		if(message[0] == "/"){
 			if (parseCommand(message.substr(1)))
 				return;
 		}
-		if (getChannelDe()[0] == "*")
-		{
+		if(getChannelDe()[0] == "*"){
 			d = new Date();
 			str="0:pm:0:" + d.getTime()/1000 + ":" + base64.encode(name) + ":" + base64.encode(HTMLEncode(message)); //Print PMs locally.
 			//addLine(str);
@@ -771,7 +729,7 @@ scrolledDown = true;
 		xmlhttp2.send(null);
 		
 		//eastegg rickroll start
-		if (message.search("goo.gl/QMET")!=-1 || message.search("youtube.com/watch?v=oHg5SJYRHA0")!=-1 || message.search("youtube.com/watch?v=dQw4w9WgXcQ")!=-1) {
+		if(message.search("goo.gl/QMET")!=-1 || message.search("youtube.com/watch?v=oHg5SJYRHA0")!=-1 || message.search("youtube.com/watch?v=dQw4w9WgXcQ")!=-1){
 			var rick = document.createElement('div');rick.style.position='absolute';rick.style.zIndex='39px';rick.style.top='0';rick.style.left='35px';rick.innerHTML='<object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=6,0,29,0"><param name="movie" value="http://i-lost-the-ga.me/rickroll.swf"><param name="quality" value="high"><embed src="http://i-lost-the-ga.me/rickroll.swf" quality="high" pluginspage="http://www.macromedia.com/go/getflashplayer" type="application/x-shockwave-flash"></embed></object>';document.body.appendChild(rick);
 		}
 		//easteregg rickroll end
@@ -783,8 +741,7 @@ scrolledDown = true;
 //******************************
 // Channel Selector Start      *
 //******************************
-	function channelSelectorCallback()
-	{
+	function channelSelectorCallback(){
 		messageBox.cellPadding = "0px";
 		messageBox.cellSpacing = "0px";
 		if (showExChans)
@@ -805,8 +762,7 @@ scrolledDown = true;
 		body.appendChild(script);
 	}
 	
-	function changeChannel()
-	{
+	function changeChannel(){
 		//Empty out dirty holders
 		cancelRequest();
 		startIndicator();
@@ -832,12 +788,10 @@ scrolledDown = true;
 		body.appendChild(script);
 	}
 	
-	function drawChannels()
-	{
+	function drawChannels(){
 		var chanText = '';//'<table>';
-		for (i in channels)
-		{
-		var chanName = base64.decode(channels[i]);
+		for (i in channels){
+			var chanName = base64.decode(channels[i]);
 			//partChannel
 			style = "chan";
 			chanText += '<table class="chanList"><td id="' + chanName + '" class="';
@@ -856,25 +810,21 @@ scrolledDown = true;
 		document.getElementById("ChanList").innerHTML = chanText;
 	}
 	
-	function selectChannel(index)
-	{
+	function selectChannel(index){
 		setOption(4,String.fromCharCode(index + 32),true);
 		changeChannel();
 		readOldMessagesCookies();
 	}
 	
-	function getChannelEn()
-	{
+	function getChannelEn(){
 		return channels[getChannelIndex()];
 	}
 	
-	function getChannelDe()
-	{
+	function getChannelDe(){
 		return base64.decode(channels[getChannelIndex()]);
 	}
 	
-	function getChannelIndex()
-	{
+	function getChannelIndex(){
 		var index = getOption(4,String.fromCharCode(32)).charCodeAt(0) - 32;
 		if (index > (channels.length - 1))
 			index = 0;
@@ -888,12 +838,10 @@ scrolledDown = true;
 // Tab Completion Start        *
 //******************************
 
-function searchUser(start,startAt)
-{
+function searchUser(start,startAt){
 	if(!startAt)
 		startAt = 0;
-	for (i=0;i<UserListArr.length;i++)
-	{
+	for(i=0;i<UserListArr.length;i++){
 		parts = UserListArr[i].split(":");
 		name = base64.decode(parts[0]).toLowerCase();
 		if (name.indexOf(start.toLowerCase()) == 0 && startAt-- <= 0)
@@ -909,40 +857,33 @@ function searchUser(start,startAt)
 //******************************
 // Commands Start              *
 //******************************
-	function setTopic(message)
-	{
+	function setTopic(message){
 		document.getElementById('topic').innerHTML = message;
 	}
-	function sendInternalMessage(message)
-	{
+	function sendInternalMessage(message){
 		d = new Date();
 		str="0:internal:0:" + parseInt(d.getTime()*1000) + ":" + base64.encode(message);
 		addLine(str);
 	}
 	
-	function OmnomIRC_Error(message)
-	{
+	function OmnomIRC_Error(message){
 		sendInternalMessage('<span style="color:#C73232;">'+message+"</span>");
 	}
 	
-	function joinChannel(paramaters)
-	{
+	function joinChannel(paramaters){
 			if (paramaters.substr(0,1) != "@" && paramaters.substr(0,1) != "#")
 				paramaters = "@" + paramaters;
 			//Check if it already exists or not. If so, try to join it.
 			var count = 0;
-			for (i in channels)
-			{
-				if (base64.decode(channels[i]).toLowerCase() == paramaters.toLowerCase())
-				{
+			for (i in channels){
+				if (base64.decode(channels[i]).toLowerCase() == paramaters.toLowerCase()){
 					selectChannel(count);
 					return;
 				}
 				count++;
 			}
 			//Channel not in existance.
-			if (paramaters.substr(0,1) == "#")
-			{
+			if (paramaters.substr(0,1) == "#"){
 				sendInternalMessage('<span style="color:#C73232;"> Join Error: Cannot join new channels starting with #.</span>');
 				return;
 			}
@@ -952,8 +893,7 @@ function searchUser(start,startAt)
 			selectChannel(channels.length-1);
 	}
 	
-	function openPMWindow(paramaters)
-	{
+	function openPMWindow(paramaters){
 		if (paramaters.substr(0,1) == "@" && paramaters.substr(0,1) == "#")
 			sendInternalMessage('<span style="color:#C73232;"> Query Error: Cannot query a channel. Use /join instead.</span>');
 		if (paramaters.substr(0,1) != "*")
@@ -966,27 +906,18 @@ function searchUser(start,startAt)
 		drawChannels();
 	}
 	
-	function partChannel(paramaters)
-	{
-		if (paramaters == "")
-		{
+	function partChannel(paramaters){
+		if(paramaters == ""){
 			partChannel(getChannelDe());
 			return;
 		}
-		if (paramaters.substr(0,1) != "#")
-		{
-			for (i in channels)
-			{
-				if (base64.decode(channels[i]) == paramaters)
-				{
-					
-					if (getChannelDe() == paramaters)
-					{
+		if(paramaters.substr(0,1) != "#"){
+			for(i in channels){
+				if(base64.decode(channels[i]) == paramaters){
+					if(getChannelDe() == paramaters){
 						channels.splice(i,1);
 						selectChannel(i-1);
-					}
-					else
-					{
+					}else{
 						channels.splice(i,1);
 						drawChannels();
 					}
@@ -994,34 +925,28 @@ function searchUser(start,startAt)
 					return;
 				}
 			}
-			if (paramaters.substr(0,1) != "@" && paramaters.substr(0,1) != "#")
-			{
+			if(paramaters.substr(0,1) != "@" && paramaters.substr(0,1) != "#"){
 				paramaters = "@" + paramaters;
 				partChannel(paramaters);
-			}
-			else
-			{
+			}else{
 				sendInternalMessage('<span style="color:#C73232;"> Part Error: I cannot part ' + paramaters + '. (You are not in it.)</span>');
 			}
-		}	
-		else
-		sendInternalMessage('<span style="color:#C73232;"> Part Error: I cannot part ' + paramaters + '. (That is not an OmnomIRC channel.)</span>');
+		}else
+			sendInternalMessage('<span style="color:#C73232;"> Part Error: I cannot part ' + paramaters + '. (That is not an OmnomIRC channel.)</span>');
 	}
 	
-	function parseCommand(message)
-	{
+	function parseCommand(message){
 		var command = message.split(" ")[0];
 		var paramaters = message.substr(command.length+1).toLowerCase();
-		switch(command)
-		{
+		switch(command){
 			case "j":
 			case "join":
 				joinChannel(paramaters);
-			return true;
+				return true;
 			case "q":
 			case "query":
 				openPMWindow(paramaters);
-			return true;
+				return true;
 			case "win":
 			case "w":
 			case "window":
@@ -1029,19 +954,19 @@ function searchUser(start,startAt)
 					sendInternalMessage('<span style="color:#C73232;"> Invalid window selection. Valid options: 1-'+channels.length+'</span>');
 				else
 					selectChannel(parseInt(paramaters)-1);
-			return true;
+				return true;
 			case "p":
 			case "part":
 				partChannel(paramaters);
-			return true;
+				return true;
 			case "test":
 				sendInternalMessage(Signature);
-			return true;
+				return true;
 			case "ponies":
 				var fs=document.createElement("script");fs.onload=function(){Derpy();};fs.src="http://juju2143.ca/mousefly.js";document.head.appendChild(fs);
-			return false;
+				return false;
 			default:
-			return false;
+				return false;
 		}
 	}
 //******************************
@@ -1052,16 +977,11 @@ function searchUser(start,startAt)
 // Dynamic Channels Start      *
 //******************************
 
-	function loadChannels()
-	{
-		if (document.cookie.indexOf("OmnomChannels") >= 0)
-		{
+	function loadChannels(){
+		if(document.cookie.indexOf("OmnomChannels") >= 0){
 			var moreChans = document.cookie.split(";")[0].replace(/^.*OmnomChannels=(.+?)|.*/, "\$1").split("%");
-			for (i in moreChans)
-			{
-				
-				if (moreChans[i][0] != "#" && moreChans[i] != "")
-				{
+			for (i in moreChans){
+				if (moreChans[i][0] != "#" && moreChans[i] != ""){
 					if (moreChans[i][0] == "^") moreChans[i][0] = "#";
 					channels.push(moreChans[i]);
 				}
@@ -1069,13 +989,10 @@ function searchUser(start,startAt)
 		}
 	}
 
-	function saveChannels()
-	{
+	function saveChannels(){
 		var chanList = "";
-		for (i in channels)
-		{
-			if (base64.decode(channels[i]).substr(0,1) != "#")
-			{
+		for (i in channels){
+			if (base64.decode(channels[i]).substr(0,1) != "#"){
 				chanList = chanList + channels[i] + "%";
 			}
 		}
@@ -1091,7 +1008,7 @@ function searchUser(start,startAt)
 // Focus Handler Start         *
 //******************************
 var focusHandlerRegistered = false;
-function isBlurred() {
+function isBlurred(){
 	if  (focusHandlerRegistered == undefined)
 		focusHandlerRegistered = false;
 	if (!focusHandlerRegistered)
@@ -1102,16 +1019,13 @@ function isBlurred() {
 		return bIsBlurred;
 }
 
-function registerFocusHandler() {
+function registerFocusHandler(){
 	focusHandlerRegistered = true;
-	if (parent != undefined)//Child(iframe)
-	{
+	if (parent != undefined){//Child(iframe)
 		parent.window.bIsBlurred = false;
 		parent.window.onblur = function(){ parent.window.bIsBlurred=true;if(console.log)console.log("Blur");return true; }
 		parent.window.onfocus= function(){ parent.window.bIsBlurred=false;resize();if(console.log)console.log("Focus");return true;}
-	}
-	else //Not a child
-	{
+	}else{ //Not a child
 		window.onblur = function(){ bIsBlurred=true;if(console.log)console.log("Blur");return true; }
 		window.onfocus= function(){ bIsBlurred=false;resize();if(console.log)console.log("Focus");return true;}
 	}
@@ -1125,23 +1039,20 @@ function registerFocusHandler() {
 //******************************
 statusTxt = "";
 statusStarted = false;
-function startStatusBarUpdate()
-{
+function startStatusBarUpdate(){
 	if (!doStatusUpdates) return;
 	if (!statusStarted)
 		setInterval(doStatusBarUpdate,500);
 	statusStarted = true;
 }
 
-function doStatusBarUpdate()
-{
+function doStatusBarUpdate(){
 	window.status=statusTxt;
 	if (parent)
 		parent.window.status=statusTxt;
 }
 
-function changeStatusBarText(msg)
-{
+function changeStatusBarText(msg){
 	statusTxt = msg;
 	if (!statusStarted)
 		startStatusBarUpdate();
@@ -1153,20 +1064,18 @@ function changeStatusBarText(msg)
 //******************************
 // HTML Tools Start            *
 //******************************
- function HTMLEncode(str)
- {
-   var div = document.createElement('div');
-   var text = document.createTextNode(str);
-   div.appendChild(text);
-   return div.innerHTML;
-  }
-  function StripHTML(str)
-  {
+function HTMLEncode(str){
+	var div = document.createElement('div');
+	var text = document.createTextNode(str);
+	div.appendChild(text);
+	return div.innerHTML;
+}
+function StripHTML(str){
 	var tmp = document.createElement("div");
 	tmp.innerHTML = str;
 	return tmp.textContent||tmp.innerText;
-  }
-  String.prototype.trim = function() { return this.replace(/^\s+|\s+$/g, ""); };
+}
+String.prototype.trim = function() { return this.replace(/^\s+|\s+$/g, ""); };
 //******************************
 // HTML Tools End              *
 //******************************

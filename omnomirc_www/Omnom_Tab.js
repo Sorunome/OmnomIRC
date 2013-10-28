@@ -18,41 +18,38 @@
 */
 
 message = document.getElementById("message");
-if(message.addEventListener ) {
+if(message.addEventListener ){
 	message.addEventListener("keydown",keyHandler,false);
-	} else if(message.attachEvent ) {
-        message.attachEvent("onkeydown",keyHandler);
-    }
+}else if(message.attachEvent ){
+	message.attachEvent("onkeydown",keyHandler);
+}
 isInTab = false;
 tabWord = "";
 tabCount = 0;
 startPos = 0;
 endPos = 0;
 endPosO = 0;
-    function keyHandler(e) {
+	function keyHandler(e){
 		if (getCurrentWord() == "")
 			return true;
-        var TABKEY = 9;
-        if(e.keyCode == TABKEY) {
-            if(e.preventDefault) {
-                e.preventDefault();
-            }
+		var TABKEY = 9;
+		if(e.keyCode == TABKEY){
+			if(e.preventDefault){
+				e.preventDefault();
+			}
 			tabWord = getCurrentWord();
 			getTabComplete();
 			tabCount++;
 			isInTab = true;
 			setTimeout(1,1); //Who woulda thought that a bogus call makes it not parse it in FF4?
-            return false;
-        }
-		else
-		{
+			return false;
+		}else{
 			tabWord = "";
 			tabCount = 0;
 			isInTab = false;
 		}
-    }
-	function getCurrentWord()
-	{
+	}
+	function getCurrentWord(){
 		if (isInTab)
 			return tabWord;
 		startPos = message.selectionStart;
@@ -68,17 +65,15 @@ endPosO = 0;
 		endPosO = endPos;		
 		return message.value.substr(startPos,endPos - startPos).trim();
 	}
-	function getTabComplete()
-	{		
-		if (!isInTab)
-		{
+	function getTabComplete(){
+		if(!isInTab){
 			startPos = message.selectionStart;
-		
+			
 			startChar = message.value.charAt(startPos);
 			while (startChar != " " && --startPos > 0)
 				startChar = message.value.charAt(startPos);
 			if (startChar == " ") startChar+=2;
-		
+			
 			endPos = message.selectionStart;
 			endChar = message.value.charAt(endPos);
 			while (endChar != " " && ++endPos <= message.value.length)
@@ -86,8 +81,7 @@ endPosO = 0;
 			if (endChar == " ") endChar-=2;
 		}
 		name = searchUser(getCurrentWord(),tabCount);
-		if (name == getCurrentWord())
-		{
+		if (name == getCurrentWord()){
 			tabCount = 0;
 			name = searchUser(getCurrentWord(),tabCount);
 		}

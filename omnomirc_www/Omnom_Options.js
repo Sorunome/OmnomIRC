@@ -21,66 +21,59 @@
 //******************************
 // Option Engine Start         *
 //******************************
-    var Options = "----------------------------------------|"; //40 for future expansion!(and 40 bytes isn't much.) Pipe is a terminator.
-    function cookieLoad() {
-        if (document.cookie.indexOf("OmnomIRC") >= 0) {
-            Options = document.cookie.replace(/^.*OmnomIRC=(.+?)|.*/, "\$1");
-        }
-        else {
-            document.cookie = "OmnomIRC=" + Options + ";expires=Sat, 20 Nov 2286 17:46:39 GMT;";
-        }
-    }
+	var Options = "----------------------------------------|"; //40 for future expansion!(and 40 bytes isn't much.) Pipe is a terminator.
+	function cookieLoad(){
+		if(document.cookie.indexOf("OmnomIRC") >= 0){
+			Options = document.cookie.replace(/^.*OmnomIRC=(.+?)|.*/, "\$1");
+		}else{
+			document.cookie = "OmnomIRC=" + Options + ";expires=Sat, 20 Nov 2286 17:46:39 GMT;";
+		}
+	}
 	
-    function getOption(Option,def) { //Returns what 'Option' is. Option must be a number 1-40. def is what to return if it is not set(equal to -)
-        if (Option < 1 || Option > 40)
-            return 0;
-        result = Options.charAt(Option - 1);
-        result;
-        if (result == '-')
-            return def;
-        return result;
-            
-    }
+	function getOption(Option,def){ //Returns what 'Option' is. Option must be a number 1-40. def is what to return if it is not set(equal to -)
+		if (Option < 1 || Option > 40)
+			return 0;
+		result = Options.charAt(Option - 1);
+		result;
+		if (result == '-')
+			return def;
+		return result;
+			
+	}
 	
-    function setOption(Option, value,noRefresh) { //Sets 'Option' to 'value'. Value must be a single char. Option must be a number 1-40.
-        if (Option < 1 || Option > 40)
-            return;
-        Options = Options.substring(0, Option - 1) + value + Options.substring(Option);
-        document.cookie = "OmnomIRC=" + Options + ";expires=Sat, 20 Nov 2286 17:46:39 GMT;";
-        if (!noRefresh)
+	function setOption(Option,value,noRefresh){ //Sets 'Option' to 'value'. Value must be a single char. Option must be a number 1-40.
+		if (Option < 1 || Option > 40)
+			return;
+		Options = Options.substring(0, Option - 1) + value + Options.substring(Option);
+		document.cookie = "OmnomIRC=" + Options + ";expires=Sat, 20 Nov 2286 17:46:39 GMT;";
+		if (!noRefresh)
 			document.location.reload();
-    }
+	}
 	
-    function getHTMLToggle(State, StateOn, StateOff,StateOnFunc,StateOffFunc) {
-        result = "";
-        if (State){
-            result += "<b>";
-            result += StateOn;
-            result += "</b>";
-        }
-        else
-        {
-            result += '<a href="#" onclick="'+StateOnFunc+'">';
-            result += StateOn;
-            result += '</a>';
-        }
-        result += "</td><td>";
-        if (!State)
-        {
-            result += "<b>";
-            result += StateOff;
-            result += "</b>";
-        }
-        else
-        {
-            result += '<a href="#" onclick="'+StateOffFunc+'">';
-            result += StateOff;
-            result += '</a>';
-        }
-        return result;
-    }
-	function clearCookies()
-	{
+	function getHTMLToggle(State,StateOn,StateOff,StateOnFunc,StateOffFunc){
+		result = "";
+		if (State){
+			result += "<b>";
+			result += StateOn;
+			result += "</b>";
+		}else{
+			result += '<a href="#" onclick="'+StateOnFunc+'">';
+			result += StateOn;
+			result += '</a>';
+		}
+		result += "</td><td>";
+		if (!State){
+			result += "<b>";
+			result += StateOff;
+			result += "</b>";
+		}else{
+			result += '<a href="#" onclick="'+StateOffFunc+'">';
+			result += StateOff;
+			result += '</a>';
+		}
+		return result;
+	}
+	function clearCookies(){
 		document.cookie = "OmnomIRC=a;expires=Thu, 01-Jan-1970 00:00:01 GMT;";
 		document.cookie = "OmnomChannels=a;expires=Thu, 01-Jan-1970 00:00:01 GMT;";
 		document.location.reload();
@@ -94,8 +87,7 @@
 // Chrome Notification Start   *
 //******************************
 
-	function showNotification(message)
-	{
+	function showNotification(message){
 		if (window.webkitNotifications == undefined || window.webkitNotifications == null || !window.webkitNotifications)
 			return 0;
 		if (window.webkitNotifications.checkPermission() != 0)
@@ -105,10 +97,8 @@
 		n.show();
 	}
 	
-	function setAllowNotification()
-	{
-		if (window.webkitNotifications == undefined || window.webkitNotifications == null || !window.webkitNotifications)
-		{
+	function setAllowNotification(){
+		if (window.webkitNotifications == undefined || window.webkitNotifications == null || !window.webkitNotifications){
 			alert("This feature only works in chrome.");
 			return;
 		}
@@ -116,10 +106,8 @@
 			
 	}
 	
-	function permissionGranted()
-	{
-		if (window.webkitNotifications.checkPermission() == 0)
-		{
+	function permissionGranted(){
+		if (window.webkitNotifications.checkPermission() == 0){
 			showNotification("Notifications Enabled!");
 			setOption(7,'T');
 			window.location.refresh(true);
