@@ -73,7 +73,7 @@
 		if (isset($_GET['calc']))
 			UpdateUser("OmnomIRC",$defaultChan,'2');
 		CleanOfflineUsers(); //This gets called often enough. We can't have have constant presence in the matrix without a helper app, this is the closest we'll get.
-		if (file_get_contents("/run/omnomirc_curid")<=$curLine) {
+		if (file_get_contents($curidFilePath)<=$curLine) {
 			usleep(500000);
 			continue;
 		}

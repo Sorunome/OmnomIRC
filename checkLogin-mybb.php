@@ -19,7 +19,7 @@ if(!isset($_GET['op'])) {
 		header('Content-type: text/plain');
 	elseif (!isset($_GET['textmode']))
 		header('Content-type: text/javascript');
-	if ($mybb->user['username']=="" || $mybb->user['isbannedgroup']) {
+	if ($mybb->user['username']=="" || $mybb->user['isbannedgroup'] || (isset($_GET['sid']) && htmlspecialchars(str_replace(";","%^%",$_COOKIE['__cfduid']))!=$_GET['sid']) || !isset($_GET['sid'])) {
 		$nick = "Guest";
 		$signature = "";
 	} else {

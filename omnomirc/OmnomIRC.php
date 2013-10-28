@@ -19,20 +19,14 @@
 */
 
 //Here's the config for the bot.
-$servers = Array();
-$servers[] = Array("<first irc server>",6667 /*port*/);
-$servers[] = Array("<second irc server>",6667);
+$documentRoot = "/var/www/omnomirc.www.omnimaga.org";
+
+$IRCBOT=true;
+include($documentRoot."/config.php");
+
 $pings = Array();
 
-$sql_server="<mysql server name>";
-$sql_username="<mysql username>";
-$sql_password="<mysql password>";
-?>
-
-
-<?PHP
-$IRCBOT=true; //Don't print JS from channels.php
-include("/path/to/omnomirc/Channels.php");
+include($documentRoot."/Channels.php");
 
 $sockets = Array();
 
@@ -43,11 +37,11 @@ $fragLine = "";
 
 function sql_query()
 {
-	global $sqlConnection,$sql_server,$sql_username,$sql_password;
-	$sqlConnection = mysql_pconnect($sql_server,$sql_username,$sql_password);
+	global $sqlConnection,$sql_server,$sql_user,$sql_password,$sql_db;
+	$sqlConnection = mysql_pconnect($sql_server,$sql_user,$sql_password);
 	if (!$sqlConnection) 
 		die("Could not connect to SQL DB.\n");
-	if (!mysql_select_db("omnomirc",$sqlConnection)) die('Invalid query: ' . mysql_error());
+	if (!mysql_select_db($sql_db,$sqlConnection)) die('Invalid query: ' . mysql_error());
 	$params = func_get_args();
 	$query = $params[0];
 	$args = Array();
@@ -93,7 +87,7 @@ function getMessage($parts,$start,$trim)
 function parseMsg($allMessage,$callingSocket)
 {
 
-	global $socket,$hasIdent,$ident,$chanStr,$userList,$fragment,$fragLine;
+	global $socket,$hasIdent,$ident,$chanStr,$userList,$fragment,$fragLine,$botPasswd,$topicBotNick;
 	for ($i=0;$i<count($sockets);$i++)
 				if ($sockets[i] == $callingSocket)
 					$pings[i] = time();
@@ -126,7 +120,7 @@ function parseMsg($allMessage,$callingSocket)
 		{
 			case "privmsg":
 				
-				if ($parts[3] == ":DOTHIS<raaaaaandom keeeeeeey!>") sendLine(getMessage($parts,4,false));
+				if ($parts[3] == ":DOTHIS".$botPasswd) sendLine(getMessage($parts,4,false));
 				if ($parts[3] == ":PRINTUSERLIST") print_r($userList);
 				if ($parts[3] == ":UPDATEUSERLIST") updateUserList();
 				if ($parts[3] == ":UPDATECHANS")
@@ -134,7 +128,7 @@ function parseMsg($allMessage,$callingSocket)
 					echo "Updating chans";
 					sendLine("join #,0");
 					$IRCBOT = true;
-					include("/path/to/omnomirc/Channels.php"); //Update channels array/strings
+					include($documentRoot."/Channels.php"); //Update channels array/strings
 					sendLine("JOIN $chanStr\n");
 					updateUserList();
 				}
@@ -182,9 +176,9 @@ function parseMsg($allMessage,$callingSocket)
 			break;
 			case "topic":
 				$message = getMessage($parts,3,true);
-				if ($info[1]!="OmnomIRC" && $info[1]!="TopicBot") {
+				if ($info[1]!="OmnomIRC" && $info[1]!=$topicBotNick) {
 					addLine($info[1],'',"topic",$message,$channel);
-					sendLine("PRIVMSG TopicBot : $channel $message\n",$callingSocket);
+					sendLine("PRIVMSG $topicBotNick : $channel $message\n",$callingSocket);
 					sendLine("PRIVMSG $channel :(#)3* ".$info[1]." has changed the topic to ".$message,$callingSocket);
 				}
 			break;
@@ -209,7 +203,7 @@ function parseMsg($allMessage,$callingSocket)
 
 function addLine($name1,$name2,$type,$message,$channel)
 {
-	global $socket;
+	global $socket,$curidFilePath;
 	$curPosArr = mysql_fetch_array(sql_query("SELECT MAX('line_number') FROM `irc_lines`"));
 	$curPos =  $curPosArr[0]+ 1;
 	sql_query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`) VALUES ('%s','%s','%s','%s','%s','%s')",$name1,$name2,$message,$type,$channel,time());
@@ -220,10 +214,13 @@ function addLine($name1,$name2,$type,$message,$channel)
 		}
 		sql_query("UPDATE `irc_topics` SET topic='%s' WHERE chan='%s'",$message,strtolower($channel));
 	}
+	$temp = mysql_fetch_array(sql_query("SELECT MAX(line_number) FROM irc_lines"));
+	file_put_contents($curidFilePath,$temp[0]);
 }
 
 function processMessages()
 {
+	global $topicBotNick;
 	$res = sql_query("SELECT * FROM irc_outgoing_messages");
 	$lastline = 0;
 	while ($row = mysql_fetch_array($res)) 
@@ -243,7 +240,7 @@ function processMessages()
 			break;
 		case "topic":
 			sendLine("PRIVMSG $row[channel] :$colorAdding3* ".$row['nick']." has changed the topic to ".$row['message']);
-			sendLine("PRIVMSG TopicBot : $row[channel] ".$row['message']);
+			sendLine("PRIVMSG $topicBotNick : $row[channel] ".$row['message']);
 			break;
 		case "mode":
 			sendLine("PRIVMSG $row[channel] :$colorAdding3* ".$row['nick']." set $row[channel] mode ".$row['message']);
@@ -285,7 +282,6 @@ function userLeave($username,$channel)
 		unset($userList[$channel][$pos]);
 	}
 	sql_query("DELETE FROM `irc_users` WHERE `username` = '%s' AND `channel` = '%s' AND online='0'",$username,$channel);
-	echo "==USER PART==";
 }
 
 function userQuit($username,$message,$socketToExclude)
@@ -303,7 +299,6 @@ function userQuit($username,$message,$socketToExclude)
 	}
 	addLine($username,'',"quit",$message,'');
 	sql_query("DELETE FROM `irc_users` WHERE `username` = '%s' AND online='0'",$username);
-	echo "==USER QUIT==";
 }
 function userNick($oldNick,$newNick,$socketToExclude)
 {
@@ -346,8 +341,7 @@ function userJoin($username,$channel)
 	sql_query("DELETE FROM `irc_outgoing_messages`");
 	sql_query("DELETE FROM `irc_users`");
 	sleep(8);
-	$ident[] = "PASS NONE\nUSER OmnomIRC OmnomIRC OmnomIRC :OmnomIRC\nNICK OmnomIRC\n";
-	$ident[] = "PASS NONE\nUSER OmnomIRC OmnomIRC OmnomIRC :OmnomIRC\nNICK OmnomIRC\n";
+	
 	sendLine($ident[0],$sockets[0],false);
 	sendLine($ident[1],$sockets[1],false);
 	$connected = true;

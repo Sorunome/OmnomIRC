@@ -1,4 +1,5 @@
 <?php
+include_once('config.php');
 if (strpos($_SERVER['HTTP_USER_AGENT'],"textmode;")===false) {?>
 <!--
 /*
@@ -189,7 +190,7 @@ if (strpos($_SERVER['HTTP_USER_AGENT'],"textmode;")===false) {?>
 	var body= document.getElementsByTagName('body')[0];
 	var script= document.createElement('script');
 	script.type= 'text/javascript';
-	script.src=CHECKLOGINURL+<?php if(isset($_COOKIE['__cfduid'])) echo '"?sid='.urlencode(htmlspecialchars(str_replace(";","%^%",$_COOKIE['__cfduid']))).';"'."\n"; ?>;
+	script.src=CHECKLOGINURL+<?php if(isset($_COOKIE[$securityCookie])) echo '"?sid='.urlencode(htmlspecialchars(str_replace(";","%^%",$_COOKIE[$securityCookie]))).';"'."\n"; ?>;
 	body.appendChild(script);
 </script>
 <audio id="ding" src="beep.wav" hidden></audio>
@@ -197,9 +198,9 @@ if (strpos($_SERVER['HTTP_USER_AGENT'],"textmode;")===false) {?>
 </html>
 <?php
 } else {
-	if(isset($_COOKIE['__cfduid']))
-		header('Location: http://www.omnimaga.org/checkLogin.php?textmode&sid='.urlencode(htmlspecialchars(str_replace(";","%^%",$_COOKIE['__cfduid']))));
+	if(isset($_COOKIE[$securityCookie]))
+		header('Location: '.$checkLoginUrl.'?textmode&sid='.urlencode(htmlspecialchars(str_replace(";","%^%",$_COOKIE[$securityCookie]))));
 	else
-		header('Location: http://www.omnimaga.org/checkLogin.php?textmode');
+		header('Location: '.$checkLoginUrl.'?textmode');
 }
 ?>

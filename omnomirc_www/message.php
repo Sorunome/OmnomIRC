@@ -308,7 +308,7 @@ ip 108.174.51.58
 	} else {
 		$temp = mysql_fetch_array(sql_query("SELECT MAX(line_number) FROM irc_lines"));
 		//var_dump($temp[0]);
-		file_put_contents("/run/omnomirc_curid",$temp[0]);
+		file_put_contents($curidFilePath,$temp[0]);
 	}
 	//sorunome edit END
 ?>
