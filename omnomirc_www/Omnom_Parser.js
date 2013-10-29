@@ -248,6 +248,23 @@ scrolledDown = true;
 					tdName.innerHTML = name;
 				}
 			break;
+			case "pmaction":
+				if (getChannelDe().toLowerCase() != ("*" + parts[4]).toLowerCase() && parts[4] != userName){ //not in pm window
+					if (!hasLoaded)
+						return "";
+					tdMessage.innerHTML = "(PM)" + name + parsedMessage;
+					if (hasLoaded){
+						openPMWindow(parts[4]);
+						if (notifications)
+							showNotification("* (PM)" + parts[4] + " " + parts[5]);
+						if (highDing)
+								document.getElementById('ding').play();
+						document.getElementById("*" + parts[4]).style.color="#C22";
+					}
+				}else{ //In the PM window
+					tdMessage.innerHTML = name + " " + parsedMessage;
+				}
+			break;
 			case "curline":
 				return "";
 			break;

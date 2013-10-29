@@ -282,7 +282,10 @@ ip 108.174.51.58
 	}
 	if ($channel[0] == "*") //PM
 	{
-		$type = "pm";
+		if($type=="action")
+			$type = "pmaction";
+		else
+			$type = "pm";
 		$channel = substr($channel,1);
 	}
 	

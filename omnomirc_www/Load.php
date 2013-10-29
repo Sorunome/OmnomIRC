@@ -103,6 +103,7 @@
 				case "message":
 					echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result['message'])) . ':' . base64_url_encode(htmlspecialchars("0"));break;
 				case "action":
+				case "pmaction":
 					echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result['message'])) . ':' . base64_url_encode(htmlspecialchars("0"));break;
 				case "join":
 					echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1']));break;

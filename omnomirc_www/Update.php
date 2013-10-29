@@ -118,6 +118,7 @@
 						case "message":
 							echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result['message'])) . ':' . base64_url_encode(htmlspecialchars("0"));break;
 						case "action":
+						case "pmaction":
 							echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result['message'])) . ':' . base64_url_encode(htmlspecialchars("0"));break;
 						case "join":
 							echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1']));break;
@@ -154,6 +155,7 @@
 				case "message":
 					echo $addStr.$result['line_number'].":".htmlspecialchars($result['channel']).":".htmlspecialchars($result['name1']).":".htmlspecialchars($result['message']);break;
 				case "action":
+				case "pmaction":
 					echo $addStr.$result['line_number'].":".htmlspecialchars($result['channel']).":*".htmlspecialchars($result['name1'])." ".htmlspecialchars($result['message']);break;
 				case "join":
 					if ($result['Online']!='1')echo $addStr.$result['line_number'].":".htmlspecialchars($result['channel']).":*".htmlspecialchars($result['name1'])." has joined ".htmlspecialchars($result['channel']);else echo $addStr.$result['line_number']."::";break;
