@@ -98,7 +98,12 @@
 				$result = mysql_fetch_array(sql_query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND locate('%s',`message`) != 0 AND NOT (((`type` = 'pm' OR `type` = 'pmaction') AND `name1` <> '%s') OR (`type` = 'server'))",$curLine + 0,substr($nick,0,4), $nick));
 			else
 				$result = mysql_fetch_array(sql_query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND (`channel` LIKE '%s')",$curLine + 0,"%#%"));
-			if (!isset($result[0])) {usleep(500000); continue;}
+			if (!isset($result[0])){
+				$temp = mysql_fetch_array(sql_query("SELECT MAX(line_number) FROM `irc_lines`"));
+				$curLine = $temp[0];
+				usleep(500000);
+				continue;
+			}
 			if  (!isset($_GET['calc'])) {
 				if (strpos($userSql["ignores"],strtolower($result["name1"])."\n")===false) { //Sorunome edit
 					echo $result['line_number'] . ":highlight:0:0:". base64_url_encode($result['channel']) . "::" . base64_url_encode($result['name1']) . ":" . base64_url_encode($result['message']);
