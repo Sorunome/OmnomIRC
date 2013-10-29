@@ -896,7 +896,9 @@ function searchUser(start,startAt){
 			}
 			//Valid chan, add to list.
 			channels.push(base64.encode(paramaters));
+			loadChannels(); //cross-tab stuff
 			saveChannels();
+			drawChannels();
 			selectChannel(channels.length-1);
 	}
 	
@@ -909,8 +911,10 @@ function searchUser(start,startAt){
 			if (base64.decode(channels[i]).toLowerCase() == paramaters.toLowerCase())
 				return; //PM already opened, don't open another.
 		channels.push(base64.encode(paramaters));
+		loadChannels(); //cross-tab stuff
 		saveChannels();
 		drawChannels();
+		selectChannel(channels.length-1);
 	}
 	
 	function partChannel(paramaters){
@@ -983,14 +987,24 @@ function searchUser(start,startAt){
 //******************************
 // Dynamic Channels Start      *
 //******************************
-
+	function existsInArray(a,v){
+		for(var i=0;i<a.length;i++){
+			if(a[i]==v){
+				return true;
+			}
+		}
+		return false;
+	}
+	
 	function loadChannels(){
-		if(document.cookie.indexOf("OmnomChannels") >= 0){
-			var moreChans = document.cookie.split(";")[0].replace(/^.*OmnomChannels=(.+?)|.*/, "\$1").split("%");
+		var moreChans;
+		if(moreChans = getCookie("OmnomChannels").split("%")){
 			for (i in moreChans){
 				if (moreChans[i][0] != "#" && moreChans[i] != ""){
-					if (moreChans[i][0] == "^") moreChans[i][0] = "#";
-					channels.push(moreChans[i]);
+					if (moreChans[i][0] == "^")
+						moreChans[i][0] = "#";
+					if(!existsInArray(channels,moreChans[i]))
+						channels.push(moreChans[i]);
 				}
 			}
 		}
@@ -1004,7 +1018,7 @@ function searchUser(start,startAt){
 			}
 		}
 		chanList = chanList.substr(0,chanList.length-1);
-		document.cookie = "OmnomChannels=" + chanList + ";expires=Sat, 20 Nov 2286 17:46:39 GMT;";
+		setCookie("OmnomChannels",chanList,30);
 	}
 
 //******************************
