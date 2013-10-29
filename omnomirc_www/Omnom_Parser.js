@@ -987,6 +987,7 @@ function searchUser(start,startAt){
 //******************************
 // Dynamic Channels Start      *
 //******************************
+
 	function existsInArray(a,v){
 		for(var i=0;i<a.length;i++){
 			if(a[i]==v){
@@ -997,17 +998,29 @@ function searchUser(start,startAt){
 	}
 	
 	function loadChannels(){
-		var moreChans;
-		if(moreChans = getCookie("OmnomChannels").split("%")){
-			for (i in moreChans){
-				if (moreChans[i][0] != "#" && moreChans[i] != ""){
-					if (moreChans[i][0] == "^")
-						moreChans[i][0] = "#";
-					if(!existsInArray(channels,moreChans[i]))
-						channels.push(moreChans[i]);
+		/*var temp,i,x,y,ARRcookies=document.cookie.split(";");
+		for (i=0;i<ARRcookies.length;i++) {
+			x=ARRcookies[i].substr(0,ARRcookies[i].indexOf("="));
+			y=ARRcookies[i].substr(ARRcookies[i].indexOf("=")+1);
+			x=x.replace(/^\s+|\s+$/g,"");
+			if (x=='OmnomChannels') {
+				temp=unescape(y);
+				break;
+			}
+		}*/
+		try{
+			var moreChans = getCookie('OmnomChannels').split("%");
+			if(moreChans){
+				for (i in moreChans){
+					if (moreChans[i][0] != "#" && moreChans[i] != ""){
+						if (moreChans[i][0] == "^")
+							moreChans[i][0] = "#";
+						if(!existsInArray(channels,moreChans[i]))
+							channels.push(moreChans[i]);
+					}
 				}
 			}
-		}
+		}catch(e){}
 	}
 
 	function saveChannels(){
