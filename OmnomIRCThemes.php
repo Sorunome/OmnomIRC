@@ -40,7 +40,6 @@ function echoNewStyle($c1,$c2,$c3){
 	#about > div,
 	#scrollBar,
 	td.curchan,
-	td.chan,
 	#scrollBarLine,
 	#UserList,
 	.linehigh {
