@@ -113,7 +113,7 @@ if (strpos($_SERVER['HTTP_USER_AGENT'],"textmode;")===false) {?>
 
 <div id="UserListContainer">
 	<span style="left:10%;position:relative;font-size:6pt;"><table id="hotlinks"><tr><td><a href="http://www.omnimaga.org/OmnomIRC_Full.html" target="_TOP">Full View</a></td><td><a id="toggle" href="#" onclick="toggleEnable();">Toggle</a></td></tr><tr><td><a href="Options.html" accesskey="o" alt="OmnomIRC Options" title="OmnomIRC Options">Options</a></td><td><a alt="About OmnomIRC" onclick="if (document.getElementById('about').style.display=='none'){document.getElementById('about').style.display='';}else{document.getElementById('about').style.display='none';}">About</a></td></tr><tr><td><a href="http://ourl.ca/logs" target="_blank" alt="Logs">Logs</a></td></tr></table></span>
-	<div id="UserList" style="position:relative;left:10%;/*height:88%;height:calc(100% - 50px);height:-webkit-calc(100% - 50px);*/top:1%;width:120%;font-family:verdana,sans-serif;overflow-x:hidden;overflow-y:scroll;">
+	<div id="UserList" style="position:relative;left:10%;top:1%;width:120%;font-family:verdana,sans-serif;overflow-x:hidden;overflow-y:scroll;">
 	</div>
 	<span class="arrowButtonHoriz3"><div style="width:12px;height:9pt;top:0pt;position:absolute;font-weight:bolder;margin-top:10pt;" class="arrowButtonHoriz2">&#9650;</div>
 	<div style="width:12px;height:9pt;top:0pt;position:absolute;margin-top:10pt;" onmousedown="downInt = setInterval('userListDiv.scrollTop -= 9',50);" onmouseout="clearInterval(downInt);" onmouseup="clearInterval(downInt);"></div></span>

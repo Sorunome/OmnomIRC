@@ -70,6 +70,7 @@
 	height:100px;
 	position:absolute;
 	z-index:42;
+	left: 98%;
 	left:calc(99% - 17px);
 	cursor:pointer;
 	border-radius: 2px;
@@ -95,10 +96,12 @@
 	position: absolute;
 	z-index: 41;
 	width: 6px;
+	height: 100%;
 	height: calc(100% - 39px);
 	border: 1px solid #6699FF;
 	border-top:none;
 	top: 38px;
+	left:98%;
 	left: calc(99% - 16px);
 	background-color: #CAE4FF;
 }

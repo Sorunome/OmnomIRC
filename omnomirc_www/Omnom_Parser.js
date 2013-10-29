@@ -598,8 +598,8 @@ scrolledDown = true;
 		if(!hideUserlist){
 			var style = document.createElement("style");
 			style.type="text/css";
-			style.innerHTML = "#scrollBar{left:calc(90% - 17px);}\
-								#scrollBarLine{left: calc(90% - 16px);}\
+			style.innerHTML = "#scrollBar{left:89%;left:calc(90% - 17px);}\
+								#scrollBarLine{left:89%;left:calc(90% - 16px);}\
 								input[type=text]{width:82%;width:calc(91% - 115px);width:-webkit-calc(91% - 115px);}\
 								#mBoxCont{width:90%;}\
 								.arrowButtonHoriz2,.arrowButtonHoriz3 > div:nth-child(2){left:89%;left:calc(90% - 5px);left:-webkit-calc(90% - 5px);}\
