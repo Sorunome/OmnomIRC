@@ -594,28 +594,22 @@ scrolledDown = true;
 		showSmileys = getOption(12,"T") == "T";
 		numCharsHighlight = parseInt(getOption(13,"3"))+1;
 		hideUserlist = getOption(14,"F") == "T";
-		showScrollBar = getOption(15,"F") == "T";
+		showScrollBar = getOption(15,"T") == "T";
 		if(!hideUserlist){
 			var style = document.createElement("style");
 			style.type="text/css";
-			style.innerHTML = "#topicbox{width:88%;width:calc(88% - 5px);width:-webkit-calc(88% - 5px);}\
-								#Channels{width:88%;}\
+			style.innerHTML = "#scrollBar{left:calc(90% - 17px);}\
+								#scrollBarLine{left: calc(90% - 16px);}\
 								input[type=text]{width:82%;width:calc(91% - 115px);width:-webkit-calc(91% - 115px);}\
 								#mBoxCont{width:90%;}\
 								.arrowButtonHoriz2,.arrowButtonHoriz3 > div:nth-child(2){left:89%;left:calc(90% - 5px);left:-webkit-calc(90% - 5px);}\
-								#UserListContainer{left:90%;height:98%;transition:none;-webkit-transition:none;-o-transition-property:none;-o-transition-duration:none;-o-transition-delay:none;}";
+								#UserListContainer{left:90%;height:100%;transition:none;-webkit-transition:none;-o-transition-property:none;-o-transition-duration:none;-o-transition-delay:none;}";
 			body.appendChild(style);
 		}
 		if(showScrollBar){
 			var scrollBar = document.createElement("div");
 			scrollBar.id="scrollBar";
-			scrollBar.style.width="8px";
-			scrollBar.style.height="100px";
-			scrollBar.style.borderRadius="4px";
-			scrollBar.style.position="absolute";
-			scrollBar.style.zIndex="42";
-			scrollBar.style.left=String(((body.offsetWidth/100)*99)-17)+"px";
-			scrollBar.style.cursor="pointer";
+			
 			body.appendChild(scrollBar);
 			scrollBar.prevY=0;
 			scrollBar.isClicked=false;
@@ -624,17 +618,20 @@ scrolledDown = true;
 				var element=document.getElementById('scrollBar');
 				if(element.isClicked){
 					element.style.top=String(parseInt(element.style.top)+(y-element.prevY))+"px";
-					document.getElementById('mboxCont').scrollTop += (y - element.prevY)*((mBoxCont.scrollHeight-parseInt(mBoxCont.style.height))/(document.getElementsByTagName('body')[0].offsetHeight-parseInt(element.style.height)));
-					if (mBoxCont.scrollTop + mBoxCont.clientHeight == mBoxCont.scrollHeight)
-						scrolledDown = true;
-					else
-						scrolledDown = false;
-					if (parseInt(element.style.top)<0)
-						element.style.top="0px";
-					if (parseInt(element.style.top)>(body.offsetHeight-scrollBar.offsetHeight))
+					mBoxCont.scrollTop = ((parseInt(element.style.top)-38)/(body.offsetHeight-scrollBar.offsetHeight-38))*(mBoxCont.scrollHeight-mBoxCont.clientHeight);
+					scrolledDown = false;
+					if (parseInt(element.style.top)<38){
+						element.style.top="38px";
+						mBoxCont.scrollTop = 0;
+					}
+					if (parseInt(element.style.top)>(body.offsetHeight-scrollBar.offsetHeight)){
 						element.style.top=String(body.offsetHeight-scrollBar.offsetHeight)+"px";
+						mBoxCont.scrollTop = mBoxCont.scrollHeight-mBoxCont.clientHeight;
+						scrolledDown = true;
+					}
 				}
-				element.prevY=y;};
+				element.prevY=y;
+			};
 			scrollBar.onmousedown = function(){
 				document.getElementById('scrollBar').isClicked=true;
 				document.getElementById('scrollArea').style.display="";
@@ -663,14 +660,7 @@ scrolledDown = true;
 			scrollArea.onmouseout = scrollBar.onmouseup;
 			
 			var line = document.createElement("div");
-			line.style.width="1px";
-			line.style.height="100%";
-			line.style.border="none";
-			line.style.backgroundColor="black";
-			line.style.position="absolute";
-			line.style.zIndex="41";
-			line.style.top=0;
-			line.style.left=String(((body.offsetWidth/100)*99)-13)+"px";
+			line.id = 'scrollBarLine';
 			body.appendChild(line);
 			mboxCont.style.width=String(((body.offsetWidth/100)*99)-22)+"px";
 			var style = document.createElement("style");
@@ -679,8 +669,8 @@ scrolledDown = true;
 			body.appendChild(style);
 			
 			if(!hideUserlist){
-				scrollBar.style.left=String(((body.offsetWidth/100)*90)-17)+"px";
-				line.style.left=String(((body.offsetWidth/100)*90)-13)+"px";
+				//scrollBar.style.left=String(((body.offsetWidth/100)*90)-17)+"px";
+				//line.style.left=String(((body.offsetWidth/100)*90)-13)+"px";
 				mboxCont.style.width=String(((body.offsetWidth/100)*90)-22)+"px";
 			}
 		}
