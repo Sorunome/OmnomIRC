@@ -818,7 +818,7 @@ scrolledDown = true;
 	}
 	
 	function selectChannel(index){
-		setOption(4,String.fromCharCode(index + 32),true);
+		setOption(4,String.fromCharCode(index + 45),true);
 		changeChannel();
 		readOldMessagesCookies();
 	}
@@ -832,7 +832,7 @@ scrolledDown = true;
 	}
 	
 	function getChannelIndex(){
-		var index = getOption(4,String.fromCharCode(32)).charCodeAt(0) - 32;
+		var index = getOption(4,String.fromCharCode(45)).charCodeAt(0) - 45;
 		if (index > (channels.length - 1))
 			index = 0;
 		return index;
