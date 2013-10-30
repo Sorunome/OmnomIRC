@@ -360,7 +360,7 @@ scrolledDown = true;
 			s = s.replace(/:crazy:/g,"<img src='smileys/fou.gif' alt='Crazy' "+addStuff+">");
 			s = s.replace(/:hyper:/g,"<img src='smileys/happy0075.gif' alt='Hyper' "+addStuff+">");
 			s = s.replace(/:love:/g,"<img src='smileys/love.gif' alt='Love' "+addStuff+">");
- 			s = s.replace(/:mad:/g,"<img src='smileys/mad.gif' alt='Mad' "+addStuff+">");
+			s = s.replace(/:mad:/g,"<img src='smileys/mad.gif' alt='Mad' "+addStuff+">");
 			s = s.replace(/:w00t:/g,"<img src='smileys/smiley_woot.gif' alt='w00t' "+addStuff+">");
 			s = s.replace(/(^| )\*\.\*/g,"$1<img src='smileys/psychedelicO_O.gif' alt='O.O.O' "+addStuff+">");
 			s = s.replace(/(^| )D:/g,"$1<img src='smileys/bigfrown.gif' alt='Big Frown' "+addStuff+">");
@@ -998,16 +998,6 @@ function searchUser(start,startAt){
 	}
 	
 	function loadChannels(){
-		/*var temp,i,x,y,ARRcookies=document.cookie.split(";");
-		for (i=0;i<ARRcookies.length;i++) {
-			x=ARRcookies[i].substr(0,ARRcookies[i].indexOf("="));
-			y=ARRcookies[i].substr(ARRcookies[i].indexOf("=")+1);
-			x=x.replace(/^\s+|\s+$/g,"");
-			if (x=='OmnomChannels') {
-				temp=unescape(y);
-				break;
-			}
-		}*/
 		try{
 			var moreChans = getCookie('OmnomChannels').split("%");
 			if(moreChans){

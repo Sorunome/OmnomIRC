@@ -190,7 +190,7 @@ if (strpos($_SERVER['HTTP_USER_AGENT'],"textmode;")===false) {?>
 	var body= document.getElementsByTagName('body')[0];
 	var script= document.createElement('script');
 	script.type= 'text/javascript';
-	script.src=CHECKLOGINURL+<?php if(isset($_COOKIE[$securityCookie])) echo '"?sid='.urlencode(htmlspecialchars(str_replace(";","%^%",$_COOKIE[$securityCookie]))).';"'."\n"; ?>;
+	script.src=CHECKLOGINURL+<?php if(isset($_COOKIE[$securityCookie])) echo '"?sid='.urlencode(htmlspecialchars(str_replace(";","%^%",$_COOKIE[$securityCookie]))).'";'."\n"; ?>;
 	body.appendChild(script);
 </script>
 <audio id="ding" src="beep.wav" hidden></audio>
