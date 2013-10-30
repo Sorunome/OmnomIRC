@@ -160,7 +160,7 @@ if(cluster.isMaster){
 			case 'M':
 				if(typeof irc != 'undefined'){
 					msg = JSON.parse(msg);
-					if(msg.message){
+					if(typeof msg.message != 'udefined'){
 						irc.say(msg.room,'('+options.origins[msg.origin][0]+')'+'<'+msg.from+'> '+msg.message);
 					}
 				}
