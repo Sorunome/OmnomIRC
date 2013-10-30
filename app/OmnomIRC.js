@@ -160,7 +160,7 @@ if(cluster.isMaster){
 			case 'M':
 				if(typeof irc != 'undefined'){
 					msg = JSON.parse(msg);
-					if(msg.message){
+					if(typeof msg.message != 'udefined'){
 						irc.say(msg.room,'('+options.origins[msg.origin][0]+')'+'<'+msg.from+'> '+msg.message);
 					}
 				}
@@ -202,6 +202,17 @@ if(cluster.isMaster){
 			'css': 'text/css',
 			'png': 'image/png',
 			'jpg': 'image/jpeg'
+		},
+		message = function(room,from,message,origin,socket){
+			if(typeof socket == 'undefined'){
+				socket = io.sockets.in(room);
+			}
+			socket.emit('message',{
+				message: message,
+				room: room,
+				from: from,
+				origin: origin
+			})
 		},
 		app = require('http').createServer(function(req,res){
 			if(toobusy()){
@@ -421,17 +432,6 @@ if(cluster.isMaster){
 						});
 					});
 				}
-			},
-			message = function(room,from,message,origin,socket){
-				if(typeof socket == 'undefined'){
-					socket = io.sockets.in(room);
-				}
-				socket.emit('message',{
-					message: message,
-					room: room,
-					from: from,
-					origin: origin
-				})
 			},
 			fromServer = function(room,message,socket){
 				if(typeof socket == 'undefined'){
