@@ -57,6 +57,7 @@
 		settings = {},
 		settingsConf = {},
 		tabs = [],
+		ignores = ($.localStorage('ignores') || []),
 		properties = {
 			nick: 'User',
 			sig: '',
@@ -159,6 +160,51 @@
 					for(var i in tabs){
 						$o.msg('   ['+i+'] '+tabs[i].name);
 					}
+				}
+			},
+			{ // ignore
+				cmd: 'ignore',
+				fn: function(args){
+					args.shift();
+					var nick = args.join(' ').toLowerCase();
+					if($.inArray(nick,ignores)==-1){
+						ignores.push(nick);
+						$.localStorage('ignores',ignores);
+						$o.msg('Now ignoring '+nick);
+					}else{
+						$o.msg('You were already ignoring '+nick);
+					}
+				}
+			},
+			{ // unignore
+				cmd: 'unignore',
+				fn: function(args){
+					args.shift();
+					var nick = args.join(' ').toLowerCase(),
+						ignorePos;
+					if(ignores!=null && (ignorePos=$.inArray(nick,ignores))!=-1 || nick=='*'){
+						if(nick!='*'){
+							ignores.splice(ignorePos,1);
+							$.localStorage('ignores',ignores);
+							$o.msg('Not more ignoring '+nick);
+						}else{
+							ignores = [];
+							$.localStorage('ignores',[]);
+							$o.msg('Not more ignoring anybody');
+						}
+					}else{
+						$o.msg('You weren\'t ignoring '+nick);
+					}
+				}
+			},
+			{ // ignorelist
+				cmd: 'ignorelist',
+				fn: function(args){
+					var m = 'Ignored users: ';
+					for(var i=0;i<ignores.length;i++){
+						m += ignores[i]+', ';
+					}
+					$o.msg(m.substring(0,m.length-2));
 				}
 			}
 		],
@@ -285,23 +331,25 @@
 							+'</span>');
 							$o.msg({html:child},data.room);
 						};
-					if(data.from != 0){
-						msg('	<'+data.from+'>	'+data.message);
-					}else{
-						msg('	* '+data.message);
+					if((data.from !== 0 && $.inArray(data.from.toLowerCase(),ignores)==-1) || data.from === 0){
+						if(data.from != 0){
+							msg('	<'+data.from+'>	'+data.message);
+						}else{
+							msg('	* '+data.message);
+						}
+						abbrDate('abbr.date_'+time);
+						if(settings.timestamp == ''){
+							$('.date_cell').css('visibility','hidden');
+						}else{
+							$('.date_cell').css('visibility','visible');
+						}
+						runHook('message',[
+							data.message,
+							data.from,
+							data.room,
+							data.origin
+						]);
 					}
-					abbrDate('abbr.date_'+time);
-					if(settings.timestamp == ''){
-						$('.date_cell').css('visibility','hidden');
-					}else{
-						$('.date_cell').css('visibility','visible');
-					}
-					runHook('message',[
-						data.message,
-						data.from,
-						data.room,
-						data.origin
-					]);
 				}
 			}
 		],
