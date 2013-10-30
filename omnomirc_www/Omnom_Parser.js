@@ -914,7 +914,6 @@ function searchUser(start,startAt){
 		loadChannels(); //cross-tab stuff
 		saveChannels();
 		drawChannels();
-		selectChannel(channels.length-1);
 	}
 	
 	function partChannel(paramaters){
@@ -957,6 +956,7 @@ function searchUser(start,startAt){
 			case "q":
 			case "query":
 				openPMWindow(paramaters);
+				selectChannel(channels.length-1);
 				return true;
 			case "win":
 			case "w":
