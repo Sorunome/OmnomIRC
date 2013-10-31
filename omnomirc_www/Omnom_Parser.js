@@ -54,9 +54,7 @@ scrolledDown = true;
 		xmlhttp.open("GET",url,true);
 		if (isBlurred()){
 			setTimeout("xmlhttp.send(null);",2500); //Only query every 2.5 seconds maximum if not foregrounded.
-		}
-		else
-		{
+		}else{
 			setTimeout("xmlhttp.send(null);",75); //Wait for everything to get parsed before requesting again.
 		}
 		inRequest = true;
@@ -485,13 +483,13 @@ scrolledDown = true;
 				style = style + "background:none;padding:none;border:none;";
 			if (highBold)
 				style = style + "font-weight:bold;";
-			return '<span class="highlight" style="' + style + '">' + text + "</span>";
-			if(parent.window.bIsBlurred){
+			if(isBlurred() && hasLoaded){
 				if (notifications)
 					showNotification("(" + parts[4] + ") <" + parts[6] + "> " + parts[7]);
 				if (highDing)
 					document.getElementById('ding').play();
 			}
+			return '<span class="highlight" style="' + style + '">' + text + "</span>";
 		}
 		return text;
 	}
@@ -725,7 +723,6 @@ scrolledDown = true;
 		chanScr.onload= function(){channelSelectorCallback();readOldMessagesCookies();};
 		body.appendChild(chanScr);
 		chanList = document.getElementById('chanList');
-		isBlurred();
 		if(userName == "Guest"){
 			var message = document.getElementById("message");
 			message.disabled = "true";
@@ -1067,28 +1064,24 @@ function searchUser(start,startAt){
 //******************************
 // Focus Handler Start         *
 //******************************
-var focusHandlerRegistered = false;
-function isBlurred(){
-	if  (focusHandlerRegistered == undefined)
-		focusHandlerRegistered = false;
-	if (!focusHandlerRegistered)
-		registerFocusHandler();
-	if (parent != undefined)
-		return parent.window.bIsBlurred;
-	else
-		return bIsBlurred;
-}
 
+var focusHandlerRegistered = false;
+bIsBlurred = false;
 function registerFocusHandler(){
 	focusHandlerRegistered = true;
-	if (parent != undefined){//Child(iframe)
-		parent.window.bIsBlurred = false;
-		parent.window.onblur = function(){ parent.window.bIsBlurred=true;if(console.log)console.log("Blur");return true; }
-		parent.window.onfocus= function(){ parent.window.bIsBlurred=false;resize();if(console.log)console.log("Focus");return true;}
-	}else{ //Not a child
-		window.onblur = function(){ bIsBlurred=true;if(console.log)console.log("Blur");return true; }
-		window.onfocus= function(){ bIsBlurred=false;resize();if(console.log)console.log("Focus");return true;}
+	window.self.onblur = function(){
+		console.log('blur');
+		bIsBlurred = true;
 	}
+	window.self.onfocus = function(){
+		console.log('focus');
+		bIsBlurred = false;
+	}
+}
+function isBlurred(){
+	if(!focusHandlerRegistered)
+		registerFocusHandler();
+	return bIsBlurred;
 }
 //******************************
 // Focus Handler End           *

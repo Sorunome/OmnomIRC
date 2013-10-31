@@ -297,11 +297,10 @@ function userQuit($username,$message,$socketToExclude)
 function userNick($oldNick,$newNick,$socketToExclude)
 {
 	global $userList;
-	foreach($userList as $chanName => $channel)
-	{
+	foreach($userList as $chanName => $channel){
 		$pos = array_search($oldNick,$channel);
-		if ($pos)
-		{
+		if ($pos!==false){
+			$newNick = trim($newNick);
 			sendLine("PRIVMSG $chanName :(#)* $oldNick has changed nicks to $newNick",$socketToExclude);
 			addLine($oldNick,$newNick,"nick",'',$chanName);
 			$userList[$chanName][$pos] = $newNick;
