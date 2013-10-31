@@ -296,6 +296,7 @@ ip 108.174.51.58
 			$fromSource='1';
 			$isOnline='2';
 		}
+		sql_query("UPDATE `irc_users` SET lastMsg='%s' WHERE username='%s' AND channel='%s' AND online='1'",time(),$nick,$channel);
 		sql_query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES('%s','%s','%s','%s','%s','%s')",$message,$nick,$channel,($type=="action")?'1':'0',$fromSource,"msg");
 		sql_query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s','%s')",$nick,$message,$type,$channel,time(),$isOnline);
 	}

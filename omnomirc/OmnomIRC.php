@@ -106,25 +106,20 @@ function parseMsg($allMessage,$callingSocket)
 		unset($lines[count($lines) - 1]);
 	}
 	
-	foreach ($lines as $Message)
-	{
+	foreach ($lines as $Message){
 		$parts = explode(" ",$Message);
 		preg_match("/:(.*)!(.*)@(.*)/",$parts[0],$info);
 		$channel = strtolower($parts[2]);
 		$isChan = (substr($channel,0,1)=="#");
-		if (strtolower($parts[0]) == "ping")
-		{
+		if (strtolower($parts[0]) == "ping"){
 			sendLine("PONG " . trim($parts[1]) . "\n");
 		}
-		switch(strtolower($parts[1]))
-		{
+		switch(strtolower($parts[1])){
 			case "privmsg":
-				
-				if ($parts[3] == ":DOTHIS".$botPasswd) sendLine(getMessage($parts,4,false));
-				if ($parts[3] == ":PRINTUSERLIST") print_r($userList);
-				if ($parts[3] == ":UPDATEUSERLIST") updateUserList();
-				if ($parts[3] == ":UPDATECHANS")
-				{
+				if($parts[3] == ":DOTHIS".$botPasswd) sendLine(getMessage($parts,4,false));
+				if($parts[3] == ":PRINTUSERLIST") print_r($userList);
+				if($parts[3] == ":UPDATEUSERLIST") updateUserList();
+				if($parts[3] == ":UPDATECHANS"){
 					echo "Updating chans";
 					sendLine("join #,0");
 					$IRCBOT = true;
@@ -135,13 +130,10 @@ function parseMsg($allMessage,$callingSocket)
 				if (!$isChan) break;
 				
 				$message = getMessage($parts,3,true);
-				if (preg_match("/^ACTION (.*)/",$message,$messageA))
-				{
+				if (preg_match("/^ACTION (.*)/",$message,$messageA)){
 					addLine($info[1],'','action',$messageA[1],$channel);
 					sendLine("PRIVMSG $channel :(#)6* $info[1] $messageA[1]",$callingSocket); //Send to other servers
-				}
-				else
-				{
+				}else{
 					addLine($info[1],'','message',$message,$channel);
 					sendLine("PRIVMSG $channel :(#)<$info[1]> ".getMessage($parts,3,true),$callingSocket); //Send to other servers
 				}
@@ -214,6 +206,8 @@ function addLine($name1,$name2,$type,$message,$channel)
 		}
 		sql_query("UPDATE `irc_topics` SET topic='%s' WHERE chan='%s'",$message,strtolower($channel));
 	}
+	if($type=='action' || $type=='message')
+		sql_query("UPDATE `irc_users` SET lastMsg='%s' WHERE username='%s' AND channel='%s' AND online='0'",time(),$name1,$channel);
 	$temp = mysql_fetch_array(sql_query("SELECT MAX(line_number) FROM irc_lines"));
 	file_put_contents($curidFilePath,$temp[0]);
 }

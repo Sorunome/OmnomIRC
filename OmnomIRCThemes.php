@@ -36,6 +36,7 @@ function hex2rgba($color, $opacity = false) {
 function echoNewStyle($c1,$c2,$c3){
 	echo "#UserListContainer,
 	#smileyselect,
+	#lastSeenCont,
 	#topicbox,
 	#about > div,
 	#scrollBar,

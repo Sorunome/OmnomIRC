@@ -154,12 +154,6 @@ scrolledDown = true;
 		}
 		if ((type == "message" || type == "action") && parts[4].toLowerCase() != "new" && parts[4].toLowerCase() != "omnom"){
 			parsedMessage = parseHighlight(parsedMessage);
-			if(parent.window.bIsBlurred){
-				if (notifications)
-					showNotification("(" + parts[4] + ") <" + parts[6] + "> " + parts[7]);
-				if (highDing)
-					document.getElementById('ding').play();
-			}
 		}
 		retval = "";
 		displayMessage = true;
@@ -288,7 +282,6 @@ scrolledDown = true;
 				if((i=chanPos(base64.encode(parts[4])))!=-1){
 					channels[i][1] = true;
 				}
-				//document.getElementById(parts[4]).style.color="#C22"; //This call will fail if they aren't in the chan. Crude, but effective.
 				if (notifications)
 					showNotification("(" + parts[4] + ") <" + parts[6] + "> " + parts[7]);
 				if (highDing)
@@ -493,6 +486,12 @@ scrolledDown = true;
 			if (highBold)
 				style = style + "font-weight:bold;";
 			return '<span class="highlight" style="' + style + '">' + text + "</span>";
+			if(parent.window.bIsBlurred){
+				if (notifications)
+					showNotification("(" + parts[4] + ") <" + parts[6] + "> " + parts[7]);
+				if (highDing)
+					document.getElementById('ding').play();
+			}
 		}
 		return text;
 	}
@@ -556,7 +555,22 @@ scrolledDown = true;
 		UserListArr.push(userp);
 		parseUsers();
 	}
-	
+	function getUserLastSeen(nick,chan,online){
+		getInfo = new XMLHttpRequest();
+		getInfo.onreadystatechange=function(){
+			if(getInfo.readyState==4 && getInfo.status==200){
+				if(!isNaN(parseInt(getInfo.responseText))){
+					var elem = document.getElementById('lastSeenCont');
+					var d = new Date(parseInt(getInfo.responseText)*1000);
+					elem.innerHTML = 'Last Seen: '+d.toLocaleTimeString();
+					elem.style.display = 'block';
+				}
+			}
+		}
+		getInfo.open('GET','Load.php?userinfo&name='+nick+'&chan='+chan+'&online='+online,true);
+		getInfo.setRequestHeader('Content-type','application/x-www-form-urlencoded');
+		getInfo.send();
+	}
 	function parseUsers(){
 		if (!userListDiv || userListDiv == null)
 			userListDiv = document.getElementById("UserList");
@@ -568,13 +582,15 @@ scrolledDown = true;
 		});
 		for (i=0;i<UserListArr.length;i++){
 			parts = UserListArr[i].split(":");
-			if (parts[1] == "0") userText = userText + "#" + base64.decode(parts[0]) + "<br/>";
+			userText += '<span onmouseover="getUserLastSeen(\''+parts[0]+'\',\''+getChannelEn()+'\',\''+parts[1]+'\')" onmouseout="try{getInfo.abort();}catch(e){};document.getElementById(\'lastSeenCont\').style.display=\'none\'">'
+			if (parts[1] == "0") userText += "#" + base64.decode(parts[0]) + "<br/>";
 			if (parts[1] == "1") 
-				userText = userText + '<a target="_top" href="'+SEARCHNAMESURL+base64.decode(parts[0]) + 
+				userText += '<a target="_top" href="'+SEARCHNAMESURL+base64.decode(parts[0]) + 
 				'"><img src="omni.png" alt="Omnimaga User" title="Omnimaga User" border=0 width=8 height=8 />' + base64.decode(parts[0]) + '</a><br/>';
-			if (parts[1] == "2") userText = userText + "!" + base64.decode(parts[0]) + "<br/>";
+			if (parts[1] == "2") userText += "!" + base64.decode(parts[0]) + "<br/>";
+			userText += '</span>';
 		}
-		userText = userText + "<br/><br/>";
+		userText += "<br/><br/>";
 		userListDiv.innerHTML = userText;
 	}
 	

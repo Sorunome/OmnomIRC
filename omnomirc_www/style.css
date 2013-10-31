@@ -480,6 +480,7 @@ input[type=text] {
     padding-top: 2px;
     border-top: 1px solid #6699FF;
     transition: 1s 1s background-color;
+	cursor:default;
 }
 #UserListContainer {
 	position:absolute;
@@ -527,4 +528,13 @@ input[type=text] {
 	-o-transition-duration: 0.5s;
 	-o-transition-delay: 0.2s;
 }
- 
+#lastSeenCont {
+	position:absolute;
+	z-index:44;
+	top:10px;
+	right:10px;
+	background:#a1c2ff;
+	padding:5px;
+	border:1px solid #6699ff;
+	border-radius:5px;
+}

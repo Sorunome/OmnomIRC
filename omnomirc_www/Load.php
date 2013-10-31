@@ -24,134 +24,143 @@
 	include("Source/sql.php");
 	include("Source/sign.php");
 	include("Source/userlist.php");
-	function getUserstuffQuery($nick) {
-		$userSql = mysql_fetch_array(sql_query("SELECT * FROM `irc_userstuff` WHERE name='%s'",strtolower($nick)));
-		if ($userSql["name"]==NULL) {
-			sql_query("INSERT INTO `irc_userstuff` (name) VALUES('%s')",strtolower($nick));
+	if(!isset($_GET['userinfo'])){
+		function getUserstuffQuery($nick) {
 			$userSql = mysql_fetch_array(sql_query("SELECT * FROM `irc_userstuff` WHERE name='%s'",strtolower($nick)));
-		}
-		return $userSql;
-	}
-	ob_start();
-	if(isset($_GET['count']))
-		$count = $_GET['count'];
-	else
-		$count = 1;
-
-	$channel = $defaultChan;
-	if (isset($_GET['channel']))
-		$channel = base64_url_decode($_GET['channel']);
-	$nick = "0";
-	if (isset($_GET['nick']))
-	{
-		$nick = base64_url_decode($_GET['nick']);
-		$signature = base64_url_decode($_GET['signature']);
-		//if ($signature != base64_url_encode(sign($nick)))
-		if (!checkSignature($nick,$signature))
-			$nick = "0";
-		$userSql = getUserstuffQuery($nick);
-		if (strpos($userSql["bans"],base64_url_decode($_GET['channel'])."\n")!==false)
-			die("addLine('999999999999999999999999999:server:0:0:T21ub21JUkM=:RVJST1IgLSBiYW5uZWQ=');");
-	}
-	if ($channel[0]!="*" and $channel[0]!="#" and $channel[0]!="@" and $channel[0]!="&")
-		$channel = "0";
-	
-	if ($channel[0] == "*") //PM
-	{
-		$sender = substr($channel,1);
-		$channel = $nick;
-		$res = sql_query("SELECT x.* FROM (
-													SELECT * FROM `irc_lines` 
-													WHERE 
-													((`channel` = '%s'
-													AND `name1` = '%s')
-													OR
-													(`channel` = '%s'
-													AND `name1` = '%s'))
-														AND NOT ((`type` = 'join' OR `type` = 'part') AND `Online` = 1)
-													ORDER BY `line_number` DESC 
-													LIMIT %s
-												) AS x
-												ORDER BY `line_number` ASC",$channel,$sender,$sender,$channel,$count + 0);
-	}
-	else
-	{
-		$res = sql_query("SELECT x.* FROM (
-													SELECT * FROM `irc_lines` 
-													WHERE (`channel` = '%s' OR `channel` = '%s')
-														AND NOT ((`type` = 'join' OR `type` = 'part') AND `Online` = 1)
-													ORDER BY `line_number` DESC 
-													LIMIT %s
-												) AS x
-												ORDER BY `line_number` ASC",$channel,$nick,$count + 0);
-	}
-	echo "void('$nick');";
-	while ($result = mysql_fetch_array($res))
-	{
-		//Sorunome edit START
-		$userSql = mysql_fetch_array(sql_query("SELECT * FROM `irc_userstuff` WHERE name='%s'",strtolower($nick)));
-		$ignorelist = "";
-		if ($userSql["name"]!=NULL) {
-			$ignorelist = $userSql["ignores"];
-		}
-		//Sorunome edit END
-		if (strpos($userSql["ignores"],strtolower($result["name1"])."\n")===false) { //Sorunome edit
-			echo "addLine('";
-			switch (strtolower($result['type']))
-			{
-				case "pm":
-				case "message":
-					echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result['message'])) . ':' . base64_url_encode(htmlspecialchars("0"));break;
-				case "action":
-				case "pmaction":
-					echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result['message'])) . ':' . base64_url_encode(htmlspecialchars("0"));break;
-				case "join":
-					echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1']));break;
-				case "part":
-					echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result["message"]));break;
-				case "kick":
-					echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result["name2"])) . ":" . base64_url_encode(htmlspecialchars($result["message"]));break;
-				case "quit":
-					echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result["message"]));break;
-				case "mode":
-					echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result["message"]));break;
-				case "nick":
-					echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result["name2"]));break;
-				case "server":
-					echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result["message"]));break;
-				case "topic":
-					echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result["message"]));break;
+			if ($userSql["name"]==NULL) {
+				sql_query("INSERT INTO `irc_userstuff` (name) VALUES('%s')",strtolower($nick));
+				$userSql = mysql_fetch_array(sql_query("SELECT * FROM `irc_userstuff` WHERE name='%s'",strtolower($nick)));
 			}
-			echo "');";
-		} //Sorunome edit
+			return $userSql;
+		}
+		ob_start();
+		if(isset($_GET['count']))
+			$count = $_GET['count'];
+		else
+			$count = 1;
+
+		$channel = $defaultChan;
+		if (isset($_GET['channel']))
+			$channel = base64_url_decode($_GET['channel']);
+		$nick = "0";
+		if (isset($_GET['nick']))
+		{
+			$nick = base64_url_decode($_GET['nick']);
+			$signature = base64_url_decode($_GET['signature']);
+			//if ($signature != base64_url_encode(sign($nick)))
+			if (!checkSignature($nick,$signature))
+				$nick = "0";
+			$userSql = getUserstuffQuery($nick);
+			if (strpos($userSql["bans"],base64_url_decode($_GET['channel'])."\n")!==false)
+				die("addLine('999999999999999999999999999:server:0:0:T21ub21JUkM=:RVJST1IgLSBiYW5uZWQ=');");
+		}
+		if ($channel[0]!="*" and $channel[0]!="#" and $channel[0]!="@" and $channel[0]!="&")
+			$channel = "0";
+		
+		if ($channel[0] == "*") //PM
+		{
+			$sender = substr($channel,1);
+			$channel = $nick;
+			$res = sql_query("SELECT x.* FROM (
+														SELECT * FROM `irc_lines` 
+														WHERE 
+														((`channel` = '%s'
+														AND `name1` = '%s')
+														OR
+														(`channel` = '%s'
+														AND `name1` = '%s'))
+															AND NOT ((`type` = 'join' OR `type` = 'part') AND `Online` = 1)
+														ORDER BY `line_number` DESC 
+														LIMIT %s
+													) AS x
+													ORDER BY `line_number` ASC",$channel,$sender,$sender,$channel,$count + 0);
+		}
+		else
+		{
+			$res = sql_query("SELECT x.* FROM (
+														SELECT * FROM `irc_lines` 
+														WHERE (`channel` = '%s' OR `channel` = '%s')
+															AND NOT ((`type` = 'join' OR `type` = 'part') AND `Online` = 1)
+														ORDER BY `line_number` DESC 
+														LIMIT %s
+													) AS x
+													ORDER BY `line_number` ASC",$channel,$nick,$count + 0);
+		}
+		echo "void('$nick');";
+		while ($result = mysql_fetch_array($res))
+		{
+			//Sorunome edit START
+			$userSql = mysql_fetch_array(sql_query("SELECT * FROM `irc_userstuff` WHERE name='%s'",strtolower($nick)));
+			$ignorelist = "";
+			if ($userSql["name"]!=NULL) {
+				$ignorelist = $userSql["ignores"];
+			}
+			//Sorunome edit END
+			if (strpos($userSql["ignores"],strtolower($result["name1"])."\n")===false) { //Sorunome edit
+				echo "addLine('";
+				switch (strtolower($result['type']))
+				{
+					case "pm":
+					case "message":
+						echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result['message'])) . ':' . base64_url_encode(htmlspecialchars("0"));break;
+					case "action":
+					case "pmaction":
+						echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result['message'])) . ':' . base64_url_encode(htmlspecialchars("0"));break;
+					case "join":
+						echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1']));break;
+					case "part":
+						echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result["message"]));break;
+					case "kick":
+						echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result["name2"])) . ":" . base64_url_encode(htmlspecialchars($result["message"]));break;
+					case "quit":
+						echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result["message"]));break;
+					case "mode":
+						echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result["message"]));break;
+					case "nick":
+						echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result["name2"]));break;
+					case "server":
+						echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result["message"]));break;
+					case "topic":
+						echo $result['line_number'] . ":" . $result['type'] . ":" . $result['Online'] . ":" . $result['time'] . ":" . base64_url_encode(htmlspecialchars($result['name1'])) . ":" . base64_url_encode(htmlspecialchars($result["message"]));break;
+				}
+				echo "');";
+			} //Sorunome edit
+		}
+		
+		$curMax = mysql_fetch_array(sql_query("SELECT MAX(`line_number`) FROM `irc_lines`"));
+		echo "addLine('" . $curMax[0] . ":curline');";
+		//Sorunome edit START
+		$curtopic = mysql_fetch_array(sql_query("SELECT * FROM `irc_topics` WHERE `chan`='%s'",strtolower($channel)));
+		echo "addLine('" . $curMax[0] . ":topic:0:" . time() . "::" . base64_url_encode(htmlspecialchars($curtopic["topic"])) . "');";
+		//Sorunome edit END
+		$users = Array();
+		
+		$result = sql_query("SELECT * FROM `irc_users` WHERE `channel`='%s'",$channel);
+		while ($user = mysql_fetch_array($result))
+		{
+			$users[count($users)][0] = strtolower($user['username']);
+			$users[count($users) - 1][1] = $user['username'];
+			$users[count($users) - 1][2] = $user['online'];
+			$users[count($users) - 1][3] = $user['channel'];
+		}
+		
+		asort($users);
+		foreach ($users as $user)
+		{
+			echo "addUser('" . base64_url_encode(htmlspecialchars($user[1])) . ":" . $user[2] . "');";
+		}
+		if (isset($_GET['calc'])) {
+			ob_end_clean();
+			$temp = mysql_fetch_array(sql_query("SELECT MAX(line_number) FROM `irc_lines`"));
+			echo $temp[0];
+		} else
+			ob_end_flush();
+	}else{
+		if(isset($_GET['name']) && isset($_GET['chan']) && isset($_GET['online'])){
+			$temp = mysql_fetch_array(sql_query("SELECT `lastMsg` FROM `irc_users` WHERE username='%s' AND channel='%s' AND online='%s'",base64_url_decode($_GET['name']),base64_url_decode($_GET['chan']),$_GET['online']));
+			echo $temp[0];
+		}else{
+			echo 'Bad parameters';
+		}
 	}
-	
-	$curMax = mysql_fetch_array(sql_query("SELECT MAX(`line_number`) FROM `irc_lines`"));
-	echo "addLine('" . $curMax[0] . ":curline');";
-	//Sorunome edit START
-	$curtopic = mysql_fetch_array(sql_query("SELECT * FROM `irc_topics` WHERE `chan`='%s'",strtolower($channel)));
-	echo "addLine('" . $curMax[0] . ":topic:0:" . time() . "::" . base64_url_encode(htmlspecialchars($curtopic["topic"])) . "');";
-	//Sorunome edit END
-	$users = Array();
-	
-	$result = sql_query("SELECT * FROM `irc_users` WHERE `channel`='%s'",$channel);
-	while ($user = mysql_fetch_array($result))
-	{
-		$users[count($users)][0] = strtolower($user['username']);
-		$users[count($users) - 1][1] = $user['username'];
-		$users[count($users) - 1][2] = $user['online'];
-		$users[count($users) - 1][3] = $user['channel'];
-	}
-	
-	asort($users);
-	foreach ($users as $user)
-	{
-		echo "addUser('" . base64_url_encode(htmlspecialchars($user[1])) . ":" . $user[2] . "');";
-	}
-	if (isset($_GET['calc'])) {
-		ob_end_clean();
-		$temp = mysql_fetch_array(sql_query("SELECT MAX(line_number) FROM `irc_lines`"));
-		echo $temp[0];
-	} else
-		ob_end_flush();
 ?>

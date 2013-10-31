@@ -171,6 +171,7 @@ if (strpos($_SERVER['HTTP_USER_AGENT'],"textmode;")===false) {?>
 	<img src="smileys/ninja.gif" alt="Get Ninja'd" title="Get Ninja'd" onclick="replaceText(' :ninja:', document.forms.irc.message); return false;">
 </div>
 <div id="indicator" style="position:absolute;z-index:44;margin:0;padding:0;top:0;right:0;"></div>
+<div id="lastSeenCont" style="display:none;"></div>
 
 <script src="Omnom_Options.js"></script>
 <script src="Omnom_Parser.js"></script>
