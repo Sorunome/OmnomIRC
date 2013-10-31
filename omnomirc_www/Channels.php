@@ -29,7 +29,7 @@
 		header('Content-type: text/javascript');
 		$chanStr = "";
 		foreach ($channels as $chan)
-			if ($chan[1])$chanStr = $chanStr . '"'.base64_url_encode($chan[0]).'",';
+			if ($chan[1])$chanStr = $chanStr . '["'.base64_url_encode($chan[0]).'",false],';
 		$chanStr = substr($chanStr,0,-1);
 		
 		echo "var channels=[";
@@ -38,7 +38,7 @@
 		
 		$exChanStr = "";
 		foreach ($channels as $chan)
-			if (!$chan[1])$exChanStr = $exChanStr . '"'.base64_url_encode($chan[0]).'",';
+			if (!$chan[1])$exChanStr = $exChanStr . '["'.base64_url_encode($chan[0]).'",false],';
 		$exChanStr = substr($exChanStr,0,-1);
 		
 		echo "var exChannels=[";

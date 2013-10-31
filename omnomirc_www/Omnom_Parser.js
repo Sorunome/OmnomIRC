@@ -154,6 +154,12 @@ scrolledDown = true;
 		}
 		if ((type == "message" || type == "action") && parts[4].toLowerCase() != "new" && parts[4].toLowerCase() != "omnom"){
 			parsedMessage = parseHighlight(parsedMessage);
+			if(parent.window.bIsBlurred){
+				if (notifications)
+					showNotification("(" + parts[4] + ") <" + parts[6] + "> " + parts[7]);
+				if (highDing)
+					document.getElementById('ding').play();
+			}
 		}
 		retval = "";
 		displayMessage = true;
@@ -240,7 +246,11 @@ scrolledDown = true;
 							showNotification("(PM) <" + parts[4] + "> " + parts[5]);
 						if (highDing)
 								document.getElementById('ding').play();
-						document.getElementById("*" + parts[4]).style.color="#C22";
+						var i;
+						if((i=chanPos(base64.encode('*'+parts[4])))!=-1){
+							channels[i][1] = true;
+						}
+						drawChannels();
 					}
 				}else{
 					tdMessage.className="message";
@@ -259,7 +269,11 @@ scrolledDown = true;
 							showNotification("* (PM)" + parts[4] + " " + parts[5]);
 						if (highDing)
 								document.getElementById('ding').play();
-						document.getElementById("*" + parts[4]).style.color="#C22";
+						var i;
+						if((i=chanPos(base64.encode('*'+parts[4])))!=-1){
+							channels[i][1] = true;
+						}
+						drawChannels();
 					}
 				}else{ //In the PM window
 					tdMessage.innerHTML = name + " " + parsedMessage;
@@ -269,13 +283,17 @@ scrolledDown = true;
 				return "";
 			break;
 			case "highlight":
-				if (parts[6].toLowerCase() == "new") return "";
+				if (parts[6].toLowerCase() == "new" || parts[6].toLowerCase() == "omnom") return "";
+				var i;
+				if((i=chanPos(base64.encode(parts[4])))!=-1){
+					channels[i][1] = true;
+				}
 				//document.getElementById(parts[4]).style.color="#C22"; //This call will fail if they aren't in the chan. Crude, but effective.
 				if (notifications)
 					showNotification("(" + parts[4] + ") <" + parts[6] + "> " + parts[7]);
 				if (highDing)
 					document.getElementById('ding').play();
-				
+				drawChannels();
 				
 				return "";
 			break;
@@ -640,9 +658,6 @@ scrolledDown = true;
 				document.getElementById('scrollBar').isClicked=false;
 				document.getElementById('scrollArea').style.display="none";
 			};
-			/*scrollBar.onmouseout = function() {
-				document.getElementById('scrollBar').isClicked=false;
-			};*/
 			scrollBar.style.top=String(body.offsetHeight-scrollBar.offsetHeight)+"px";
 			var scrollArea = document.createElement("div");
 			scrollArea.id="scrollArea";
@@ -785,8 +800,8 @@ scrolledDown = true;
 		curLine = 0;
 		UserListArr = Array();
 		userListDiv.innerHTML = "";
-		
-		drawChannels();	
+		channels[getChannelIndex()][1] = false;
+		drawChannels();
 		var body= document.getElementsByTagName('body')[0];
 		var script= document.createElement('script');
 		script.type= 'text/javascript';
@@ -798,13 +813,16 @@ scrolledDown = true;
 	function drawChannels(){
 		var chanText = '';//'<table>';
 		for (i in channels){
-			var chanName = base64.decode(channels[i]);
+			var chanName = base64.decode(channels[i][0]);
 			//partChannel
 			style = "chan";
 			chanText += '<table class="chanList"><td id="' + chanName + '" class="';
 			if (getChannelIndex()==i)
 				style = "curchan";
 			chanText += style;
+			if(channels[i][1]){
+				chanText += '" style="color:#CC2222';
+			}
 			chanText += '">';
 			if (chanName.substr(0,1) != "#")
 				chanText += '<span onclick="partChannel(\'' + chanName + '\')" onmouseover="this.style.color=\'#C73232\';this.style.font-weight=\'bolder\'" onmouseout="this.style.color=\'' + ((getChannelIndex()==i)?'#FFF':'#22C') + '\';this.style.font-weight=\'normal\'">x</span> ';
@@ -824,11 +842,11 @@ scrolledDown = true;
 	}
 	
 	function getChannelEn(){
-		return channels[getChannelIndex()];
+		return channels[getChannelIndex()][0];
 	}
 	
 	function getChannelDe(){
-		return base64.decode(channels[getChannelIndex()]);
+		return base64.decode(channels[getChannelIndex()][0]);
 	}
 	
 	function getChannelIndex(){
@@ -883,7 +901,7 @@ function searchUser(start,startAt){
 			//Check if it already exists or not. If so, try to join it.
 			var count = 0;
 			for (i in channels){
-				if (base64.decode(channels[i]).toLowerCase() == paramaters.toLowerCase()){
+				if (base64.decode(channels[i][0]).toLowerCase() == paramaters.toLowerCase()){
 					selectChannel(count);
 					return;
 				}
@@ -895,7 +913,7 @@ function searchUser(start,startAt){
 				return;
 			}
 			//Valid chan, add to list.
-			channels.push(base64.encode(paramaters));
+			channels.push([base64.encode(paramaters),false]);
 			loadChannels(); //cross-tab stuff
 			saveChannels();
 			drawChannels();
@@ -908,9 +926,9 @@ function searchUser(start,startAt){
 		if (paramaters.substr(0,1) != "*")
 			paramaters = "*" + paramaters;
 		for (i in channels)
-			if (base64.decode(channels[i]).toLowerCase() == paramaters.toLowerCase())
+			if (base64.decode(channels[i][0]).toLowerCase() == paramaters.toLowerCase())
 				return; //PM already opened, don't open another.
-		channels.push(base64.encode(paramaters));
+		channels.push([base64.encode(paramaters),false]);
 		loadChannels(); //cross-tab stuff
 		saveChannels();
 		drawChannels();
@@ -923,7 +941,7 @@ function searchUser(start,startAt){
 		}
 		if(paramaters.substr(0,1) != "#"){
 			for(i in channels){
-				if(base64.decode(channels[i]) == paramaters){
+				if(base64.decode(channels[i][0]) == paramaters){
 					if(getChannelDe() == paramaters){
 						channels.splice(i,1);
 						selectChannel(i-1);
@@ -948,7 +966,7 @@ function searchUser(start,startAt){
 	function parseCommand(message){
 		var command = message.split(" ")[0];
 		var paramaters = message.substr(command.length+1).toLowerCase();
-		switch(command){
+		switch(command.toLowerCase()){
 			case "j":
 			case "join":
 				joinChannel(paramaters);
@@ -975,7 +993,7 @@ function searchUser(start,startAt){
 				return true;
 			case "ponies":
 				var fs=document.createElement("script");fs.onload=function(){Derpy();};fs.src="http://juju2143.ca/mousefly.js";document.head.appendChild(fs);
-				return false;
+				return true;
 			default:
 				return false;
 		}
@@ -988,13 +1006,13 @@ function searchUser(start,startAt){
 // Dynamic Channels Start      *
 //******************************
 
-	function existsInArray(a,v){
-		for(var i=0;i<a.length;i++){
-			if(a[i]==v){
-				return true;
+	function chanPos(c){
+		for(var i=0;i<channels.length;i++){
+			if(channels[i][0]==c){
+				return i;
 			}
 		}
-		return false;
+		return -1;
 	}
 	
 	function loadChannels(){
@@ -1005,8 +1023,8 @@ function searchUser(start,startAt){
 					if (moreChans[i][0] != "#" && moreChans[i] != ""){
 						if (moreChans[i][0] == "^")
 							moreChans[i][0] = "#";
-						if(!existsInArray(channels,moreChans[i]))
-							channels.push(moreChans[i]);
+						if(chanPos(moreChans[i])==-1)
+							channels.push([moreChans[i],false]);
 					}
 				}
 			}
@@ -1016,8 +1034,8 @@ function searchUser(start,startAt){
 	function saveChannels(){
 		var chanList = "";
 		for (i in channels){
-			if (base64.decode(channels[i]).substr(0,1) != "#"){
-				chanList = chanList + channels[i] + "%";
+			if (base64.decode(channels[i][0]).substr(0,1) != "#"){
+				chanList = chanList + channels[i][0] + "%";
 			}
 		}
 		chanList = chanList.substr(0,chanList.length-1);
