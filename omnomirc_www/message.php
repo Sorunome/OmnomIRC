@@ -301,7 +301,7 @@ ip 108.174.51.58
 		sql_query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s','%s')",$nick,$message,$type,$channel,time(),$isOnline);
 	}
 	if ($sendPm) {//sorunome edit START
-		sql_query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s',1)","OmnomIRC",$returnmessage,"server",$nick,time());
+		sql_query("INSERT INTO `irc_lines` (name1,message,type,channel,time,name2,online) VALUES('%s','%s','%s','%s','%s','%s',1)","OmnomIRC",$returnmessage,"server",$nick,time(),$channel);
 	}
 	if ($reload) {
 		sql_query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s',1)","OmnomIRC","THE GAME","reload",$nick,time());

@@ -79,12 +79,13 @@
 		{
 			$res = sql_query("SELECT x.* FROM (
 														SELECT * FROM `irc_lines` 
-														WHERE (`channel` = '%s' OR `channel` = '%s')
-															AND NOT ((`type` = 'join' OR `type` = 'part') AND `Online` = 1)
+														WHERE (`type` != 'server' AND ((`channel` = '%s' OR `channel` = '%s')
+															AND NOT ((`type` = 'join' OR `type` = 'part') AND `Online` = 1)))
+															OR (`type` = 'server' AND channel='%s' AND name2='%s')
 														ORDER BY `line_number` DESC 
 														LIMIT %s
 													) AS x
-													ORDER BY `line_number` ASC",$channel,$nick,$count + 0);
+													ORDER BY `line_number` ASC",$channel,$nick,$nick,$channel,$count + 0);
 		}
 		echo "void('$nick');";
 		while ($result = mysql_fetch_array($res))

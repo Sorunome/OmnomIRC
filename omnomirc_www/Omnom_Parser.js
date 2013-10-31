@@ -559,12 +559,14 @@ scrolledDown = true;
 		getInfo = new XMLHttpRequest();
 		getInfo.onreadystatechange=function(){
 			if(getInfo.readyState==4 && getInfo.status==200){
+				var elem = document.getElementById('lastSeenCont');
 				if(!isNaN(parseInt(getInfo.responseText))){
-					var elem = document.getElementById('lastSeenCont');
 					var d = new Date(parseInt(getInfo.responseText)*1000);
-					elem.innerHTML = 'Last Seen: '+d.toLocaleTimeString();
-					elem.style.display = 'block';
+					elem.innerHTML = 'Last Seen: '+d.toLocaleString();
+				}else{
+					elem.innerHTML = 'Last Seen: never';
 				}
+				elem.style.display = 'block';
 			}
 		}
 		getInfo.open('GET','Load.php?userinfo&name='+nick+'&chan='+chan+'&online='+online,true);
