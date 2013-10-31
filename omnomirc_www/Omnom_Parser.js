@@ -985,31 +985,31 @@ function searchUser(start,startAt){
 		var command = message.split(" ")[0];
 		var paramaters = message.substr(command.length+1).toLowerCase();
 		switch(command.toLowerCase()){
-			case "j":
-			case "join":
+			case 'j':
+			case 'join':
 				joinChannel(paramaters);
 				return true;
-			case "q":
-			case "query":
+			case 'q':
+			case 'query':
 				openPMWindow(paramaters);
 				selectChannel(channels.length-1);
 				return true;
-			case "win":
-			case "w":
-			case "window":
+			case 'win':
+			case 'w':
+			case 'window':
 				if (parseInt(paramaters) > channels.length || parseInt(paramaters) <= 0)
 					sendInternalMessage('<span style="color:#C73232;"> Invalid window selection. Valid options: 1-'+channels.length+'</span>');
 				else
 					selectChannel(parseInt(paramaters)-1);
 				return true;
-			case "p":
-			case "part":
+			case 'p':
+			case 'part':
 				partChannel(paramaters);
 				return true;
-			case "test":
-				sendInternalMessage(Signature);
+			case 'help':
+				sendInternalMessage('<span style="color:#2A8C2A;">For full help go here: <a href="http://ourl.ca/17329" target="_top">http://ourl.ca/17329</a></span>');
 				return true;
-			case "ponies":
+			case 'ponies':
 				var fs=document.createElement("script");fs.onload=function(){Derpy();};fs.src="http://juju2143.ca/mousefly.js";document.head.appendChild(fs);
 				return true;
 			default:
