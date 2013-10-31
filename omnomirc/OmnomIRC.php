@@ -149,7 +149,7 @@ function parseMsg($allMessage,$callingSocket)
 				$message = getMessage($parts,3,true);
 				addLine($info[1],'','part',$message,$channel);
 				userLeave($info[1],$channel);
-				sendLine("PRIVMSG $channel :(#)* $info[1] has left $channel(".getMessage($parts,3,true).")",$callingSocket);
+				sendLine("PRIVMSG $channel :(#)* $info[1] has left $channel(".trim(getMessage($parts,3,true)).")",$callingSocket);
 			break;
 			case "mode":
 				if (!$isChan) break;
@@ -286,7 +286,7 @@ function userQuit($username,$message,$socketToExclude)
 		$pos = array_search($username,$channel);
 		if ($pos)
 		{
-			sendLine("PRIVMSG $chanName :(#)* $username has quit $chanName ($message))",$socketToExclude);
+			sendLine("PRIVMSG $chanName :(#)* $username has quit $chanName (".trim($message).")",$socketToExclude);
 			addLine($username,'',"quit",$message,$chanName);
 			unset($userList[$chanName][$pos]);
 		}
