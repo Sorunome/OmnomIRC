@@ -123,7 +123,14 @@ scrolledDown = true;
 			messageBox.appendChild(row);
 		if (doScroll && scrolledDown)mBoxCont.scrollTop = mBoxCont.scrollHeight + 50;
 	}
-	
+	function makeNotification(m){
+		if(isCurrent()){
+			if (notifications)
+				showNotification(m);
+			if (highDing)
+				document.getElementById('ding').play();
+		}
+	}
 	function parseMessage(message){
 		a = message;
 		var parts = message.split(":");
@@ -143,11 +150,8 @@ scrolledDown = true;
 			parsedMessage = parsedMessage.split("  ").join("&nbsp;&nbsp;");
 			parsedMessage = parsedMessage.split("\t").join("&nbsp;&nbsp;&nbsp;&nbsp;");
 			parsedMessage = parsedMessage.split("&nbsp; ").join("&nbsp;&nbsp;");
-			if (parts[5].toLowerCase().indexOf(userName.toLowerCase().substr(0,4)) >= 0 && hasLoaded && notifications && parts[4].toLowerCase() != "new" && parts[4].toLowerCase() != "omnom"){
-				showNotification("<" + parts[4] + "> " + parts[5]);
-				if (highDing){
-					document.getElementById('ding').play();
-				}
+			if (parts[5].toLowerCase().indexOf(userName.toLowerCase().substr(0,4)) >= 0 && hasLoaded && parts[4].toLowerCase() != "new" && parts[4].toLowerCase() != "omnom"){
+				makeNotification("<" + parts[4] + "> " + parts[5]);
 			}
 		}
 		if ((type == "message" || type == "action") && parts[4].toLowerCase() != "new" && parts[4].toLowerCase() != "omnom"){
@@ -234,10 +238,7 @@ scrolledDown = true;
 					tdName.innerHTML = "(PM)" + name;
 					if (hasLoaded){
 						openPMWindow(parts[4]);
-						if (notifications)
-							showNotification("(PM) <" + parts[4] + "> " + parts[5]);
-						if (highDing)
-								document.getElementById('ding').play();
+						makeNotification("(PM) <" + parts[4] + "> " + parts[5]);
 						var i;
 						if((i=chanPos(base64.encode('*'+parts[4])))!=-1){
 							channels[i][1] = true;
@@ -257,10 +258,7 @@ scrolledDown = true;
 					tdMessage.innerHTML = "(PM)" + name + parsedMessage;
 					if (hasLoaded){
 						openPMWindow(parts[4]);
-						if (notifications)
-							showNotification("* (PM)" + parts[4] + " " + parts[5]);
-						if (highDing)
-								document.getElementById('ding').play();
+						makeNotification("* (PM)" + parts[4] + " " + parts[5]);
 						var i;
 						if((i=chanPos(base64.encode('*'+parts[4])))!=-1){
 							channels[i][1] = true;
@@ -280,10 +278,7 @@ scrolledDown = true;
 				if((i=chanPos(base64.encode(parts[4])))!=-1){
 					channels[i][1] = true;
 				}
-				if (notifications)
-					showNotification("(" + parts[4] + ") <" + parts[6] + "> " + parts[7]);
-				if (highDing)
-					document.getElementById('ding').play();
+				makeNotification("(" + parts[4] + ") <" + parts[6] + "> " + parts[7]);
 				drawChannels();
 				
 				return "";
@@ -484,10 +479,7 @@ scrolledDown = true;
 			if (highBold)
 				style = style + "font-weight:bold;";
 			if(isBlurred() && hasLoaded){
-				if (notifications)
-					showNotification("(" + parts[4] + ") <" + parts[6] + "> " + parts[7]);
-				if (highDing)
-					document.getElementById('ding').play();
+				makeNotification("(" + parts[4] + ") <" + parts[6] + "> " + parts[7]);
 			}
 			return '<span class="highlight" style="' + style + '">' + text + "</span>";
 		}
@@ -608,12 +600,15 @@ scrolledDown = true;
 //******************************
 // Userlist End                *
 //******************************
+
 //******************************
 // Load Start                  *
 //******************************
 	function load(){
 		var body= document.getElementsByTagName('body')[0];
 		cookieLoad();
+		registerFocusHandler();
+		getRandomTabId();
 		lineHigh = getOption(6,"T") == "T";
 		doHigh = false;
 		coloredNames = getOption(3,"F") == "T";
@@ -1062,6 +1057,26 @@ function searchUser(start,startAt){
 //******************************
 
 //******************************
+// Multi-tab Start             *
+//******************************
+
+tabId = '';
+function getRandomTabId(){
+	tabId = Math.random().toString(36);
+	setCookie('OmnomBrowserTab',tabId,1);
+}
+function isCurrent(){
+	if(getCookie('OmnomBrowserTab')==tabId){
+		return true;
+	}
+	return false;
+}
+
+//******************************
+// Multi-tab End               *
+//******************************
+
+//******************************
 // Focus Handler Start         *
 //******************************
 
@@ -1069,14 +1084,13 @@ var focusHandlerRegistered = false;
 bIsBlurred = false;
 function registerFocusHandler(){
 	focusHandlerRegistered = true;
-	window.self.onblur = function(){
-		console.log('blur');
+	window.self.addEventListener('blur',function(){
 		bIsBlurred = true;
-	}
-	window.self.onfocus = function(){
-		console.log('focus');
+	},false);
+	window.self.addEventListener('focus',function(){
+		setCookie('OmnomBrowserTab',tabId,1);
 		bIsBlurred = false;
-	}
+	},false);
 }
 function isBlurred(){
 	if(!focusHandlerRegistered)
