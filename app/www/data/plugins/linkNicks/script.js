@@ -22,18 +22,20 @@ hook('message',function(msg,from,room,origin){
 			before = parseMsg.substring(0,31);
 			after = parseMsg.substring(parseMsg.indexOf("&nbsp;",31));
 		}
-		newHTML = $(fragment())
-			.append(before)
-			.append(
-				$('<a>')
-						.attr('href','http:/'+'/www.omnimaga.org/index.php?action=ezportal;sa=page;p=13&userSearch='+nick)
-						.text(nick)
-			).append(after);
-		$o.event('links',newHTML.html());
-		//$($('#content-list').children().last().children("span").get(1)).html(newHTML);
-		//$($($o.ui.tabs.current().body).children().last().children().get(1)).html(newHTML);
-		//$('#content-list > li:nth-last-child(1) > span:nth-last-child(1)').html(newHTML);
-		$($o.ui.tabs.current().body).children().last().children().slice(1,2)
-			.add('#content-list > li:nth-last-child(1) > span:nth-last-child(1)').html(newHTML);
+		if(nick.indexOf('<a')==-1){
+			newHTML = $(fragment())
+				.append(before)
+				.append(
+					$('<a>')
+							.attr('href','http:/'+'/www.omnimaga.org/index.php?action=ezportal;sa=page;p=13&userSearch='+nick)
+							.text(nick)
+				).append(after);
+			$o.event('links',newHTML.html());
+			//$($('#content-list').children().last().children("span").get(1)).html(newHTML);
+			//$($($o.ui.tabs.current().body).children().last().children().get(1)).html(newHTML);
+			//$('#content-list > li:nth-last-child(1) > span:nth-last-child(1)').html(newHTML);
+			$($o.ui.tabs.current().body).children().last().children().slice(1,2)
+				.add('#content-list > li:nth-last-child(1) > span:nth-last-child(1)').html(newHTML);
+		}
 	}
 });

@@ -1,27 +1,23 @@
-hook("start",function(name){
-	$("#input").keydown(function oldMessagesKeyHandle(e){
-		var oldMessages = [],
-			room = room = $o.ui.tabs.current().name,
-			temp = $.localStorage('oldMessages-'+room);
-		if (temp!=null){
-			oldMessages = temp.split("\n");
-		}
-		if ($('#input').data('oldMessageCounter')==oldMessages.length){
+hook('start',function(name){
+	$('#input').keydown(function oldMessagesKeyHandle(e){
+		var room = $o.ui.tabs.current().name,
+			oldMessages = ($.localStorage('oldMessages-'+room)||[]);
+		if($('#input').data('oldMessageCounter')==oldMessages.length){
 			$('#input').data('currentMessage',$('#input').val());
 		}
-		if (oldMessages.length!=0){
+		if(oldMessages.length!=0){
 			switch(e.which){
 				case 38:
-					if ($('#input').data('oldMessageCounter')!=0){
+					if($('#input').data('oldMessageCounter')!=0){
 						$('#input').data('oldMessageCounter',$('#input').data('oldMessageCounter')-1);
 					}
 					$('#input').val(oldMessages[$('#input').data('oldMessageCounter')]);
 				break;
 				case 40:
-					if ($('#input').data('oldMessageCounter')!=oldMessages.length){
+					if($('#input').data('oldMessageCounter')!=oldMessages.length){
 						$('#input').data('oldMessageCounter',$('#input').data('oldMessageCounter')+1);
 					}
-					if ($('#input').data('oldMessageCounter')==oldMessages.length){
+					if($('#input').data('oldMessageCounter')==oldMessages.length){
 						$('#input').val($('#input').data('currentMessage'));
 					}else{
 						$('#input').val(oldMessages[$('#input').data('oldMessageCounter')]);
@@ -34,39 +30,27 @@ hook("start",function(name){
 		'currentMessage':''
 	});
 });
-hook("tabswitch",function(newT,oldT){
-	var oldMessages = [],
-		room = newT.name,
-		temp = $.localStorage('oldMessages-'+room);
-	if (temp!=null){
-		oldMessages = temp.split("\n");
-	}
+hook('tabswitch',function(newT,oldT){
+	var room = newT.name,
+		oldMessages = ($.localStorage('oldMessages-'+room)||[]);
 	$('#input').data('oldMessageCounter',oldMessages.length);
 });
-hook("load",function(){
-	var oldMessages = [],
-		room = $o.ui.tabs.current().name,
-		temp = $.localStorage('oldMessages-'+room);
-	if (temp!=null){
-		oldMessages = temp.split("\n");
-	}
+hook('load',function(){
+	var room = newT.name,
+		oldMessages = ($.localStorage('oldMessages-'+room)||[]);
 	$('#input').data('oldMessageCounter',oldMessages.length);
 });
-hook("send",function(msg,room){
-	var oldMessages = [],
-		temp = $.localStorage('oldMessages-'+room);
-	if (temp!=null){
-		oldMessages = temp.split("\n");
-	}
+hook('send',function(msg,room){
+	var oldMessages = ($.localStorage('oldMessages-'+room)||[]);
 	oldMessages.push(msg);
 	if (oldMessages.length>20){
 		oldMessages.shift();
 	}
-	$.localStorage('oldMessages-'+room,oldMessages.join("\n"));
+	$.localStorage('oldMessages-'+room,oldMessages);
 	$('#input').data('oldMessageCounter',oldMessages.length);
 	//$o.event('OldMessages','added old message');
 	return true;
 });
-hook("stop",function(name){
+hook('stop',function(name){
 	$('#input').off(oldMessagesKeyHandle);
 });
