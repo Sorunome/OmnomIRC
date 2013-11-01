@@ -14,6 +14,8 @@ $searchNamesUrl = 'http://www.omnimaga.org/index.php?action=ezportal;sa=page;p=1
 $checkLoginUrl = 'http://www.omnimaga.org/checkLogin.php';
 $securityCookie = '__cfduid';
 $curidFilePath = '/run/omnomirc_curid';
+$calcKey = '<random string>';
+$externalStyleSheet = '';
 
 $channels=Array();
 $channels[]=Array('#omnimaga',true);//Default chan, 'cause it's the first in the array.

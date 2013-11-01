@@ -49,7 +49,7 @@ ip 108.174.51.58
 		die('Missing Required Field');
 	if(strlen($_GET['message']) < 4)
 		die('Bad message');
-	if(!(checkSignature($_GET['nick'],$_GET['signature'],true) || (isset($_GET['calc']) && $_GET['passwd']=='ah8re3wieChacieSo7ap')))
+	if(!(checkSignature($_GET['nick'],$_GET['signature'],true) || (isset($_GET['calc']) && $_GET['passwd']==$calcKey)))
 		die('Bad signature');
 	
 	

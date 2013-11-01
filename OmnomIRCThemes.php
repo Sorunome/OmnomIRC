@@ -77,7 +77,8 @@ function echoNewStyle($c1,$c2,$c3){
 	}
 	body,
 	#scrollbar:hover,
-	#scrollbar:active{
+	#scrollbar:active,
+	#UserList:hover{
 		background-color: $c3;
 	}";
 }

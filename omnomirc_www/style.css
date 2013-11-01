@@ -473,14 +473,24 @@ input[type=text] {
 /*    margin-right: -5px; */
 }
 #UserList {
+	position:relative;
+	top:1%;
+	left:0;
+	width:120%;
+	font-family:verdana,sans-serif;
+	overflow-x:hidden;
+	overflow-y:scroll;
     height: calc(100% - 4em);
     background-color: #CAE4FF;
-    left: 0;
-    padding-left: 1em;
+    padding-left: 10%;
     padding-top: 2px;
     border-top: 1px solid #6699FF;
     transition: 1s 1s background-color;
 	cursor:default;
+}
+#UserList:hover {
+	background-color: #DFEFFF;
+	transition: 0.5s 0.25s background-color;
 }
 #UserListContainer {
 	position:absolute;

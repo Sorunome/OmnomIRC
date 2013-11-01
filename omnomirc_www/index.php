@@ -27,7 +27,10 @@ if(strpos($_SERVER['HTTP_USER_AGENT'],'textmode;')===false && !isset($_GET['text
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>OmnomIRC V2</title>
 <link rel="stylesheet" type="text/css" href="style.css" />
-<link rel="stylesheet" type="text/css" href="http://www.omnimaga.org/OmnomIRCThemes.php" />
+<?php
+if($externalStyleSheet!='')
+	echo '<link rel="stylesheet" type="text/css" href="'.$externalStyleSheet.'" />';
+?>
 <script src="config.php?js"></script>
 <script src="btoa.js"></script>
 <script type="text/javascript">
@@ -135,7 +138,7 @@ if(strpos($_SERVER['HTTP_USER_AGENT'],'textmode;')===false && !isset($_GET['text
 		}
 		?>
 	</table></span>
-	<div id="UserList" style="position:relative;left:10%;top:1%;width:120%;font-family:verdana,sans-serif;overflow-x:hidden;overflow-y:scroll;">
+	<div id="UserList">
 	</div>
 	<span class="arrowButtonHoriz3"><div style="width:12px;height:9pt;top:0pt;position:absolute;font-weight:bolder;margin-top:10pt;" class="arrowButtonHoriz2">&#9650;</div>
 	<div style="width:12px;height:9pt;top:0pt;position:absolute;margin-top:10pt;" onmousedown="downInt = setInterval('userListDiv.scrollTop -= 9',50);" onmouseout="clearInterval(downInt);" onmouseup="clearInterval(downInt);"></div></span>
