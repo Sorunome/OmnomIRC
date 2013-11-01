@@ -605,6 +605,7 @@ scrolledDown = true;
 // Load Start                  *
 //******************************
 	function load(){
+		hasLoaded = false;
 		var body= document.getElementsByTagName('body')[0];
 		cookieLoad();
 		registerFocusHandler();
@@ -624,6 +625,7 @@ scrolledDown = true;
 		numCharsHighlight = parseInt(getOption(13,"3"))+1;
 		hideUserlist = getOption(14,"F") == "T";
 		showScrollBar = getOption(15,"T") == "T";
+		enableScrollWheel = getOption(16,'F') == 'T';
 		if(!hideUserlist){
 			var style = document.createElement("style");
 			style.type="text/css";
@@ -700,7 +702,6 @@ scrolledDown = true;
 				mboxCont.style.width=String(((body.offsetWidth/100)*90)-22)+"px";
 			}
 		}
-		hasLoaded = false;
 		if(!showSmileys){
 			document.getElementById('smileyMenuButton').src='smileys/smiley_grey.png';
 			document.getElementById('smileyMenuButton').style.cursor='default';
@@ -709,6 +710,22 @@ scrolledDown = true;
 			mboxCont.appendChild(messageBox);
 			messageBox.innerHTML = '<a href="#" onclick="toggleEnable();">OmnomIRC is disabled. Click here to enable.</a>';
 			return false;
+		}
+		if(enableScrollWheel){
+			var mousewheelevt=(/Firefox/i.test(navigator.userAgent))?'DOMMouseScroll':'mousewheel';
+			mBoxCont.addEventListener(mousewheelevt,function(e){
+				if(e.preventDefault){
+					e.preventDefault();
+				}
+				scrolledDown = false;
+				mBoxCont.scrollTop = Math.min(mBoxCont.scrollHeight-mBoxCont.clientHeight,Math.max(0,mBoxCont.scrollTop-(/Firefox/i.test(navigator.userAgent)?(e.detail*(-20)):e.wheelDelta)));
+				if(mBoxCont.scrollTop==(mBoxCont.scrollHeight-mBoxCont.clientHeight)){
+					scrolledDown = true;
+				}
+				if(showScrollBar){
+					document.getElementById('scrollBar').style.top=((mBoxCont.scrollTop/(mBoxCont.scrollHeight-mBoxCont.clientHeight))*(body.offsetHeight-scrollBar.offsetHeight-38)+38).toString()+'px';
+				}
+			},false);
 		}
 		doLineHigh=true;
 		

@@ -83,6 +83,7 @@ Options:
 13 - highlight number chars
 14 - hide userlist
 15 - show scrollbar
+16 - enable main-window scrolling
 -->
 <body>
 <table>
@@ -124,13 +125,15 @@ for (var i=0;i<10;i++) {
 </select>
 </td></tr><tr><td>
 Show Scrollbar:</td><td><script type="text/javascript"> document.write(getHTMLToggle(getOption(15,"T") == "T", "Yes", "No", "setOption(15,\'T\');", "setOption(15,\'F\');"));</script>
-</td>
+</td><td>
+Enable Scrollwheel:</td><td><script type="text/javascript"> document.write(getHTMLToggle(getOption(16,"F") == "T", "Yes", "No", "setOption(16,\'T\');", "setOption(16,\'F\');"));</script>
+</td></tr>
 <script type="text/javascript">
 if (window.webkitNotifications != undefined && window.webkitNotifications != null && window.webkitNotifications)
 {
-	document.write("<td style='padding-left:10px;border-right:none;'>Chrome Notifications:</td><td style='border-right:1px solid;'>");
+	document.write("<tr><td>Chrome Notifications:</td><td style='border-right:1px solid;'>");
 	document.write(getHTMLToggle(getOption(7,"F") == "T","Yes","No","setAllowNotification();","setOption(7,'F')"));
-	document.write("</td>");
+	document.write("</td></tr>");
 }
 </script>
 </tr>
