@@ -29,6 +29,7 @@ tabCount = 0;
 startPos = 0;
 endPos = 0;
 endPosO = 0;
+tabAppendStr = ' ';
 	function keyHandler(e){
 		if (getCurrentWord() == "")
 			return true;
@@ -56,29 +57,32 @@ endPosO = 0;
 		endPos = message.selectionStart;
 		
 		startChar = message.value.charAt(startPos);
-		while (startChar != " " && --startPos > 0)
+		while (startChar != ' ' && --startPos > 0)
 			startChar = message.value.charAt(startPos);
-		if (startChar == " ") startPos++;
+		if (startChar == ' ') startPos++;
 		endChar = message.value.charAt(endPos);
-		while (endChar != " " && ++endPos <= message.value.length)
+		while (endChar != ' ' && ++endPos <= message.value.length)
 			endChar = message.value.charAt(endPos);
 		endPosO = endPos;		
 		return message.value.substr(startPos,endPos - startPos).trim();
 	}
 	function getTabComplete(){
 		if(!isInTab){
+			tabAppendStr = ' ';
 			startPos = message.selectionStart;
-			
+			if(startPos==1){
+				tabAppendStr = ': ';
+			}
 			startChar = message.value.charAt(startPos);
-			while (startChar != " " && --startPos > 0)
+			while(startChar != ' ' && --startPos > 0)
 				startChar = message.value.charAt(startPos);
-			if (startChar == " ") startChar+=2;
+			if(startChar == ' ') startChar+=2;
 			
 			endPos = message.selectionStart;
 			endChar = message.value.charAt(endPos);
-			while (endChar != " " && ++endPos <= message.value.length)
+			while (endChar != ' ' && ++endPos <= message.value.length)
 				endChar = message.value.charAt(endPos);
-			if (endChar == " ") endChar-=2;
+			if (endChar == ' ') endChar-=2;
 		}
 		name = searchUser(getCurrentWord(),tabCount);
 		if (name == getCurrentWord()){
@@ -86,6 +90,6 @@ endPosO = 0;
 			name = searchUser(getCurrentWord(),tabCount);
 		}
 			
-		message.value = message.value.substr(0,startPos) + name + message.value.substr(endPos + 1);
-		endPos = endPosO + name.length;
+		message.value = message.value.substr(0,startPos)+name+tabAppendStr+message.value.substr(endPos+1);
+		endPos = endPosO+name.length;
 	}
