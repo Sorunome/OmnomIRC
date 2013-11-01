@@ -1062,7 +1062,7 @@ function searchUser(start,startAt){
 
 tabId = '';
 function getRandomTabId(){
-	tabId = Math.random().toString(36);
+	tabId = Math.random().toString(36)+(new Date()).getTime().toString();
 	setCookie('OmnomBrowserTab',tabId,1);
 }
 function isCurrent(){

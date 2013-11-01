@@ -37,7 +37,7 @@ $hotlinks[]=Array(
 );
 $hotlinks[]=Array(
 	'inner' => 'Options',
-	'href' => 'Options.html'
+	'href' => '?options'
 );
 $hotlinks[]=Array(
 	'inner' => 'About',

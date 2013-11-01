@@ -1,8 +1,4 @@
 <?php
-include_once(realpath(dirname(__FILE__)).'/config.php');
-if(strpos($_SERVER['HTTP_USER_AGENT'],'textmode;')===false && !isset($_GET['textmode'])){
-?>
-<!--
 /*
     OmnomIRC COPYRIGHT 2010,2011 Netham45
 
@@ -21,7 +17,133 @@ if(strpos($_SERVER['HTTP_USER_AGENT'],'textmode;')===false && !isset($_GET['text
     You should have received a copy of the GNU General Public License
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
-!-->
+include_once(realpath(dirname(__FILE__)).'/config.php');
+if(strpos($_SERVER['HTTP_USER_AGENT'],'textmode;')!==false || isset($_GET['textmode'])){
+	if(isset($_COOKIE[$securityCookie]))
+		header('Location: '.$checkLoginUrl.'?textmode&sid='.urlencode(htmlspecialchars(str_replace(";","%^%",$_COOKIE[$securityCookie]))));
+	else
+		header('Location: '.$checkLoginUrl.'?textmode');
+}elseif(isset($_GET['options'])){
+?>
+<html>
+<head>
+<title>OmnomIRC Options</title>
+<link rel="stylesheet" type="text/css" href="style.css" />
+<?php
+if($externalStyleSheet!='')
+	echo '<link rel="stylesheet" type="text/css" href="'.$externalStyleSheet.'" />';
+?>
+<script src="Omnom_Options.js"></script>
+<style type="text/css">
+body,td,tr,pre,table{
+	font-size: 13px;font-family:verdana,sans-serif;line-height:17px;
+}
+td
+{
+	width:auto;
+	height:20px;
+	white-space: inherit;
+	word-wrap: inherit;
+}
+table
+{
+	height:auto;
+}
+tr td:nth-child(4) {
+	padding-left:10px;
+}
+tr td:nth-child(2) {
+	border-right:1px solid;
+}
+tr td:nth-child(5) {
+	border-right:1px solid;
+}
+</style>
+<script type="text/javascript">
+function warning(){
+	alert("-READ THIS-\nNot all extra channels are owned and controlled by Omnimaga. We cannot be held liable for the content of them.\n\nBy using them, you agree to be governed by the rules inside them.\n\nOmnimaga rules still apply for OmnomIRC communication.");
+	setOption(9,'T');
+}
+</script>
+</head>
+<!--
+Options:
+1 - highlight bold
+2 - highlight red
+3 - color names
+4 - currentChannel
+5 - enabled
+6 - alternating line highlight
+7 - enable chrome notifications
+8 - ding on highlight
+9 - show extra channels
+10 - show timestamps
+11 - show updates in status bar
+12 - show smileys
+13 - highlight number chars
+14 - hide userlist
+15 - show scrollbar
+-->
+<body>
+<table>
+<tr><td>
+Highlight Bold:</td><td> <script type="text/javascript"> document.write(getHTMLToggle(getOption(1,"T") == "T", "Yes", "No", "setOption(1,\'T\');", "setOption(1,\'F\');"));</script>
+</td><td>
+Highlight Red:</td><td> <script type="text/javascript"> document.write(getHTMLToggle(getOption(2,"T") == "T", "Yes", "No", "setOption(2,\'T\');", "setOption(2,\'F\');"));</script>
+</td></tr><tr><td>
+Colored Names:</td><td> <script type="text/javascript"> document.write(getHTMLToggle(getOption(3,"F") == "T", "Yes", "No", "setOption(3,\'T\');", "setOption(3,\'F\');"));</script>
+</td><td>
+Show extra Channels:</td><td> <script type="text/javascript"> document.write(getHTMLToggle(getOption(9,"F") == "T", "Yes", "No", "warning();", "setOption(9,\'F\');"));</script>
+</td></tr><tr><td>
+Alternating Line Highlight:</td><td> <script type="text/javascript"> document.write(getHTMLToggle(getOption(6,"T") == "T", "Yes", "No", "setOption(6,\'T\');", "setOption(6,\'F\');"));</script>
+</td><td>
+Enabled:</td><td> <script type="text/javascript"> document.write(getHTMLToggle(getOption(5,"T") == "T", "Yes", "No", "setOption(5,\'T\');", "setOption(5,\'F\');"));</script>
+</td></tr><tr><td>
+Ding on Highlight:</td><td><script type="text/javascript"> document.write(getHTMLToggle(getOption(8,"F") == "T", "Yes", "No", "setOption(8,\'T\');", "setOption(8,\'F\');"));</script>
+</td><td>
+Show Timestamps:</td><td><script type="text/javascript"> document.write(getHTMLToggle(getOption(10,"F") == "T", "Yes", "No", "setOption(10,\'T\');", "setOption(10,\'F\');"));</script>
+</td></tr><tr><td>
+Show Updates in Browser Status Bar:</td><td><script type="text/javascript"> document.write(getHTMLToggle(getOption(11,"T") == "T", "Yes", "No", "setOption(11,\'T\');", "setOption(11,\'F\');"));</script>
+</td><td>
+Show smileys:</td><td><script type="text/javascript"> document.write(getHTMLToggle(getOption(12,"T") == "T", "Yes", "No", "setOption(12,\'T\');", "setOption(12,\'F\');"));</script>
+</td></tr><tr><td>
+Hide Userlist:</td><td><script type="text/javascript"> document.write(getHTMLToggle(getOption(14,"F") == "T", "Yes", "No", "setOption(14,\'T\');", "setOption(14,\'F\');"));</script>
+</td><td>
+Number chars for Highlighting:
+</td><td colspan="2" style="border-right:none;">
+<select onchange="setOption(13,this.value);">
+<script type="text/javascript">
+var currentOption = getOption(13,"3");
+for (var i=0;i<10;i++) {
+	if  (parseInt(currentOption)==i)
+		document.write("<option selected='selected' value='"+i.toString()+"'>"+(i+1).toString()+"</option>");
+	else
+		document.write("<option value='"+i.toString()+"'>"+(i+1).toString()+"</option>");
+}
+</script>
+</select>
+</td></tr><tr><td>
+Show Scrollbar:</td><td><script type="text/javascript"> document.write(getHTMLToggle(getOption(15,"T") == "T", "Yes", "No", "setOption(15,\'T\');", "setOption(15,\'F\');"));</script>
+</td>
+<script type="text/javascript">
+if (window.webkitNotifications != undefined && window.webkitNotifications != null && window.webkitNotifications)
+{
+	document.write("<td style='padding-left:10px;border-right:none;'>Chrome Notifications:</td><td style='border-right:1px solid;'>");
+	document.write(getHTMLToggle(getOption(7,"F") == "T","Yes","No","setAllowNotification();","setOption(7,'F')"));
+	document.write("</td>");
+}
+</script>
+</tr>
+</table>
+<a href="#" onclick="clearCookies()">Clear Cookies</a>
+<br/><br/>
+<br/><br/>
+<div style="top:100%;margin-top:-33pt;position:absolute;"><a href="index.php"><span style="font-size:30pt;">&#8592;</span><span style="font-size:18pt;top:-3pt;position:relative;">Back<span></a></div>
+</body>
+</html>
+<?php
+}else{
+?>
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -223,10 +345,5 @@ if($externalStyleSheet!='')
 </body>
 </html>
 <?php
-}else{
-	if(isset($_COOKIE[$securityCookie]))
-		header('Location: '.$checkLoginUrl.'?textmode&sid='.urlencode(htmlspecialchars(str_replace(";","%^%",$_COOKIE[$securityCookie]))));
-	else
-		header('Location: '.$checkLoginUrl.'?textmode');
 }
 ?>
