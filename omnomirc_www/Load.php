@@ -100,7 +100,7 @@
 					case 'server':
 					case 'part':
 					case "topic":
-						echo $lineBeginning.base64_url_encode(htmlspecialchars($result['message']));
+						echo $lineBeginning.base64_url_encode(htmlspecialchars(trim($result['message'])));
 						break;
 					case 'nick':
 						echo $lineBeginning.base64_url_encode(htmlspecialchars($result['name2']));

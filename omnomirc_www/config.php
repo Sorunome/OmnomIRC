@@ -1,8 +1,8 @@
 <?php
 
-include_once(realpath(dirname(__FILE__)).'/Source/userlist.php');
 include_once(realpath(dirname(__FILE__)).'/Source/sql.php');
 include_once(realpath(dirname(__FILE__)).'/Source/sign.php');
+include_once(realpath(dirname(__FILE__)).'/Source/userlist.php');
 include_once(realpath(dirname(__FILE__)).'/Source/cachefix.php');
 $sql_server = 'localhost';
 $sql_db = 'sql-db';

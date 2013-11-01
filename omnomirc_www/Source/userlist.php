@@ -1,19 +1,16 @@
 <?PHP
 	function UpdateUser($nick,$channel,$online){
 		if($channel[0]=='*')
-			return; //PMs have no userlist.
-		$result = sql_query("SELECT * FROM `irc_users` WHERE `username` = '%s' AND `channel` = '%s' AND `online` = 1",$nick,$channel);
+			return;
+		$result = sql_query("SELECT time FROM `irc_users` WHERE `username` = '%s' AND `channel` = '%s' AND `online` = 1",$nick,$channel);
 		if (mysql_num_rows($result)){ //Update
 			sql_query("UPDATE `irc_users` SET `time`='%s' WHERE `username` = '%s' AND `channel` = '%s' AND `online` = 1",time(),$nick,$channel);
 			$row = mysql_fetch_array($result);
 			if ($row['time'] < strtotime('-1 minute')) //First time they joined in a minute.
 				notifyJoin($nick,$channel);
-		}elseif(defined($nick)){ //Insert
-			$tempSql = mysql_fetch_array(sql_query("SELECT * FROM irc_users WHERE username='%s' AND channel='%s' AND online='1'",$nick,$channel));
-			if(!isset($tempSql['username']) || $tempSql['username']==NULL){
-				sql_query("INSERT INTO `irc_users` (`username`,`channel`,`time`,`online`) VALUES('%s','%s','%s',1)",$nick,$channel,time());
-				notifyJoin($nick,$channel);
-			}
+		}else{ //Insert
+			sql_query("INSERT INTO `irc_users` (`username`,`channel`,`time`,`online`) VALUES('%s','%s','%s',1)",$nick,$channel,time());
+			notifyJoin($nick,$channel);
 		}
 	}
 	
