@@ -21,12 +21,18 @@
 //Here's the config for the bot.
 $documentRoot = "/var/www/omnomirc.www.omnimaga.org";
 
-$IRCBOT=true;
 include($documentRoot."/config.php");
 
 $pings = Array();
 
-include($documentRoot."/Channels.php");
+$chanStr = '';
+foreach ($exChans as $chan)
+	$channels[] = $chan;
+foreach ($channels as $chan)
+	$chanStr = $chanStr .$chan[0].',';
+
+
+$chanStr = substr($chanStr,0,-1);
 
 $sockets = Array();
 
@@ -35,72 +41,47 @@ $userList = Array();
 $fragment = false;
 $fragLine = "";
 
-function sql_query()
-{
-	global $sqlConnection,$sql_server,$sql_user,$sql_password,$sql_db;
-	$sqlConnection = mysql_pconnect($sql_server,$sql_user,$sql_password);
-	if (!$sqlConnection) 
-		die("Could not connect to SQL DB.\n");
-	if (!mysql_select_db($sql_db,$sqlConnection)) die('Invalid query: ' . mysql_error());
-	$params = func_get_args();
-	$query = $params[0];
-	$args = Array();
-	for ($i=1;$i<count($params);$i++)
-		$args[$i-1] = mysql_real_escape_string(str_replace("\r","",str_replace("\n","",$params[$i])),$sqlConnection);
-	$result = mysql_query(vsprintf($query,$args),$sqlConnection);
-	if (!$result) 
-		echo "\n\nSQL ERROR!" . mysql_error() . "Query: " . vsprintf($query,$args). "\n\n\n";
-	return $result;
-}
 
-function sendLine($line,$socketToMatch,$exclude = true)
-{
+function sendLine($line,$socketToMatch,$exclude = true){
 	global $sockets;
 	$line = trim($line) . "\n";
-	if ($exclude)
-	{
-		if (!isset($socketToMatch))
+	if($exclude){
+		if(!isset($socketToMatch))
 			$socketToMatch="None";
 		
-		foreach ($sockets as $socket)
-			if ($socket != $socketToMatch)
+		foreach($sockets as $socket)
+			if($socket != $socketToMatch)
 				socket_write($socket,$line);
-	}
-	else
-	{
+	}else{
 		socket_write($socketToMatch,$line);
 	}
 	echo "<<" . $line;
 }
 
-function getMessage($parts,$start,$trim)
-{
+function getMessage($parts,$start,$trim){
 	if($trim)
 		$message = substr($parts[$start++],1);
-	for ($i = $start; $i < count($parts);$i++)
+	for($i = $start; $i < count($parts);$i++)
 		$message = $message . " " . $parts[$i];
 	
 	//$message = trim($message);
 	return $message;
 }
 
-function parseMsg($allMessage,$callingSocket)
-{
+function parseMsg($allMessage,$callingSocket){
 
-	global $socket,$hasIdent,$ident,$chanStr,$userList,$fragment,$fragLine,$botPasswd,$topicBotNick;
-	for ($i=0;$i<count($sockets);$i++)
-				if ($sockets[i] == $callingSocket)
+	global $socket,$hasIdent,$ircBot_ident,$chanStr,$userList,$fragment,$fragLine,$ircBot_botPasswd,$ircBot_topicBotNick;
+	for($i=0;$i<count($sockets);$i++)
+				if($sockets[i] == $callingSocket)
 					$pings[i] = time();
-	if ($fragment)
-	{
+	if ($fragment){
 		$allMessage = $fragLine . $allMessage;
 		$fragment = false;
 	}
 		
 	$lines = explode("\n",$allMessage);
 	
-	if (substr($allMessage,-1) != "\n")
-	{
+	if (substr($allMessage,-1) != "\n"){
 		$fragment = true;
 		$fragLine = $lines[count($lines) - 1];
 		unset($lines[count($lines) - 1]);
@@ -111,12 +92,12 @@ function parseMsg($allMessage,$callingSocket)
 		preg_match("/:(.*)!(.*)@(.*)/",$parts[0],$info);
 		$channel = strtolower($parts[2]);
 		$isChan = (substr($channel,0,1)=="#");
-		if (strtolower($parts[0]) == "ping"){
+		if(strtolower($parts[0]) == "ping"){
 			sendLine("PONG " . trim($parts[1]) . "\n");
 		}
 		switch(strtolower($parts[1])){
 			case "privmsg":
-				if($parts[3] == ":DOTHIS".$botPasswd) sendLine(getMessage($parts,4,false));
+				if($parts[3] == ":DOTHIS".$ircBot_botPasswd) sendLine(getMessage($parts,4,false));
 				if($parts[3] == ":PRINTUSERLIST") print_r($userList);
 				if($parts[3] == ":UPDATEUSERLIST") updateUserList();
 				if($parts[3] == ":UPDATECHANS"){
@@ -127,10 +108,10 @@ function parseMsg($allMessage,$callingSocket)
 					sendLine("JOIN $chanStr\n");
 					updateUserList();
 				}
-				if (!$isChan) break;
+				if(!$isChan) break;
 				
 				$message = getMessage($parts,3,true);
-				if (preg_match("/^ACTION (.*)/",$message,$messageA)){
+				if(preg_match("/^ACTION (.*)/",$message,$messageA)){
 					addLine($info[1],'','action',$messageA[1],$channel);
 					sendLine("PRIVMSG $channel :(#)6* $info[1] $messageA[1]",$callingSocket); //Send to other servers
 				}else{
@@ -168,9 +149,9 @@ function parseMsg($allMessage,$callingSocket)
 			break;
 			case "topic":
 				$message = getMessage($parts,3,true);
-				if ($info[1]!="OmnomIRC" && $info[1]!=$topicBotNick) {
+				if($info[1]!="OmnomIRC" && $info[1]!=$ircBot_topicBotNick){
 					addLine($info[1],'',"topic",$message,$channel);
-					sendLine("PRIVMSG $topicBotNick : $channel $message\n",$callingSocket);
+					sendLine("PRIVMSG $ircBot_topicBotNick : $channel $message\n",$callingSocket);
 					sendLine("PRIVMSG $channel :(#)3* ".$info[1]." has changed the topic to ".$message,$callingSocket);
 				}
 			break;
@@ -186,15 +167,14 @@ function parseMsg($allMessage,$callingSocket)
 				userJoin($parts[7],$parts[3]);
 			break;
 			case "451":
-				$ident = "PASS none\nUSER OmnomIRC OmnomIRC OmnomIRC :OmnomIRC\nNICK OmnomIRC\n";
-				sendLine($ident,$callingSocket,false);
+				$ircBot_ident = "PASS none\nUSER OmnomIRC OmnomIRC OmnomIRC :OmnomIRC\nNICK OmnomIRC\n";
+				sendLine($ircBot_ident,$callingSocket,false);
 			break;
 		}
 	}
 }
 
-function addLine($name1,$name2,$type,$message,$channel)
-{
+function addLine($name1,$name2,$type,$message,$channel){
 	global $socket,$curidFilePath;
 	$curPosArr = mysql_fetch_array(sql_query("SELECT MAX('line_number') FROM `irc_lines`"));
 	$curPos =  $curPosArr[0]+ 1;
@@ -212,13 +192,11 @@ function addLine($name1,$name2,$type,$message,$channel)
 	file_put_contents($curidFilePath,$temp[0]);
 }
 
-function processMessages()
-{
-	global $topicBotNick;
+function processMessages(){
+	global $ircBot_topicBotNick;
 	$res = sql_query("SELECT * FROM irc_outgoing_messages");
 	$lastline = 0;
-	while ($row = mysql_fetch_array($res)) 
-	{
+	while($row = mysql_fetch_array($res)) {
 		$colorAdding="12(O)";
 		if ($row['fromSource']=='1')
 			$colorAdding="7(C)";
@@ -234,7 +212,7 @@ function processMessages()
 			break;
 		case "topic":
 			sendLine("PRIVMSG $row[channel] :$colorAdding3* ".$row['nick']." has changed the topic to ".$row['message']);
-			sendLine("PRIVMSG $topicBotNick : $row[channel] ".$row['message']);
+			sendLine("PRIVMSG $ircBot_topicBotNick : $row[channel] ".$row['message']);
 			break;
 		case "mode":
 			sendLine("PRIVMSG $row[channel] :$colorAdding3* ".$row['nick']." set $row[channel] mode ".$row['message']);
@@ -249,8 +227,7 @@ function processMessages()
 }
 
 
-function updateUserList($socket)
-{
+function updateUserList($socket){
 	global $channels;
 	clearUserList();
 	foreach($channels as $chan)
@@ -260,32 +237,26 @@ function updateUserList($socket)
 			sendLine("who $chan[0]"); //Spam who's! \o/
 }
 
-function clearUserList()
-{
+function clearUserList(){
 	global $userList;
 	$userList=array();
 	sql_query("DELETE FROM `irc_users`");
 }
 
-function userLeave($username,$channel)
-{
+function userLeave($username,$channel){
 	global $userList;
 	$pos = array_search($username,$userList[$channel]);
-	if ($pos)
-	{
+	if($pos){
 		unset($userList[$channel][$pos]);
 	}
 	sql_query("DELETE FROM `irc_users` WHERE `username` = '%s' AND `channel` = '%s' AND online='0'",$username,$channel);
 }
 
-function userQuit($username,$message,$socketToExclude)
-{
+function userQuit($username,$message,$socketToExclude){
 	global $userList;
-	foreach($userList as $chanName => $channel)
-	{
+	foreach($userList as $chanName => $channel){
 		$pos = array_search($username,$channel);
-		if ($pos)
-		{
+		if($pos){
 			sendLine("PRIVMSG $chanName :(#)* $username has quit $chanName (".trim($message).")",$socketToExclude);
 			addLine($username,'',"quit",$message,$chanName);
 			unset($userList[$chanName][$pos]);
@@ -294,8 +265,7 @@ function userQuit($username,$message,$socketToExclude)
 	addLine($username,'',"quit",$message,'');
 	sql_query("DELETE FROM `irc_users` WHERE `username` = '%s' AND online='0'",$username);
 }
-function userNick($oldNick,$newNick,$socketToExclude)
-{
+function userNick($oldNick,$newNick,$socketToExclude){
 	global $userList;
 	foreach($userList as $chanName => $channel){
 		$pos = array_search($oldNick,$channel);
@@ -310,23 +280,21 @@ function userNick($oldNick,$newNick,$socketToExclude)
 	sql_query("UPDATE `irc_users` SET `username`='%s' WHERE `username`='%s'",$newNick, $oldNick);
 }
 
-function userJoin($username,$channel)
-{
+function userJoin($username,$channel){
 	global $userList;
 	$channel = str_replace(':', '', $channel);
-	if (!isset($userList[$channel])) $userList[$channel] = Array();
+	if(!isset($userList[$channel])) $userList[$channel] = Array();
 	array_push($userList[$channel], $username);
 	$tempSql = mysql_fetch_array(sql_query("SELECT * FROM irc_users WHERE username='%s' AND channel='%s' AND online='0'",$username,$channel));
-	if ($tempSql["username"]==NULL)
+	if($tempSql["username"]==NULL)
 		sql_query("INSERT INTO `irc_users` (`username`,`channel`) VALUES('%s','%s')",$username,$channel);
 }
 
 
 	error_reporting(0);
-	foreach ($servers as $server)
-	{
+	foreach($ircBot_servers as $server){
 		$sockets[] = $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
-		if (!socket_connect($socket,$server[0],$server[1]))
+		if(!socket_connect($socket,$server[0],$server[1]))
 			die("Could not connect. Error: " . socket_last_error());
 		socket_set_nonblock($socket);
 	}
@@ -335,29 +303,23 @@ function userJoin($username,$channel)
 	sql_query("DELETE FROM `irc_users`");
 	sleep(8);
 	
-	sendLine($ident[0],$sockets[0],false);
-	sendLine($ident[1],$sockets[1],false);
+	sendLine($ircBot_ident[0],$sockets[0],false);
+	sendLine($ircBot_ident[1],$sockets[1],false);
 	$connected = true;
-	while ($connected)
-	{		
-		foreach ($sockets as $socket)
-		{
-			if ($recBuf = socket_read($socket,1024))
-			{
+	while($connected){
+		foreach($sockets as $socket){
+			if($recBuf = socket_read($socket,1024)){
 				echo ">>" . $recBuf;
 				parseMsg($recBuf,$socket);
 			}
 			$errorcode = socket_last_error();
 			socket_clear_error();
-			if (!$recBuf && $errorcode == 0)
-			{
+			if(!$recBuf && $errorcode == 0){
 				die("Connection lost!\n");
 			}
 		}
-		foreach ($pings as $ping)
-		{
-			if ((time() - $ping) > 180)
-			{
+		foreach($pings as $ping){
+			if((time() - $ping) > 180){
 				sendLine("quit :Local ping timeout -- I am restarting");
 				die("Ping timeout!\n");
 			}
@@ -365,6 +327,6 @@ function userJoin($username,$channel)
 		processMessages();
 		usleep(2000);
 	}
-	foreach ($sockets as $socket) //Close all sockets on close
+	foreach($sockets as $socket) //Close all sockets on close
 		socket_close($socket);
 ?>

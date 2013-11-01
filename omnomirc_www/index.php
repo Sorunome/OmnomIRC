@@ -1,6 +1,7 @@
 <?php
-include_once('config.php');
-if (strpos($_SERVER['HTTP_USER_AGENT'],"textmode;")===false) {?>
+include_once(realpath(dirname(__FILE__)).'/config.php');
+if(strpos($_SERVER['HTTP_USER_AGENT'],'textmode;')===false && !isset($_GET['textmode'])){
+?>
 <!--
 /*
     OmnomIRC COPYRIGHT 2010,2011 Netham45
@@ -112,7 +113,28 @@ if (strpos($_SERVER['HTTP_USER_AGENT'],"textmode;")===false) {?>
 	<div style="font-size:12pt;width:12px;height:9pt;bottom:9pt;position:absolute;margin-top:-10pt;margin-left:-10pt;" onmousedown="upIntM = setInterval('document.getElementById(\'mboxCont\').scrollTop += 9;if (mBoxCont.scrollTop+mBoxCont.clientHeight==mBoxCont.scrollHeight)scrolledDown=true;',50);" onmouseout="clearInterval(upIntM);" onmouseup="clearInterval(upIntM);"></div></span>
 
 <div id="UserListContainer">
-	<span style="left:10%;position:relative;font-size:6pt;"><table id="hotlinks"><tr><td><a href="http://www.omnimaga.org/OmnomIRC_Full.html" target="_TOP">Full View</a></td><td><a id="toggle" href="#" onclick="toggleEnable();">Toggle</a></td></tr><tr><td><a href="Options.html" accesskey="o" alt="OmnomIRC Options" title="OmnomIRC Options">Options</a></td><td><a alt="About OmnomIRC" onclick="if (document.getElementById('about').style.display=='none'){document.getElementById('about').style.display='';}else{document.getElementById('about').style.display='none';}">About</a></td></tr><tr><td><a href="http://ourl.ca/logs" target="_blank" alt="Logs">Logs</a></td></tr></table></span>
+	<span style="left:10%;position:relative;font-size:6pt;"><table id="hotlinks">
+		<?php
+		$i = true;
+		foreach($hotlinks as $link){
+			if($i){
+				echo '<tr>';
+			}
+			echo '<td><a ';
+			foreach($link as $key => $value)
+				if($key!='inner')
+					echo $key.'="'.$value.'" ';
+			echo '>'.$link['inner'].'</a></td>';
+			if(!$i){
+				echo '</tr>';
+			}
+			$i = !$i;
+		}
+		if(!$i){
+			echo '</tr>';
+		}
+		?>
+	</table></span>
 	<div id="UserList" style="position:relative;left:10%;top:1%;width:120%;font-family:verdana,sans-serif;overflow-x:hidden;overflow-y:scroll;">
 	</div>
 	<span class="arrowButtonHoriz3"><div style="width:12px;height:9pt;top:0pt;position:absolute;font-weight:bolder;margin-top:10pt;" class="arrowButtonHoriz2">&#9650;</div>
@@ -191,14 +213,14 @@ if (strpos($_SERVER['HTTP_USER_AGENT'],"textmode;")===false) {?>
 	var body= document.getElementsByTagName('body')[0];
 	var script= document.createElement('script');
 	script.type= 'text/javascript';
-	script.src=CHECKLOGINURL+<?php if(isset($_COOKIE[$securityCookie])) echo '"?sid='.urlencode(htmlspecialchars(str_replace(";","%^%",$_COOKIE[$securityCookie]))).'";'."\n"; ?>;
+	script.src=<?php if(isset($_COOKIE[$securityCookie])) echo '"'.$checkLoginUrl.'?sid='.urlencode(htmlspecialchars(str_replace(";","%^%",$_COOKIE[$securityCookie]))).'";'."\n"; ?>
 	body.appendChild(script);
 </script>
 <audio id="ding" src="beep.wav" hidden></audio>
 </body>
 </html>
 <?php
-} else {
+}else{
 	if(isset($_COOKIE[$securityCookie]))
 		header('Location: '.$checkLoginUrl.'?textmode&sid='.urlencode(htmlspecialchars(str_replace(";","%^%",$_COOKIE[$securityCookie]))));
 	else

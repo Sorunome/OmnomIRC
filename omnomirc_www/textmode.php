@@ -5,9 +5,7 @@ session_start();
 
 ini_set('display_errors', '0');
 //include("Source/cachefix.php"); //This must be the first line in every file.
-include("Source/sql.php");
-include("Source/sign.php");
-include("Source/userlist.php");
+include_once(realpath(dirname(__FILE__)).'/config.php');
 $count = "25";
 $channel = $defaultChan;
 $nick = "0";

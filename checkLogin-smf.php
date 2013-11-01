@@ -1,26 +1,27 @@
 <?PHP
 $encriptKeyToUse = "key from Config.php (created while installation)";
+$checkCookie = '__cfduid';
 function base64_url_encode($input) {
-	return strtr(base64_encode($input), '+/=', '-_,');
+	return strtr(base64_encode($input),'+/=','-_,');
 }
 
-function base64_url_decode($input) {
-	return base64_decode(strtr($input, '-_,', '+/=')); 
+function base64_url_decode($input){
+	return base64_decode(strtr($input,'-_,','+/=')); 
 }
 $ssi_guest_access = true;
-@require(dirname(__FILE__) . '/SSI.php');
+@require(dirname(__FILE__).'/SSI.php');
 
 
 ob_start();
-if(!isset($_GET['op'])) {
+if(!isset($_GET['op'])){
 	if(isset($_GET['txt']))
 		header('Content-type: text/plain');
-	elseif (!isset($_GET['textmode']))
+	elseif(!isset($_GET['textmode']))
 		header('Content-type: text/javascript');
-	if ($user_info['is_guest'] || is_not_banned() || (isset($_GET['sid']) && htmlspecialchars(str_replace(";","%^%",$_COOKIE['__cfduid']))!=$_GET['sid']) || !isset($_GET['sid'])) {
+	if($user_info['is_guest'] || is_not_banned() || (isset($_GET['sid']) && htmlspecialchars(str_replace(";","%^%",$_COOKIE[$checkCookie]))!=$_GET['sid']) || !isset($_GET['sid'])) {
 		$nick = "Guest";
 		$signature = "";
-	} else {
+	}else{
 		$nick = $user_info['name'];
 		$signature = base64_url_encode(mcrypt_encrypt ( MCRYPT_RIJNDAEL_256 , $encriptKeyToUse , $nick , MCRYPT_MODE_ECB));
 	}
@@ -33,9 +34,9 @@ if(isset($_GET['op'])) {
 	loadMemberData($id, false, 'normal');
 	loadMemberData($id);
 	loadMemberContext($id);
-	if (base64_decode(strtr($_GET['nick'], '-_,', '+/='))==$memberContext[$id]['name'])
+	if(base64_decode(strtr($_GET['nick'],'-_,','+/='))==$memberContext[$id]['name'])
 		echo $memberContext[$id]['group'];
-} else {
+}else{
 	if(isset($_GET['txt']))
 		echo $signature."\n".$nick."\n".$context['user']['id'];
 	elseif (isset($_GET['textmode']))

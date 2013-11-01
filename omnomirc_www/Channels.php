@@ -17,45 +17,27 @@
     You should have received a copy of the GNU General Public License
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
-	include("/path/to/Source/sign.php");
-	//Set the channels here.
-	//$channels[]=Array("#channel",AlwaysShow);
-	//$channels = Array();
-	//$channels[] = Array("#omnimaga",true);
+	include_once(realpath(dirname(__FILE__)).'/config.php');
 	
-	if (!isset($IRCBOT))
-	{
-		//Output for Javascript.
-		header('Content-type: text/javascript');
-		$chanStr = "";
-		foreach ($channels as $chan)
-			if ($chan[1])$chanStr = $chanStr . '["'.base64_url_encode($chan[0]).'",false],';
-		$chanStr = substr($chanStr,0,-1);
-		
-		echo "var channels=[";
-		echo $chanStr;
-		echo "];";
-		
-		$exChanStr = "";
-		foreach ($channels as $chan)
-			if (!$chan[1])$exChanStr = $exChanStr . '["'.base64_url_encode($chan[0]).'",false],';
-		$exChanStr = substr($exChanStr,0,-1);
-		
-		echo "var exChannels=[";
-		echo $exChanStr;
-		echo "];";
-	}
-	else
-	{
-		//Output for PHP
-		$chanStr = "";
-		foreach ($exChans as $chan)
-			$channels[] = $chan;
-		foreach ($channels as $chan)
-			$chanStr = $chanStr .$chan[0].',';
-		
-		$chanStr = substr($chanStr,0,-1);
-	}
+	//Output for Javascript.
+	header('Content-type: text/javascript');
+	$chanStr = '';
+	foreach ($channels as $chan)
+		if ($chan[1])$chanStr = $chanStr . '["'.base64_url_encode($chan[0]).'",false],';
+	$chanStr = substr($chanStr,0,-1);
+	
+	echo 'var channels=[';
+	echo $chanStr;
+	echo '];';
+	
+	$exChanStr = "";
+	foreach ($channels as $chan)
+		if (!$chan[1])$exChanStr = $exChanStr . '["'.base64_url_encode($chan[0]).'",false],';
+	$exChanStr = substr($exChanStr,0,-1);
+	
+	echo 'var exChannels=[';
+	echo $exChanStr;
+	echo '];';
 ?>
 
 

@@ -25,45 +25,40 @@ ip 108.174.51.58
 //set_error_handler("error_function");
 //error_reporting(-1);
 
-	include("Source/cachefix.php"); //This must be the first line in every file.
-	include("Source/sql.php");
-	include("Source/sign.php");
+	include_once(realpath(dirname(__FILE__)).'/Source/cachefix.php'); //This must be the first line in every file.
+	include_once(realpath(dirname(__FILE__)).'/config.php');
 	
-	function getUserstuffQuery($nick) {
-		$userSql = mysql_fetch_array(sql_query("SELECT * FROM `irc_userstuff` WHERE name='%s'",strtolower($nick)));
-		if ($userSql["name"]==NULL) {
-			sql_query("INSERT INTO `irc_userstuff` (name) VALUES('%s')",strtolower($nick));
-			$userSql = mysql_fetch_array(sql_query("SELECT * FROM `irc_userstuff` WHERE name='%s'",strtolower($nick)));
-		}
-		return $userSql;
-	}
-	function isOp() {
+	function isOp(){
 		global $opGroups,$checkLoginUrl;
 		
-		$returnPosition = file_get_contents($checkLoginUrl."?op&u=".$_GET['id']."&nick=".$_GET['nick']);
+		$returnPosition = file_get_contents($checkLoginUrl.'?op&u='.$_GET['id'].'&nick='.$_GET['nick']);
 		$returnPosition = substr($returnPosition,3,strlen($returnPosition));
 		if (in_array($returnPosition,$opGroups))
 			return true;
 		$userSql = getUserstuffQuery(html_entity_decode(base64_url_decode($_GET['nick'])));
-		if (strpos($userSql["ops"],base64_url_decode($_GET['channel'])."\n")!==false)
+		if (strpos($userSql['ops'],base64_url_decode($_GET['channel'])."\n")!==false)
 			return true;
-		if ($userSql["globalOp"]==1)
+		if ($userSql['globalOp']==1)
 			return true;
 		return false;
 	}
-	function removeLinebrakes($s) {
-		return str_replace("\0","",str_replace("\r","",str_replace("\n","",$s)));
+	function removeLinebrakes($s){
+		return str_replace("\0",'',str_replace("\r",'',str_replace("\n",'',$s)));
 	}
-	if (!isset($_GET['signature']) || !isset($_GET['nick']) || !isset($_GET['message']) || !isset($_GET['channel']) || !isset($_GET['id'])) die("Missing Required Field");
-	if (strlen($_GET['message']) < 4) die("Bad message");
-	if (!(checkSignature($_GET['nick'],$_GET['signature'],true) || (isset($_GET['calc']) && $_GET['passwd']=='ah8re3wieChacieSo7ap'))) die("Bad signature");
+	if(!isset($_GET['signature']) || !isset($_GET['nick']) || !isset($_GET['message']) || !isset($_GET['channel']) || !isset($_GET['id']))
+		die('Missing Required Field');
+	if(strlen($_GET['message']) < 4)
+		die('Bad message');
+	if(!(checkSignature($_GET['nick'],$_GET['signature'],true) || (isset($_GET['calc']) && $_GET['passwd']=='ah8re3wieChacieSo7ap')))
+		die('Bad signature');
 	
 	
-	$message = removeLinebrakes(base64_url_decode(str_replace(" ","+",$_GET['message'])));
-	$type = "message";
-	$message = str_replace(array("\r", "\r\n", "\n"), ' ', $message);
+	$message = removeLinebrakes(base64_url_decode(str_replace(' ','+',$_GET['message'])));
+	$type = 'message';
+	$message = str_replace(array("\r","\r\n","\n"),' ',$message);
 	$parts = explode(" ",$message);
-	if (strlen($message) <= 0) die("Bad message");
+	if(strlen($message) <= 0)
+		die('Bad message');
 	$nick = html_entity_decode(removeLinebrakes(base64_url_decode($_GET['nick'])));
 	$channel = base64_url_decode($_GET['channel']);
 	$pm = false;
@@ -71,208 +66,212 @@ ip 108.174.51.58
 	$reload = false;
 	$sendPm = false;
 	$userSql = getUserstuffQuery($nick);
-		if (strpos($userSql["bans"],base64_url_decode($_GET['channel'])."\n")!==false)
-			die("banned");
+		if(strpos($userSql['bans'],base64_url_decode($_GET['channel'])."\n")!==false)
+			die('banned');
 	
-	if (substr($parts[0],0,1)=="/") {
-		if (isset($_GET['calc']) && ($parts[0]!="/me" || substr($parts[0],0,2)=="//")) die("Sorry calculator, you can only do /me messages");
+	if(substr($parts[0],0,1)=='/') {
+		if(isset($_GET['calc']) && ($parts[0]!='/me' || substr($parts[0],0,2)=='//'))
+			die('Sorry calculator, you can only do /me messages');
 		switch(strtolower(substr($parts[0],1))) {
-			case "me":
-				$type = "action";
-				$message = preg_replace("/\/me/i","",$message,1);
+			case 'me':
+				$type = 'action';
+				$message = preg_replace('/\/me/i','',$message,1);
 				break;
-			case "msg":
-			case "pm":
+			case 'msg':
+			case 'pm':
 				$pm=true;
 				$channel = $parts[1];
-				$message = "";
+				$message = '';
 				unset($parts[0]);
 				unset($parts[1]);
-				$message = implode(" ",$parts);
-				$type = "pm";
+				$message = implode(' ',$parts);
+				$type = 'pm';
 				break;
-			case "ignore":
+			case 'ignore':
 				unset($parts[0]);
 				$ignoreuser = strtolower(implode(" ",$parts));
 				$returnmessage = "";
 				$sendNormal = false;
 				$sendPm = true;
 				$userSql = getUserstuffQuery($nick);
-				if (strpos($userSql["ignores"],$ignoreuser."\n")===false) {
-					$userSql["ignores"].=$ignoreuser."\n";
+				if(strpos($userSql['ignores'],$ignoreuser."\n")===false){
+					$userSql['ignores'].=$ignoreuser."\n";
 					sql_query("UPDATE `irc_userstuff` SET ignores='%s' WHERE name='%s'",$userSql["ignores"],strtolower($nick));
 					$returnmessage = "\x033Now ignoring $ignoreuser.";
 					$reload = true;
-				} else {
+				}else{
 					$returnmessage = "\x034ERROR: couldn't ignore $ignoreuser: already ignoring.";
 				}
 				break;
-			case "unignore":
+			case 'unignore':
 				unset($parts[0]);
-				$ignoreuser = strtolower(implode(" ",$parts));
-				$returnmessage = "";
+				$ignoreuser = strtolower(implode(' ',$parts));
+				$returnmessage = '';
 				$sendNormal = false;
 				$sendPm = true;
 				$userSql = getUserstuffQuery($nick);
-				$allIgnoreUsers = explode("\n","\n".$userSql["ignores"]);
+				$allIgnoreUsers = explode("\n","\n".$userSql['ignores']);
 				$unignored = false;
-				for ($i;$i<sizeof($allIgnoreUsers);$i++) {
-					echo $allIgnoreUsers[$i]." ".$ignoreuser."\n";
-					if ($allIgnoreUsers[$i]==$ignoreuser) {
+				for($i;$i<sizeof($allIgnoreUsers);$i++){
+					echo $allIgnoreUsers[$i].' '.$ignoreuser."\n";
+					if($allIgnoreUsers[$i]==$ignoreuser){
 						$unignored = true;
 						unset($allIgnoreUsers[$i]);
 					}
 				}
 				unset($allIgnoreUsers[0]); //whitespace bug
-				$userSql["ignores"] = implode("\n",$allIgnoreUsers);
-				if ($ignoreuser=="*") {$userSql["ignores"]="";$unignored=true;} //unignore all
-				if ($unignored) {
+				$userSql['ignores'] = implode("\n",$allIgnoreUsers);
+				if($ignoreuser=='*'){
+					$userSql['ignores']='';
+					$unignored=true;
+				}
+				if($unignored){
 					$returnmessage = "\x033You are not more ignoring $ignoreuser";
-					if ($ignoreuser=="*") $returnmessage = "\x033You are no longer ignoring anybody.";
+					if($ignoreuser=='*')
+						$returnmessage = "\x033You are no longer ignoring anybody.";
 					mysql_fetch_array(sql_query("UPDATE `irc_userstuff` SET ignores='%s' WHERE name='%s'",$userSql["ignores"],strtolower($nick)));
 					$reload = true;
-				} else {
+				}else{
 					$returnmessage = "\x034ERROR: You weren't ignoring $ignoreuser";
 				}
 				break;
-			case "ignorelist":
-				$returnmessage = "";
+			case 'ignorelist':
+				$returnmessage = '';
 				$sendNormal = false;
 				$sendPm = true;
 				$userSql = getUserstuffQuery($nick);
 				$returnmessage = "\x033Ignored users: ".str_replace("\n",",",$userSql["ignores"]);
 				break;
-			case "position":
-				$returnmessage = "";
+			case 'position':
+				$returnmessage = '';
 				$sendNormal = false;
 				$sendPm = true;
-				if (isOp())
+				if(isOp())
 					$returnmessage = "You are op and thus you just lost \x02THE GAME\x02";
 				else
 					$returnmessage = "You aren't op";
 				break;
-			case "topic":
+			case 'topic':
 				$sendNormal = false;
-				if (isOp()) {
+				if(isOp()){
 					unset($parts[0]);
-					$newTopic = implode(" ",$parts);
+					$newTopic = implode(' ',$parts);
 					$temp = mysql_fetch_array(sql_query("SELECT * FROM `irc_topics` WHERE chan='%s'",strtolower($channel)));
-					if ($temp["chan"]==NULL) {
+					if($temp['chan']==NULL){
 						sql_query("INSERT INTO `irc_topics` (chan,topic) VALUES('%s','')",strtolower($channel));
 					}
 					sql_query("UPDATE `irc_topics` SET topic='%s' WHERE chan='%s'",$newTopic,strtolower($channel));
 					sql_query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES('%s','%s','%s','%s','%s','%s')",$newTopic,$nick,$channel,'0','0','topic');
 					sql_query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s','%s')",$nick,$newTopic,"topic",$channel,time(),'1');
-				} else {
+				}else{
 					$returnmessage = "You aren't op";
 					$sendPm = true;
 				}
 				break;
-			case "op":
+			case 'op':
 				$sendNormal = false;
-				if (isOp()) {
+				if(isOp()){
 					unset($parts[0]);
-					$userToOp = implode(" ",$parts);
+					$userToOp = implode(' ',$parts);
 					$userSql = getUserstuffQuery($userToOp);
-					if (strpos($userSql["ops"],$channel."\n")===false) {
-						$userSql["ops"].=$channel."\n";
+					if (strpos($userSql['ops'],$channel."\n")===false) {
+						$userSql['ops'].=$channel."\n";
 						sql_query("UPDATE `irc_userstuff` SET ops='%s' WHERE name='%s'",$userSql["ops"],strtolower($userToOp));
 						sql_query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES('%s','%s','%s','%s','%s','%s')","+o $userToOp",$nick,$channel,'0','0','mode');
 						sql_query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s','%s')",$nick,"+o $userToOp","mode",$channel,time(),'1');
-					} else {
+					}else{
 						$returnmessage = "\x034ERROR: couldn't op $userToOp: already op.";
 					}
-				} else {
+				}else{
 					$returnmessage = "You aren't op";
 					$sendPm = true;
 				}
 				break;
-			case "deop":
+			case 'deop':
 				$sendNormal = false;
-				if (isOp()) {
+				if(isOp()){
 					unset($parts[0]);
 					$userToOp = implode(" ",$parts);
 					$userSql = getUserstuffQuery($userToOp);
-					$allOpChans = explode("\n","\n".$userSql["ops"]);
+					$allOpChans = explode("\n","\n".$userSql['ops']);
 					$deoped = false;
-					for ($i;$i<sizeof($allOpChans);$i++) {
+					for($i;$i<sizeof($allOpChans);$i++){
 						echo $allOpChans[$i]." ".$channel."\n";
-						if ($allOpChans[$i]==$channel) {
+						if ($allOpChans[$i]==$channel){
 							$deoped = true;
 							unset($allOpChans[$i]);
 						}
 					}
 					unset($allOpChans[0]); //whitespace bug
-					$userSql["ops"] = implode("\n",$allOpChans);
-					if ($deoped) {
+					$userSql['ops'] = implode("\n",$allOpChans);
+					if($deoped){
 						sql_query("UPDATE `irc_userstuff` SET ops='%s' WHERE name='%s'",$userSql["ops"],strtolower($userToOp));
 						sql_query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES('%s','%s','%s','%s','%s','%s')","-o $userToOp",$nick,$channel,'0','0','mode');
 						sql_query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s','%s')",$nick,"-o $userToOp","mode",$channel,time(),'1');
-					} else {
+					}else{
 						$returnmessage = "\x034ERROR: couldn't deop $userToOp: no op.";
 						$sendPm = true;
 					}
-				} else {
+				}else{
 					$returnmessage = "You aren't op";
 					$sendPm = true;
 				}
 				break;
-			case "ban":
+			case 'ban':
 				$sendNormal = false;
-				if (isOp()) {
+				if(isOp()){
 					unset($parts[0]);
-					$userToOp = implode(" ",$parts);
+					$userToOp = implode(' ',$parts);
 					$userSql = getUserstuffQuery($userToOp);
-					if (strpos($userSql["bans"],$channel."\n")===false) {
-						$userSql["bans"].=$channel."\n";
+					if(strpos($userSql['bans'],$channel."\n")===false){
+						$userSql['bans'].=$channel."\n";
 						sql_query("UPDATE `irc_userstuff` SET bans='%s' WHERE name='%s'",$userSql["bans"],strtolower($userToOp));
 						sql_query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES('%s','%s','%s','%s','%s','%s')","+b $userToOp",$nick,$channel,'0','0','mode');
 						sql_query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s','%s')",$nick,"+b $userToOp","mode",$channel,time(),'1');
-					} else {
+					}else{
 						$returnmessage = "\x034ERROR: couldn't ban $userToOp: already banned.";
 					}
-				} else {
+				}else{
 					$returnmessage = "You aren't op";
 					$sendPm = true;
 				}
 				break;
-			case "deban":
-			case "unban":
+			case 'deban':
+			case 'unban':
 				$sendNormal = false;
-				if (isOp()) {
+				if(isOp()){
 					unset($parts[0]);
-					$userToOp = implode(" ",$parts);
+					$userToOp = implode(' ',$parts);
 					$userSql = getUserstuffQuery($userToOp);
-					$allOpChans = explode("\n","\n".$userSql["bans"]);
+					$allOpChans = explode("\n","\n".$userSql['bans']);
 					$deoped = false;
-					for ($i;$i<sizeof($allOpChans);$i++) {
-						echo $allOpChans[$i]." ".$channel."\n";
-						if ($allOpChans[$i]==$channel) {
+					for($i;$i<sizeof($allOpChans);$i++){
+						echo $allOpChans[$i].' '.$channel."\n";
+						if($allOpChans[$i]==$channel){
 							$deoped = true;
 							unset($allOpChans[$i]);
 						}
 					}
 					unset($allOpChans[0]); //whitespace bug
-					$userSql["bans"] = implode("\n",$allOpChans);
-					if ($deoped) {
+					$userSql['bans'] = implode("\n",$allOpChans);
+					if($deoped){
 						sql_query("UPDATE `irc_userstuff` SET bans='%s' WHERE name='%s'",$userSql["bans"],strtolower($userToOp));
 						sql_query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES('%s','%s','%s','%s','%s','%s')","-b $userToOp",$nick,$channel,'0','0','mode');
 						sql_query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s','%s')",$nick,"-b $userToOp","mode",$channel,time(),'1');
-					} else {
+					}else{
 						$returnmessage = "\x034ERROR: couldn't deban $userToOp: no ban.";
 						$sendPm = true;
 					}
-				} else {
+				}else{
 					$returnmessage = "You aren't op";
 					$sendPm = true;
 				}
 				break;
 			
 			default:
-				if (substr($parts[0],0,2)=="//")
+				if(substr($parts[0],0,2)=='//')
 					$message=substr($message,1);
-				else {
-					$returnmessage = "";
+				else{
 					$sendNormal = false;
 					$sendPm = true;
 					$returnmessage = "\x02ERROR:\x02 Invalid command.";
@@ -280,19 +279,18 @@ ip 108.174.51.58
 				break;
 		}
 	}
-	if ($channel[0] == "*") //PM
-	{
-		if($type=="action")
-			$type = "pmaction";
+	if($channel[0] == '*'){ //PM
+		if($type=='action')
+			$type = 'pmaction';
 		else
-			$type = "pm";
+			$type = 'pm';
 		$channel = substr($channel,1);
 	}
 	
-	if ($sendNormal) {//sorunome edit
+	if($sendNormal){
 		$fromSource='0';
 		$isOnline='1';
-		if (isset($_GET['calc'])){
+		if(isset($_GET['calc'])){
 			$fromSource='1';
 			$isOnline='2';
 		}
@@ -300,19 +298,17 @@ ip 108.174.51.58
 		sql_query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES('%s','%s','%s','%s','%s','%s')",$message,$nick,$channel,($type=="action")?'1':'0',$fromSource,"msg");
 		sql_query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s','%s')",$nick,$message,$type,$channel,time(),$isOnline);
 	}
-	if ($sendPm) {//sorunome edit START
+	if($sendPm){
 		sql_query("INSERT INTO `irc_lines` (name1,message,type,channel,time,name2,online) VALUES('%s','%s','%s','%s','%s','%s',1)","OmnomIRC",$returnmessage,"server",$nick,time(),$channel);
 	}
-	if ($reload) {
+	if($reload){
 		sql_query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s',1)","OmnomIRC","THE GAME","reload",$nick,time());
 	}
-	if (isset($_GET['textmode'])) {
+	if(isset($_GET['textmode'])){
 		session_start();
 		echo "<html><head><meta http-equiv=\"refresh\" content=\"1;url=textmode.php?update=".$_SESSION['curline']."\"></head><body>Sending message...</body></html>";
-	} else {
+	}else{
 		$temp = mysql_fetch_array(sql_query("SELECT MAX(line_number) FROM irc_lines"));
-		//var_dump($temp[0]);
 		file_put_contents($curidFilePath,$temp[0]);
 	}
-	//sorunome edit END
 ?>
