@@ -19,7 +19,14 @@
 */
 	include_once(realpath(dirname(__FILE__)).'/Source/cachefix.php'); //This must be the first line in every file.
 	include_once(realpath(dirname(__FILE__)).'/config.php');
-	
+	function doUserUpdate(){
+		global $defaultChan,$nick,$channel;
+		if(isset($_GET['calc']))
+			UpdateUser('OmnomIRC',$defaultChan,'2');
+		elseif($nick != '0')
+			UpdateUser($nick,$channel,'1');
+		CleanOfflineUsers();
+	}
 	
 	$curLine = $_GET['lineNum'];
 	$channel = $defaultChan;
@@ -53,24 +60,17 @@
 		$pm = true;
 	}
 	$countBeforeQuit = 0;
+	doUserUpdate();
 	while(true){
 		if($countBeforeQuit++ == 50){//Timeout after 25 seconds.
-			if(isset($_GET['calc']))
-				UpdateUser('OmnomIRC',$defaultChan,'2');
-			elseif($nick != '0')
-				UpdateUser($nick,$channel,'1');
-			CleanOfflineUsers();
+			doUserUpdate();
 			die();
 		}
 		if(file_get_contents($curidFilePath)<=$curLine) {
 			usleep(500000);
 			continue;
 		}
-		if(isset($_GET['calc']))
-			UpdateUser('OmnomIRC',$defaultChan,'2');
-		elseif($nick != '0')
-			UpdateUser($nick,$channel,'1');
-		CleanOfflineUsers();
+		doUserUpdate();
 		if(!isset($_GET['calc']) and $nick!='0')
 			$query = sql_query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND (((`channel` = '%s' OR `channel` = '%s' OR (`channel` = '%s' AND `name1` = '%s')) AND `type`!='server') OR (`type` = 'server' AND channel='%s' AND name2='%s'))",$curLine + 0,$channel,$nick,$pm?$sender:"0",$nick,$nick,$channel);
 		else
