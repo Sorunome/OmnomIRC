@@ -1116,7 +1116,7 @@ function startStatusBarUpdate(){
 function doStatusBarUpdate(){
 	window.status=statusTxt;
 	if (parent)
-		parent.window.status=statusTxt;
+		try{parent.window.status=statusTxt;}catch(e){}
 }
 
 function changeStatusBarText(msg){
