@@ -128,14 +128,8 @@ Show Scrollbar:</td><td><script type="text/javascript"> document.write(getHTMLTo
 </td><td>
 Enable Scrollwheel:</td><td><script type="text/javascript"> document.write(getHTMLToggle(getOption(16,"F") == "T", "Yes", "No", "setOption(16,\'T\');", "setOption(16,\'F\');"));</script>
 </td></tr>
-<script type="text/javascript">
-if (window.webkitNotifications != undefined && window.webkitNotifications != null && window.webkitNotifications)
-{
-	document.write("<tr><td>Chrome Notifications:</td><td style='border-right:1px solid;'>");
-	document.write(getHTMLToggle(getOption(7,"F") == "T","Yes","No","setAllowNotification();","setOption(7,'F')"));
-	document.write("</td></tr>");
-}
-</script>
+<tr><td>Browser Notifications:</td><td style="border-right:1px solid;"><script type="text/javascript">document.write(getHTMLToggle(getOption(7,"F") == "T","Yes","No","setAllowNotification();","setOption(7,'F')"));</script>
+</td></tr>
 </tr>
 </table>
 <a href="#" onclick="clearCookies()">Clear Cookies</a>

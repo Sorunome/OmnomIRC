@@ -84,26 +84,41 @@
 //******************************
 
 //******************************
-// Chrome Notification Start   *
+// Browser Notification Start   *
 //******************************
 
 	function showNotification(message){
-		if (window.webkitNotifications == undefined || window.webkitNotifications == null || !window.webkitNotifications)
-			return 0;
-		if (window.webkitNotifications.checkPermission() != 0)
-			return 0;
-		var n
-		n = window.webkitNotifications.createNotification('http://www.omnimaga.org/favicon.ico', 'OmnomIRC Highlight', message);
-		n.show();
+		if(window.webkitNotifications!=undefined && window.webkitNotifications!=null && window.webkitNotifications && window.webkitNotifications.checkPermission() == 0){
+			var n = window.webkitNotifications.createNotification('http://www.omnimaga.org/favicon.ico', 'OmnomIRC Highlight', message);
+			n.show();
+		}else if(Notification!=undefined && Notification!=null && Notification && Notification.permission==='granted'){
+			var n = new Notification('OmnomIRC Highlight',{
+				icon:'http://www.omnimaga.org/favicon.ico',
+				body:message
+			});
+			n.onshow = function(){ 
+				setTimeout(n.close,30000); 
+			}
+		}
 	}
 	
 	function setAllowNotification(){
-		if (window.webkitNotifications == undefined || window.webkitNotifications == null || !window.webkitNotifications){
-			alert("This feature only works in chrome.");
-			return;
+		if (window.webkitNotifications!=undefined && window.webkitNotifications!=null && window.webkitNotifications){
+			window.webkitNotifications.requestPermission(permissionGranted);
+		}else if(typeof Notification!=='undefined' && Notification && Notification.permission!=='denied'){
+			Notification.requestPermission(function(status){
+				if (Notification.permission !== status){
+					Notification.permission = status;
+				}
+				if(status==='granted'){
+					showNotification('Notifications Enabled!');
+					setOption(7,'T');
+					window.location.refresh(true);
+				}
+			});
+		}else{
+			alert('Your browser doesn\'t support notifications');
 		}
-		window.webkitNotifications.requestPermission(permissionGranted);
-			
 	}
 	
 	function permissionGranted(){
@@ -114,5 +129,5 @@
 		}
 	}
 //******************************
-// Chrome Notification End     *
+// Browser Notification End     *
 //******************************
