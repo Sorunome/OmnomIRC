@@ -718,7 +718,7 @@ scrolledDown = true;
 					e.preventDefault();
 				}
 				scrolledDown = false;
-				mBoxCont.scrollTop = Math.min(mBoxCont.scrollHeight-mBoxCont.clientHeight,Math.max(0,mBoxCont.scrollTop-(/Firefox/i.test(navigator.userAgent)?(e.detail*(-20)):e.wheelDelta)));
+				mBoxCont.scrollTop = Math.min(mBoxCont.scrollHeight-mBoxCont.clientHeight,Math.max(0,mBoxCont.scrollTop-(/Firefox/i.test(navigator.userAgent)?(e.detail*(-20)):(e.wheelDelta/2))));
 				if(mBoxCont.scrollTop==(mBoxCont.scrollHeight-mBoxCont.clientHeight)){
 					scrolledDown = true;
 				}
@@ -727,6 +727,16 @@ scrolledDown = true;
 				}
 			},false);
 		}
+		// mouse wheel for userList
+		var mousewheelevtusrl=(/Firefox/i.test(navigator.userAgent))?'DOMMouseScroll':'mousewheel';
+		document.getElementById('UserList').style.top='0px';
+		document.getElementById('UserList').addEventListener(mousewheelevtusrl,function(e){
+			if(e.preventDefault){
+				e.preventDefault();
+			}
+			var elem = document.getElementById('UserList');
+			elem.style.top = Math.min(0,Math.max(((/Opera/i.test(navigator.userAgent))?-30:0)+document.getElementById('UserListInnerCont').clientHeight-elem.scrollHeight,parseInt(elem.style.top)+(/Firefox/i.test(navigator.userAgent)?(e.detail*(-20)):(e.wheelDelta/2)))).toString()+'px';
+		},false);
 		doLineHigh=true;
 		
 		var chanScr= document.createElement('script');

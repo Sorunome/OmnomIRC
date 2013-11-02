@@ -61,6 +61,8 @@
 	margin:0;
 }
 #hotlinks {
+	margin-left:10%;
+	font-size:6pt;
 	width:85px;
 }
 
@@ -472,25 +474,35 @@ input[type=text] {
     margin-top: 3px;
 /*    margin-right: -5px; */
 }
-#UserList {
+#UserListInnerCont {
 	position:relative;
 	top:1%;
 	left:0;
-	width:120%;
+	width:100%;
+	height:100%;
 	font-family:verdana,sans-serif;
 	overflow-x:hidden;
-	overflow-y:scroll;
+	overflow-y:hidden;
     height: calc(100% - 4em);
     background-color: #CAE4FF;
-    padding-left: 10%;
-    padding-top: 2px;
     border-top: 1px solid #6699FF;
     transition: 1s 1s background-color;
 	cursor:default;
+	padding:0;
 }
-#UserList:hover {
+#UserListInnerCont:hover {
 	background-color: #DFEFFF;
 	transition: 0.5s 0.25s background-color;
+}
+#UserList {
+	position:relative;
+	overflow:hidden;
+	width:100%;
+	left:0;
+	top:0;
+	margin:0;
+    padding-left: 10%;
+    padding-top: 2px;
 }
 #UserListContainer {
 	position:absolute;

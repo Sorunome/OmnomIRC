@@ -187,7 +187,7 @@ if($externalStyleSheet!='')
 			newHeight = window.innerHeight - (msg.clientHeight + 14) + "px";
 			winbg2.style.height = newHeight;
 
-			messageBox.style.height = winbg2.clientHeight - offset + "px";
+			//messageBox.style.height = winbg2.clientHeight - offset + "px";
 			mBoxCont.style.height = winbg2.clientHeight - offset + "px";
 			mBoxCont.scrollTop = mBoxCont.scrollHeight;
 			//msg.style.width = mBoxCont.clientWidth - send.clientWidth - "39" + "px";
@@ -200,7 +200,7 @@ if($externalStyleSheet!='')
 			msg = document.getElementById("message");
 			send = document.getElementById("send");
 			winbg2.style.height = page.clientHeight - msg.clientHeight - offset + "px";
-			messageBox.style.height = winbg2.clientHeight - offset + "px";
+			//messageBox.style.height = winbg2.clientHeight - offset + "px";
 			mBoxCont.style.height = winbg2.clientHeight - offset + "px";
 			mBoxCont.scrollTop = mBoxCont.scrollHeight;
 			//msg.style.width = mBoxCont.clientWidth - send.clientWidth - "39" + "px";
@@ -241,7 +241,7 @@ if($externalStyleSheet!='')
 	<div style="font-size:12pt;width:12px;height:9pt;bottom:9pt;position:absolute;margin-top:-10pt;margin-left:-10pt;" onmousedown="upIntM = setInterval('document.getElementById(\'mboxCont\').scrollTop += 9;if (mBoxCont.scrollTop+mBoxCont.clientHeight==mBoxCont.scrollHeight)scrolledDown=true;',50);" onmouseout="clearInterval(upIntM);" onmouseup="clearInterval(upIntM);"></div></span>
 
 <div id="UserListContainer">
-	<span style="left:10%;position:relative;font-size:6pt;"><table id="hotlinks">
+	<table id="hotlinks">
 		<?php
 		$i = true;
 		foreach($hotlinks as $link){
@@ -262,9 +262,8 @@ if($externalStyleSheet!='')
 			echo '</tr>';
 		}
 		?>
-	</table></span>
-	<div id="UserList">
-	</div>
+	</table>
+	<div id="UserListInnerCont"><div id="UserList"></div></div>
 	<span class="arrowButtonHoriz3"><div style="width:12px;height:9pt;top:0pt;position:absolute;font-weight:bolder;margin-top:10pt;" class="arrowButtonHoriz2">&#9650;</div>
 	<div style="width:12px;height:9pt;top:0pt;position:absolute;margin-top:10pt;" onmousedown="downInt = setInterval('userListDiv.scrollTop -= 9',50);" onmouseout="clearInterval(downInt);" onmouseup="clearInterval(downInt);"></div></span>
 	<span class="arrowButtonHoriz3"><div style="width:12px;height:9pt;top:100%;position:absolute;margin-top:-10pt;font-weight:bolder;" class="arrowButtonHoriz2">&#9660;</div>
