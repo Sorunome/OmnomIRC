@@ -104,7 +104,13 @@
 	
 	function setAllowNotification(){
 		if (window.webkitNotifications!=undefined && window.webkitNotifications!=null && window.webkitNotifications){
-			window.webkitNotifications.requestPermission(permissionGranted);
+			window.webkitNotifications.requestPermission(function(){
+				if (window.webkitNotifications.checkPermission() == 0){
+					showNotification("Notifications Enabled!");
+					setOption(7,'T');
+					window.location.refresh(true);
+				}
+			});
 		}else if(typeof Notification!=='undefined' && Notification && Notification.permission!=='denied'){
 			Notification.requestPermission(function(status){
 				if (Notification.permission !== status){
@@ -118,14 +124,6 @@
 			});
 		}else{
 			alert('Your browser doesn\'t support notifications');
-		}
-	}
-	
-	function permissionGranted(){
-		if (window.webkitNotifications.checkPermission() == 0){
-			showNotification("Notifications Enabled!");
-			setOption(7,'T');
-			window.location.refresh(true);
 		}
 	}
 //******************************

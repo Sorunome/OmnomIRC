@@ -42,12 +42,11 @@ function echoNewStyle($c1,$c2,$c3){
 	#scrollBar,
 	td.curchan,
 	#scrollBarLine,
-	#UserList,
+	#UserListInnerCont,
 	.linehigh {
 		background: $c2;
 		border-color: $c1;
 	}
-	
 	#topicbox {
 		border-top: none;
 	}
@@ -78,7 +77,7 @@ function echoNewStyle($c1,$c2,$c3){
 	body,
 	#scrollbar:hover,
 	#scrollbar:active,
-	#UserList:hover{
+	#UserListInnerCont:hover{
 		background-color: $c3;
 	}";
 }
