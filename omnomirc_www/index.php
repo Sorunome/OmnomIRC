@@ -197,7 +197,7 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 		return "<a onclick='getPage(\"$page\");return false'>$inner</a>";
 	}
 	if(isset($_GET['server'])){
-		if(isset($_GET['nick']) && isset($_GET['sig']) && isset($_GET['id']) && !isGlobalOp(base64_url_decode($_GET['nick']),base64_url_decode($_GET['sig']),$_GET['id'])){
+		if(isset($_GET['nick']) && isset($_GET['sig']) && isset($_GET['id']) && isGlobalOp(base64_url_decode($_GET['nick']),base64_url_decode($_GET['sig']),$_GET['id'])){
 			if(isset($_GET['page'])){
 				switch($_GET['page']){
 					case 'index':
@@ -274,7 +274,11 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 							$sql_db = base64_url_decode($_POST['sql_db']);
 							$sql_user = base64_url_decode($_POST['sql_user']);
 							$sql_password = base64_url_decode($_POST['sql_password']);
-							adminWriteConfig();
+							$sql_connection=mysql_connect($sql_server,$sql_user,$sql_password);
+							if (!$sql_connection)
+								echo 'Couldn\'t connect to sql server';
+							else
+								adminWriteConfig();
 						}
 					break;
 					default:
@@ -307,7 +311,7 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 						document.getElementById('adminContent').innerHTML = getPage.responseText;
 					}
 				}
-				getPage.open('GET','?admin&server&page='+name+'&nick='+userName+'&sig='+Signature+'&id='+omnimagaUserId,true);
+				getPage.open('GET','?admin&server&page='+name+'&nick='+base64.encode(userName)+'&sig='+base64.encode(Signature)+'&id='+omnimagaUserId,true);
 				getPage.setRequestHeader('Content-type','application/x-www-form-urlencoded');
 				getPage.send();
 			}
@@ -318,7 +322,7 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 						alert(getPage.responseText);
 					}
 				}
-				getPage.open('POST','?admin&server&page='+name+'&nick='+userName+'&sig='+Signature+'&id='+omnimagaUserId,true);
+				getPage.open('POST','?admin&server&page='+name+'&nick='+base64.encode(userName)+'&sig='+base64.encode(Signature)+'&id='+omnimagaUserId,true);
 				getPage.setRequestHeader('Content-type','application/x-www-form-urlencoded');
 				getPage.send(value);
 			}
