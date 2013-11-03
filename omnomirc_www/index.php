@@ -143,6 +143,7 @@ Enable Scrollwheel:</td><td><script type="text/javascript"> document.write(getHT
 	function adminWriteConfig(){
 		global $sql_server,$sql_db,$sql_user,$sql_password,$signature_key,$hostname,$searchNamesUrl,$checkLoginUrl,$securityCookie,$curidFilePath,$calcKey,$externalStyleSheet,$channels,$exChans,$opGroups,$hotlinks,$ircBot_servers,$ircBot_serversT,$ircBot_ident,$ircBot_identT,$ircBot_botPasswd,$ircBot_botNick,$ircBot_topicBotNick;
 		$config = '<?php
+/* This is a automatically generated config-file by OmnomIRC, please use the admin pannel to edit it! */
 include_once(realpath(dirname(__FILE__)).\'/Source/sql.php\');
 include_once(realpath(dirname(__FILE__)).\'/Source/sign.php\');
 include_once(realpath(dirname(__FILE__)).\'/Source/userlist.php\');
@@ -167,9 +168,9 @@ $exChans=Array();
 $opGroups = array(';$temp = '';foreach($opGroups as $g){$temp .= '"'.$g.'",';}$config .= substr($temp,0,-1);$config.=');
 
 $hotlinks=Array();
-';foreach($hotlinks as $link){$config .= '$hotlinks[]=Array('."\n";$temp = '';foreach($link as $key => $value)$temp .= "\t'".$key."' => '".$value."',\n";$config .= substr($temp,0,-2);$config .= "\n);\n";}$config.='
+';foreach($hotlinks as $link){$config .= '$hotlinks[]=Array('."\n";$temp = '';foreach($link as $key => $value)$temp .= "\t'".$key."' => '".str_replace("'","\\'",$value)."',\n";$config .= substr($temp,0,-2);$config .= "\n);\n";}$config.='
 $defaultChan = $channels[0][0];
-if (isset($_GET[\'js\'])) {
+if(isset($_GET[\'js\'])){
         header(\'Content-type: text/javascript\');
         echo "HOSTNAME = \'$hostname\';\nSEARCHNAMESURL=\'$searchNamesUrl\';";
 }
@@ -254,6 +255,11 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 							adminWriteConfig();
 						}
 					break;
+					case 'hotlinks':
+						echo '<div style="font-weight:bold">Hotlinks Settings</div>';
+						echo '<span class="highlight">Please don\'t change the toggle, about and admin option!</span><br>';
+						echo 'Comming soon!';
+					break;
 					case 'sql':
 						if(!isset($_POST['sql_db']) || !isset($_POST['sql_user']) || !isset($_POST['sql_password']) || !isset($_POST['sql_server'])){
 							echo '<div style="font-weight:bold">SQL Settings</div>';
@@ -280,6 +286,29 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 								echo 'Couldn\'t connect to sql server';
 							else
 								adminWriteConfig();
+						}
+					break;
+					case 'op':
+						if(!isset($_POST['opGroups'])){
+							echo '<div style="font-weight:bold">Operator Settings</div>';
+							echo '<div id="opGroupsCont"></div>';
+							echo '<img src="omni.png" onload="';
+							echo 'opGroups=[';
+							$temp = '';
+							foreach($opGroups as $o){
+								$temp .= "'".$o."',";
+							}
+							echo substr($temp,0,-1);
+							echo '];drawOpGroups();';
+							echo '" style="display:none;">';
+							echo '<button onclick="saveOp()">Save Changes</button>';
+						}else{
+							$opGroups = Array();
+							$temp = explode(':',$_POST['opGroups']);
+							foreach($temp as $t)
+								if($t && $t!='')
+									$opGroups[] = base64_url_decode($t);
+							adminWriteConfig();
 						}
 					break;
 					case 'irc':
@@ -388,7 +417,7 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 		}
 	}else{
 		?>
-		<html>
+		<html style="height:100%">
 		<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 		<title>OmnomIRC V2</title>
@@ -522,12 +551,12 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 					botTStr = '';
 				if(ircBot.length!=0){
 					for(var i=0;i<ircBot.length;i++){
-						botStr+=base64.encode(ircBot[i][0])+':'+ircBot[i][1].toString()+':'+base64.encode(ircBot[i][2].split("\\n").join("\n"))+';';
+						botStr+=base64.encode(ircBot[i][0])+':'+ircBot[i][1].toString()+':'+base64.encode(ircBot[i][2].split("\\n").join("\n").split("\\r").join("\r"))+';';
 					}
 				}
 				if(ircBotT.length!=0){
 					for(var i=0;i<ircBotT.length;i++){
-						botTStr+=base64.encode(ircBotT[i][0])+':'+ircBotT[i][1].toString()+':'+base64.encode(ircBotT[i][2].split("\\n").join("\n"))+';';
+						botTStr+=base64.encode(ircBotT[i][0])+':'+ircBotT[i][1].toString()+':'+base64.encode(ircBotT[i][2].split("\\n").join("\n").split("\\r").join("\r"))+';';
 					}
 				}
 				setPage('irc','botCont='+botStr+'&botContT='+botTStr+'&ircBotBotPasswd='+base64.encode(document.getElementById('ircBotBotPasswd').value)+'&ircBotBotNick='+base64.encode(document.getElementById('ircBotBotNick').value)+
@@ -604,6 +633,25 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 				}
 				elem.innerHTML += '<a onclick="ircBotT.push([\'&amp;lt;server&amp;gt;\',6667,\'&amp;lt;ident&amp;gt;\']);drawBotSettings();return false">Add server</a>';
 			}
+			function saveOp(){
+				var opStr = '';
+				if(opGroups.length!=0){
+					for(var i=0;i<opGroups.length;i++){
+						opStr+=base64.encode(opGroups[i])+':';
+					}
+				}
+				setPage('op','opGroups='+opStr);
+			}
+			function drawOpGroups(){
+				elem = document.getElementById('opGroupsCont');
+				elem.innerHTML = '';
+				if(opGroups.length!=0){
+					for(var i=0;i<opGroups.length;i++){
+						elem.innerHTML += '<a onclick="opGroups=deleteFromArray(opGroups,'+i+');drawOpGroups();return false">x</a> '+opGroups[i]+'<br>';
+					}
+				}
+				elem.innerHTML += '<input id="newOpGroup" type="text"><button onclick="opGroups.push(document.getElementById(\'newOpGroup\').value);document.getElementById(\'newOpGroup\').value=\'\';drawOpGroups();">Add</button>';
+			}
 			function resize(){
 				var offset = 20;
 				document.getElementById('container').style.height=(document.getElementsByTagName('html')[0].clientHeight-document.getElementById('adminFooter').clientHeight-offset).toString()+"px";
@@ -615,7 +663,7 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 		<div id='container' style='overflow-y:auto;'>
 		<div style='font-weight:bold;'>OmnomIRC Admin Pannel</div>
 		<div><a onclick="getPage('index');return false">Index</a> | <a onclick="getPage('channels');return false">Channels</a> | <a onclick="getPage('hotlinks');return false">Hotlinks</a> | <a onclick="getPage('sql');return false">SQL</a> | 
-			<a onclick="getPage('irc');return false">IRC</a> | <a onclick="getPage('misc');return false">Misc</a></div>
+			<a onclick="getPage('op');return false">Ops</a> | <a onclick="getPage('irc');return false">IRC</a> | <a onclick="getPage('misc');return false">Misc</a></div>
 		<div id='adminContent'>Loading...</div>
 		</div>
 		<div id='adminFooter'><a href='.'>Back to OmnomIRC</a></div>
