@@ -175,13 +175,13 @@ if (isset($_GET[\'js\'])) {
 }
 
 $ircBot_servers = Array();
-';foreach($ircBot_servers as $s){if($s && is_array($s)){$config .= '$ircBot_servers[]=Array("'.$s[0].'",'.$s.");\n";}}$config .= '
+';foreach($ircBot_servers as $s){if($s && is_array($s)){$config .= '$ircBot_servers[]=Array("'.$s[0].'",'.$s[1].");\n";}}$config .= '
 $ircBot_serversT = Array();
-';foreach($ircBot_serversT as $s){if($s && is_array($s)){$config .= '$ircBot_serversT[]=Array("'.$s[0].'",'.$s.");\n";}}$config .= '
+';foreach($ircBot_serversT as $s){if($s && is_array($s)){$config .= '$ircBot_serversT[]=Array("'.$s[0].'",'.$s[1].");\n";}}$config .= '
 $ircBot_ident = Array();
-';foreach($ircBot_ident as $i){$config .= '$ircBot_ident[]="'.str_replace("\n","\\n",addslashes($i))."\"\n";}$config .= '
+';foreach($ircBot_ident as $i){$config .= '$ircBot_ident[]="'.str_replace("\r","\\r",str_replace("\n","\\n",addslashes($i)))."\";\n";}$config .= '
 $ircBot_identT = Array();
-';foreach($ircBot_identT as $i){$config .= '$ircBot_identT[]="'.str_replace("\n","\\n",addslashes($i))."\"\n";}$config .= '
+';foreach($ircBot_identT as $i){$config .= '$ircBot_identT[]="'.str_replace("\r","\\r",str_replace("\n","\\n",addslashes($i)))."\";\n";}$config .= '
 $ircBot_botPasswd="'.$ircBot_botPasswd.'";
 $ircBot_botNick="'.$ircBot_botNick.'";
 $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
@@ -204,7 +204,7 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 						echo 'OmnomIRC Admin Pannel<br>Please note that it is still WIP';
 					break;
 					case 'channels':
-						if(!isset($_POST['chans']) && !isset($_POST['exChans'])){
+						if(!isset($_POST['chans']) || !isset($_POST['exChans'])){
 							echo '<div style="font-weight:bold">Channels</div>';
 							echo '<div id="channelCont"></div>';
 							echo '<div style="font-weight:bold">extra Channels (only for irc bot)</div>';
@@ -255,13 +255,14 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 						}
 					break;
 					case 'sql':
-						if(!isset($_POST['sql_db']) && !isset($_POST['sql_user']) && !isset($_POST['sql_password']) && !isset($_POST['sql_server'])){
+						if(!isset($_POST['sql_db']) || !isset($_POST['sql_user']) || !isset($_POST['sql_password']) || !isset($_POST['sql_server'])){
 							echo '<div style="font-weight:bold">SQL Settings</div>';
 							echo '<span class="highlight">Don\'t change this unless you are <b>really</b> sure what you are doing.</span><br>';
 							echo 'SQL Server:<input type="text" value="'.$sql_server.'" id="sqlServer"><br>';
 							echo 'SQL Database:<input type="text" value="'.$sql_db.'" id="sqlDb"><br>';
 							echo 'SQL User:<input type="text" value="'.$sql_user.'" id="sqlUser"><br>';
 							echo 'SQL Password:<input type="password" id="sqlPassword"><br>';
+							
 							echo '<button onclick="if(document.getElementById(\'sqlPassword\').value!=\'\'){';
 							echo 'setPage(\'sql\',\'sql_server=\'+base64.encode(document.getElementById(\'sqlServer\').value)';
 							echo '+\'&sql_db=\'+base64.encode(document.getElementById(\'sqlDb\').value)';
@@ -281,6 +282,101 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 								adminWriteConfig();
 						}
 					break;
+					case 'irc':
+						if(!isset($_POST['botCont']) || !isset($_POST['botContT']) || !isset($_POST['ircBotBotPasswd']) || !isset($_POST['ircBotBotNick']) || !isset($_POST['ircBotTopicBotNick'])){
+							echo '<div style="font-weight:bold">IRC-Bot Settings</div>';
+							echo '<span class="highlight">You will have to manually restart the irc bots after preforming changes here!</span><br>';
+							echo 'Bot Password:<input type="text" value="'.$ircBot_botPasswd.'" id="ircBotBotPasswd"><br>';
+							echo 'Main Bot Nick:<input type="text" value="'.$ircBot_botNick.'" id="ircBotBotNick"><br>';
+							echo 'Topic Bot Nick:<input type="text" value="'.$ircBot_topicBotNick.'" id="ircBotTopicBotNick"><br>';
+							echo '<span style="font-weight:bold">Main Bot</span><br><div id="botCont"></div>';
+							echo '<span style="font-weight:bold">Topic Bot</span><br><div id="botContT"></div>';
+							echo '<img src="omni.png" onload="';
+							echo 'ircBot=[';
+							$i = 0;
+							$temp = '';
+							foreach($ircBot_servers as $s){
+								$temp .= '[\''.$s[0].'\','.$s[1].',\''.str_replace("\r","\\\\r",str_replace("\n","\\\\n",addslashes($ircBot_ident[$i]))).'\'],';
+								$i++;
+							}
+							echo substr($temp,0,-1);
+							echo '];';
+							echo 'ircBotT=[';
+							$i = 0;
+							$temp = '';
+							foreach($ircBot_serversT as $s){
+								$temp .= '[\''.$s[0].'\','.$s[1].',\''.str_replace("\r","\\\\r",str_replace("\n","\\\\n",addslashes($ircBot_identT[$i]))).'\'],';
+								$i++;
+							}
+							echo substr($temp,0,-1);
+							echo '];drawBotSettings();';
+							echo '" style="display:none;">';
+							echo '<button onclick="saveBotCfg()">Save Changes</button>';
+						}else{
+							$ircBot_botPasswd = base64_url_decode($_POST['ircBotBotPasswd']);
+							$ircBot_botNick = base64_url_decode($_POST['ircBotBotNick']);
+							$ircBot_topicBotNick = base64_url_decode($_POST['ircBotTopicBotNick']);
+							$ircBot_servers = Array();
+							$ircBot_ident = Array();
+							$temp = explode(';',$_POST['botCont']);
+							$i = 0;
+							foreach($temp as $t){
+								if($t && $t!=''){
+									$e = explode(':',$t);
+									$ircBot_servers[]=Array(base64_url_decode($e[0]),(int)$e[1]);
+									$ircBot_ident[]=base64_url_decode($e[2]);
+									$i++;
+								}
+							}
+							$ircBot_serversT = Array();
+							$ircBot_identT = Array();
+							$temp = explode(';',$_POST['botContT']);
+							$i = 0;
+							foreach($temp as $t){
+								if($t && $t!=''){
+									$e = explode(':',$t);
+									$ircBot_serversT[]=Array(base64_url_decode($e[0]),(int)$e[1]);
+									$ircBot_identT[]=base64_url_decode($e[2]);
+									$i++;
+								}
+							}
+							adminWriteConfig();
+						}
+					break;
+					case 'misc':
+						if(!isset($_POST['searchNamesUrl']) || !isset($_POST['checkLoginUrl']) || !isset($_POST['hostname']) || !isset($_POST['securityCookie']) ||
+								!isset($_POST['curidFilePath']) || !isset($_POST['calcKey']) || !isset($_POST['externalStyleSheet'])){
+							echo '<div style="font-weight:bold">Misc Settings</div>';
+							echo '<span class="highlight">Some of these values shouldn\'t be messed with - beware.</span><br>';
+							echo 'Hostname:<input type="text" value="'.$hostname.'" id="hostname"><br>';
+							echo 'Name Search URL:<input type="text" value="'.$searchNamesUrl.'" id="searchNamesUrl"><br>';
+							echo 'Check Login URL:<input type="text" value="'.$checkLoginUrl.'" id="checkLoginUrl"><br>';
+							echo 'Security Cookie:<input type="text" value="'.$securityCookie.'" id="securityCookie"><br>';
+							echo 'Cur-id file path:<input type="text" value="'.$curidFilePath.'" id="curidFilePath"><br>';
+							echo 'Calculator key:<input type="text" value="'.$calcKey.'" id="calcKey"><br>';
+							echo 'External Stylesheet:<input type="text" value="'.$externalStyleSheet.'" id="externalStyleSheet"><br>';
+							
+							echo '<button onclick="';
+							echo 'setPage(\'misc\',\'hostname=\'+base64.encode(document.getElementById(\'hostname\').value)';
+							echo '+\'&searchNamesUrl=\'+base64.encode(document.getElementById(\'searchNamesUrl\').value)';
+							echo '+\'&checkLoginUrl=\'+base64.encode(document.getElementById(\'checkLoginUrl\').value)';
+							echo '+\'&securityCookie=\'+base64.encode(document.getElementById(\'securityCookie\').value)';
+							echo '+\'&curidFilePath=\'+base64.encode(document.getElementById(\'curidFilePath\').value)';
+							echo '+\'&calcKey=\'+base64.encode(document.getElementById(\'calcKey\').value)';
+							echo '+\'&externalStyleSheet=\'+base64.encode(document.getElementById(\'externalStyleSheet\').value)';
+							echo ')';
+							echo '">Save Changes</button>';
+						}else{
+							$hostname = base64_url_decode($_POST['hostname']);
+							$searchNamesUrl = base64_url_decode($_POST['searchNamesUrl']);
+							$checkLoginUrl = base64_url_decode($_POST['checkLoginUrl']);
+							$securityCookie = base64_url_decode($_POST['securityCookie']);
+							$curidFilePath = base64_url_decode($_POST['curidFilePath']);
+							$calcKey = base64_url_decode($_POST['calcKey']);
+							$externalStyleSheet = base64_url_decode($_POST['externalStyleSheet']);
+							adminWriteConfig();
+						}
+					breaK;
 					default:
 						echo 'Invalid Page';
 				}
@@ -341,40 +437,47 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 				}
 				setPage('channels','chans='+chanStr+'&exChans='+exChanStr);
 			}
-			function deleteChan(num,type){
-				if(!type){
-					channels.splice(num,1);
-				}else{
-					exChannels.splice(num,1);
+			function deleteFromArray(a,n){
+				a.splice(n,1);
+				return a
+			}
+			function moveArrayUp(a,n){
+				if(n!=0){
+					var temp = a[n];
+					a[n] = a[n-1];
+					a[n-1] = temp;
+					return a;
 				}
+				return a;
+			}
+			function moveArrayDown(a,n){
+				if(n!=a.length-1){
+					var temp = a[n];
+					a[n] = a[n+1];
+					a[n+1] = temp;
+					return a;
+				}
+				return a;
+			}
+			function deleteChan(num,type){
+				if(!type)
+					channels = deleteFromArray(channels,num);
+				else
+					exChannels = deleteFromArray(exChannels,num);
 				drawChannels();
 			}
 			function moveChanUp(num,type){
-				if(num!=0){
-					if(!type){
-						temp = channels[num];
-						channels[num] = channels[num-1];
-						channels[num-1] = temp;
-					}else{
-						temp = exChannels[num];
-						exChannels[num] = exChannels[num-1];
-						exChannels[num-1] = temp;
-					}
-				}
+				if(!type)
+					channels = moveArrayUp(channels,num);
+				else
+					exChannels = moveArrayUp(exChannels,num);
 				drawChannels();
 			}
 			function moveChanDown(num,type){
-				if (num!=channels.length-1) {
-					if(!type){
-						temp = channels[num];
-						channels[num] = channels[num+1];
-						channels[num+1] = temp;
-					}else{
-						temp = exChannels[num];
-						exChannels[num] = exChannels[num+1];
-						exChannels[num+1] = temp;
-					}
-				}
+				if(!type)
+					channels = moveArrayDown(channels,num);
+				else
+					exChannels = moveArrayDown(exChannels,num);
 				drawChannels();
 			}
 			function setChannel(num,is,type){
@@ -403,7 +506,7 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 					}
 				}
 				elem.innerHTML += 'New Channel: <span><input type="text"><button onclick="addChan(this.parentNode.getElementsByTagName(\'input\')[0].value,false)">Add</button></span>'
-				var elem = document.getElementById('exChannelCont');
+				elem = document.getElementById('exChannelCont');
 				elem.innerHTML = '';
 				if(exChannels.length!=0){
 					for(var i=0;i<exChannels.length;i++){
@@ -411,8 +514,95 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 							' <a onclick="moveChanUp('+i+',true);return false">^</a> <a onclick="moveChanDown('+i+',true);return false">v</a><br>';
 					}
 				}
-				elem.innerHTML += 'New Channel: <span><input type="text"><button onclick="addChan(this.parentNode.getElementsByTagName(\'input\')[0].value,true)">Add</button></span>'
+				elem.innerHTML += 'New Channel: <span><input type="text"><button onclick="addChan(this.parentNode.getElementsByTagName(\'input\')[0].value,true)">Add</button></span>';
 				
+			}
+			function saveBotCfg(){
+				var botStr = '',
+					botTStr = '';
+				if(ircBot.length!=0){
+					for(var i=0;i<ircBot.length;i++){
+						botStr+=base64.encode(ircBot[i][0])+':'+ircBot[i][1].toString()+':'+base64.encode(ircBot[i][2].split("\\n").join("\n"))+';';
+					}
+				}
+				if(ircBotT.length!=0){
+					for(var i=0;i<ircBotT.length;i++){
+						botTStr+=base64.encode(ircBotT[i][0])+':'+ircBotT[i][1].toString()+':'+base64.encode(ircBotT[i][2].split("\\n").join("\n"))+';';
+					}
+				}
+				setPage('irc','botCont='+botStr+'&botContT='+botTStr+'&ircBotBotPasswd='+base64.encode(document.getElementById('ircBotBotPasswd').value)+'&ircBotBotNick='+base64.encode(document.getElementById('ircBotBotNick').value)+
+					'&ircBotTopicBotNick='+base64.encode(document.getElementById('ircBotTopicBotNick').value));
+			}
+			function deleteBot(num,type){
+				if(type)
+					ircBot = deleteFromArray(ircBot,num);
+				else
+					ircBotT = deleteFromArray(ircBotT,num);
+				drawBotSettings();
+			}
+			function moveBotUp(num,type){
+				if(type)
+					ircBot = moveArrayUp(ircBot,num);
+				else
+					ircBotT = moveArrayUp(ircBotT,num);
+				drawBotSettings();
+			}
+			function moveBotDown(num,type){
+				if(type)
+					ircBot = moveArrayDown(ircBot,num);
+				else
+					ircBotT = moveArrayDown(ircBotT,num);
+				drawBotSettings();
+			}
+			function saveBot(num,type){
+				var elem,a;
+				if(type){
+					elem = document.getElementById('b'+num);
+					a = ircBot;
+				}else{
+					elem = document.getElementById('bt'+num);
+					a = ircBotT;
+				}
+				a[num][0] = elem.getElementsByTagName('input')[0].value;
+				a[num][1] = parseInt(elem.getElementsByTagName('input')[1].value);
+				a[num][2] = elem.getElementsByTagName('input')[2].value;
+				if(type)
+					ircBot = a;
+				else
+					ircBotT = a;
+				drawBotSettings();
+			}
+			function editBot(num,type){
+				var elem,a;
+				if(type){
+					elem = document.getElementById('b'+num);
+					a = ircBot;
+				}else{
+					elem = document.getElementById('bt'+num);
+					a = ircBotT;
+				}
+				elem.innerHTML = '<input type="text" value="'+a[num][0]+'" name="server"><input type="text" value="'+a[num][1].toString()+'" name="port">'+
+					'<input type="text" value="'+a[num][2]+'" name="ident"><a onclick="saveBot('+num+','+type+');">done</a>';
+			}
+			function drawBotSettings(){
+				var elem = document.getElementById('botCont');
+				elem.innerHTML = '';
+				if(ircBot.length!=0){
+					for(var i=0;i<ircBot.length;i++){
+						elem.innerHTML += '<span id="b'+i+'"><a onclick="deleteBot('+i+',true);return false">x</a> '+ircBot[i][0]+':'+ircBot[i][1].toString()+' '+ircBot[i][2]+
+							' <a onclick="editBot('+i+',true);return false">edit</a> <a onclick="moveBotUp('+i+',true);return false">^</a> <a onclick="moveBotDown('+i+',true);return false">v</a></span><br>';
+					}
+				}
+				elem.innerHTML += '<a onclick="ircBot.push([\'&amp;lt;server&amp;gt;\',6667,\'&amp;lt;ident&amp;gt;\']);drawBotSettings();return false">Add server</a>';
+				elem = document.getElementById('botContT');
+				elem.innerHTML = '';
+				if(ircBotT.length!=0){
+					for(var i=0;i<ircBotT.length;i++){
+						elem.innerHTML += '<span id="bt'+i+'"><a onclick="deleteBot('+i+',false);return false">x</a> '+ircBotT[i][0]+':'+ircBotT[i][1].toString()+' '+ircBotT[i][2]+
+							' <a onclick="editBot('+i+',false);return false">edit</a> <a onclick="moveBotUp('+i+',false);return false">^</a> <a onclick="moveBotDown('+i+',false);return false">v</a></span><br>';
+					}
+				}
+				elem.innerHTML += '<a onclick="ircBotT.push([\'&amp;lt;server&amp;gt;\',6667,\'&amp;lt;ident&amp;gt;\']);drawBotSettings();return false">Add server</a>';
 			}
 			function resize(){
 				var offset = 20;
@@ -426,7 +616,7 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 		<div style='font-weight:bold;'>OmnomIRC Admin Pannel</div>
 		<div><a onclick="getPage('index');return false">Index</a> | <a onclick="getPage('channels');return false">Channels</a> | <a onclick="getPage('hotlinks');return false">Hotlinks</a> | <a onclick="getPage('sql');return false">SQL</a> | 
 			<a onclick="getPage('irc');return false">IRC</a> | <a onclick="getPage('misc');return false">Misc</a></div>
-		<div id='adminContent'></div>
+		<div id='adminContent'>Loading...</div>
 		</div>
 		<div id='adminFooter'><a href='.'>Back to OmnomIRC</a></div>
 		<script type="text/javascript">
