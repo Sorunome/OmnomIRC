@@ -43,6 +43,12 @@ $hotlinks[]=Array(
 	'inner' => 'About',
 	'onclick' => "if (document.getElementById('about').style.display=='none'){document.getElementById('about').style.display='';}else{document.getElementById('about').style.display='none';};return false"
 );
+$hotlinks[]=Array(
+	'inner' => '<span onload="alert(\'test\')">Admin</span>',
+	'href' => '?admin',
+	'style' => 'display:none;',
+	'id' => 'adminLink'
+);
 
 $defaultChan = $channels[0][0];
 if (isset($_GET['js'])) {

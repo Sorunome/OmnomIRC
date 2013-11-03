@@ -28,20 +28,7 @@ ip 108.174.51.58
 	include_once(realpath(dirname(__FILE__)).'/Source/cachefix.php'); //This must be the first line in every file.
 	include_once(realpath(dirname(__FILE__)).'/config.php');
 	
-	function isOp(){
-		global $opGroups,$checkLoginUrl;
-		
-		$returnPosition = file_get_contents($checkLoginUrl.'?op&u='.$_GET['id'].'&nick='.$_GET['nick']);
-		$returnPosition = substr($returnPosition,3,strlen($returnPosition));
-		if (in_array($returnPosition,$opGroups))
-			return true;
-		$userSql = getUserstuffQuery(html_entity_decode(base64_url_decode($_GET['nick'])));
-		if (strpos($userSql['ops'],base64_url_decode($_GET['channel'])."\n")!==false)
-			return true;
-		if ($userSql['globalOp']==1)
-			return true;
-		return false;
-	}
+	
 	function removeLinebrakes($s){
 		return str_replace("\0",'',str_replace("\r",'',str_replace("\n",'',$s)));
 	}
@@ -146,14 +133,14 @@ ip 108.174.51.58
 				$returnmessage = '';
 				$sendNormal = false;
 				$sendPm = true;
-				if(isOp())
+				if(isOp($nick,base64_url_decode($_GET['signature']),$_GET['id'],$channel))
 					$returnmessage = "You are op and thus you just lost \x02THE GAME\x02";
 				else
 					$returnmessage = "You aren't op";
 				break;
 			case 'topic':
 				$sendNormal = false;
-				if(isOp()){
+				if(isOp($nick,base64_url_decode($_GET['signature']),$_GET['id'],$channel)){
 					unset($parts[0]);
 					$newTopic = implode(' ',$parts);
 					$temp = mysql_fetch_array(sql_query("SELECT * FROM `irc_topics` WHERE chan='%s'",strtolower($channel)));
@@ -170,7 +157,7 @@ ip 108.174.51.58
 				break;
 			case 'op':
 				$sendNormal = false;
-				if(isOp()){
+				if(isOp($nick,base64_url_decode($_GET['signature']),$_GET['id'],$channel)){
 					unset($parts[0]);
 					$userToOp = implode(' ',$parts);
 					$userSql = getUserstuffQuery($userToOp);
@@ -189,7 +176,7 @@ ip 108.174.51.58
 				break;
 			case 'deop':
 				$sendNormal = false;
-				if(isOp()){
+				if(isOp($nick,base64_url_decode($_GET['signature']),$_GET['id'],$channel)){
 					unset($parts[0]);
 					$userToOp = implode(" ",$parts);
 					$userSql = getUserstuffQuery($userToOp);
@@ -219,7 +206,7 @@ ip 108.174.51.58
 				break;
 			case 'ban':
 				$sendNormal = false;
-				if(isOp()){
+				if(isOp($nick,base64_url_decode($_GET['signature']),$_GET['id'],$channel)){
 					unset($parts[0]);
 					$userToOp = implode(' ',$parts);
 					$userSql = getUserstuffQuery($userToOp);
@@ -239,7 +226,7 @@ ip 108.174.51.58
 			case 'deban':
 			case 'unban':
 				$sendNormal = false;
-				if(isOp()){
+				if(isOp($nick,base64_url_decode($_GET['signature']),$_GET['id'],$channel)){
 					unset($parts[0]);
 					$userToOp = implode(' ',$parts);
 					$userSql = getUserstuffQuery($userToOp);

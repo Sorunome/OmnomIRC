@@ -313,11 +313,11 @@ td.message {
 .message {
 	word-wrap: break-word;
 }
-td.action > a {
-	margin-right: 0;
+td.action > a:nth-child(1) {
+	margin-right: -3px;
 }
-td.action > a > span {
-	margin-right: -5px;
+td.action > a:nth-child(1) > span {
+	margin-right:0;
 }
 tr {
 	width:100%;
@@ -467,7 +467,7 @@ table.messageBox {
     margin-bottom: -3px;
     margin-right: 4px;
 }
-input[type=text] {
+#message {
 	width: 91%;
     width: calc(100% - 115px);
 	width: -webkit-calc(100% - 115px);
@@ -503,6 +503,7 @@ input[type=text] {
 	margin:0;
     padding-left: 10%;
     padding-top: 2px;
+	transition: top .4s;
 }
 #UserListContainer {
 	position:absolute;

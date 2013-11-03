@@ -45,4 +45,34 @@
 		}
 		return $userSql;
 	}
+	
+	function isGlobalOp($nick,$sig,$id){
+		global $opGroups,$checkLoginUrl;
+		if(!checkSignature($nick,$sig))
+			return false;
+		$userSql = getUserstuffQuery($nick);
+		if ($userSql['globalOp']==1)
+			return true;
+		$returnPosition = file_get_contents($checkLoginUrl.'?op&u='.$id.'&nick='.base64_url_encode($nick));
+		//$returnPosition = substr($returnPosition,3,strlen($returnPosition));
+		if (in_array($returnPosition,$opGroups))
+			return true;
+		return false;
+	}
+	
+	function isOp($nick,$sig,$id,$chan){
+		global $opGroups,$checkLoginUrl;
+		if(!checkSignature($nick,$sig))
+			return false;
+		$returnPosition = file_get_contents($checkLoginUrl.'?op&u='.$id.'&nick='.base64_url_encode($nick));
+		//$returnPosition = substr($returnPosition,3,strlen($returnPosition));
+		if (in_array($returnPosition,$opGroups))
+			return true;
+		$userSql = getUserstuffQuery($nick);
+		if (strpos($userSql['ops'],$chan."\n")!==false)
+			return true;
+		if ($userSql['globalOp']==1)
+			return true;
+		return false;
+	}
 ?>

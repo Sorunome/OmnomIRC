@@ -84,7 +84,7 @@
 //******************************
 
 //******************************
-// Browser Notification Start   *
+// Browser Notification Start  *
 //******************************
 
 	function showNotification(message){
@@ -127,5 +127,5 @@
 		}
 	}
 //******************************
-// Browser Notification End     *
+// Browser Notification End    *
 //******************************

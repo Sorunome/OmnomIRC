@@ -70,14 +70,14 @@ tabAppendStr = ' ';
 		if(!isInTab){
 			tabAppendStr = ' ';
 			startPos = message.selectionStart;
-			if(startPos==1){
-				tabAppendStr = ': ';
-			}
 			startChar = message.value.charAt(startPos);
 			while(startChar != ' ' && --startPos > 0)
 				startChar = message.value.charAt(startPos);
-			if(startChar == ' ') startChar+=2;
-			
+			if(startChar == ' ')
+				startChar+=2;
+			if(startPos==0){
+				tabAppendStr = ': ';
+			}
 			endPos = message.selectionStart;
 			endChar = message.value.charAt(endPos);
 			while (endChar != ' ' && ++endPos <= message.value.length)

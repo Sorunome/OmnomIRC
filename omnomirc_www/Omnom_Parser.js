@@ -179,7 +179,7 @@ scrolledDown = true;
 				var body= document.getElementsByTagName('body')[0];
 				var script= document.createElement('script');
 				script.type= 'text/javascript';
-				script.src= 'Load.php?count=125&channel=' + getChannelEn() + "&nick=" + base64.encode(userName) + "&signature=" + base64.encode(Signature) + "&time=" + (new Date).getTime();;
+				script.src= 'Load.php?count=125&channel=' + getChannelEn() + "&nick=" + base64.encode(userName) + "&signature=" + base64.encode(Signature) + "&time=" + (new Date).getTime()+'&id='+omnimagaUserId;
 				script.onload= function(){parseUsers();startLoop();mBoxCont.scrollTop = mBoxCont.scrollHeight;doHigh = !doHigh;hasLoaded = true;stopIndicator();};
 				body.appendChild(script);
 				displayMessage = false;
@@ -578,7 +578,7 @@ scrolledDown = true;
 			if (parts[1] == "0") userText += "#" + base64.decode(parts[0]) + "<br/>";
 			if (parts[1] == "1") 
 				userText += '<a target="_top" href="'+SEARCHNAMESURL+base64.decode(parts[0]) + 
-				'"><img src="omni.png" alt="Omnimaga User" title="Omnimaga User" border=0 width=8 height=8 />' + base64.decode(parts[0]) + '</a><br/>';
+				'"><img src="omni.png" alt="OmnomIRC User" title="OmnomIRC User" border=0 width=8 height=8 />' + base64.decode(parts[0]) + '</a><br/>';
 			if (parts[1] == "2") userText += "!" + base64.decode(parts[0]) + "<br/>";
 			userText += '</span>';
 		}
@@ -631,7 +631,7 @@ scrolledDown = true;
 			style.type="text/css";
 			style.innerHTML = "#scrollBar{left:89%;left:calc(90% - 17px);}\
 								#scrollBarLine{left:89%;left:calc(90% - 16px);}\
-								input[type=text]{width:82%;width:calc(91% - 115px);width:-webkit-calc(91% - 115px);}\
+								#message{width:82%;width:calc(91% - 115px);width:-webkit-calc(91% - 115px);}\
 								#mBoxCont{width:90%;}\
 								.arrowButtonHoriz2,.arrowButtonHoriz3 > div:nth-child(2){left:89%;left:calc(90% - 5px);left:-webkit-calc(90% - 5px);}\
 								#UserListContainer{left:90%;height:100%;transition:none;-webkit-transition:none;-o-transition-property:none;-o-transition-duration:none;-o-transition-delay:none;}";
@@ -816,7 +816,7 @@ scrolledDown = true;
 		var body= document.getElementsByTagName('body')[0];
 		var script= document.createElement('script');
 		script.type= 'text/javascript';
-		script.src= 'Load.php?count=125&channel=' + getChannelEn() + "&nick=" + base64.encode(userName) + "&signature=" + base64.encode(Signature) + "&time=" + (new Date).getTime();
+		script.src= 'Load.php?count=125&channel=' + getChannelEn() + "&nick=" + base64.encode(userName) + "&signature=" + base64.encode(Signature) + "&time=" + (new Date).getTime()+'&id='+omnimagaUserId;
 		script.onload= function(){mBoxCont.appendChild(messageBox);parseUsers();startLoop();mBoxCont.scrollTop = mBoxCont.scrollHeight;doHigh = !doHigh;hasLoaded = true;stopIndicator();};
 		body.appendChild(script);
 	}
@@ -842,7 +842,7 @@ scrolledDown = true;
 		var body= document.getElementsByTagName('body')[0];
 		var script= document.createElement('script');
 		script.type= 'text/javascript';
-		script.src= 'Load.php?count=125&channel=' + getChannelEn() + "&nick=" + base64.encode(userName) + "&signature=" + base64.encode(Signature) + "&time=" + (new Date).getTime();;
+		script.src= 'Load.php?count=125&channel=' + getChannelEn() + "&nick=" + base64.encode(userName) + "&signature=" + base64.encode(Signature) + "&time=" + (new Date).getTime()+'&id='+omnimagaUserId;
 		script.onload= function(){mBoxCont.appendChild(messageBox);parseUsers();startLoop();mBoxCont.scrollTop = mBoxCont.scrollHeight;hasLoaded = true;doHigh=!doHigh;stopIndicator();};
 		body.appendChild(script);
 	}
@@ -909,6 +909,7 @@ function searchUser(start,startAt){
 		if (name.indexOf(start.toLowerCase()) == 0 && startAt-- <= 0)
 			return base64.decode(parts[0]);
 	}
+	tabAppendStr = '';
 	return start;
 }
 	

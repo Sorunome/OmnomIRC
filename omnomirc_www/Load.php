@@ -33,19 +33,22 @@
 		if(isset($_GET['channel']))
 			$channel = base64_url_decode($_GET['channel']);
 		$nick = "0";
-		if (isset($_GET['nick'])){
+		if(isset($_GET['nick'])){
 			$nick = base64_url_decode($_GET['nick']);
 			$signature = base64_url_decode($_GET['signature']);
-			if (!checkSignature($nick,$signature))
+			if(!checkSignature($nick,$signature))
 				$nick = "0";
 			$userSql = getUserstuffQuery($nick);
-			if (strpos($userSql["bans"],base64_url_decode($_GET['channel'])."\n")!==false)
+			if(strpos($userSql["bans"],base64_url_decode($_GET['channel'])."\n")!==false)
 				die("addLine('999999999999999999999999999:server:0:0:T21ub21JUkM=:RVJST1IgLSBiYW5uZWQ=');");
+			if(isset($_GET['id']) && isGlobalOp($nick,$signature,$_GET['id'])){
+				echo "document.getElementById('adminLink').style.display='';";
+			}
 		}
-		if ($channel[0]!="*" and $channel[0]!="#" and $channel[0]!="@" and $channel[0]!="&")
+		if($channel[0]!="*" and $channel[0]!="#" and $channel[0]!="@" and $channel[0]!="&")
 			$channel = "0";
 		
-		if ($channel[0] == "*"){ // PM
+		if($channel[0] == "*"){ // PM
 			$sender = substr($channel,1);
 			$channel = $nick;
 			$res = sql_query("SELECT x.* FROM (

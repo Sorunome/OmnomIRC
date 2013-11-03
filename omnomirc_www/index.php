@@ -139,6 +139,321 @@ Enable Scrollwheel:</td><td><script type="text/javascript"> document.write(getHT
 </body>
 </html>
 <?php
+}elseif(isset($_GET['admin'])){
+	function adminWriteConfig(){
+		global $sql_server,$sql_db,$sql_user,$sql_password,$signature_key,$hostname,$searchNamesUrl,$checkLoginUrl,$securityCookie,$curidFilePath,$calcKey,$externalStyleSheet,$channels,$exChans,$opGroups,$hotlinks,$ircBot_servers,$ircBot_serversT,$ircBot_ident,$ircBot_identT,$ircBot_botPasswd,$ircBot_botNick,$ircBot_topicBotNick;
+		$config = '<?php
+include_once(realpath(dirname(__FILE__)).\'/Source/sql.php\');
+include_once(realpath(dirname(__FILE__)).\'/Source/sign.php\');
+include_once(realpath(dirname(__FILE__)).\'/Source/userlist.php\');
+include_once(realpath(dirname(__FILE__)).\'/Source/cachefix.php\');
+
+$sql_server="'.$sql_server.'";
+$sql_db="'.$sql_db.'";
+$sql_user="'.$sql_user.'";
+$sql_password="'.$sql_password.'";
+$signature_key="'.$signature_key.'";
+$hostname="'.$hostname.'";
+$searchNamesUrl="'.$searchNamesUrl.'";
+$checkLoginUrl="'.$checkLoginUrl.'";
+$curidFilePath="'.$curidFilePath.'";
+$calcKey="'.$calcKey.'";
+$externalStyleSheet="'.$externalStyleSheet.'";
+
+$channels=Array();
+';
+		foreach($channels as $chan){
+			if($chan && is_array($chan)){
+				$config .= '$channels[]=Array("'.$chan[0].'",'.((bool)$chan[1]?'true':'false').");\n";
+			}
+		}
+$config .= '
+$exChans=Array();
+';
+		foreach($exChans as $chan){
+			if($chan && is_array($chan)){
+				$config .= '$exChans[]=Array("'.$chan[0].'",'.((bool)$chan[1]?'true':'false').");\n";
+			}
+		}
+$config .= '
+$opGroups = array(';
+		$temp = '';
+		foreach($opGroups as $g){
+			$temp .= '"'.$g.'",';
+		}
+		$config .= substr($temp,0,-1);
+$config.=');
+
+$hotlinks=Array();
+';
+		foreach($hotlinks as $link){
+			$config .= '$hotlinks[]=Array('."\n";
+			$temp = '';
+			foreach($link as $key => $value)
+				$temp .= "\t'".$key."' => '".$value."',\n";
+			$config .= substr($temp,0,-2);
+			$config .= "\n);\n";
+		}
+$config.='
+$defaultChan = $channels[0][0];
+if (isset($_GET[\'js\'])) {
+        header(\'Content-type: text/javascript\');
+        echo "HOSTNAME = \'$hostname\';\nSEARCHNAMESURL=\'$searchNamesUrl\';";
+}
+
+$ircBot_servers = Array();
+';
+		foreach($ircBot_servers as $s){
+			if($s && is_array($s)){
+				$config .= '$ircBot_servers[]=Array("'.$s[0].'",'.$s.");\n";
+			}
+		}
+$config .= '
+$ircBot_serversT = Array();
+';
+		foreach($ircBot_serversT as $s){
+			if($s && is_array($s)){
+				$config .= '$ircBot_serversT[]=Array("'.$s[0].'",'.$s.");\n";
+			}
+		}
+$config .= '
+$ircBot_ident = Array();
+';
+		foreach($ircBot_ident as $i){
+			$config .= '$ircBot_ident[]="'.str_replace("\n","\\n",addslashes($i))."\"\n";
+		}
+$config .= '
+$ircBot_identT = Array();
+';
+		foreach($ircBot_identT as $i){
+			$config .= '$ircBot_identT[]="'.str_replace("\n","\\n",addslashes($i))."\"\n";
+		}
+$config .= '
+$ircBot_botPasswd="'.$ircBot_botPasswd.'";
+$ircBot_botNick="'.$ircBot_botNick.'";
+$ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
+?>';
+		if (file_put_contents('config2.php',$config))
+			echo 'Config written<br/>';
+		else
+			echo 'Couldn\'t write config';
+	}
+	function adminGetLinkHTML($inner,$page){
+		return "<a onclick='getPage(\"$page\");return false'>$inner</a>";
+	}
+	if(isset($_GET['server'])){
+		if(isset($_GET['nick']) && isset($_GET['sig']) && isset($_GET['id']) && !isGlobalOp(base64_url_decode($_GET['nick']),base64_url_decode($_GET['sig']),$_GET['id'])){
+			if(isset($_GET['page'])){
+				switch($_GET['page']){
+					case 'index':
+						echo 'OmnomIRC Admin Pannel<br>Please note that it is still WIP';
+					break;
+					case 'channels':
+						if(!isset($_GET['chans']) && !isset($_GET['exChans'])){
+							echo '<div style="font-weight:bold">Channels</div>';
+							echo '<div id="channelCont"></div>';
+							echo '<div style="font-weight:bold">extra Channels (only for irc bot)</div>';
+							echo '<div id="exChannelCont"></div>';
+							echo '<button onclick="saveChannels()">Save Changes</button>';
+							echo '<img src="omni.png" onload="';
+							echo 'channels = [';
+							$chanStr = '';
+							foreach($channels as $chan){
+								$chanStr.='[\''.$chan[0].'\','.($chan[1]?'true':'false').'],';
+							}
+							$chanStr = substr($chanStr,0,-1);
+							echo $chanStr;
+							echo '];';
+							echo 'exChannels = [';
+							$chanStr = '';
+							foreach($exChans as $chan){
+								$chanStr.='[\''.$chan[0].'\','.($chan[1]?'true':'false').'],';
+							}
+							$chanStr = substr($chanStr,0,-1);
+							echo $chanStr;
+							echo '];drawChannels();';
+							echo '" style="display:none;">';
+						}else{
+							$channels=Array();
+							$temp = explode(';',$_GET['chans']);
+							foreach($temp as $t){
+								if($t && $t!=''){
+									$e = explode(':',$t);
+									$temp = false;
+									if($e[1]=='true')
+										$temp = true;
+									$channels[]=Array(base64_url_decode($e[0]),$temp);
+								}
+							}
+							$exChans=Array();
+							$temp = explode(';',$_GET['exChans']);
+							foreach($temp as $t){
+								if($t && $t!=''){
+									$e = explode(':',$t);
+									$temp = false;
+									if($e[1]=='true')
+										$temp = true;
+									$exChans[]=Array(base64_url_decode($e[0]),$temp);
+								}
+							}
+							adminWriteConfig();
+						}
+					break;
+					default:
+						echo 'Invalid Page';
+				}
+			}else{
+				echo 'Invalid arguments';
+			}
+		}else{
+			echo 'Permission denied';
+		}
+	}else{
+		?>
+		<html>
+		<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<title>OmnomIRC V2</title>
+		<link rel="stylesheet" type="text/css" href="style.css" />
+		<?php
+		if($externalStyleSheet!='')
+			echo '<link rel="stylesheet" type="text/css" href="'.$externalStyleSheet.'" />';
+		?>
+		<script src="config.php?js"></script>
+		<script src="btoa.js"></script>
+		<script type='text/javascript'>
+			function getPage(name){
+				var getPage = new XMLHttpRequest();
+				getPage.onreadystatechange=function(){
+					if(getPage.readyState==4 && getPage.status==200){
+						document.getElementById('adminContent').innerHTML = getPage.responseText;
+					}
+				}
+				getPage.open('GET','?admin&server&page='+name+'&nick='+userName+'&sig='+Signature+'&id='+omnimagaUserId,true);
+				getPage.setRequestHeader('Content-type','application/x-www-form-urlencoded');
+				getPage.send();
+			}
+			function saveChannels(){
+				var chanStr = '',
+					exChanStr = '';
+				if(channels.length!=0){
+					for(var i=0;i<channels.length;i++){
+						chanStr+=base64.encode(channels[i][0])+':'+(channels[i][1]?'true':'false')+';';
+					}
+				}
+				if(exChannels.length!=0){
+					for(var i=0;i<exChannels.length;i++){
+						exChanStr+=base64.encode(exChannels[i][0])+':'+(exChannels[i][1]?'true':'false')+';';
+					}
+				}
+				getPage('channels&chans='+chanStr+'&exChans='+exChanStr);
+			}
+			function deleteChan(num,type){
+				if(!type){
+					channels.splice(num,1);
+				}else{
+					exChannels.splice(num,1);
+				}
+				drawChannels();
+			}
+			function moveChanUp(num,type){
+				if(num!=0){
+					if(!type){
+						temp = channels[num];
+						channels[num] = channels[num-1];
+						channels[num-1] = temp;
+					}else{
+						temp = exChannels[num];
+						exChannels[num] = exChannels[num-1];
+						exChannels[num-1] = temp;
+					}
+				}
+				drawChannels();
+			}
+			function moveChanDown(num,type){
+				if (num!=channels.length-1) {
+					if(!type){
+						temp = channels[num];
+						channels[num] = channels[num+1];
+						channels[num+1] = temp;
+					}else{
+						temp = exChannels[num];
+						exChannels[num] = exChannels[num+1];
+						exChannels[num+1] = temp;
+					}
+				}
+				drawChannels();
+			}
+			function setChannel(num,is,type){
+				if(!type){
+					channels[num][1] = is;
+				}else{
+					exChannels[num][1] = false;
+				}
+				drawChannels();
+			}
+			function addChan(str,type){
+				if(!type){
+					channels.push([str,true]);
+				}else{
+					exChannels.push([str,true]);
+				}
+				drawChannels();
+			}
+			function drawChannels(){
+				var elem = document.getElementById('channelCont');
+				elem.innerHTML = '';
+				if(channels.length!=0){
+					for(var i=0;i<channels.length;i++){
+						elem.innerHTML += '<a onclick="deleteChan('+i+',false);return false">x</a> '+channels[i][0]+'<input type="checkbox" '+(channels[i][1]?'checked="checked" onclick="setChannel('+i+',false,false)"':'onclick="setChannel('+i+',true,false)"')+'>'+
+							' <a onclick="moveChanUp('+i+',false);return false">^</a> <a onclick="moveChanDown('+i+',false);return false">v</a><br>';
+					}
+				}
+				elem.innerHTML += 'New Channel: <span><input type="text"><button onclick="addChan(this.parentNode.getElementsByTagName(\'input\')[0].value,false)">Add</button></span>'
+				var elem = document.getElementById('exChannelCont');
+				elem.innerHTML = '';
+				if(exChannels.length!=0){
+					for(var i=0;i<exChannels.length;i++){
+						elem.innerHTML += '<a onclick="deleteChan('+i+',true);return false">x</a> '+exChannels[i][0]+
+							' <a onclick="moveChanUp('+i+',true);return false">^</a> <a onclick="moveChanDown('+i+',true);return false">v</a><br>';
+					}
+				}
+				elem.innerHTML += 'New Channel: <span><input type="text"><button onclick="addChan(this.parentNode.getElementsByTagName(\'input\')[0].value,true)">Add</button></span>'
+				
+			}
+			function resize(){
+				var offset = 20;
+				document.getElementById('container').style.height=(document.getElementsByTagName('html')[0].clientHeight-document.getElementById('adminFooter').clientHeight-offset).toString()+"px";
+			}
+			window.addEventListener('resize',resize,false);
+		</script>
+		</head>
+		<body>
+		<div id='container' style='overflow-y:auto;'>
+		<div style='font-weight:bold;'>OmnomIRC Admin Pannel</div>
+		<div><a onclick="getPage('index');return false">Index</a> | <a onclick="getPage('channels');return false">Channels</a> | <a onclick="getPage('hotlinks');return false">Hotlinks</a> | <a onclick="getPage('sql');return false">SQL</a> | 
+			<a onclick="getPage('irc');return false">IRC</a> | <a onclick="getPage('misc');return false">Misc</a></div>
+		<div id='adminContent'></div>
+		</div>
+		<div id='adminFooter'><a href='.'>Back to OmnomIRC</a></div>
+		<script type="text/javascript">
+			function signCallback(sig,nick,id) {
+				Signature = sig;
+				userName = nick;
+				omnimagaUserId = id;
+				resize();
+				getPage('index');
+			}
+			var script= document.createElement('script'),
+				body= document.getElementsByTagName('body')[0];
+			script.type= 'text/javascript';
+			script.src=<?php if(isset($_COOKIE[$securityCookie])) echo '"'.$checkLoginUrl.'?sid='.urlencode(htmlspecialchars(str_replace(";","%^%",$_COOKIE[$securityCookie]))).'";'."\n"; ?>
+			body.appendChild(script);
+		</script>
+		</body>
+		</html>
+		<?php
+	}
 }else{
 ?>
 <html>
@@ -155,7 +470,7 @@ if($externalStyleSheet!='')
 <script type="text/javascript">
 	document.domain=HOSTNAME;
 	
-	function AJAXSend() {
+	function AJAXSend(){
 		Message = document.getElementById("message").value;
 		sendAJAXMessage(userName,Signature,Message,"#omnimaga",omnimagaUserId);
 		oldMessages.push(Message);
@@ -170,11 +485,9 @@ if($externalStyleSheet!='')
 			setCookie("oldMessages-"+getChannelEn(),oldMessages.join("\n"),30);
 	}
 	
-	function resize()
-	{
+	function resize(){
 		var offset = 42;
-		if ("\v" != "v")
-		{
+		if ("\v" != "v"){
 			winbg2=document.getElementById("windowbg2");
 			msg = document.getElementById("message");
 			send = document.getElementById("send");
@@ -186,9 +499,7 @@ if($externalStyleSheet!='')
 			mBoxCont.scrollTop = mBoxCont.scrollHeight;
 			//msg.style.width = mBoxCont.clientWidth - send.clientWidth - "39" + "px";
 			//msg.style.left = "0px";
-		}
-		else
-		{
+		}else{
 			page = document.getElementsByTagName("html")[0];
 			winbg2=document.getElementById("windowbg2");
 			msg = document.getElementById("message");
