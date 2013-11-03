@@ -141,7 +141,7 @@ Enable Scrollwheel:</td><td><script type="text/javascript"> document.write(getHT
 <?php
 }elseif(isset($_GET['admin'])){
 	function adminWriteConfig(){
-		global $sql_server,$sql_db,$sql_user,$sql_password,$signature_key,$hostname,$searchNamesUrl,$checkLoginUrl,$securityCookie,$curidFilePath,$calcKey,$externalStyleSheet,$channels,$exChans,$opGroups,$hotlinks,$ircBot_servers,$ircBot_serversT,$ircBot_ident,$ircBot_identT,$ircBot_botPasswd,$ircBot_botNick,$ircBot_topicBotNick;
+		global $OmnomIRC_version,$sql_server,$sql_db,$sql_user,$sql_password,$signature_key,$hostname,$searchNamesUrl,$checkLoginUrl,$securityCookie,$curidFilePath,$calcKey,$externalStyleSheet,$channels,$exChans,$opGroups,$hotlinks,$ircBot_servers,$ircBot_serversT,$ircBot_ident,$ircBot_identT,$ircBot_botPasswd,$ircBot_botNick,$ircBot_topicBotNick;
 		$config = '<?php
 /* This is a automatically generated config-file by OmnomIRC, please use the admin pannel to edit it! */
 include_once(realpath(dirname(__FILE__)).\'/Source/sql.php\');
@@ -149,6 +149,7 @@ include_once(realpath(dirname(__FILE__)).\'/Source/sign.php\');
 include_once(realpath(dirname(__FILE__)).\'/Source/userlist.php\');
 include_once(realpath(dirname(__FILE__)).\'/Source/cachefix.php\');
 
+$OmnomIRC_version = "'.$OmnomIRC_version.'";
 $sql_server="'.$sql_server.'";
 $sql_db="'.$sql_db.'";
 $sql_user="'.$sql_user.'";
@@ -202,7 +203,8 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 			if(isset($_GET['page'])){
 				switch($_GET['page']){
 					case 'index':
-						echo 'OmnomIRC Admin Pannel<br>Please note that it is still WIP';
+						echo 'OmnomIRC Admin Pannel<br>Please note that it is still WIP<br>';
+						echo "OmnomIRC Version: $OmnomIRC_version";
 					break;
 					case 'channels':
 						if(!isset($_POST['chans']) || !isset($_POST['exChans'])){
@@ -217,16 +219,14 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 							foreach($channels as $chan){
 								$chanStr.='[\''.$chan[0].'\','.($chan[1]?'true':'false').'],';
 							}
-							$chanStr = substr($chanStr,0,-1);
-							echo $chanStr;
+							echo substr($chanStr,0,-1);
 							echo '];';
 							echo 'exChannels = [';
 							$chanStr = '';
 							foreach($exChans as $chan){
 								$chanStr.='[\''.$chan[0].'\','.($chan[1]?'true':'false').'],';
 							}
-							$chanStr = substr($chanStr,0,-1);
-							echo $chanStr;
+							echo substr($chanStr,0,-1);
 							echo '];drawChannels();';
 							echo '" style="display:none;">';
 						}else{
@@ -259,6 +259,20 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 						echo '<div style="font-weight:bold">Hotlinks Settings</div>';
 						echo '<span class="highlight">Please don\'t change the toggle, about and admin option!</span><br>';
 						echo 'Comming soon!';
+						echo '<img src="omni.png" onload="';
+						echo 'hotlinks=[';
+						$temp = '';
+						foreach($hotlinks as $h){
+							$temp2 = '';
+							$temp .= '[';
+							foreach($h as $key => $link)
+								$temp .= "['".$key."','".str_replace("'","\\'",$link)."'],";
+							$temp .= substr($temp2,0,-1);
+							$temp .= '],';
+						}
+						echo substr($temp,0,-1);
+						echo '];';
+						echo '" style="display:none;">';
 					break;
 					case 'sql':
 						if(!isset($_POST['sql_db']) || !isset($_POST['sql_user']) || !isset($_POST['sql_password']) || !isset($_POST['sql_server'])){
@@ -488,27 +502,6 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 				}
 				return a;
 			}
-			function deleteChan(num,type){
-				if(!type)
-					channels = deleteFromArray(channels,num);
-				else
-					exChannels = deleteFromArray(exChannels,num);
-				drawChannels();
-			}
-			function moveChanUp(num,type){
-				if(!type)
-					channels = moveArrayUp(channels,num);
-				else
-					exChannels = moveArrayUp(exChannels,num);
-				drawChannels();
-			}
-			function moveChanDown(num,type){
-				if(!type)
-					channels = moveArrayDown(channels,num);
-				else
-					exChannels = moveArrayDown(exChannels,num);
-				drawChannels();
-			}
 			function setChannel(num,is,type){
 				if(!type){
 					channels[num][1] = is;
@@ -517,33 +510,25 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 				}
 				drawChannels();
 			}
-			function addChan(str,type){
-				if(!type){
-					channels.push([str,true]);
-				}else{
-					exChannels.push([str,true]);
-				}
-				drawChannels();
-			}
 			function drawChannels(){
 				var elem = document.getElementById('channelCont');
 				elem.innerHTML = '';
 				if(channels.length!=0){
 					for(var i=0;i<channels.length;i++){
-						elem.innerHTML += '<a onclick="deleteChan('+i+',false);return false">x</a> '+channels[i][0]+'<input type="checkbox" '+(channels[i][1]?'checked="checked" onclick="setChannel('+i+',false,false)"':'onclick="setChannel('+i+',true,false)"')+'>'+
-							' <a onclick="moveChanUp('+i+',false);return false">^</a> <a onclick="moveChanDown('+i+',false);return false">v</a><br>';
+						elem.innerHTML += '<a onclick="channels=deleteFromArray(channels,'+i+');drawChannels();return false">x</a> '+channels[i][0]+'<input type="checkbox" '+(channels[i][1]?'checked="checked" onclick="setChannel('+i+',false,false)"':'onclick="setChannel('+i+',true,false)"')+'>'+
+							' <a onclick="channels=moveArrayUp(channels,'+i+');drawChannels();return false">^</a> <a onclick="channels=moveArrayDown(channels,'+i+');drawChannels();return false">v</a><br>';
 					}
 				}
-				elem.innerHTML += 'New Channel: <span><input type="text"><button onclick="addChan(this.parentNode.getElementsByTagName(\'input\')[0].value,false)">Add</button></span>'
+				elem.innerHTML += 'New Channel: <span><input type="text"><button onclick="channels.push([this.parentNode.getElementsByTagName(\'input\')[0].value,true]);this.parentNode.getElementsByTagName(\'input\')[0].value=\'\';drawChannels();">Add</button></span>'
 				elem = document.getElementById('exChannelCont');
 				elem.innerHTML = '';
 				if(exChannels.length!=0){
 					for(var i=0;i<exChannels.length;i++){
-						elem.innerHTML += '<a onclick="deleteChan('+i+',true);return false">x</a> '+exChannels[i][0]+
-							' <a onclick="moveChanUp('+i+',true);return false">^</a> <a onclick="moveChanDown('+i+',true);return false">v</a><br>';
+						elem.innerHTML += '<a onclick="exChannels=deleteFromArray(exChannels,'+i+');drawChannels();return false">x</a> '+exChannels[i][0]+
+							' <a onclick="exChannels=moveArrayUp(exChannels,'+i+');drawChannels();return false">^</a> <a onclick="exChannels=moveArrayDown(exChannels,'+i+');drawChannels();return false">v</a><br>';
 					}
 				}
-				elem.innerHTML += 'New Channel: <span><input type="text"><button onclick="addChan(this.parentNode.getElementsByTagName(\'input\')[0].value,true)">Add</button></span>';
+				elem.innerHTML += 'New Channel: <span><input type="text"><button onclick="exChannels.push([this.parentNode.getElementsByTagName(\'input\')[0].value,true]);this.parentNode.getElementsByTagName(\'input\')[0].value=\'\';drawChannels();">Add</button></span>';
 				
 			}
 			function saveBotCfg(){
@@ -561,27 +546,6 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 				}
 				setPage('irc','botCont='+botStr+'&botContT='+botTStr+'&ircBotBotPasswd='+base64.encode(document.getElementById('ircBotBotPasswd').value)+'&ircBotBotNick='+base64.encode(document.getElementById('ircBotBotNick').value)+
 					'&ircBotTopicBotNick='+base64.encode(document.getElementById('ircBotTopicBotNick').value));
-			}
-			function deleteBot(num,type){
-				if(type)
-					ircBot = deleteFromArray(ircBot,num);
-				else
-					ircBotT = deleteFromArray(ircBotT,num);
-				drawBotSettings();
-			}
-			function moveBotUp(num,type){
-				if(type)
-					ircBot = moveArrayUp(ircBot,num);
-				else
-					ircBotT = moveArrayUp(ircBotT,num);
-				drawBotSettings();
-			}
-			function moveBotDown(num,type){
-				if(type)
-					ircBot = moveArrayDown(ircBot,num);
-				else
-					ircBotT = moveArrayDown(ircBotT,num);
-				drawBotSettings();
 			}
 			function saveBot(num,type){
 				var elem,a;
@@ -618,20 +582,20 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 				elem.innerHTML = '';
 				if(ircBot.length!=0){
 					for(var i=0;i<ircBot.length;i++){
-						elem.innerHTML += '<span id="b'+i+'"><a onclick="deleteBot('+i+',true);return false">x</a> '+ircBot[i][0]+':'+ircBot[i][1].toString()+' '+ircBot[i][2]+
-							' <a onclick="editBot('+i+',true);return false">edit</a> <a onclick="moveBotUp('+i+',true);return false">^</a> <a onclick="moveBotDown('+i+',true);return false">v</a></span><br>';
+						elem.innerHTML += '<span id="b'+i+'"><a onclick="ircBot=deleteFromArray(ircBot,'+i+');drawBotSettings();return false">x</a> '+ircBot[i][0]+':'+ircBot[i][1].toString()+' '+ircBot[i][2]+
+							' <a onclick="editBot('+i+',true);return false">edit</a> <a onclick="ircBot=moveArrayUp(ircBot,'+i+');drawBotSettings();return false">^</a> <a onclick="ircBot=moveArrayDown(ircBot,'+i+');drawBotSettings();return false">v</a></span><br>';
 					}
 				}
-				elem.innerHTML += '<a onclick="ircBot.push([\'&amp;lt;server&amp;gt;\',6667,\'&amp;lt;ident&amp;gt;\']);drawBotSettings();return false">Add server</a>';
+				elem.innerHTML += '<a onclick="ircBot.push([\'&amp;lt;server&amp;gt;\',6667,\'&amp;lt;ident&amp;gt;\']);drawBotSettings();editBot(ircBot.length-1,true);return false">Add server</a>';
 				elem = document.getElementById('botContT');
 				elem.innerHTML = '';
 				if(ircBotT.length!=0){
 					for(var i=0;i<ircBotT.length;i++){
-						elem.innerHTML += '<span id="bt'+i+'"><a onclick="deleteBot('+i+',false);return false">x</a> '+ircBotT[i][0]+':'+ircBotT[i][1].toString()+' '+ircBotT[i][2]+
-							' <a onclick="editBot('+i+',false);return false">edit</a> <a onclick="moveBotUp('+i+',false);return false">^</a> <a onclick="moveBotDown('+i+',false);return false">v</a></span><br>';
+						elem.innerHTML += '<span id="bt'+i+'"><a onclick="ircBotT=deleteFromArray(ircBotT,'+i+');drawBotSettings();return false">x</a> '+ircBotT[i][0]+':'+ircBotT[i][1].toString()+' '+ircBotT[i][2]+
+							' <a onclick="editBot('+i+',false);return false">edit</a> <a onclick="ircBotT=moveArrayUp(ircBotT,'+i+');drawBotSettings();return false">^</a> <a onclick="ircBotT=moveArrayDown(ircBotT,'+i+');drawBotSettings();return false">v</a></span><br>';
 					}
 				}
-				elem.innerHTML += '<a onclick="ircBotT.push([\'&amp;lt;server&amp;gt;\',6667,\'&amp;lt;ident&amp;gt;\']);drawBotSettings();return false">Add server</a>';
+				elem.innerHTML += '<a onclick="ircBotT.push([\'&amp;lt;server&amp;gt;\',6667,\'&amp;lt;ident&amp;gt;\']);drawBotSettings();editBot(ircBotT.length-1,false);return false">Add server</a>';
 			}
 			function saveOp(){
 				var opStr = '';
