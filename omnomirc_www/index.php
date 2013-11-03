@@ -161,40 +161,13 @@ $calcKey="'.$calcKey.'";
 $externalStyleSheet="'.$externalStyleSheet.'";
 
 $channels=Array();
-';
-		foreach($channels as $chan){
-			if($chan && is_array($chan)){
-				$config .= '$channels[]=Array("'.$chan[0].'",'.((bool)$chan[1]?'true':'false').");\n";
-			}
-		}
-$config .= '
+';foreach($channels as $chan){if($chan && is_array($chan)){$config .= '$channels[]=Array("'.$chan[0].'",'.((bool)$chan[1]?'true':'false').");\n";}}$config .= '
 $exChans=Array();
-';
-		foreach($exChans as $chan){
-			if($chan && is_array($chan)){
-				$config .= '$exChans[]=Array("'.$chan[0].'",'.((bool)$chan[1]?'true':'false').");\n";
-			}
-		}
-$config .= '
-$opGroups = array(';
-		$temp = '';
-		foreach($opGroups as $g){
-			$temp .= '"'.$g.'",';
-		}
-		$config .= substr($temp,0,-1);
-$config.=');
+';foreach($exChans as $chan){if($chan && is_array($chan)){$config .= '$exChans[]=Array("'.$chan[0].'",'.((bool)$chan[1]?'true':'false').");\n";}}$config .= '
+$opGroups = array(';$temp = '';foreach($opGroups as $g){$temp .= '"'.$g.'",';}$config .= substr($temp,0,-1);$config.=');
 
 $hotlinks=Array();
-';
-		foreach($hotlinks as $link){
-			$config .= '$hotlinks[]=Array('."\n";
-			$temp = '';
-			foreach($link as $key => $value)
-				$temp .= "\t'".$key."' => '".$value."',\n";
-			$config .= substr($temp,0,-2);
-			$config .= "\n);\n";
-		}
-$config.='
+';foreach($hotlinks as $link){$config .= '$hotlinks[]=Array('."\n";$temp = '';foreach($link as $key => $value)$temp .= "\t'".$key."' => '".$value."',\n";$config .= substr($temp,0,-2);$config .= "\n);\n";}$config.='
 $defaultChan = $channels[0][0];
 if (isset($_GET[\'js\'])) {
         header(\'Content-type: text/javascript\');
@@ -202,41 +175,23 @@ if (isset($_GET[\'js\'])) {
 }
 
 $ircBot_servers = Array();
-';
-		foreach($ircBot_servers as $s){
-			if($s && is_array($s)){
-				$config .= '$ircBot_servers[]=Array("'.$s[0].'",'.$s.");\n";
-			}
-		}
-$config .= '
+';foreach($ircBot_servers as $s){if($s && is_array($s)){$config .= '$ircBot_servers[]=Array("'.$s[0].'",'.$s.");\n";}}$config .= '
 $ircBot_serversT = Array();
-';
-		foreach($ircBot_serversT as $s){
-			if($s && is_array($s)){
-				$config .= '$ircBot_serversT[]=Array("'.$s[0].'",'.$s.");\n";
-			}
-		}
-$config .= '
+';foreach($ircBot_serversT as $s){if($s && is_array($s)){$config .= '$ircBot_serversT[]=Array("'.$s[0].'",'.$s.");\n";}}$config .= '
 $ircBot_ident = Array();
-';
-		foreach($ircBot_ident as $i){
-			$config .= '$ircBot_ident[]="'.str_replace("\n","\\n",addslashes($i))."\"\n";
-		}
-$config .= '
+';foreach($ircBot_ident as $i){$config .= '$ircBot_ident[]="'.str_replace("\n","\\n",addslashes($i))."\"\n";}$config .= '
 $ircBot_identT = Array();
-';
-		foreach($ircBot_identT as $i){
-			$config .= '$ircBot_identT[]="'.str_replace("\n","\\n",addslashes($i))."\"\n";
-		}
-$config .= '
+';foreach($ircBot_identT as $i){$config .= '$ircBot_identT[]="'.str_replace("\n","\\n",addslashes($i))."\"\n";}$config .= '
 $ircBot_botPasswd="'.$ircBot_botPasswd.'";
 $ircBot_botNick="'.$ircBot_botNick.'";
 $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 ?>';
-		if (file_put_contents('config2.php',$config))
-			echo 'Config written<br/>';
-		else
-			echo 'Couldn\'t write config';
+		if (file_put_contents('config2.php',$config)){
+			echo 'Config written';
+			return true;
+		}
+		echo 'Couldn\'t write config';
+		return false;
 	}
 	function adminGetLinkHTML($inner,$page){
 		return "<a onclick='getPage(\"$page\");return false'>$inner</a>";
@@ -249,7 +204,7 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 						echo 'OmnomIRC Admin Pannel<br>Please note that it is still WIP';
 					break;
 					case 'channels':
-						if(!isset($_GET['chans']) && !isset($_GET['exChans'])){
+						if(!isset($_POST['chans']) && !isset($_POST['exChans'])){
 							echo '<div style="font-weight:bold">Channels</div>';
 							echo '<div id="channelCont"></div>';
 							echo '<div style="font-weight:bold">extra Channels (only for irc bot)</div>';
@@ -275,7 +230,7 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 							echo '" style="display:none;">';
 						}else{
 							$channels=Array();
-							$temp = explode(';',$_GET['chans']);
+							$temp = explode(';',$_POST['chans']);
 							foreach($temp as $t){
 								if($t && $t!=''){
 									$e = explode(':',$t);
@@ -286,7 +241,7 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 								}
 							}
 							$exChans=Array();
-							$temp = explode(';',$_GET['exChans']);
+							$temp = explode(';',$_POST['exChans']);
 							foreach($temp as $t){
 								if($t && $t!=''){
 									$e = explode(':',$t);
@@ -296,6 +251,29 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 									$exChans[]=Array(base64_url_decode($e[0]),$temp);
 								}
 							}
+							adminWriteConfig();
+						}
+					break;
+					case 'sql':
+						if(!isset($_POST['sql_db']) && !isset($_POST['sql_user']) && !isset($_POST['sql_password']) && !isset($_POST['sql_server'])){
+							echo '<div style="font-weight:bold">SQL Settings</div>';
+							echo '<span class="highlight">Don\'t change this unless you are <b>really</b> sure what you are doing.</span><br>';
+							echo 'SQL Server:<input type="text" value="'.$sql_server.'" id="sqlServer"><br>';
+							echo 'SQL Database:<input type="text" value="'.$sql_db.'" id="sqlDb"><br>';
+							echo 'SQL User:<input type="text" value="'.$sql_user.'" id="sqlUser"><br>';
+							echo 'SQL Password:<input type="password" id="sqlPassword"><br>';
+							echo '<button onclick="if(document.getElementById(\'sqlPassword\').value!=\'\'){';
+							echo 'setPage(\'sql\',\'sql_server=\'+base64.encode(document.getElementById(\'sqlServer\').value)';
+							echo '+\'&sql_db=\'+base64.encode(document.getElementById(\'sqlDb\').value)';
+							echo '+\'&sql_user=\'+base64.encode(document.getElementById(\'sqlUser\').value)';
+							echo '+\'&sql_password=\'+base64.encode(document.getElementById(\'sqlPassword\').value)';
+							echo ');document.getElementById(\'sqlPassword\').value=\'\';}else{alert(\'you need to set a password\');}';
+							echo '">Save Changes</button>';
+						}else{
+							$sql_server = base64_url_decode($_POST['sql_server']);
+							$sql_db = base64_url_decode($_POST['sql_db']);
+							$sql_user = base64_url_decode($_POST['sql_user']);
+							$sql_password = base64_url_decode($_POST['sql_password']);
 							adminWriteConfig();
 						}
 					break;
@@ -333,6 +311,17 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 				getPage.setRequestHeader('Content-type','application/x-www-form-urlencoded');
 				getPage.send();
 			}
+			function setPage(name,value){
+				var getPage = new XMLHttpRequest();
+				getPage.onreadystatechange=function(){
+					if(getPage.readyState==4 && getPage.status==200){
+						alert(getPage.responseText);
+					}
+				}
+				getPage.open('POST','?admin&server&page='+name+'&nick='+userName+'&sig='+Signature+'&id='+omnimagaUserId,true);
+				getPage.setRequestHeader('Content-type','application/x-www-form-urlencoded');
+				getPage.send(value);
+			}
 			function saveChannels(){
 				var chanStr = '',
 					exChanStr = '';
@@ -346,7 +335,7 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 						exChanStr+=base64.encode(exChannels[i][0])+':'+(exChannels[i][1]?'true':'false')+';';
 					}
 				}
-				getPage('channels&chans='+chanStr+'&exChans='+exChanStr);
+				setPage('channels','chans='+chanStr+'&exChans='+exChanStr);
 			}
 			function deleteChan(num,type){
 				if(!type){
