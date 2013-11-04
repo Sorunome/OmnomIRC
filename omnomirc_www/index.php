@@ -256,23 +256,42 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 						}
 					break;
 					case 'hotlinks':
-						echo '<div style="font-weight:bold">Hotlinks Settings</div>';
-						echo '<span class="highlight">Please don\'t change the toggle, about and admin option!</span><br>';
-						echo 'Comming soon!';
-						echo '<img src="omni.png" onload="';
-						echo 'hotlinks=[';
-						$temp = '';
-						foreach($hotlinks as $h){
-							$temp2 = '';
-							$temp .= '[';
-							foreach($h as $key => $link)
-								$temp .= "['".$key."','".str_replace("'","\\'",$link)."'],";
-							$temp .= substr($temp2,0,-1);
-							$temp .= '],';
+						if(!isset($_POST['links'])){
+							echo '<div style="font-weight:bold">Hotlinks Settings</div>';
+							echo '<span class="highlight">Please don\'t change the toggle, about and admin option!</span><br>';
+							echo '<div id="hotlinksCont"></div>';
+							echo '<button onclick="saveHotlinks()">Save Changes</button>';
+							echo '<img src="omni.png" onload="';
+							echo 'hotlinks=[';
+							$temp = '';
+							foreach($hotlinks as $h){
+								$temp2 = '';
+								$temp .= '[';
+								foreach($h as $key => $link)
+									$temp .= "['".$key."','".str_replace("'","\\'",$link)."'],";
+								$temp .= substr($temp2,0,-1);
+								$temp .= '],';
+							}
+							echo substr($temp,0,-1);
+							echo '];drawHotlinks();';
+							echo '" style="display:none;">';
+						}else{
+							$hotlinks = Array();
+							$temp = explode(';',$_POST['links']);
+							foreach($temp as $t){
+								if($t!=''){
+									$hotlinks[] = Array();
+									$uemp = explode(':',$t);
+									foreach($uemp as $u){
+										if($u!=''){
+											$vemp = explode('.',$u);
+											$hotlinks[count($hotlinks)-1][base64_url_decode($vemp[0])] = base64_url_decode($vemp[1]);
+										}
+									}
+								}
+							}
+							adminWriteConfig();
 						}
-						echo substr($temp,0,-1);
-						echo '];';
-						echo '" style="display:none;">';
 					break;
 					case 'sql':
 						if(!isset($_POST['sql_db']) || !isset($_POST['sql_user']) || !isset($_POST['sql_password']) || !isset($_POST['sql_server'])){
@@ -615,6 +634,50 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 					}
 				}
 				elem.innerHTML += '<input id="newOpGroup" type="text"><button onclick="opGroups.push(document.getElementById(\'newOpGroup\').value);document.getElementById(\'newOpGroup\').value=\'\';drawOpGroups();">Add</button>';
+			}
+			function saveHotlinks(){
+				var hotStr = '';
+				if(hotlinks.length!=0){
+					for(var i=0;i<hotlinks.length;i++){
+						if(hotlinks[i].length!=0){
+							for(var j=0;j<hotlinks[i].length;j++){
+								if(hotlinks[i][j].length!=0){
+									hotStr += base64.encode(hotlinks[i][j][0])+'.'+base64.encode(hotlinks[i][j][1])+':';
+								}
+							}
+							hotStr+=';';
+						}
+					}
+				}
+				setPage('hotlinks','links='+hotStr);
+			}
+			function saveHotlink(i,j){
+				var elem = document.getElementById('h'+i+':'+j);
+				hotlinks[i][j][0] = elem.getElementsByTagName('input')[0].value;
+				hotlinks[i][j][1] = elem.getElementsByTagName('input')[1].value;
+				drawHotlinks();
+			}
+			function editHotlink(i,j){
+				document.getElementById('h'+i+':'+j).innerHTML = '<input type="text" value="'+hotlinks[i][j][0]+'"><input type="text" value="'+hotlinks[i][j][1]+'">'+
+					'<a onclick="saveHotlink('+i+','+j+');">done</a>';
+			}
+			function drawHotlinks(){
+				elem = document.getElementById('hotlinksCont');
+				elem.innerHTML = '';
+				if(hotlinks.length!=0){
+					for(var i=0;i<hotlinks.length;i++){
+						elem.innerHTML += '<a onclick="hotlinks=deleteFromArray(hotlinks,'+i+');drawHotlinks();return false">x</a> Hotlink: '+
+							' <a onclick="hotlinks=moveArrayUp(hotlinks,'+i+');drawHotlinks();return false">^</a> <a onclick="hotlinks=moveArrayDown(hotlinks,'+i+');drawHotlinks();return false">v</a><br>';
+						if(hotlinks[i].length!=0){
+							for(var j=0;j<hotlinks[i].length;j++){
+								elem.innerHTML += '<span id="h'+i+':'+j+'" style="margin-left:50px"><a onclick="hotlinks['+i+']=deleteFromArray(hotlinks['+i+'],'+j+');drawHotlinks();return false">x</a> '+hotlinks[i][j][0]+' => '+hotlinks[i][j][1]+
+									' <a onclick="editHotlink('+i+','+j+');return false">edit</a></span><br>';
+							}
+						}
+						elem.innerHTML += '<span style="margin-left:50px"><a onclick="hotlinks['+i+'].push([\'attr\',\'value\']);drawHotlinks();editHotlink('+i+',hotlinks['+i+'].length-1);return false">Add attribute</a></span><br>';
+					}
+				}
+				elem.innerHTML += '<a onclick="hotlinks.push([[\'inner\',\'myHotlink\']]);drawHotlinks();editHotlink(hotlinks.length-1,hotlinks[hotlinks.length-1].length-1);return false">Add hotlink</a>';
 			}
 			function resize(){
 				var offset = 20;
