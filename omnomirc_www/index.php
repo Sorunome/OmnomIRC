@@ -161,6 +161,7 @@ $checkLoginUrl="'.$checkLoginUrl.'";
 $curidFilePath="'.$curidFilePath.'";
 $calcKey="'.$calcKey.'";
 $externalStyleSheet="'.$externalStyleSheet.'";
+$securityCookie="'.$securityCookie.'";
 
 $channels=Array();
 ';foreach($channels as $chan){if($chan && is_array($chan)){$config .= '$channels[]=Array("'.$chan[0].'",'.((bool)$chan[1]?'true':'false').");\n";}}$config .= '
@@ -188,7 +189,7 @@ $ircBot_botPasswd="'.$ircBot_botPasswd.'";
 $ircBot_botNick="'.$ircBot_botNick.'";
 $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 ?>';
-		if (file_put_contents('config2.php',$config)){
+		if (file_put_contents('config.php',$config)){
 			echo 'Config written';
 			return true;
 		}
