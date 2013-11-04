@@ -204,7 +204,7 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 			if(isset($_GET['page'])){
 				switch($_GET['page']){
 					case 'index':
-						echo 'OmnomIRC Admin Pannel<br>Please note that it is still WIP<br>';
+						echo '<b>OmnomIRC Admin Pannel</b><br>';
 						echo "OmnomIRC Version: $OmnomIRC_version";
 					break;
 					case 'channels':

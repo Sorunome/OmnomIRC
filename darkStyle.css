@@ -6,7 +6,7 @@
 #scrollBar,
 td.curchan,
 #scrollBarLine,
-#UserList,
+#UserListInnerCont,
 .linehigh {
 	background:#262626;
 	border-color:#4d4d4d;
@@ -37,11 +37,11 @@ td.chan:hover {
 body,
 #scrollbar:hover,
 #scrollbar:active,
-#UserList:hover{
+#UserListInnerCont:hover{
 	background-color:#121212;
 }
 body,
-#UserList,
+#UserListInnerCont,
 .irc-date,
 td.curchan,
 .highlight{

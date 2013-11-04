@@ -121,7 +121,7 @@ DELIMITER $$
 --
 -- Events
 --
-CREATE DEFINER=`omnomirc`@`localhost` EVENT `Clean up Userstuff` ON SCHEDULE EVERY 1 DAY STARTS '2013-10-31 00:00:00' ON COMPLETION NOT PRESERVE ENABLE COMMENT 'Clean up the db' DO DELETE FROM irc_userstuff
+CREATE EVENT `Clean up Userstuff` ON SCHEDULE EVERY 1 DAY STARTS '2013-10-31 00:00:00' ON COMPLETION NOT PRESERVE ENABLE COMMENT 'Clean up the db' DO DELETE FROM irc_userstuff
 	WHERE (ignores = '' OR ignores IS NULL)
 	AND (ops = '' OR ops IS NULL)
 	AND (bans = '' OR bans IS NULL)
