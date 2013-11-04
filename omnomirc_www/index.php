@@ -724,8 +724,8 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 if($externalStyleSheet!='')
 	echo '<link rel="stylesheet" type="text/css" href="'.$externalStyleSheet.'" />';
 ?>
-<script src="config.php?js"></script>
-<script src="btoa.js"></script>
+<script type="text/javascript" src="config.php?js"></script>
+<script type="text/javascript" src="btoa.js"></script>
 <script type="text/javascript">
 	document.domain=HOSTNAME;
 	
@@ -886,11 +886,31 @@ if($externalStyleSheet!='')
 <div id="indicator" style="position:absolute;z-index:44;margin:0;padding:0;top:0;right:0;"></div>
 <div id="lastSeenCont" style="display:none;"></div>
 
-<script src="Omnom_Options.js"></script>
-<script src="Omnom_Parser.js"></script>
-<script src="Omnom_Tab.js"></script>
-<script src="Omnom_Misc.js"></script>
+<script type="text/javascript" src="Omnom_Options.js"></script>
+<script type="text/javascript" src="Omnom_Parser.js"></script>
+<script type="text/javascript" src="Omnom_Tab.js"></script>
+<script type="text/javascript" src="Omnom_Misc.js"></script>
+<script type="text/javascript">
+<?php
+$chanStr = '';
+foreach ($channels as $chan)
+	if ($chan[1])$chanStr = $chanStr . '["'.base64_url_encode($chan[0]).'",false],';
+$chanStr = substr($chanStr,0,-1);
 
+echo 'var channels=[';
+echo $chanStr;
+echo '];';
+
+$exChanStr = "";
+foreach ($channels as $chan)
+	if (!$chan[1])$exChanStr = $exChanStr . '["'.base64_url_encode($chan[0]).'",false],';
+$exChanStr = substr($exChanStr,0,-1);
+
+echo 'var exChannels=[';
+echo $exChanStr;
+echo '];';
+?>
+</script>
 <script type="text/javascript">
 	startIndicator();
 	

@@ -739,11 +739,9 @@ scrolledDown = true;
 		},false);
 		doLineHigh=true;
 		
-		var chanScr= document.createElement('script');
-		chanScr.type= 'text/javascript';
-		chanScr.src= 'Channels.php';
-		chanScr.onload= function(){channelSelectorCallback();readOldMessagesCookies();};
-		body.appendChild(chanScr);
+		
+		channelSelectorCallback();
+		readOldMessagesCookies();
 		chanList = document.getElementById('chanList');
 		if(userName == "Guest"){
 			var message = document.getElementById("message");
