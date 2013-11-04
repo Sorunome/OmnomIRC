@@ -249,7 +249,7 @@ function userLeave($username,$channel){
 	if($pos){
 		unset($userList[$channel][$pos]);
 	}
-	sql_query("DELETE FROM `irc_users` WHERE `username` = '%s' AND `channel` = '%s' AND online='0'",$username,$channel);
+	sql_query("UPDATE `irc_users` SET `isOnline`='0' WHERE `username` = '%s' AND `channel` = '%s' AND online='0'",$username,$channel);
 }
 
 function userQuit($username,$message,$socketToExclude){
@@ -263,7 +263,7 @@ function userQuit($username,$message,$socketToExclude){
 		}
 	}
 	addLine($username,'',"quit",$message,'');
-	sql_query("DELETE FROM `irc_users` WHERE `username` = '%s' AND online='0'",$username);
+	sql_query("UPDATE `irc_users` SET `isOnline`='0' WHERE `username` = '%s' AND online='0'",$username);
 }
 function userNick($oldNick,$newNick,$socketToExclude){
 	global $userList;
@@ -285,9 +285,11 @@ function userJoin($username,$channel){
 	$channel = str_replace(':', '', $channel);
 	if(!isset($userList[$channel])) $userList[$channel] = Array();
 	array_push($userList[$channel], $username);
-	$tempSql = mysql_fetch_array(sql_query("SELECT * FROM irc_users WHERE username='%s' AND channel='%s' AND online='0'",$username,$channel));
+	$tempSql = mysql_fetch_array(sql_query("SELECT username,usernum FROM irc_users WHERE username='%s' AND channel='%s' AND online='0'",$username,$channel));
 	if($tempSql["username"]==NULL)
 		sql_query("INSERT INTO `irc_users` (`username`,`channel`) VALUES('%s','%s')",$username,$channel);
+	else
+		sql_query("UPDATE `irc_users` SET `isOnline`='1' WHERE `usernum`='%s'",$tempSql['usernum']);
 }
 
 

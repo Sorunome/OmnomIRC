@@ -119,7 +119,7 @@
 		echo "addLine('".$curMax[0].':topic:0:'.time().'::'.base64_url_encode(htmlspecialchars($curtopic['topic']))."');";
 		$users = Array();
 		
-		$result = sql_query("SELECT username,online,channel FROM `irc_users` WHERE `channel`='%s'",$channel);
+		$result = sql_query("SELECT username,online,channel FROM `irc_users` WHERE `channel`='%s' AND `isOnline`='1'",$channel);
 		while ($user = mysql_fetch_array($result)){
 			$users[count($users)][0] = strtolower($user['username']);
 			$users[count($users) - 1][1] = $user['username'];
