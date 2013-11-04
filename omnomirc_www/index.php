@@ -269,7 +269,7 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 								$temp2 = '';
 								$temp .= '[';
 								foreach($h as $key => $link)
-									$temp .= "['".$key."','".str_replace("'","\\'",$link)."'],";
+									$temp2 .= "['".$key."','".str_replace("'","\\'",$link)."'],";
 								$temp .= substr($temp2,0,-1);
 								$temp .= '],';
 							}

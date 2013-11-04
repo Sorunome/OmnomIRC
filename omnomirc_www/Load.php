@@ -42,7 +42,7 @@
 			if(strpos($userSql["bans"],base64_url_decode($_GET['channel'])."\n")!==false)
 				die("addLine('999999999999999999999999999:server:0:0:T21ub21JUkM=:RVJST1IgLSBiYW5uZWQ=');");
 			if(isset($_GET['id']) && isGlobalOp($nick,$signature,$_GET['id'])){
-				echo "document.getElementById('adminLink').style.display='';";
+				echo "try{document.getElementById('adminLink').style.display='';}catch(err){};";
 			}
 		}
 		if($channel[0]!="*" and $channel[0]!="#" and $channel[0]!="@" and $channel[0]!="&")
