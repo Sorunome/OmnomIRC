@@ -60,6 +60,9 @@
 	padding:0;
 	margin:0;
 }
+#hotlinks:empty,#hotlinks td:empty,#hotlinks tr:empty{
+	display:none;
+}
 #hotlinks {
 	margin-left:10%;
 	font-size:6pt;

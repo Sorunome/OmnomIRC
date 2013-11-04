@@ -264,6 +264,7 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 							echo '<button onclick="saveHotlinks()">Save Changes</button>';
 							echo '<img src="omni.png" onload="';
 							echo 'hotlinks=[';
+							
 							$temp = '';
 							foreach($hotlinks as $h){
 								$temp2 = '';
@@ -822,6 +823,12 @@ if($externalStyleSheet!='')
 			}
 			$i = !$i;
 		}
+		if($i){
+			echo '<tr style="display:none;" id="adminLink"><td><a href="?admin">Admin</a></td>';
+		}else{
+			echo '<td style="display:none;" id="adminLink"><a href="?admin">Admin</a></td>';
+		}
+		$i = !$i;
 		if(!$i){
 			echo '</tr>';
 		}
