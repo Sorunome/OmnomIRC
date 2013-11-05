@@ -76,9 +76,9 @@
 		else
 			$query = sql_query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND (`channel` LIKE '%s')",$curLine + 0,"%#%");
 		
-		$result = mysql_fetch_array($query);
+		$result = mysqli_fetch_array($query);
 		if(!isset($_GET['calc'])) {
-			$userSql = mysql_fetch_array(sql_query("SELECT * FROM `irc_userstuff` WHERE name='%s'",strtolower($nick)));
+			$userSql = mysqli_fetch_array(sql_query("SELECT * FROM `irc_userstuff` WHERE name='%s'",strtolower($nick)));
 			$ignorelist = '';
 			if($userSql['name']!=NULL) {
 				$ignorelist = $userSql['ignores'];
@@ -86,11 +86,11 @@
 		}
 		if (!isset($result[0])){
 			if (!isset($_GET['calc']))
-				$result = mysql_fetch_array(sql_query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND locate('%s',`message`) != 0 AND NOT (((`type` = 'pm' OR `type` = 'pmaction') AND `name1` <> '%s') OR (`type` = 'server'))",$curLine + 0,substr($nick,0,4), $nick));
+				$result = mysqli_fetch_array(sql_query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND locate('%s',`message`) != 0 AND NOT (((`type` = 'pm' OR `type` = 'pmaction') AND `name1` <> '%s') OR (`type` = 'server'))",$curLine + 0,substr($nick,0,4), $nick));
 			else
-				$result = mysql_fetch_array(sql_query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND (`channel` LIKE '%s')",$curLine + 0,"%#%"));
+				$result = mysqli_fetch_array(sql_query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND (`channel` LIKE '%s')",$curLine + 0,"%#%"));
 			if(!isset($result[0])){
-				$temp = mysql_fetch_array(sql_query("SELECT MAX(line_number) FROM `irc_lines`"));
+				$temp = mysqli_fetch_array(sql_query("SELECT MAX(line_number) FROM `irc_lines`"));
 				$curLine = $temp[0];
 				usleep(500000);
 				continue;
@@ -186,7 +186,7 @@
 				}
 				echo "\n";
 			}
-		}while($result = mysql_fetch_array($query));
+		}while($result = mysqli_fetch_array($query));
 		break;
 	}
 ?>

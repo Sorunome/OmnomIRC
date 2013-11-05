@@ -76,8 +76,8 @@
 													ORDER BY `line_number` ASC",$channel,$nick,$nick,$channel,$count + 0);
 		}
 		echo "void('$nick');";
-		while($result = mysql_fetch_array($res)){
-			$userSql = mysql_fetch_array(sql_query("SELECT * FROM `irc_userstuff` WHERE name='%s'",strtolower($nick)));
+		while($result = mysqli_fetch_array($res)){
+			$userSql = mysqli_fetch_array(sql_query("SELECT * FROM `irc_userstuff` WHERE name='%s'",strtolower($nick)));
 			$ignorelist = "";
 			if($userSql["name"]!=NULL){
 				$ignorelist = $userSql["ignores"];
@@ -113,14 +113,14 @@
 			}
 		}
 		
-		$curMax = mysql_fetch_array(sql_query("SELECT MAX(`line_number`) FROM `irc_lines`"));
+		$curMax = mysqli_fetch_array(sql_query("SELECT MAX(`line_number`) FROM `irc_lines`"));
 		echo "addLine('".$curMax[0].":curline');";
-		$curtopic = mysql_fetch_array(sql_query("SELECT topic FROM `irc_topics` WHERE `chan`='%s'",strtolower($channel)));
+		$curtopic = mysqli_fetch_array(sql_query("SELECT topic FROM `irc_topics` WHERE `chan`='%s'",strtolower($channel)));
 		echo "addLine('".$curMax[0].':topic:0:'.time().'::'.base64_url_encode(htmlspecialchars($curtopic['topic']))."');";
 		$users = Array();
 		
 		$result = sql_query("SELECT username,online,channel FROM `irc_users` WHERE `channel`='%s' AND `isOnline`='1'",$channel);
-		while ($user = mysql_fetch_array($result)){
+		while ($user = mysqli_fetch_array($result)){
 			$users[count($users)][0] = strtolower($user['username']);
 			$users[count($users) - 1][1] = $user['username'];
 			$users[count($users) - 1][2] = $user['online'];
@@ -133,13 +133,13 @@
 		}
 		if(isset($_GET['calc'])){
 			ob_end_clean();
-			$temp = mysql_fetch_array(sql_query("SELECT MAX(line_number) FROM `irc_lines`"));
+			$temp = mysqli_fetch_array(sql_query("SELECT MAX(line_number) FROM `irc_lines`"));
 			echo $temp[0];
 		}else
 			ob_end_flush();
 	}else{
 		if(isset($_GET['name']) && isset($_GET['chan']) && isset($_GET['online'])){
-			$temp = mysql_fetch_array(sql_query("SELECT `lastMsg` FROM `irc_users` WHERE username='%s' AND channel='%s' AND online='%s'",base64_url_decode($_GET['name']),base64_url_decode($_GET['chan']),$_GET['online']));
+			$temp = mysqli_fetch_array(sql_query("SELECT `lastMsg` FROM `irc_users` WHERE username='%s' AND channel='%s' AND online='%s'",base64_url_decode($_GET['name']),base64_url_decode($_GET['chan']),$_GET['online']));
 			echo $temp[0];
 		}else{
 			echo 'Bad parameters';

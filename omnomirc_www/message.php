@@ -116,7 +116,7 @@ ip 108.174.51.58
 					$returnmessage = "\x033You are not more ignoring $ignoreuser";
 					if($ignoreuser=='*')
 						$returnmessage = "\x033You are no longer ignoring anybody.";
-					mysql_fetch_array(sql_query("UPDATE `irc_userstuff` SET ignores='%s' WHERE name='%s'",$userSql["ignores"],strtolower($nick)));
+					mysqli_fetch_array(sql_query("UPDATE `irc_userstuff` SET ignores='%s' WHERE name='%s'",$userSql["ignores"],strtolower($nick)));
 					$reload = true;
 				}else{
 					$returnmessage = "\x034ERROR: You weren't ignoring $ignoreuser";
@@ -143,7 +143,7 @@ ip 108.174.51.58
 				if(isOp($nick,base64_url_decode($_GET['signature']),$_GET['id'],$channel)){
 					unset($parts[0]);
 					$newTopic = implode(' ',$parts);
-					$temp = mysql_fetch_array(sql_query("SELECT * FROM `irc_topics` WHERE chan='%s'",strtolower($channel)));
+					$temp = mysqli_fetch_array(sql_query("SELECT * FROM `irc_topics` WHERE chan='%s'",strtolower($channel)));
 					if($temp['chan']==NULL){
 						sql_query("INSERT INTO `irc_topics` (chan,topic) VALUES('%s','')",strtolower($channel));
 					}
@@ -295,7 +295,7 @@ ip 108.174.51.58
 		session_start();
 		echo "<html><head><meta http-equiv=\"refresh\" content=\"1;url=textmode.php?update=".$_SESSION['curline']."\"></head><body>Sending message...</body></html>";
 	}else{
-		$temp = mysql_fetch_array(sql_query("SELECT MAX(line_number) FROM irc_lines"));
+		$temp = mysqli_fetch_array(sql_query("SELECT MAX(line_number) FROM irc_lines"));
 		file_put_contents($curidFilePath,$temp[0]);
 	}
 ?>

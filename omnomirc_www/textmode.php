@@ -34,7 +34,7 @@ if(isset($_GET['message'])){
 												ORDER BY `line_number` ASC",$channel,$nick,$count + 0);
 		$_SESSION['content'] = "";
 	}
-	while($result = mysql_fetch_array($query)){
+	while($result = mysqli_fetch_array($query)){
 		$line = "<tr>";
 		$starBeginning = '<td>* '.htmlspecialchars($result['name1']).' ';
 		switch (strtolower($result['type'])){

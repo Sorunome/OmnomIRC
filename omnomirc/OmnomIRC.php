@@ -176,11 +176,11 @@ function parseMsg($allMessage,$callingSocket){
 
 function addLine($name1,$name2,$type,$message,$channel){
 	global $socket,$curidFilePath;
-	$curPosArr = mysql_fetch_array(sql_query("SELECT MAX('line_number') FROM `irc_lines`"));
+	$curPosArr = mysqli_fetch_array(sql_query("SELECT MAX('line_number') FROM `irc_lines`"));
 	$curPos =  $curPosArr[0]+ 1;
 	sql_query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`) VALUES ('%s','%s','%s','%s','%s','%s')",$name1,$name2,$message,$type,$channel,time());
 	if ($type=="topic") {
-		$temp = mysql_fetch_array(sql_query("SELECT * FROM `irc_topics` WHERE chan='%s'",strtolower($channel)));
+		$temp = mysqli_fetch_array(sql_query("SELECT * FROM `irc_topics` WHERE chan='%s'",strtolower($channel)));
 		if ($temp["chan"]==NULL) {
 			sql_query("INSERT INTO `irc_topics` (chan,topic) VALUES('%s','')",strtolower($channel));
 		}
@@ -188,7 +188,7 @@ function addLine($name1,$name2,$type,$message,$channel){
 	}
 	if($type=='action' || $type=='message')
 		sql_query("UPDATE `irc_users` SET lastMsg='%s' WHERE username='%s' AND channel='%s' AND online='0'",time(),$name1,$channel);
-	$temp = mysql_fetch_array(sql_query("SELECT MAX(line_number) FROM irc_lines"));
+	$temp = mysqli_fetch_array(sql_query("SELECT MAX(line_number) FROM irc_lines"));
 	file_put_contents($curidFilePath,$temp[0]);
 }
 
@@ -196,7 +196,7 @@ function processMessages(){
 	global $ircBot_topicBotNick;
 	$res = sql_query("SELECT * FROM irc_outgoing_messages");
 	$lastline = 0;
-	while($row = mysql_fetch_array($res)) {
+	while($row = mysqli_fetch_array($res)) {
 		$colorAdding="12(O)";
 		if ($row['fromSource']=='1')
 			$colorAdding="7(C)";
@@ -285,7 +285,7 @@ function userJoin($username,$channel){
 	$channel = str_replace(':', '', $channel);
 	if(!isset($userList[$channel])) $userList[$channel] = Array();
 	array_push($userList[$channel], $username);
-	$tempSql = mysql_fetch_array(sql_query("SELECT username,usernum FROM irc_users WHERE username='%s' AND channel='%s' AND online='0'",$username,$channel));
+	$tempSql = mysqli_fetch_array(sql_query("SELECT username,usernum FROM irc_users WHERE username='%s' AND channel='%s' AND online='0'",$username,$channel));
 	if($tempSql["username"]==NULL)
 		sql_query("INSERT INTO `irc_users` (`username`,`channel`) VALUES('%s','%s')",$username,$channel);
 	else

@@ -190,7 +190,7 @@ $ircBot_botPasswd="'.$ircBot_botPasswd.'";
 $ircBot_botNick="'.$ircBot_botNick.'";
 $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 ?>';
-		if (file_put_contents('config.php',$config)){
+		if(file_put_contents('config.php',$config)){
 			if($output)
 				echo 'Config written';
 			return true;
@@ -222,14 +222,15 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 			if(isset($_GET['page'])){
 				switch($_GET['page']){
 					case 'index':
-						if(!(isset($_POST['install']) && !$oirc_installed)){
+						if((!(isset($_POST['install']) && !$oirc_installed)) && !isset($_POST['backup'])){
 							echo '<b>OmnomIRC Admin Pannel</b><br>';
 							echo "OmnomIRC Version: $OmnomIRC_version<br>";
+							echo '<button onclick="setPage(\'index\',\'backup=1\');">Back up config</button><br>';
 							if(!$oirc_installed){
 								echo '<span class="highlight">You are currently in installation mode!</span><br>';
 								echo '<button onclick="setPage(\'index\',\'install=1\');">Install</button>';
 							}
-						}else{
+						}elseif((isset($_POST['install']) && !$oirc_installed)){
 							$sql_connection = connectSQL();
 							$sql = str_replace("\n","",file_get_contents("omnomirc.sql"));
 							$queries = explode(";",$sql);
@@ -241,6 +242,11 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 							$oirc_installed = true;
 							adminWriteConfig(false);
 							echo 'Successfully installed OmnomIRC!';
+						}elseif(isset($_POST['backup'])){
+							if(file_put_contents('config.backup.php',file_get_contents('config.php')))
+								echo 'Backed up!';
+							else
+								echo 'Couldn\'t write backup file!';
 						}
 					break;
 					case 'channels':
