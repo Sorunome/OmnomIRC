@@ -139,9 +139,9 @@ Enable Scrollwheel:</td><td><script type="text/javascript"> document.write(getHT
 </body>
 </html>
 <?php
-}elseif(isset($_GET['admin'])){
-	function adminWriteConfig(){
-		global $OmnomIRC_version,$sql_server,$sql_db,$sql_user,$sql_password,$signature_key,$hostname,$searchNamesUrl,$checkLoginUrl,$securityCookie,$curidFilePath,$calcKey,$externalStyleSheet,$channels,$exChans,$opGroups,$hotlinks,$ircBot_servers,$ircBot_serversT,$ircBot_ident,$ircBot_identT,$ircBot_botPasswd,$ircBot_botNick,$ircBot_topicBotNick;
+}elseif(isset($_GET['admin']) || !$oirc_installed){
+	function adminWriteConfig($output=true){
+		global $OmnomIRC_version,$oirc_installed,$sql_server,$sql_db,$sql_user,$sql_password,$signature_key,$hostname,$searchNamesUrl,$checkLoginUrl,$securityCookie,$curidFilePath,$calcKey,$externalStyleSheet,$channels,$exChans,$opGroups,$hotlinks,$ircBot_servers,$ircBot_serversT,$ircBot_ident,$ircBot_identT,$ircBot_botPasswd,$ircBot_botNick,$ircBot_topicBotNick;
 		$config = '<?php
 /* This is a automatically generated config-file by OmnomIRC, please use the admin pannel to edit it! */
 include_once(realpath(dirname(__FILE__)).\'/Source/sql.php\');
@@ -150,6 +150,7 @@ include_once(realpath(dirname(__FILE__)).\'/Source/userlist.php\');
 include_once(realpath(dirname(__FILE__)).\'/Source/cachefix.php\');
 
 $OmnomIRC_version = "'.$OmnomIRC_version.'";
+$oirc_installed = '.($oirc_installed?'true':'false').';
 $sql_server="'.$sql_server.'";
 $sql_db="'.$sql_db.'";
 $sql_user="'.$sql_user.'";
@@ -190,22 +191,57 @@ $ircBot_botNick="'.$ircBot_botNick.'";
 $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 ?>';
 		if (file_put_contents('config.php',$config)){
-			echo 'Config written';
+			if($output)
+				echo 'Config written';
 			return true;
 		}
-		echo 'Couldn\'t write config';
+		if($output)
+			echo 'Couldn\'t write config';
 		return false;
 	}
-	function adminGetLinkHTML($inner,$page){
-		return "<a onclick='getPage(\"$page\");return false'>$inner</a>";
+	function getRandKey(){
+		$randKey = rand(100,9999).'-'.Rand(10000,999999);
+		$randKey = md5($randKey);
+		$randKey = base64_encode($randKey);
+		return md5($randKey);
 	}
 	if(isset($_GET['server'])){
-		if(isset($_GET['nick']) && isset($_GET['sig']) && isset($_GET['id']) && isGlobalOp(base64_url_decode($_GET['nick']),base64_url_decode($_GET['sig']),$_GET['id'])){
+		if(!$oirc_installed || (isset($_GET['nick']) && isset($_GET['sig']) && isset($_GET['id']) && isGlobalOp(base64_url_decode($_GET['nick']),base64_url_decode($_GET['sig']),$_GET['id']))){
+			if($signature_key==''){
+				$signature_key = getRandKey();
+				adminWriteConfig(false);
+			}
+			if($calcKey==''){
+				$calcKey = getRandKey();
+				adminWriteConfig(false);
+			}
+			if($ircBot_botPasswd==''){
+				$ircBot_botPasswd = getRandKey();
+				adminWriteConfig(false);
+			}
 			if(isset($_GET['page'])){
 				switch($_GET['page']){
 					case 'index':
-						echo '<b>OmnomIRC Admin Pannel</b><br>';
-						echo "OmnomIRC Version: $OmnomIRC_version";
+						if(!(isset($_POST['install']) && !$oirc_installed)){
+							echo '<b>OmnomIRC Admin Pannel</b><br>';
+							echo "OmnomIRC Version: $OmnomIRC_version<br>";
+							if(!$oirc_installed){
+								echo '<span class="highlight">You are currently in installation mode!</span><br>';
+								echo '<button onclick="setPage(\'index\',\'install=1\');">Install</button>';
+							}
+						}else{
+							$sql_connection = connectSQL();
+							$sql = str_replace("\n","",file_get_contents("omnomirc.sql"));
+							$queries = explode(";",$sql);
+							foreach($queries as $query){
+								mysqli_query($sql_connection,$query);
+								if (mysqli_errno($sql_connection)!=0 && mysqli_errno($sql_connection)!=1065/*empty*/)
+									die('ERROR '.mysqli_errno($sql_connection).': '.mysqli_error($sql_connection));
+							}
+							$oirc_installed = true;
+							adminWriteConfig(false);
+							echo 'Successfully installed OmnomIRC!';
+						}
 					break;
 					case 'channels':
 						if(!isset($_POST['chans']) || !isset($_POST['exChans'])){
@@ -316,7 +352,7 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 							$sql_db = base64_url_decode($_POST['sql_db']);
 							$sql_user = base64_url_decode($_POST['sql_user']);
 							$sql_password = base64_url_decode($_POST['sql_password']);
-							$sql_connection=mysql_connect($sql_server,$sql_user,$sql_password);
+							$sql_connection=mysqli_connect($sql_server,$sql_user,$sql_password);
 							if (!$sql_connection)
 								echo 'Couldn\'t connect to sql server';
 							else
@@ -704,11 +740,19 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 				resize();
 				getPage('index');
 			}
+			<?php
+			if($oirc_installed){
+			?>
 			var script= document.createElement('script'),
 				body= document.getElementsByTagName('body')[0];
 			script.type= 'text/javascript';
 			script.src=<?php if(isset($_COOKIE[$securityCookie])) echo '"'.$checkLoginUrl.'?sid='.urlencode(htmlspecialchars(str_replace(";","%^%",$_COOKIE[$securityCookie]))).'";'."\n"; ?>
 			body.appendChild(script);
+			<?php
+			}else{
+				echo 'signCallback("","",0);';
+			}
+			?>
 		</script>
 		</body>
 		</html>
@@ -828,10 +872,7 @@ if($externalStyleSheet!='')
 		}else{
 			echo '<td style="display:none;" id="adminLink"><a href="?admin">Admin</a></td>';
 		}
-		$i = !$i;
-		if(!$i){
-			echo '</tr>';
-		}
+		echo '</tr>';
 		?>
 	</table>
 	<div id="UserListInnerCont"><div id="UserList"></div></div>

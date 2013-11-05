@@ -5,17 +5,18 @@ include_once(realpath(dirname(__FILE__)).'/Source/sign.php');
 include_once(realpath(dirname(__FILE__)).'/Source/userlist.php');
 include_once(realpath(dirname(__FILE__)).'/Source/cachefix.php');
 $OmnomIRC_version = '2.5.1';
+$oirc_installed = false;
 $sql_server = 'localhost';
 $sql_db = 'sql-db';
 $sql_user = 'sql-user';
 $sql_password = 'sql-passwd';
-$signature_key = 'sig-key';
+$signature_key = '';
 $hostname = 'hostname';
 $searchNamesUrl = 'http://www.omnimaga.org/index.php?action=ezportal;sa=page;p=13&userSearch=';
 $checkLoginUrl = 'http://www.omnimaga.org/checkLogin.php';
 $securityCookie = '__cfduid';
 $curidFilePath = '/run/omnomirc_curid';
-$calcKey = '<random string>';
+$calcKey = '';
 $externalStyleSheet = '';
 
 $channels=Array();
@@ -28,7 +29,7 @@ $opGroups = array('Support Staff','President','Administrator','Coder Of Tomorrow
 $hotlinks=Array();
 $hotlinks[]=Array(
 	'inner' => 'Full View',
-	'href' => 'http://'.$hostname,
+	'href' => '.',
 	'target' => '_top'
 );
 $hotlinks[]=Array(
@@ -64,8 +65,8 @@ $ircBot_ident[] = "PASS NONE\nUSER OmnomIRC OmnomIRC OmnomIRC :OmnomIRC\nNICK Om
 $ircBot_identT = Array();
 $ircBot_identT[] = "PASS NONE\nUSER TopicBot TopicBot TopicBot :TopicBot\nNICK TopicBot\n";
 $ircBot_identT[] = "PASS NONE\nUSER TopicBot TopicBot TopicBot :TopicBot\nNICK TopicBot\n";
-$ircBot_botPasswd = '<password>';
+$ircBot_botPasswd = '';
 $ircBot_botNick = 'OmnomIRC';
 $ircBot_topicBotNick = 'TopicBot';
-}
+
 ?> 

@@ -25,11 +25,9 @@
 	*/
 	function connectSQL(){
 		global $sql_user,$sql_password,$sql_server,$sql_db;
-		$sqlConnection = mysql_connect($sql_server,$sql_user,$sql_password); //This is a connection to a local SQL server.
-		if (!$sqlConnection) 
-			die('Could not connect to SQL DB: '.mysql_error());
-		if (!mysql_select_db($sql_db,$sqlConnection))
-			die('Could not select DB: '.mysql_error());
+		$sqlConnection = mysqli_connect($sql_server,$sql_user,$sql_password,$sql_db); //This is a connection to a local SQL server.
+		if (mysqli_connect_errno($sqlConnection)!=0) 
+			die('Could not connect to SQL DB: '.mysqli_connect_errno($sqlConnection).' '.mysqli_connect_error($sqlConnection));
 		return $sqlConnection;
 	}
 	
@@ -39,10 +37,10 @@
 		$query = $params[0];
 		$args = Array();
 		for ($i=1;$i<count($params);$i++)
-			$args[$i-1] = mysql_real_escape_string($params[$i],$sqlConnection);
-		$result = mysql_query(vsprintf($query,$args),$sqlConnection);
+			$args[$i-1] = mysqli_real_escape_string($params[$i],$sqlConnection);
+		$result = mysqli_query(vsprintf($query,$args),$sqlConnection);
 		if (!$result) 
-			die(mysql_error().'Query: '.vsprintf($query,$args));
+			die(mysqli_error().'Query: '.vsprintf($query,$args));
 		return $result;
 	}
 ?>
