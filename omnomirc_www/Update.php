@@ -77,8 +77,11 @@
 			$query = $sql->query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND (((`channel` = '%s' OR `channel` = '%s' OR (`channel` = '%s' AND `name1` = '%s')) AND `type`!='server') OR (`type` = 'server' AND channel='%s' AND name2='%s'))",$curline + 0,$channel,$nick,$pm?$sender:"0",$nick,$nick,$channel);
 		else
 			$query = $sql->query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND (`channel` LIKE '%s')",$curline + 0,"%#%");
-		
-		$result = $query[0];
+		if(isset($query[0])){
+			$result = $query[0];
+		}else{
+			$result = array();
+		}
 		if(!isset($_GET['calc'])) {
 			$userSql = $sql->query("SELECT * FROM `irc_userstuff` WHERE name='%s'",strtolower($nick));
 			if(isset($userSql[0])){
