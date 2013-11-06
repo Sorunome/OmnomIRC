@@ -17,8 +17,8 @@
     You should have received a copy of the GNU General Public License
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
-	error_reporting(E_ALL);
-	ini_set('display_errors','1');
+	//error_reporting(E_ALL);
+	//ini_set('display_errors','1');
 	include_once(realpath(dirname(__FILE__)).'/config.php');
 	function doUserUpdate(){
 		global $defaultChan,$nick,$channel;

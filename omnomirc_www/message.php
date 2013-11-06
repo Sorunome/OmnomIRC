@@ -291,8 +291,8 @@ ip 108.174.51.58
 	if(isset($_GET['textmode'])){
 		session_start();
 		echo "<html><head><meta http-equiv=\"refresh\" content=\"1;url=textmode.php?update=".$_SESSION['curline']."\"></head><body>Sending message...</body></html>";
-	}else{
-		$temp = $sql->query("SELECT MAX(line_number) FROM irc_lines")[0];
-		file_put_contents($curidFilePath,$temp[0]);
 	}
+	$temp = $sql->query("SELECT MAX(line_number) FROM irc_lines")[0];
+	file_put_contents($curidFilePath,$temp[0]);
+	
 ?>

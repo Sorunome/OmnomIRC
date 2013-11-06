@@ -4,7 +4,7 @@ include_once(realpath(dirname(__FILE__)).'/Source/sql.php');
 include_once(realpath(dirname(__FILE__)).'/Source/sign.php');
 include_once(realpath(dirname(__FILE__)).'/Source/userlist.php');
 include_once(realpath(dirname(__FILE__)).'/Source/cachefix.php');
-$OmnomIRC_version = '2.5.1';
+$OmnomIRC_version = '2.5.2';
 $oirc_installed = false;
 $sql_server = 'localhost';
 $sql_db = 'sql-db';

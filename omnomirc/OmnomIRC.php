@@ -19,7 +19,10 @@
 */
 
 //Here's the config for the bot.
-$documentRoot = "/var/www/omnomirc.www.omnimaga.org";
+error_reporting(E_ALL);
+ini_set('display_errors','1');
+
+$documentRoot = "/usr/share/nginx/html/oirc";
 
 include($documentRoot."/config.php");
 
@@ -175,28 +178,28 @@ function parseMsg($allMessage,$callingSocket){
 }
 
 function addLine($name1,$name2,$type,$message,$channel){
-	global $socket,$curidFilePath;
-	$curPosArr = mysqli_fetch_array(sql_query("SELECT MAX('line_number') FROM `irc_lines`"));
+	global $socket,$curidFilePath,$sql;
+	$curPosArr = $sql->query("SELECT MAX('line_number') FROM `irc_lines`")[0];
 	$curPos =  $curPosArr[0]+ 1;
-	sql_query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`) VALUES ('%s','%s','%s','%s','%s','%s')",$name1,$name2,$message,$type,$channel,time());
+	$sql->query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`) VALUES ('%s','%s','%s','%s','%s','%s')",$name1,$name2,$message,$type,$channel,time());
 	if ($type=="topic") {
-		$temp = mysqli_fetch_array(sql_query("SELECT * FROM `irc_topics` WHERE chan='%s'",strtolower($channel)));
+		$temp = $sql->query("SELECT * FROM `irc_topics` WHERE chan='%s'",strtolower($channel))[0];
 		if ($temp["chan"]==NULL) {
-			sql_query("INSERT INTO `irc_topics` (chan,topic) VALUES('%s','')",strtolower($channel));
+			$sql->query("INSERT INTO `irc_topics` (chan,topic) VALUES('%s','')",strtolower($channel));
 		}
-		sql_query("UPDATE `irc_topics` SET topic='%s' WHERE chan='%s'",$message,strtolower($channel));
+		$sql->query("UPDATE `irc_topics` SET topic='%s' WHERE chan='%s'",$message,strtolower($channel));
 	}
 	if($type=='action' || $type=='message')
-		sql_query("UPDATE `irc_users` SET lastMsg='%s' WHERE username='%s' AND channel='%s' AND online='0'",time(),$name1,$channel);
-	$temp = mysqli_fetch_array(sql_query("SELECT MAX(line_number) FROM irc_lines"));
+		$sql->query("UPDATE `irc_users` SET lastMsg='%s' WHERE username='%s' AND channel='%s' AND online='0'",time(),$name1,$channel);
+	$temp = $sql->query("SELECT MAX(line_number) FROM irc_lines")[0];
 	file_put_contents($curidFilePath,$temp[0]);
 }
 
 function processMessages(){
-	global $ircBot_topicBotNick;
-	$res = sql_query("SELECT * FROM irc_outgoing_messages");
+	global $ircBot_topicBotNick,$sql;
+	$res = $sql->query("SELECT * FROM irc_outgoing_messages");
 	$lastline = 0;
-	while($row = mysqli_fetch_array($res)) {
+	foreach($res as $row) {
 		$colorAdding="12(O)";
 		if ($row['fromSource']=='1')
 			$colorAdding="7(C)";
@@ -223,7 +226,7 @@ function processMessages(){
 		$lastline = $row['prikey'];
 	}
 	if ($lastline != 0)
-		sql_query("DELETE FROM `irc_outgoing_messages` WHERE prikey < %s",$lastline + 1);
+		$sql->query("DELETE FROM `irc_outgoing_messages` WHERE prikey < %s",$lastline + 1);
 }
 
 
@@ -238,22 +241,22 @@ function updateUserList($socket){
 }
 
 function clearUserList(){
-	global $userList;
+	global $userList,$sql;
 	$userList=array();
-	sql_query("DELETE FROM `irc_users`");
+	$sql->query("DELETE FROM `irc_users`");
 }
 
 function userLeave($username,$channel){
-	global $userList;
+	global $userList,$sql;
 	$pos = array_search($username,$userList[$channel]);
 	if($pos){
 		unset($userList[$channel][$pos]);
 	}
-	sql_query("UPDATE `irc_users` SET `isOnline`='0' WHERE `username` = '%s' AND `channel` = '%s' AND online='0'",$username,$channel);
+	$sql->query("UPDATE `irc_users` SET `isOnline`='0' WHERE `username` = '%s' AND `channel` = '%s' AND online='0'",$username,$channel);
 }
 
 function userQuit($username,$message,$socketToExclude){
-	global $userList;
+	global $userList,$sql;
 	foreach($userList as $chanName => $channel){
 		$pos = array_search($username,$channel);
 		if($pos){
@@ -263,10 +266,10 @@ function userQuit($username,$message,$socketToExclude){
 		}
 	}
 	addLine($username,'',"quit",$message,'');
-	sql_query("UPDATE `irc_users` SET `isOnline`='0' WHERE `username` = '%s' AND online='0'",$username);
+	$sql->query("UPDATE `irc_users` SET `isOnline`='0' WHERE `username` = '%s' AND online='0'",$username);
 }
 function userNick($oldNick,$newNick,$socketToExclude){
-	global $userList;
+	global $userList,$sql;
 	foreach($userList as $chanName => $channel){
 		$pos = array_search($oldNick,$channel);
 		if ($pos!==false){
@@ -277,23 +280,22 @@ function userNick($oldNick,$newNick,$socketToExclude){
 		}
 	}
 	addLine($oldNick,$newNick,"nick",'','');
-	sql_query("UPDATE `irc_users` SET `username`='%s' WHERE `username`='%s'",$newNick, $oldNick);
+	$sql->query("UPDATE `irc_users` SET `username`='%s' WHERE `username`='%s'",$newNick, $oldNick);
 }
 
 function userJoin($username,$channel){
-	global $userList;
+	global $userList,$sql;
 	$channel = str_replace(':', '', $channel);
 	if(!isset($userList[$channel])) $userList[$channel] = Array();
 	array_push($userList[$channel], $username);
-	$tempSql = mysqli_fetch_array(sql_query("SELECT username,usernum FROM irc_users WHERE username='%s' AND channel='%s' AND online='0'",$username,$channel));
+	$tempSql = $sql->query("SELECT username,usernum FROM irc_users WHERE username='%s' AND channel='%s' AND online='0'",$username,$channel)[0];
 	if($tempSql["username"]==NULL)
-		sql_query("INSERT INTO `irc_users` (`username`,`channel`) VALUES('%s','%s')",$username,$channel);
+		$sql->query("INSERT INTO `irc_users` (`username`,`channel`) VALUES('%s','%s')",$username,$channel);
 	else
-		sql_query("UPDATE `irc_users` SET `isOnline`='1' WHERE `usernum`='%s'",$tempSql['usernum']);
+		$sql->query("UPDATE `irc_users` SET `isOnline`='1' WHERE `usernum`='%s'",$tempSql['usernum']);
 }
 
 
-	error_reporting(0);
 	foreach($ircBot_servers as $server){
 		$sockets[] = $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
 		if(!socket_connect($socket,$server[0],$server[1]))
@@ -301,12 +303,12 @@ function userJoin($username,$channel){
 		socket_set_nonblock($socket);
 	}
 
-	sql_query("DELETE FROM `irc_outgoing_messages`");
-	sql_query("DELETE FROM `irc_users`");
+	$sql->query("DELETE FROM `irc_outgoing_messages`");
+	$sql->query("DELETE FROM `irc_users`");
 	sleep(8);
 	
 	sendLine($ircBot_ident[0],$sockets[0],false);
-	sendLine($ircBot_ident[1],$sockets[1],false);
+	error_reporting(0);
 	$connected = true;
 	while($connected){
 		foreach($sockets as $socket){
