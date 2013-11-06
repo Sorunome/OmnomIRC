@@ -150,7 +150,7 @@
 	}else{
 		if(isset($_GET['name']) && isset($_GET['chan']) && isset($_GET['online'])){
 			$temp = $sql->query("SELECT `lastMsg` FROM `irc_users` WHERE username='%s' AND channel='%s' AND online='%s'",base64_url_decode($_GET['name']),base64_url_decode($_GET['chan']),$_GET['online']);
-			echo $temp[0];
+			echo $temp[0]['lastMsg'];
 		}else{
 			echo 'Bad parameters';
 		}

@@ -100,7 +100,6 @@
 			}else{
 				$temp = $sql->query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND (`channel` LIKE '%s')",$curline + 0,"%#%");
 			}
-			var_dump($temp);
 			if(isset($temp[0])){
 				$result = $temp[0];
 			}else{
@@ -109,7 +108,7 @@
 			if(!isset($result['line_number'])){
 				$temp = $sql->query("SELECT MAX(line_number) FROM `irc_lines`");
 				if(isset($temp[0]))
-					$curline = (int)$temp[0][0];
+					$curline = (int)$temp[0]['MAX(line_number)'];
 				usleep(500000);
 				continue;
 			}
