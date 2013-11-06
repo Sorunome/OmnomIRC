@@ -155,7 +155,7 @@ scrolledDown = true;
 			}
 		}
 		if ((type == "message" || type == "action") && parts[4].toLowerCase() != "new" && parts[4].toLowerCase() != "omnom"){
-			parsedMessage = parseHighlight(parsedMessage);
+			parsedMessage = parseHighlight(parsedMessage,parts);
 		}
 		retval = "";
 		displayMessage = true;
@@ -471,7 +471,7 @@ scrolledDown = true;
 
 		return(colorStr);
 	}
-	function parseHighlight(text){ //highlight
+	function parseHighlight(text,parts){ //highlight
 		if (text.toLowerCase().indexOf(userName.toLowerCase().substr(0,numCharsHighlight)) >= 0 && userName != "Guest"){
 			style = "";
 			if (!highRed)

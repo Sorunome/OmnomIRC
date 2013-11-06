@@ -231,13 +231,9 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 								echo '<button onclick="setPage(\'index\',\'install=1\');">Install</button>';
 							}
 						}elseif((isset($_POST['install']) && !$oirc_installed)){
-							$sql_connection = connectSQL();
-							$sql = str_replace("\n","",file_get_contents("omnomirc.sql"));
-							$queries = explode(";",$sql);
+							$queries = explode(";",str_replace("\n","",file_get_contents("omnomirc.sql")));
 							foreach($queries as $query){
-								mysqli_query($sql_connection,$query);
-								if (mysqli_errno($sql_connection)!=0 && mysqli_errno($sql_connection)!=1065/*empty*/)
-									die('ERROR '.mysqli_errno($sql_connection).': '.mysqli_error($sql_connection));
+								$sql->query($query);
 							}
 							$oirc_installed = true;
 							adminWriteConfig(false);
@@ -358,9 +354,9 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 							$sql_db = base64_url_decode($_POST['sql_db']);
 							$sql_user = base64_url_decode($_POST['sql_user']);
 							$sql_password = base64_url_decode($_POST['sql_password']);
-							$sql_connection=mysqli_connect($sql_server,$sql_user,$sql_password);
-							if (!$sql_connection)
-								echo 'Couldn\'t connect to sql server';
+							$sql_connection=mysqli_connect($sql_server,$sql_user,$sql_password,$sql_db);
+							if (mysqli_connect_errno($sqlConnection)!=0) 
+								die('Could not connect to SQL DB: '.mysqli_connect_errno($sqlConnection).' '.mysqli_connect_error($sqlConnection));
 							else
 								adminWriteConfig();
 						}
@@ -752,7 +748,7 @@ $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 			var script= document.createElement('script'),
 				body= document.getElementsByTagName('body')[0];
 			script.type= 'text/javascript';
-			script.src=<?php if(isset($_COOKIE[$securityCookie])) echo '"'.$checkLoginUrl.'?sid='.urlencode(htmlspecialchars(str_replace(";","%^%",$_COOKIE[$securityCookie]))).'";'."\n"; ?>
+			script.src=<?php if(isset($_COOKIE[$securityCookie]))echo '"'.$checkLoginUrl.'?sid='.urlencode(htmlspecialchars(str_replace(";","%^%",$_COOKIE[$securityCookie]))).'";'."\n"; else echo '"'.$checkLoginUrl.'?sid=THEGAME";'."\n"; ?>
 			body.appendChild(script);
 			<?php
 			}else{
@@ -978,7 +974,7 @@ echo '];';
 	var body= document.getElementsByTagName('body')[0];
 	var script= document.createElement('script');
 	script.type= 'text/javascript';
-	script.src=<?php if(isset($_COOKIE[$securityCookie])) echo '"'.$checkLoginUrl.'?sid='.urlencode(htmlspecialchars(str_replace(";","%^%",$_COOKIE[$securityCookie]))).'";'."\n"; ?>
+	script.src=<?php if(isset($_COOKIE[$securityCookie]))echo '"'.$checkLoginUrl.'?sid='.urlencode(htmlspecialchars(str_replace(";","%^%",$_COOKIE[$securityCookie]))).'";'."\n"; else echo '"'.$checkLoginUrl.'?sid=THEGAME";'."\n"; ?>
 	body.appendChild(script);
 </script>
 <audio id="ding" src="beep.wav" hidden></audio>
