@@ -193,9 +193,8 @@ function addLine($name1,$name2,$type,$message,$channel){
 	}
 	if($type=='action' || $type=='message')
 		$sql->query("UPDATE `irc_users` SET lastMsg='%s' WHERE username='%s' AND channel='%s' AND online='0'",time(),$name1,$channel);
-	$temp = (int)file_get_contents($curidFilePath);
-	$temp++;
-	file_put_contents($curidFilePath,$temp);
+	$temp = $sql->query('SELECT MAX(line_number) FROM irc_lines');
+	file_put_contents($curidFilePath,$temp[0]['MAX(line_number)']);
 }
 
 function processMessages(){

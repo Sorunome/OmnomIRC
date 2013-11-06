@@ -117,8 +117,8 @@
 				echo "');";
 			}
 		}
-		$temp = $sql->query("SELECT MAX(`line_number`) FROM `irc_lines`");
-		$curMax = $temp[0];
+		$temp = $sql->query("SELECT MAX(line_number) FROM `irc_lines`");
+		$curMax = $temp[0]['MAX(line_number)'];
 		echo "addLine('".$curMax.":curline');";
 		$curtopic = $sql->query("SELECT topic FROM `irc_topics` WHERE `chan`='%s'",strtolower($channel));
 		if(isset($curtopic[0])){
@@ -144,7 +144,7 @@
 		if(isset($_GET['calc'])){
 			ob_end_clean();
 			$temp = $sql->query("SELECT MAX(line_number) FROM `irc_lines`");
-			echo $temp[0];
+			echo $temp[0]['MAX(line_number)'];
 		}else
 			ob_end_flush();
 	}else{
