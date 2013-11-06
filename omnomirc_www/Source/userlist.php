@@ -45,10 +45,12 @@
 	
 	function getUserstuffQuery($nick){
 		global $sql;
-		$userSql = $sql->query("SELECT * FROM `irc_userstuff` WHERE name='%s'",strtolower($nick))[0];
+		$temp = $sql->query("SELECT * FROM `irc_userstuff` WHERE name='%s'",strtolower($nick));
+		$userSql = $temp[0];
 		if($userSql['name']==NULL){
 			$sql->query("INSERT INTO `irc_userstuff` (name) VALUES('%s')",strtolower($nick));
-			$userSql = $sql->query("SELECT * FROM `irc_userstuff` WHERE name='%s'",strtolower($nick))[0];
+			$temp = $sql->query("SELECT * FROM `irc_userstuff` WHERE name='%s'",strtolower($nick));
+			$userSql = $temp[0];
 		}
 		return $userSql;
 	}

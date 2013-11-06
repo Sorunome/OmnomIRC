@@ -140,7 +140,8 @@ ip 108.174.51.58
 				if(isOp($nick,base64_url_decode($_GET['signature']),$_GET['id'],$channel)){
 					unset($parts[0]);
 					$newTopic = implode(' ',$parts);
-					$temp = $sql->query("SELECT * FROM `irc_topics` WHERE chan='%s'",strtolower($channel))[0];
+					$temp = $sql->query("SELECT * FROM `irc_topics` WHERE chan='%s'",strtolower($channel));
+					$temp = $temp[0];
 					if($temp['chan']==NULL){
 						$sql->query("INSERT INTO `irc_topics` (chan,topic) VALUES('%s','')",strtolower($channel));
 					}
@@ -292,7 +293,7 @@ ip 108.174.51.58
 		session_start();
 		echo "<html><head><meta http-equiv=\"refresh\" content=\"1;url=textmode.php?update=".$_SESSION['curline']."\"></head><body>Sending message...</body></html>";
 	}
-	$temp = $sql->query("SELECT MAX(line_number) FROM irc_lines")[0];
+	$temp = $sql->query("SELECT MAX(line_number) FROM irc_lines");
 	file_put_contents($curidFilePath,$temp[0]);
 	
 ?>

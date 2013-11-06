@@ -17,8 +17,8 @@
     You should have received a copy of the GNU General Public License
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
-	//error_reporting(E_ALL);
-	//ini_set('display_errors','1');
+	error_reporting(E_ALL);
+	ini_set('display_errors','1');
 	include_once(realpath(dirname(__FILE__)).'/config.php');
 	function doUserUpdate(){
 		global $defaultChan,$nick,$channel;
@@ -29,7 +29,7 @@
 		CleanOfflineUsers();
 	}
 	
-	$curLine = $_GET['lineNum'];
+	$curline = $_GET['lineNum'];
 	$channel = $defaultChan;
 	if (isset($_GET['channel']))
 		$channel = base64_url_decode($_GET['channel']);
@@ -67,15 +67,16 @@
 			doUserUpdate();
 			die();
 		}
-		if(file_get_contents($curidFilePath)<=$curLine) {
+		
+		if((int)file_get_contents($curidFilePath)<=$curline) {
 			usleep(500000);
 			continue;
 		}
 		doUserUpdate();
 		if(!isset($_GET['calc']) and $nick!='0')
-			$query = $sql->query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND (((`channel` = '%s' OR `channel` = '%s' OR (`channel` = '%s' AND `name1` = '%s')) AND `type`!='server') OR (`type` = 'server' AND channel='%s' AND name2='%s'))",$curLine + 0,$channel,$nick,$pm?$sender:"0",$nick,$nick,$channel);
+			$query = $sql->query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND (((`channel` = '%s' OR `channel` = '%s' OR (`channel` = '%s' AND `name1` = '%s')) AND `type`!='server') OR (`type` = 'server' AND channel='%s' AND name2='%s'))",$curline + 0,$channel,$nick,$pm?$sender:"0",$nick,$nick,$channel);
 		else
-			$query = $sql->query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND (`channel` LIKE '%s')",$curLine + 0,"%#%");
+			$query = $sql->query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND (`channel` LIKE '%s')",$curline + 0,"%#%");
 		
 		$result = $query[0];
 		if(!isset($_GET['calc'])) {
@@ -90,14 +91,22 @@
 				$ignorelist = $userSql['ignores'];
 			}
 		}
-		if (!isset($result[0])){
-			if (!isset($_GET['calc']))
-				$result = $sql->query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND locate('%s',`message`) != 0 AND NOT (((`type` = 'pm' OR `type` = 'pmaction') AND `name1` <> '%s') OR (`type` = 'server'))",$curLine + 0,substr($nick,0,4), $nick)[0];
-			else
-				$result = $sql->query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND (`channel` LIKE '%s')",$curLine + 0,"%#%")[0];
-			if(!isset($result[0])){
-				$temp = $sql->query("SELECT MAX(line_number) FROM `irc_lines`")[0];
-				$curLine = (int)$temp[0];
+		if (!isset($result['line_number'])){
+			if (!isset($_GET['calc'])){
+				$temp = $sql->query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND locate('%s',`message`) != 0 AND NOT (((`type` = 'pm' OR `type` = 'pmaction') AND `name1` <> '%s') OR (`type` = 'server'))",$curline + 0,substr($nick,0,4), $nick);
+			}else{
+				$temp = $sql->query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND (`channel` LIKE '%s')",$curline + 0,"%#%");
+			}
+			var_dump($temp);
+			if(isset($temp[0])){
+				$result = $temp[0];
+			}else{
+				$result = array();
+			}
+			if(!isset($result['line_number'])){
+				$temp = $sql->query("SELECT MAX(line_number) FROM `irc_lines`");
+				if(isset($temp[0]))
+					$curline = (int)$temp[0][0];
 				usleep(500000);
 				continue;
 			}

@@ -117,8 +117,8 @@
 				echo "');";
 			}
 		}
-		
-		$curMax = $sql->query("SELECT MAX(`line_number`) FROM `irc_lines`")[0][0];
+		$temp = $sql->query("SELECT MAX(`line_number`) FROM `irc_lines`");
+		$curMax = $temp[0];
 		echo "addLine('".$curMax.":curline');";
 		$curtopic = $sql->query("SELECT topic FROM `irc_topics` WHERE `chan`='%s'",strtolower($channel));
 		if(isset($curtopic[0])){
@@ -143,12 +143,14 @@
 		}
 		if(isset($_GET['calc'])){
 			ob_end_clean();
-			echo $sql->query("SELECT MAX(line_number) FROM `irc_lines`")[0];
+			$temp = $sql->query("SELECT MAX(line_number) FROM `irc_lines`");
+			echo $temp[0];
 		}else
 			ob_end_flush();
 	}else{
 		if(isset($_GET['name']) && isset($_GET['chan']) && isset($_GET['online'])){
-			echo $sql->query("SELECT `lastMsg` FROM `irc_users` WHERE username='%s' AND channel='%s' AND online='%s'",base64_url_decode($_GET['name']),base64_url_decode($_GET['chan']),$_GET['online'])[0];
+			$temp = $sql->query("SELECT `lastMsg` FROM `irc_users` WHERE username='%s' AND channel='%s' AND online='%s'",base64_url_decode($_GET['name']),base64_url_decode($_GET['chan']),$_GET['online']);
+			echo $temp[0];
 		}else{
 			echo 'Bad parameters';
 		}

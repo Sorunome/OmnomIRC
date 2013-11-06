@@ -13,6 +13,7 @@ class sql{
 		return $mysqli;
 	}
 	public function query(){
+		//ini_set('memory_limit','-1');
 		$mysqli = $this->connectSql();
 		$params = func_get_args();
 		$query = $params[0];
@@ -21,12 +22,18 @@ class sql{
 			$args[$i-1] = $mysqli->real_escape_string($params[$i]);
 		$result = $mysqli->query(vsprintf($query,$args));
 		if($mysqli->errno==1065) //empty
-			return [];
+			return array();
 		if($mysqli->errno!=0) 
 			die($mysqli->error.' Query: '.vsprintf($query,$args));
 		if($result===true) //nothing returned
-			return [];
-		$res = $result->fetch_all(MYSQLI_BOTH);
+			return array();
+		$res = array();
+		$i = 0;
+		while ($row = $result->fetch_assoc()) {
+			$res[] = $row;
+			if($i++>=150)
+				break;
+		}
 		$result->free();
 		return $res;
 	}

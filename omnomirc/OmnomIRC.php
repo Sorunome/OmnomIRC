@@ -179,11 +179,13 @@ function parseMsg($allMessage,$callingSocket){
 
 function addLine($name1,$name2,$type,$message,$channel){
 	global $socket,$curidFilePath,$sql;
-	$curPosArr = $sql->query("SELECT MAX('line_number') FROM `irc_lines`")[0];
+	$temp = $sql->query("SELECT MAX('line_number') FROM `irc_lines`");
+	$curPosArr = $temp[0];
 	$curPos =  $curPosArr[0]+ 1;
 	$sql->query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`) VALUES ('%s','%s','%s','%s','%s','%s')",$name1,$name2,$message,$type,$channel,time());
-	if ($type=="topic") {
-		$temp = $sql->query("SELECT * FROM `irc_topics` WHERE chan='%s'",strtolower($channel))[0];
+	if ($type=="topic"){
+		$temp = $sql->query("SELECT * FROM `irc_topics` WHERE chan='%s'",strtolower($channel));
+		$temp = $temp[0];
 		if ($temp["chan"]==NULL) {
 			$sql->query("INSERT INTO `irc_topics` (chan,topic) VALUES('%s','')",strtolower($channel));
 		}
@@ -191,8 +193,9 @@ function addLine($name1,$name2,$type,$message,$channel){
 	}
 	if($type=='action' || $type=='message')
 		$sql->query("UPDATE `irc_users` SET lastMsg='%s' WHERE username='%s' AND channel='%s' AND online='0'",time(),$name1,$channel);
-	$temp = $sql->query("SELECT MAX(line_number) FROM irc_lines")[0];
-	file_put_contents($curidFilePath,$temp[0]);
+	$temp = (int)file_get_contents($curidFilePath);
+	$temp++;
+	file_put_contents($curidFilePath,$temp);
 }
 
 function processMessages(){
@@ -243,7 +246,7 @@ function updateUserList($socket){
 function clearUserList(){
 	global $userList,$sql;
 	$userList=array();
-	$sql->query("DELETE FROM `irc_users`");
+	//$sql->query("DELETE FROM `irc_users`");
 }
 
 function userLeave($username,$channel){
@@ -288,7 +291,8 @@ function userJoin($username,$channel){
 	$channel = str_replace(':', '', $channel);
 	if(!isset($userList[$channel])) $userList[$channel] = Array();
 	array_push($userList[$channel], $username);
-	$tempSql = $sql->query("SELECT username,usernum FROM irc_users WHERE username='%s' AND channel='%s' AND online='0'",$username,$channel)[0];
+	$temp = $sql->query("SELECT username,usernum FROM irc_users WHERE username='%s' AND channel='%s' AND online='0'",$username,$channel);
+	$tempSql = $temp[0];
 	if($tempSql["username"]==NULL)
 		$sql->query("INSERT INTO `irc_users` (`username`,`channel`) VALUES('%s','%s')",$username,$channel);
 	else
