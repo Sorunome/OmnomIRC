@@ -22,10 +22,10 @@ if(isset($_GET['message'])){
 	
 	if(isset($_GET['update']) && isset($_SESSION['curline'])){
 		$pm = false;
-		$query = sql_query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND (`channel` = '%s' OR `channel` = '%s' OR (`channel` = '%s' AND `name1` = '%s'))",$_SESSION['curline'] + 0,$channel,$nick,$pm?$sender:"0", $nick);
+		$query = $sql->query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND (`channel` = '%s' OR `channel` = '%s' OR (`channel` = '%s' AND `name1` = '%s'))",$_SESSION['curline'] + 0,$channel,$nick,$pm?$sender:"0", $nick);
 	}else{
 		$_SESSION['curline'] = 0;
-		$query = sql_query("SELECT x.* FROM (
+		$query = $sql->query("SELECT x.* FROM (
 													SELECT * FROM `irc_lines` 
 													WHERE `channel` = '%s' OR `channel` = '%s'
 													ORDER BY `line_number` DESC 
@@ -34,7 +34,7 @@ if(isset($_GET['message'])){
 												ORDER BY `line_number` ASC",$channel,$nick,$count + 0);
 		$_SESSION['content'] = "";
 	}
-	while($result = mysqli_fetch_array($query)){
+	foreach($query as $result){
 		$line = "<tr>";
 		$starBeginning = '<td>* '.htmlspecialchars($result['name1']).' ';
 		switch (strtolower($result['type'])){
