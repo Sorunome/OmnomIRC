@@ -46,7 +46,10 @@
 	function getUserstuffQuery($nick){
 		global $sql;
 		$temp = $sql->query("SELECT * FROM `irc_userstuff` WHERE name='%s'",strtolower($nick));
-		$userSql = $temp[0];
+		if(isset($temp[0]))
+			$userSql = $temp[0];
+		else
+			$userSql = array('name' => NULL);
 		if($userSql['name']==NULL){
 			$sql->query("INSERT INTO `irc_userstuff` (name) VALUES('%s')",strtolower($nick));
 			$temp = $sql->query("SELECT * FROM `irc_userstuff` WHERE name='%s'",strtolower($nick));
@@ -62,7 +65,7 @@
 		$userSql = getUserstuffQuery($nick);
 		if ($userSql['globalOp']==1)
 			return true;
-		$returnPosition = file_get_contents($checkLoginUrl.'?op&u='.$id.'&nick='.base64_url_encode($nick));
+		$returnPosition = trim(file_get_contents($checkLoginUrl.'?op&u='.$id.'&nick='.base64_url_encode($nick)));
 		//$returnPosition = substr($returnPosition,3,strlen($returnPosition));
 		if (in_array($returnPosition,$opGroups))
 			return true;
@@ -73,7 +76,7 @@
 		global $opGroups,$checkLoginUrl;
 		if(!checkSignature($nick,$sig))
 			return false;
-		$returnPosition = file_get_contents($checkLoginUrl.'?op&u='.$id.'&nick='.base64_url_encode($nick));
+		$returnPosition = trim(file_get_contents($checkLoginUrl.'?op&u='.$id.'&nick='.base64_url_encode($nick)));
 		//$returnPosition = substr($returnPosition,3,strlen($returnPosition));
 		if (in_array($returnPosition,$opGroups))
 			return true;

@@ -278,7 +278,9 @@ scrolledDown = true;
 				if((i=chanPos(base64.encode(parts[4])))!=-1){
 					channels[i][1] = true;
 				}
-				makeNotification("(" + parts[4] + ") <" + parts[6] + "> " + parts[7]);
+				if(parts[7]!=undefined){
+					makeNotification("(" + parts[4] + ") <" + parts[6] + "> " + parts[7]);
+				}
 				drawChannels();
 				
 				return "";
@@ -379,6 +381,7 @@ scrolledDown = true;
 		if (!colorStr || colorStr == null || colorStr == undefined) return;
 		colorStr = clickable_links(colorStr);
 		colorStr = parseSmileys(colorStr);
+		colorStr = colorStr.split("\x16\x16").join('');
 		//lcount = 0;
 		//a = colorStr;
 		var arrayResults = Array();
@@ -492,7 +495,7 @@ scrolledDown = true;
 		text = text.replace(/http:\/\/ourl\.ca\//g,"\x01ourl.ca/");
 		text = text.replace(/((h111:\/\/(www\.omnimaga\.org\/|ourl\.ca))[-a-zA-Z0-9@:;%_+.~#?&//=]+)/, '<a target="_top" href="$1">$1</a>');
 		text = text.replace(RegExp("(^|.)(((f|ht)(tp|tps):\/\/)[^\\s\x02\x03\x0f\x16\x1d\x1f]*)","g"),'$1<a target="_blank" href="$2">$2</a>');
-		text = text.replace(RegExp("(^|\\s)(www\.[^\\s\x02\x03\x0f\x16\x1d\x1f]*)","g"),'$1<a target="_blank" href="http://$2">$2</a>');
+		text = text.replace(RegExp("(^|\\s)(www\\.[^\\s\x02\x03\x0f\x16\x1d\x1f]*)","g"),'$1<a target="_blank" href="http://$2">$2</a>');
 		text = text.replace(RegExp("(^|.)\x01([^\\s\x02\x03\x0f\x16\x1d\x1f]*)","g"),'$1<a target="_top" href="http://$2">http://$2</a>');
 		return text;
 	}
@@ -787,7 +790,7 @@ scrolledDown = true;
 		
 		//eastegg rickroll start
 		if(message.search("goo.gl/QMET")!=-1 || message.search("youtube.com/watch?v=oHg5SJYRHA0")!=-1 || message.search("youtube.com/watch?v=dQw4w9WgXcQ")!=-1){
-			var rick = document.createElement('div');rick.style.position='absolute';rick.style.zIndex='39px';rick.style.top='0';rick.style.left='35px';rick.innerHTML='<object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=6,0,29,0"><param name="movie" value="http://i-lost-the-ga.me/rickroll.swf"><param name="quality" value="high"><embed src="http://i-lost-the-ga.me/rickroll.swf" quality="high" pluginspage="http://www.macromedia.com/go/getflashplayer" type="application/x-shockwave-flash"></embed></object>';document.body.appendChild(rick);
+			var rick = document.createElement('div');rick.style.position='absolute';rick.style.zIndex='39px';rick.style.top='0';rick.style.left='35px';rick.innerHTML='<object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=6,0,29,0"><param name="movie" value="http://134.0.27.190/juju/i-lost-the-ga.me/rickroll.swf"><param name="quality" value="high"><embed src="http://134.0.27.190/juju/i-lost-the-ga.me/rickroll.swf" quality="high" pluginspage="http://www.macromedia.com/go/getflashplayer" type="application/x-shockwave-flash"></embed></object>';document.body.appendChild(rick);
 		}
 		//easteregg rickroll end
 	}
