@@ -41,9 +41,9 @@
 		$signature = base64_url_decode($_GET['signature']);
 		if (!checkSignature($nick,$signature))
 			$nick = '0';
-		if ($nick=='0') {
+		if ($nick!='0') {
 			$userSql = getUserstuffQuery($nick);
-			if (strpos($userSql['bans'],base64_url_decode($_GET['channel'])."\n")!==false) {
+			if (strpos($userSql['bans'],base64_url_decode($_GET['channel'])."\n")!==false || $userSql['globalBan']=='1') {
 				sleep(30);
 				die();
 			}

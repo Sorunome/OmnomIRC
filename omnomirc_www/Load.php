@@ -39,7 +39,7 @@
 			if(!checkSignature($nick,$signature))
 				$nick = "0";
 			$userSql = getUserstuffQuery($nick);
-			if(strpos($userSql["bans"],base64_url_decode($_GET['channel'])."\n")!==false)
+			if(strpos($userSql["bans"],base64_url_decode($_GET['channel'])."\n")!==false || $userSql['globalBan']=='1')
 				die("addLine('999999999999999999999999999:server:0:0:T21ub21JUkM=:RVJST1IgLSBiYW5uZWQ=');");
 			if(isset($_GET['id']) && isGlobalOp($nick,$signature,$_GET['id'])){
 				echo "try{document.getElementById('adminLink').style.display='';}catch(err){};";
