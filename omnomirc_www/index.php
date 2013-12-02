@@ -291,7 +291,7 @@ Enable Scrollwheel:</td><td><script type="text/javascript"> document.write(getHT
 							$sql_user = base64_url_decode($_POST['sql_user']);
 							$sql_password = base64_url_decode($_POST['sql_password']);
 							$sql_connection=mysqli_connect($sql_server,$sql_user,$sql_password,$sql_db);
-							if (mysqli_connect_errno($sqlConnection)!=0) 
+							if (mysqli_connect_errno($sql_connection)!=0) 
 								die('Could not connect to SQL DB: '.mysqli_connect_errno($sqlConnection).' '.mysqli_connect_error($sqlConnection));
 							else
 								adminWriteConfig();
