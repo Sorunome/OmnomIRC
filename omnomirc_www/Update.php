@@ -138,13 +138,13 @@
 							echo $lineBeginning;
 							break;
 						case 'kick':
-							echo $lineBeginning.':'.base64_url_encode(htmlspecialchars($result['name2'])).':'.base64_url_encode(htmlspecialchars($result['message']));
+							echo $lineBeginning.base64_url_encode(htmlspecialchars($result['name2'])).':'.base64_url_encode(htmlspecialchars($result['message']));
 							break;
 						case 'quit':
 						case 'mode':
 						case 'server':
 						case 'part':
-						case "topic":
+						case 'topic':
 							echo $lineBeginning.base64_url_encode(htmlspecialchars(trim($result['message'])));
 							break;
 						case 'nick':

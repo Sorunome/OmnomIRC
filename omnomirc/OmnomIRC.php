@@ -133,7 +133,7 @@ function parseMsg($allMessage,$callingSocket){
 				$message = getMessage($parts,3,true);
 				addLine($info[1],'','part',$message,$channel);
 				userLeave($info[1],$channel);
-				sendLine("PRIVMSG $channel :(#)* $info[1] has left $channel(".trim(getMessage($parts,3,true)).")",$callingSocket);
+				sendLine("PRIVMSG $channel :(#)* $info[1] has left $channel (".trim(getMessage($parts,3,true)).")",$callingSocket);
 			break;
 			case "mode":
 				if (!$isChan) break;
@@ -141,10 +141,10 @@ function parseMsg($allMessage,$callingSocket){
 				addLine($info[1],'','mode',$message,$channel);
 			break;
 			case "kick":
-				$message = getMessage($parts,4,true);
+				$message = trim(getMessage($parts,4,true));
 				addLine($info[1],$parts[3],"kick",$message,$channel);
 				userLeave($info[1],$channel);
-				sendLine("PRIVMSG $channel :(#)* $info[1] has been kicked from $channel by $parts[3] (".getMessage($parts,4,true).")",$callingSocket);
+				sendLine("PRIVMSG $channel :(#)* $info[1] has been kicked from $channel by $parts[3] (".trim(getMessage($parts,4,true)).")",$callingSocket);
 			break;
 			case "quit":
 				$message = getMessage($parts,2,true);

@@ -167,7 +167,7 @@ Enable Scrollwheel:</td><td><script type="text/javascript"> document.write(getHT
 								echo '<button onclick="setPage(\'index\',\'install=1\');">Install</button>';
 							}
 						}elseif((isset($_POST['install']) && !$oirc_installed)){
-							$queries = explode(";",str_replace("\n","",file_get_contents("omnomirc.sql")));
+							$queries = explode(";",str_replace("\n","",file_get_contents(realpath(dirname(__FILE__)).'/omnomirc.sql')));
 							foreach($queries as $query){
 								$sql->query($query);
 							}
@@ -175,7 +175,7 @@ Enable Scrollwheel:</td><td><script type="text/javascript"> document.write(getHT
 							adminWriteConfig(false);
 							echo 'Successfully installed OmnomIRC!';
 						}elseif(isset($_POST['backup'])){
-							if(file_put_contents('config.backup.php',file_get_contents('config.php')))
+							if(file_put_contents(realpath(dirname(__FILE__)).'/config.backup.php',file_get_contents(realpath(dirname(__FILE__)).'/config.php')))
 								echo 'Backed up!';
 							else
 								echo 'Couldn\'t write backup file!';
@@ -669,7 +669,7 @@ Enable Scrollwheel:</td><td><script type="text/javascript"> document.write(getHT
 			<a onclick="getPage('op');return false">Ops</a> | <a onclick="getPage('irc');return false">IRC</a> | <a onclick="getPage('misc');return false">Misc</a></div>
 		<div id='adminContent'>Loading...</div>
 		</div>
-		<div id='adminFooter'><a href='.'>Back to OmnomIRC</a></div>
+		<div id='adminFooter'><a href='index.php'>Back to OmnomIRC</a></div>
 		<script type="text/javascript">
 			function signCallback(sig,nick,id) {
 				Signature = sig;

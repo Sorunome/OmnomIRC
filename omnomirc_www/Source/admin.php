@@ -50,7 +50,7 @@ $ircBot_botPasswd="'.$ircBot_botPasswd.'";
 $ircBot_botNick="'.$ircBot_botNick.'";
 $ircBot_topicBotNick="'.$ircBot_topicBotNick.'";
 ?>';
-	if(file_put_contents('config.php',$config)){
+	if(file_put_contents(realpath(dirname(__FILE__)).'/../config.php',$config)){
 		if($output)
 			echo 'Config written';
 		return true;

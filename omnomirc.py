@@ -121,7 +121,7 @@ class ThreadedTCPRequestHandler(SocketServer.BaseRequestHandler):
 					if message.split(" ")[0].lower()=="/join":
 						sendMessage=False
 						if findelement(message[message.find(" ")+1:].lower(),joinableChannels):
-							self.sendToIRC("/me has part "+self.chan)
+							self.sendToIRC("/me has left "+self.chan)
 							self.chan=message[message.find(" ")+1:].lower()
 							self.send("\xAD**Now speeking in channel "+self.chan)
 							self.sendToIRC("/me has joined "+self.chan+" ("+calcId+")")

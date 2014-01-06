@@ -80,7 +80,7 @@ ip 108.174.51.58
 				$userSql = getUserstuffQuery($nick);
 				if(strpos($userSql['ignores'],$ignoreuser."\n")===false){
 					$userSql['ignores'].=$ignoreuser."\n";
-					sql_query("UPDATE `irc_userstuff` SET ignores='%s' WHERE name='%s'",$userSql["ignores"],strtolower($nick));
+					$sql->query("UPDATE `irc_userstuff` SET ignores='%s' WHERE name='%s'",$userSql["ignores"],strtolower($nick));
 					$returnmessage = "\x033Now ignoring $ignoreuser.";
 					$reload = true;
 				}else{
@@ -113,7 +113,7 @@ ip 108.174.51.58
 					$returnmessage = "\x033You are not more ignoring $ignoreuser";
 					if($ignoreuser=='*')
 						$returnmessage = "\x033You are no longer ignoring anybody.";
-					mysqli_fetch_array(sql_query("UPDATE `irc_userstuff` SET ignores='%s' WHERE name='%s'",$userSql["ignores"],strtolower($nick)));
+					mysqli_fetch_array($sql->query("UPDATE `irc_userstuff` SET ignores='%s' WHERE name='%s'",$userSql["ignores"],strtolower($nick)));
 					$reload = true;
 				}else{
 					$returnmessage = "\x034ERROR: You weren't ignoring $ignoreuser";
@@ -166,6 +166,7 @@ ip 108.174.51.58
 						$sql->query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s','%s')",$nick,"+o $userToOp","mode",$channel,time(),'1');
 					}else{
 						$returnmessage = "\x034ERROR: couldn't op $userToOp: already op.";
+						$sendPm = true;
 					}
 				}else{
 					$returnmessage = "You aren't op";
@@ -215,6 +216,7 @@ ip 108.174.51.58
 						$sql->query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s','%s')",$nick,"+b $userToOp","mode",$channel,time(),'1');
 					}else{
 						$returnmessage = "\x034ERROR: couldn't ban $userToOp: already banned.";
+						$sendPm = true;
 					}
 				}else{
 					$returnmessage = "You aren't op";
