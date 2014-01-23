@@ -53,7 +53,7 @@ ip 108.174.51.58
 		if(strpos($userSql['bans'],base64_url_decode($_GET['channel'])."\n")!==false)
 			die('banned');
 	
-	if(substr($parts[0],0,1)=='/') {
+	if(substr($parts[0],0,1)=='/'){
 		if(isset($_GET['calc']) && ($parts[0]!='/me' || substr($parts[0],0,2)=='//'))
 			die('Sorry calculator, you can only do /me messages');
 		switch(strtolower(substr($parts[0],1))) {

@@ -106,6 +106,7 @@ function parseMsg($allMessage,$callingSocket){
 				}
 			break;
 			case "376": //End of MOTD
+			case "422": //no MOTD
 				sendLine("JOIN $chanStr\n",$callingSocket,false);
 			break;
 			case "451":

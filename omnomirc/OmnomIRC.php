@@ -126,25 +126,26 @@ function parseMsg($allMessage,$callingSocket){
 				$channel = trim(substr($channel,1));
 				addLine($info[1],'','join','',$channel);
 				userJoin($info[1],$channel);
-				sendLine("PRIVMSG $channel :(#)* $info[1] has joined $channel",$callingSocket);
+				sendLine("PRIVMSG $channel :(#)3* $info[1] has joined $channel",$callingSocket);
 			break;
 			case "part":
 				$channel = trim($channel);
 				$message = getMessage($parts,3,true);
 				addLine($info[1],'','part',$message,$channel);
 				userLeave($info[1],$channel);
-				sendLine("PRIVMSG $channel :(#)* $info[1] has left $channel (".trim(getMessage($parts,3,true)).")",$callingSocket);
+				sendLine("PRIVMSG $channel :(#)2* $info[1] has left $channel (".trim(getMessage($parts,3,true)).")",$callingSocket);
 			break;
 			case "mode":
 				if (!$isChan) break;
 				$message = getMessage($parts,3,false);
 				addLine($info[1],'','mode',$message,$channel);
+				sendLine("PRIVMSG $channel :(#)3* ".$info[1]." set ".$channel." mode".$message,$callingSocket);
 			break;
 			case "kick":
 				$message = trim(getMessage($parts,4,true));
 				addLine($info[1],$parts[3],"kick",$message,$channel);
-				userLeave($info[1],$channel);
-				sendLine("PRIVMSG $channel :(#)* $info[1] has been kicked from $channel by $parts[3] (".trim(getMessage($parts,4,true)).")",$callingSocket);
+				userLeave($info[3],$channel);
+				sendLine("PRIVMSG $channel :(#)4* $info[1] has kicked $parts[3] from $channel (".trim(getMessage($parts,4,true)).")",$callingSocket);
 			break;
 			case "quit":
 				$message = getMessage($parts,2,true);
@@ -163,6 +164,7 @@ function parseMsg($allMessage,$callingSocket){
 				userNick($info[1],$message,$callingSocket);
 			break;
 			case "376": //End of MOTD
+			case "422": //no MOTD
 				sendLine("JOIN $chanStr\n",$callingSocket,false);
 				updateUserList($callingSocket);
 			break;
@@ -192,7 +194,7 @@ function addLine($name1,$name2,$type,$message,$channel){
 		$sql->query("UPDATE `irc_topics` SET topic='%s' WHERE chan='%s'",$message,strtolower($channel));
 	}
 	if($type=='action' || $type=='message')
-		$sql->query("UPDATE `irc_users` SET lastMsg='%s' WHERE username='%s' AND channel='%s' AND online='0'",time(),$name1,$channel);
+		$sql->query("UPDATE `irc_users` SET lastMsg='%s' WHERE username='%s' AND channel='%s' AND online=0",time(),$name1,$channel);
 	$temp = $sql->query('SELECT MAX(line_number) FROM irc_lines');
 	file_put_contents($curidFilePath,$temp[0]['MAX(line_number)']);
 }
@@ -254,7 +256,7 @@ function userLeave($username,$channel){
 	if($pos){
 		unset($userList[$channel][$pos]);
 	}
-	$sql->query("UPDATE `irc_users` SET `isOnline`='0' WHERE `username` = '%s' AND `channel` = '%s' AND online='0'",$username,$channel);
+	$sql->query("UPDATE `irc_users` SET `isOnline`=0 WHERE `username` = '%s' AND `channel` = '%s' AND online=0",$username,$channel);
 }
 
 function userQuit($username,$message,$socketToExclude){
@@ -262,13 +264,13 @@ function userQuit($username,$message,$socketToExclude){
 	foreach($userList as $chanName => $channel){
 		$pos = array_search($username,$channel);
 		if($pos){
-			sendLine("PRIVMSG $chanName :(#)* $username has quit $chanName (".trim($message).")",$socketToExclude);
+			sendLine("PRIVMSG $chanName :(#)2* $username has quit $chanName (".trim($message).")",$socketToExclude);
 			addLine($username,'',"quit",$message,$chanName);
 			unset($userList[$chanName][$pos]);
 		}
 	}
 	addLine($username,'',"quit",$message,'');
-	$sql->query("UPDATE `irc_users` SET `isOnline`='0' WHERE `username` = '%s' AND online='0'",$username);
+	$sql->query("UPDATE `irc_users` SET `isOnline`=0 WHERE `username` = '%s' AND online=0",$username);
 }
 function userNick($oldNick,$newNick,$socketToExclude){
 	global $userList,$sql;
@@ -290,12 +292,12 @@ function userJoin($username,$channel){
 	$channel = str_replace(':', '', $channel);
 	if(!isset($userList[$channel])) $userList[$channel] = Array();
 	array_push($userList[$channel], $username);
-	$temp = $sql->query("SELECT username,usernum FROM irc_users WHERE username='%s' AND channel='%s' AND online='0'",$username,$channel);
+	$temp = $sql->query("SELECT username,usernum FROM irc_users WHERE username='%s' AND channel='%s' AND online=0",$username,$channel);
 	$tempSql = $temp[0];
 	if($tempSql["username"]==NULL)
 		$sql->query("INSERT INTO `irc_users` (`username`,`channel`) VALUES('%s','%s')",$username,$channel);
 	else
-		$sql->query("UPDATE `irc_users` SET `isOnline`='1' WHERE `usernum`='%s'",$tempSql['usernum']);
+		$sql->query("UPDATE `irc_users` SET `isOnline`=1 WHERE `usernum`='%s'",$tempSql['usernum']);
 }
 
 
