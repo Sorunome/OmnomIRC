@@ -1,7 +1,7 @@
 <?PHP
 	function sign($name){
-		global $signature_key;
-		return mcrypt_encrypt ( MCRYPT_RIJNDAEL_256 , $signature_key , $name , MCRYPT_MODE_ECB); //Okay, okay, this isn't a signature, it's a cypher. 
+		global $config;
+		return mcrypt_encrypt ( MCRYPT_RIJNDAEL_256 , $config['security']['sigKey'] , $name , MCRYPT_MODE_ECB); //Okay, okay, this isn't a signature, it's a cypher. 
 	}																				   //It still gives the same result every time, and I can use it with a key.
 	
 	function checkSignature($name,$signature,$deBase64=false){

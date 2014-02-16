@@ -35,6 +35,7 @@ $sockets = Array();
 
 $fragment = false;
 $fragLine = "";
+$identified = 0;
 function sendLine($line,$socketToMatch,$exclude = true){
 	global $sockets;
 	$line = trim($line) . "\n";
@@ -63,7 +64,7 @@ function getMessage($parts,$start,$trim){
 
 function parseMsg($allMessage,$callingSocket){
 
-	global $socket,$hasIdent,$ircBot_identT,$chanStr,$userList,$fragment,$fragLine,$sockets,$ircBot_botNick;
+	global $socket,$hasIdent,$ircBot_identT,$chanStr,$userList,$fragment,$fragLine,$sockets,$ircBot_botNick,$identified;
 	for($i=0;$i<count($sockets);$i++)
 				if($sockets[$i] == $callingSocket)
 					$pings[$i] = time();
@@ -105,6 +106,18 @@ function parseMsg($allMessage,$callingSocket){
 					sendLine("TOPIC ".$parts[4]." :".$topic,$callingSocket,false);
 				}
 			break;
+			 case "notice":
+				//echo $identified." ".$in."\n";
+				if($parts[0]!=":efnet.port80.se")
+					if($info[1]=="NickServ" && $identified==0){
+						$identified = 1;
+						sendLine("PRIVMSG NickServ :IDENTIFY a50ffb92c7da37dd2cf5ca29d88c423c\n");
+					}elseif($info[1]=="NickServ" && $identified==1){
+						$identified = 2;
+						sendLine("JOIN $chanStr\n",$callingSocket,false);
+					}
+			break;
+
 			case "376": //End of MOTD
 			case "422": //no MOTD
 				sendLine("JOIN $chanStr\n",$callingSocket,false);

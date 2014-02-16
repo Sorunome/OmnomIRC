@@ -59,26 +59,25 @@
 	}
 	
 	function isGlobalOp($nick,$sig,$id){
-		global $opGroups,$checkLoginUrl;
+		global $config;
 		if(!checkSignature($nick,$sig))
 			return false;
 		$userSql = getUserstuffQuery($nick);
 		if ($userSql['globalOp']==1)
 			return true;
-		$returnPosition = trim(file_get_contents($checkLoginUrl.'?op&u='.$id.'&nick='.base64_url_encode($nick)));
-		//$returnPosition = substr($returnPosition,3,strlen($returnPosition));
-		if (in_array($returnPosition,$opGroups))
+		$returnPosition = trim(file_get_contents($config["settings"]["checkLoginUrl"].'?op&u='.$id.'&nick='.base64_url_encode($nick)));
+		if (in_array($returnPosition,$config['opGroups']))
 			return true;
 		return false;
 	}
 	
 	function isOp($nick,$sig,$id,$chan){
-		global $opGroups,$checkLoginUrl;
+		global $config;
 		if(!checkSignature($nick,$sig))
 			return false;
-		$returnPosition = trim(file_get_contents($checkLoginUrl.'?op&u='.$id.'&nick='.base64_url_encode($nick)));
+		$returnPosition = trim(file_get_contents($config['settings']['checkLoginUrl'].'?op&u='.$id.'&nick='.base64_url_encode($nick)));
 		//$returnPosition = substr($returnPosition,3,strlen($returnPosition));
-		if (in_array($returnPosition,$opGroups))
+		if (in_array($returnPosition,$config['opGroups']))
 			return true;
 		$userSql = getUserstuffQuery($nick);
 		if (strpos($userSql['ops'],$chan."\n")!==false)

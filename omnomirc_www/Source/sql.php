@@ -1,12 +1,12 @@
 <?php
-class sql{
+class sqli{
 	private $mysqliConnection;
 	private function connectSql(){
-		global $sql_user,$sql_password,$sql_server,$sql_db;
+		global $config;
 		if(isset($this->mysqliConnection)){
 			return $this->mysqliConnection;
 		}
-		$mysqli = new mysqli($sql_server,$sql_user,$sql_password,$sql_db);
+		$mysqli = new mysqli($config['sql']['server'],$config['sql']['user'],$config['sql']['passwd'],$config['sql']['db']);
 		if ($mysqli->connect_errno) 
 			die('Could not connect to SQL DB: '.$mysqli->connect_errno.' '.$mysqli->connect_error);
 		$this->mysqliConnection = $mysqli;
@@ -29,14 +29,20 @@ class sql{
 			return array();
 		$res = array();
 		$i = 0;
-		while ($row = $result->fetch_assoc()) {
+		while($row = $result->fetch_assoc()) {
 			$res[] = $row;
 			if($i++>=150)
 				break;
+		}
+		if($res === []){
+			$fields = $result->fetch_fields();
+			for($i=0;$i<count($fields);$i++)
+				$res[$fields[$i]->name] = NULL;
+			$res = array($res);
 		}
 		$result->free();
 		return $res;
 	}
 }
-$sql = new sql;
+$sql = new sqli;
 ?>

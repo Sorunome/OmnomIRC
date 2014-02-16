@@ -296,6 +296,6 @@ ip 108.174.51.58
 		echo "<html><head><meta http-equiv=\"refresh\" content=\"1;url=textmode.php?update=".$_SESSION['curline']."\"></head><body>Sending message...</body></html>";
 	}
 	$temp = $sql->query("SELECT MAX(line_number) FROM irc_lines");
-	file_put_contents($curidFilePath,$temp[0]['MAX(line_number)']);
+	file_put_contents($config['settings']['curidFilePath'],$temp[0]['MAX(line_number)']);
 	
 ?>

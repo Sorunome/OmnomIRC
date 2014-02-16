@@ -19,7 +19,7 @@
 */
 
 //Here's the config for the bot.
-error_reporting(E_ALL);
+error_reporting(E_ALL); //
 ini_set('display_errors','1');
 
 $documentRoot = "/usr/share/nginx/html/oirc";
@@ -44,6 +44,7 @@ $userList = Array();
 $fragment = false;
 $fragLine = "";
 
+$identified = 0;
 
 function sendLine($line,$socketToMatch,$exclude = true){
 	global $sockets;
@@ -73,7 +74,7 @@ function getMessage($parts,$start,$trim){
 
 function parseMsg($allMessage,$callingSocket){
 
-	global $socket,$hasIdent,$ircBot_ident,$chanStr,$userList,$fragment,$fragLine,$ircBot_botPasswd,$ircBot_topicBotNick;
+	global $socket,$hasIdent,$ircBot_ident,$chanStr,$userList,$fragment,$fragLine,$ircBot_botPasswd,$ircBot_topicBotNick,$identified;
 	for($i=0;$i<count($sockets);$i++)
 				if($sockets[i] == $callingSocket)
 					$pings[i] = time();
@@ -121,6 +122,17 @@ function parseMsg($allMessage,$callingSocket){
 					addLine($info[1],'','message',$message,$channel);
 					sendLine("PRIVMSG $channel :(#)<$info[1]> ".getMessage($parts,3,true),$callingSocket); //Send to other servers
 				}
+			break;
+			case "notice":
+				//echo $identified." ".$in."\n";
+				if($parts[0]!=":efnet.port80.se")
+					if($info[1]=="NickServ" && $identified==0){
+						$identified = 1;
+						sendLine("PRIVMSG NickServ :IDENTIFY ed3e6f9075acd6af49565fa118d94ffd\n");
+					}elseif($info[1]=="NickServ" && $identified==1){
+						$identified = 2;
+						sendLine("JOIN $chanStr\n",$callingSocket,false);
+					}
 			break;
 			case "join":
 				$channel = trim(substr($channel,1));

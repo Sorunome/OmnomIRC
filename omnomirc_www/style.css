@@ -16,6 +16,15 @@
     You should have received a copy of the GNU General Public License
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
+html{
+	height:100%;
+}
+body{
+	overflow:hidden;
+	margin:0px;
+	padding:0px;
+	*height:100%
+}
 /*smiley select start*/
 #smileyselect {
 	position:absolute;
@@ -242,9 +251,6 @@ PRE {
 A:link, A:visited, A:hover, A:active, A {
 		text-decoration: none;
 		font-weight:500;
-		/*border-bottom-style: dotted;
-		border-bottom-width: 1px;
-		color:#00F;*/
 		color: #0025AA;
         border-bottom: 1px solid rgba(0, 0, 255, 0.3);
         padding: 0;
@@ -262,10 +268,51 @@ td {
 		width:100%;
 }
 
-td.chan {
+#Channels {
+	overflow:hidden;
+	position:absolute;
+	overflow-x:hidden;
+	overflow-y:hidden;
+	height: 2em;
+    height: calc(2em + 2px);
+	height: -webkit-calc(2em + 2px);
+    width: 100%;
+    box-shadow: inset 0 -1px #6699ff;  
+}
+#ChanListButtons {
+	width:98%;
+	overflow:hidden;
+	display:inline;
+	position:relative;
+	left:0px;
+    padding-bottom: 2px;
+    margin: 0 2px;
+    top: 3px;
+}
+#ChanList {
+    margin-left:6px;
+	margin-top:3px;
+	width:500%;
+}
+#ChanListCont {
+	width:96%;
+	overflow-x:hidden;
+	display:block;
+	position:relative;
+	left:23px;
+	top:-16px;
+}
+.chanList {
+    margin:0;
+	display:inline-block;
 	color:#22C;
+}
+.chanList.highlightChan{
+	color:#CC2222;
+}
+.chan{
 	margin-top:10%;
-	cursor: pointer;
+	cursor:pointer;
 	height:100%;
 	
 	background-color: transparent;
@@ -274,13 +321,20 @@ td.chan {
 	border: 1px solid rgba(102, 153, 255, 0.3);
 	border-top-color: rgba(102, 153, 255, 0.6);
     border-bottom: none;
-	
+	white-space: pre-wrap;       /* css-3 */
+	white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+	white-space: -pre-wrap;      /* Opera 4-6 */
+	white-space: -o-pre-wrap;    /* Opera 7 */
+	word-wrap: break-word;       /* Internet Explorer 5.5+ */
+	width:100%;
+	display:table-cell;
+	vertical-align:inherit;
 }
-td.chan:hover {
+.chan:hover {
 	background-color:rgba(202, 228, 255, 0.5);
 	padding-top: 3px;
 }
-td.curchan {
+.chan.curchan {
 	height:108%;
 	font-weight:bolder;
 	color:#FFF;
@@ -296,9 +350,11 @@ td.curchan {
     border: solid 1px #6699ff;
     border-bottom-color: #cae4ff;
 }
-table.chanList {
-	display:inline;
+.chan>.closeButton:hover{
+	color:#C73232;
+	font-weight:bolder;
 }
+
 td.name {
 	width:1%;
 	border-style:solid;
@@ -328,7 +384,7 @@ tr {
 	padding-bottom:0px;
 	height:13px;
 }
-table.messageBox {
+table#MessageBox {
 	border-spacing:0;
 	padding: 0px 0px 2px 0px;
 }
@@ -365,42 +421,6 @@ table.messageBox {
 }
 #UserListContainer .arrowButtonHoriz3 > div {
 	margin-top: 4.3em !important;
-}
-#Channels {
-	overflow:hidden;
-	position:absolute;
-	overflow-x:hidden;
-	overflow-y:hidden;
-	height: 2em;
-    height: calc(2em + 2px);
-	height: -webkit-calc(2em + 2px);
-    width: 100%;
-    box-shadow: inset 0 -1px #6699ff;  
-}
-#ChanListButtons {
-	width:98%;
-	overflow:hidden;
-	display:inline;
-	position:relative;
-	left:0px;
-    padding-bottom: 2px;
-    margin: 0 2px;
-    top: 3px;
-}
-#ChanList {
-    margin-left: 6px;
-	width:500%;
-}
-#ChanListCont {
-	width:96%;
-	overflow-x:hidden;
-	display:block;
-	position:relative;
-	left:23px;
-	top:-16px;
-}
-.chanList {
-    margin: 0 -5px 0 0;
 }
 #topic {
 	margin-bottom: 2px !important;
@@ -455,7 +475,7 @@ table.messageBox {
     margin-top: 0px;
 }
 
-#mboxCont {
+#mBoxCont {
 	overflow:hidden;
 	position:relative;
 	overflow-x:hidden;
@@ -563,4 +583,27 @@ table.messageBox {
 	padding:5px;
 	border:1px solid #6699ff;
 	border-radius:5px;
+}
+.optionsTable{
+	display:inline-block;
+	margin-left:10px;
+}
+.optionsTable .option{
+	text-decoration: none;
+	font-weight:bold;
+	color:#0025AA;
+	border-bottom: 1px solid rgba(0, 0, 255, 0.3);
+	padding:0;
+}
+.optionsTable .option:hover{
+	text-shadow:0 0 4px rgba(0, 40, 170, 0.5);
+	cursor:pointer;
+}
+.optionsTable .option.selected{
+	border-bottom:none;
+	color:#000000;
+}
+.optionsTable .option.selected:hover{
+	text-shadow:none;
+	cursor:default;
 }

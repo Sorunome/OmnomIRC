@@ -33,17 +33,25 @@
 		if(isset($_GET['channel']))
 			$channel = base64_url_decode($_GET['channel']);
 		$nick = "0";
+		$banned = false;
+		$admin = false;
 		if(isset($_GET['nick'])){
 			$nick = base64_url_decode($_GET['nick']);
 			$signature = base64_url_decode($_GET['signature']);
 			if(!checkSignature($nick,$signature))
 				$nick = "0";
 			$userSql = getUserstuffQuery($nick);
-			if(strpos($userSql["bans"],base64_url_decode($_GET['channel'])."\n")!==false || $userSql['globalBan']=='1')
-				die("addLine('999999999999999999999999999:server:0:0:T21ub21JUkM=:RVJST1IgLSBiYW5uZWQ=');");
-			if(isset($_GET['id']) && isGlobalOp($nick,$signature,$_GET['id'])){
-				echo "try{document.getElementById('adminLink').style.display='';}catch(err){};";
+			if(strpos($userSql["bans"],base64_url_decode($_GET['channel'])."\n")!==false || $userSql['globalBan']=='1'){
+				$banned = true;
 			}
+			if(isset($_GET['id']) && isGlobalOp($nick,$signature,$_GET['id'])){
+				$admin = true;
+			}
+		}
+		$json = '{"banned":'.($banned?'true':'false').',"admin":'.($admin?'true':'false').',"lines":[';
+		if($banned){
+			echo $json.'],"users":[]}';
+			die();
 		}
 		if($channel[0]!="*" and $channel[0]!="#" and $channel[0]!="@" and $channel[0]!="&")
 			$channel = "0";
@@ -75,7 +83,6 @@
 													) AS x
 													ORDER BY `line_number` ASC",$channel,$nick,$nick,$channel,$count + 0);
 		}
-		echo "void('$nick');";
 		$userSql = $sql->query("SELECT * FROM `irc_userstuff` WHERE name='%s' LIMIT 1",strtolower($nick));
 		if(isset($userSql[0])){
 			$userSql = $userSql[0];
@@ -88,59 +95,60 @@
 		}
 		foreach($res as $result){
 			if(strpos($userSql['ignores'],strtolower($result['name1'])."\n")===false){
-				echo "addLine('";
-				$lineBeginning = $result['line_number'].':'.$result['type'].':'.$result['Online'].':'.$result['time'].':'.base64_url_encode(htmlspecialchars($result['name1'])).':';
-				switch(strtolower($result['type'])){
-					case 'pm':
-					case 'message':
-					case 'action':
-					case 'pmaction':
-						echo $lineBeginning.base64_url_encode(htmlspecialchars($result['message'])).':'.base64_url_encode('0');
-						break;
-					case 'join':
-						echo $lineBeginning;
-						break;
-					case 'kick':
-						echo $lineBeginning.base64_url_encode(htmlspecialchars($result['name2'])).':'.base64_url_encode(htmlspecialchars($result['message']));
-						break;
-					case 'quit':
-					case 'mode':
-					case 'server':
-					case 'part':
-					case "topic":
-						echo $lineBeginning.base64_url_encode(htmlspecialchars(trim($result['message'])));
-						break;
-					case 'nick':
-						echo $lineBeginning.base64_url_encode(htmlspecialchars($result['name2']));
-						break;
-				}
-				echo "');";
+				$json .= json_encode([
+					'curLine' => (int)$result['line_number'],
+					'type' => $result['type'],
+					'network' => (int)$result['Online'],
+					'time' => (int)$result['time'],
+					'name' => $result['name1'],
+					'message' => $result['message'],
+					'name2' => $result['name2'],
+					'chan' => $result['channel']
+				]).',';
 			}
 		}
-		$temp = $sql->query("SELECT MAX(line_number) FROM `irc_lines`");
-		$curMax = $temp[0]['MAX(line_number)'];
-		echo "addLine('".$curMax.":curline');";
+		$temp = $sql->query("SELECT MAX(line_number) AS max FROM `irc_lines`");
+		$curMax = $temp[0]['max'];
 		$curtopic = $sql->query("SELECT topic FROM `irc_topics` WHERE `chan`='%s'",strtolower($channel));
-		if(isset($curtopic[0])){
+		if($curtopic[0]['topic']!=NULL){
 			$curtopic = $curtopic[0]['topic'];
 		}else{
 			$curtopic = '';
 		}
-		echo "addLine('".$curMax.':topic:0:'.time().'::'.base64_url_encode(htmlspecialchars($curtopic))."');";
+		$json .= json_encode([
+			'curLine' => (int)$curMax,
+			'type' => 'topic',
+			'network' => -1,
+			'time' => time(),
+			'name' => '',
+			'message' => $curtopic,
+			'name2' => '',
+			'chan' => $result['channel']
+		]).'],"users":[';
+		
 		$users = Array();
 		
 		$result = $sql->query("SELECT username,online,channel FROM `irc_users` WHERE `channel`='%s' AND `isOnline`='1'",$channel);
 		foreach($result as $user){
-			$users[count($users)][0] = strtolower($user['username']);
-			$users[count($users) - 1][1] = $user['username'];
-			$users[count($users) - 1][2] = $user['online'];
-			$users[count($users) - 1][3] = $user['channel'];
+			if($user['username']!=NULL){
+				$users[count($users)][0] = strtolower($user['username']);
+				$users[count($users) - 1][1] = $user['username'];
+				$users[count($users) - 1][2] = $user['online'];
+				$users[count($users) - 1][3] = $user['channel'];
+			}
 		}
 		
 		asort($users);
+		$strip = false;
 		foreach($users as $user){
-			echo "addUser('" . base64_url_encode(htmlspecialchars($user[1])) . ":" . $user[2] . "');";
+			$strip = true;
+			$json .= json_encode([
+				'nick' => $user[1],
+				'network' => (int)$user[2]
+			]).',';
 		}
+		header('Content-Type: text/json');
+		echo ($strip?substr($json,0,-1):$json).']}';
 		if(isset($_GET['calc'])){
 			ob_end_clean();
 			$temp = $sql->query("SELECT MAX(line_number) FROM `irc_lines`");

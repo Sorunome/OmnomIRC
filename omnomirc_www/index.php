@@ -17,23 +17,29 @@
     You should have received a copy of the GNU General Public License
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
+error_reporting(E_ALL);
+ini_set('display_errors','1');
 include_once(realpath(dirname(__FILE__)).'/config.php');
 if(strpos($_SERVER['HTTP_USER_AGENT'],'textmode;')!==false || isset($_GET['textmode'])){
-	if(isset($_COOKIE[$securityCookie]))
-		header('Location: '.$checkLoginUrl.'?textmode&sid='.urlencode(htmlspecialchars(str_replace(";","%^%",$_COOKIE[$securityCookie]))));
+	if(isset($_COOKIE[$config['security']['cookie']]))
+		header('Location: '.$config['settings']['checkLoginUrl'].'?textmode&sid='.urlencode(htmlspecialchars(str_replace(";","%^%",$_COOKIE[$config['security']['cookie']]))));
 	else
-		header('Location: '.$checkLoginUrl.'?textmode');
+		header('Location: '.$config['settings']['checkLoginUrl'].'?textmode');
 }elseif(isset($_GET['options'])){
 ?>
 <html>
 <head>
 <title>OmnomIRC Options</title>
+<link rel="icon" type="image/png" href="omni.png">
 <link rel="stylesheet" type="text/css" href="style.css" />
 <?php
-if($externalStyleSheet!='')
-	echo '<link rel="stylesheet" type="text/css" href="'.$externalStyleSheet.'" />';
+if($config['settings']['externalStyleSheet']!='')
+	echo '<link rel="stylesheet" type="text/css" href="'.$config['settings']['externalStyleSheet'].'" />';
+
 ?>
-<script src="Omnom_Options.js"></script>
+<script src="btoa.js"></script>
+<script type="text/javascript" src="jquery-1.11.0.min.js"></script>
+<script src="omnomirc.js"></script>
 <style type="text/css">
 body,td,tr,pre,table{
 	font-size: 13px;font-family:verdana,sans-serif;line-height:17px;
@@ -86,92 +92,45 @@ Options:
 16 - enable main-window scrolling
 -->
 <body>
-<table>
-<tr><td>
-Highlight Bold:</td><td> <script type="text/javascript"> document.write(getHTMLToggle(getOption(1,"T") == "T", "Yes", "No", "setOption(1,\'T\');", "setOption(1,\'F\');"));</script>
-</td><td>
-Highlight Red:</td><td> <script type="text/javascript"> document.write(getHTMLToggle(getOption(2,"T") == "T", "Yes", "No", "setOption(2,\'T\');", "setOption(2,\'F\');"));</script>
-</td></tr><tr><td>
-Colored Names:</td><td> <script type="text/javascript"> document.write(getHTMLToggle(getOption(3,"F") == "T", "Yes", "No", "setOption(3,\'T\');", "setOption(3,\'F\');"));</script>
-</td><td>
-Show extra Channels:</td><td> <script type="text/javascript"> document.write(getHTMLToggle(getOption(9,"F") == "T", "Yes", "No", "warning();", "setOption(9,\'F\');"));</script>
-</td></tr><tr><td>
-Alternating Line Highlight:</td><td> <script type="text/javascript"> document.write(getHTMLToggle(getOption(6,"T") == "T", "Yes", "No", "setOption(6,\'T\');", "setOption(6,\'F\');"));</script>
-</td><td>
-Enabled:</td><td> <script type="text/javascript"> document.write(getHTMLToggle(getOption(5,"T") == "T", "Yes", "No", "setOption(5,\'T\');", "setOption(5,\'F\');"));</script>
-</td></tr><tr><td>
-Ding on Highlight:</td><td><script type="text/javascript"> document.write(getHTMLToggle(getOption(8,"F") == "T", "Yes", "No", "setOption(8,\'T\');", "setOption(8,\'F\');"));</script>
-</td><td>
-Show Timestamps:</td><td><script type="text/javascript"> document.write(getHTMLToggle(getOption(10,"F") == "T", "Yes", "No", "setOption(10,\'T\');", "setOption(10,\'F\');"));</script>
-</td></tr><tr><td>
-Show Updates in Browser Status Bar:</td><td><script type="text/javascript"> document.write(getHTMLToggle(getOption(11,"T") == "T", "Yes", "No", "setOption(11,\'T\');", "setOption(11,\'F\');"));</script>
-</td><td>
-Show smileys:</td><td><script type="text/javascript"> document.write(getHTMLToggle(getOption(12,"T") == "T", "Yes", "No", "setOption(12,\'T\');", "setOption(12,\'F\');"));</script>
-</td></tr><tr><td>
-Hide Userlist:</td><td><script type="text/javascript"> document.write(getHTMLToggle(getOption(14,"F") == "T", "Yes", "No", "setOption(14,\'T\');", "setOption(14,\'F\');"));</script>
-</td><td>
-Number chars for Highlighting:
-</td><td colspan="2" style="border-right:none;">
-<select onchange="setOption(13,this.value);">
-<script type="text/javascript">
-var currentOption = getOption(13,"3");
-for (var i=0;i<10;i++) {
-	if  (parseInt(currentOption)==i)
-		document.write("<option selected='selected' value='"+i.toString()+"'>"+(i+1).toString()+"</option>");
-	else
-		document.write("<option value='"+i.toString()+"'>"+(i+1).toString()+"</option>");
-}
-</script>
-</select>
-</td></tr><tr><td>
-Show Scrollbar:</td><td><script type="text/javascript"> document.write(getHTMLToggle(getOption(15,"T") == "T", "Yes", "No", "setOption(15,\'T\');", "setOption(15,\'F\');"));</script>
-</td><td>
-Enable Scrollwheel:</td><td><script type="text/javascript"> document.write(getHTMLToggle(getOption(16,"F") == "T", "Yes", "No", "setOption(16,\'T\');", "setOption(16,\'F\');"));</script>
-</td></tr>
-<tr><td>Browser Notifications:</td><td style="border-right:1px solid;"><script type="text/javascript">document.write(getHTMLToggle(getOption(7,"F") == "T","Yes","No","setAllowNotification();","setOption(7,'F')"));</script>
-</td></tr>
-</tr>
-</table>
-<a href="#" onclick="clearCookies()">Clear Cookies</a>
-<br/><br/>
-<br/><br/>
+<div style="font-size:20px;font-weight:bold;margin-top:5px;">OmnomIRC Options</div>
+<div id='options'></div>
 <div style="top:100%;margin-top:-33pt;position:absolute;"><a href="index.php"><span style="font-size:30pt;">&#8592;</span><span style="font-size:18pt;top:-3pt;position:relative;">Back<span></a></div>
 </body>
 </html>
 <?php
-}elseif(isset($_GET['admin']) || !$oirc_installed){
-	
+}elseif(isset($_GET['admin']) || !$config['info']['installed']){
+	include_once(realpath(dirname(__FILE__)).'/Source/admin.php');
 	if(isset($_GET['server'])){
-		if(!$oirc_installed || (isset($_GET['nick']) && isset($_GET['sig']) && isset($_GET['id']) && isGlobalOp(base64_url_decode($_GET['nick']),base64_url_decode($_GET['sig']),$_GET['id']))){
-			if($signature_key==''){
-				$signature_key = getRandKey();
+		if(!$config['info']['installed'] || (isset($_GET['nick']) && isset($_GET['sig']) && isset($_GET['id']) && isGlobalOp(base64_url_decode($_GET['nick']),base64_url_decode($_GET['sig']),$_GET['id']))){
+			if($config['security']['sigKey']==''){
+				$config['security']['sigKey'] = getRandKey();
 				adminWriteConfig(false);
 			}
-			if($calcKey==''){
-				$calcKey = getRandKey();
+			if($config['security']['calcKey']==''){
+				$config['security']['calcKey'] = getRandKey();
 				adminWriteConfig(false);
 			}
-			if($ircBot_botPasswd==''){
-				$ircBot_botPasswd = getRandKey();
+			if($config['irc']['password']==''){
+				$config['irc']['password'] = getRandKey();
 				adminWriteConfig(false);
 			}
 			if(isset($_GET['page'])){
 				switch($_GET['page']){
 					case 'index':
-						if((!(isset($_POST['install']) && !$oirc_installed)) && !isset($_POST['backup'])){
+						if((!(isset($_POST['install']) && !$config['info']['installed'])) && !isset($_POST['backup'])){
 							echo '<b>OmnomIRC Admin Pannel</b><br>';
-							echo "OmnomIRC Version: $OmnomIRC_version<br>";
+							echo 'OmnomIRC Version: '.$config['info']['version'].'<br>';
 							echo '<button onclick="setPage(\'index\',\'backup=1\');">Back up config</button><br>';
-							if(!$oirc_installed){
+							if(!$config['info']['installed']){
 								echo '<span class="highlight">You are currently in installation mode!</span><br>';
 								echo '<button onclick="setPage(\'index\',\'install=1\');">Install</button>';
 							}
-						}elseif((isset($_POST['install']) && !$oirc_installed)){
+						}elseif((isset($_POST['install']) && !$config['info']['installed'])){
 							$queries = explode(";",str_replace("\n","",file_get_contents(realpath(dirname(__FILE__)).'/omnomirc.sql')));
 							foreach($queries as $query){
 								$sql->query($query);
 							}
-							$oirc_installed = true;
+							$config['info']['installed'] = true;
 							adminWriteConfig(false);
 							echo 'Successfully installed OmnomIRC!';
 						}elseif(isset($_POST['backup'])){
@@ -191,15 +150,15 @@ Enable Scrollwheel:</td><td><script type="text/javascript"> document.write(getHT
 							echo '<img src="omni.png" onload="';
 							echo 'channels = [';
 							$chanStr = '';
-							foreach($channels as $chan){
-								$chanStr.='[\''.$chan[0].'\','.($chan[1]?'true':'false').'],';
+							foreach($config['channels'] as $chan){
+								$chanStr.='[\''.$chan['chan'].'\','.($chan['visible']?'true':'false').'],';
 							}
 							echo substr($chanStr,0,-1);
 							echo '];';
 							echo 'exChannels = [';
 							$chanStr = '';
-							foreach($exChans as $chan){
-								$chanStr.='[\''.$chan[0].'\','.($chan[1]?'true':'false').'],';
+							foreach($config['exChans'] as $chan){
+								$chanStr.='[\''.$chan['chan'].'\','.($chan['visible']?'true':'false').'],';
 							}
 							echo substr($chanStr,0,-1);
 							echo '];drawChannels();';
@@ -213,9 +172,10 @@ Enable Scrollwheel:</td><td><script type="text/javascript"> document.write(getHT
 									$temp = false;
 									if($e[1]=='true')
 										$temp = true;
-									$channels[]=Array(base64_url_decode($e[0]),$temp);
+									$channels[]=Array('chan' => base64_url_decode($e[0]),'visible' => $temp);
 								}
 							}
+							$config['channels'] = $channels;
 							$exChans=Array();
 							$temp = explode(';',$_POST['exChans']);
 							foreach($temp as $t){
@@ -224,9 +184,10 @@ Enable Scrollwheel:</td><td><script type="text/javascript"> document.write(getHT
 									$temp = false;
 									if($e[1]=='true')
 										$temp = true;
-									$exChans[]=Array(base64_url_decode($e[0]),$temp);
+									$exChans[]=Array('chan' => base64_url_decode($e[0]),'visible' => $temp);
 								}
 							}
+							$config['exChans'] = $exChans;
 							adminWriteConfig();
 						}
 					break;
@@ -240,7 +201,7 @@ Enable Scrollwheel:</td><td><script type="text/javascript"> document.write(getHT
 							echo 'hotlinks=[';
 							
 							$temp = '';
-							foreach($hotlinks as $h){
+							foreach($config['hotlinks'] as $h){
 								$temp2 = '';
 								$temp .= '[';
 								foreach($h as $key => $link)
@@ -266,6 +227,7 @@ Enable Scrollwheel:</td><td><script type="text/javascript"> document.write(getHT
 									}
 								}
 							}
+							$config['hotlinks'] = $hotlinks;
 							adminWriteConfig();
 						}
 					break;
@@ -273,9 +235,9 @@ Enable Scrollwheel:</td><td><script type="text/javascript"> document.write(getHT
 						if(!isset($_POST['sql_db']) || !isset($_POST['sql_user']) || !isset($_POST['sql_password']) || !isset($_POST['sql_server'])){
 							echo '<div style="font-weight:bold">SQL Settings</div>';
 							echo '<span class="highlight">Don\'t change this unless you are <b>really</b> sure what you are doing.</span><br>';
-							echo 'SQL Server:<input type="text" value="'.$sql_server.'" id="sqlServer"><br>';
-							echo 'SQL Database:<input type="text" value="'.$sql_db.'" id="sqlDb"><br>';
-							echo 'SQL User:<input type="text" value="'.$sql_user.'" id="sqlUser"><br>';
+							echo 'SQL Server:<input type="text" value="'.$config['sql']['server'].'" id="sqlServer"><br>';
+							echo 'SQL Database:<input type="text" value="'.$config['sql']['db'].'" id="sqlDb"><br>';
+							echo 'SQL User:<input type="text" value="'.$config['sql']['user'].'" id="sqlUser"><br>';
 							echo 'SQL Password:<input type="password" id="sqlPassword"><br>';
 							
 							echo '<button onclick="if(document.getElementById(\'sqlPassword\').value!=\'\'){';
@@ -286,13 +248,13 @@ Enable Scrollwheel:</td><td><script type="text/javascript"> document.write(getHT
 							echo ');document.getElementById(\'sqlPassword\').value=\'\';}else{alert(\'you need to set a password\');}';
 							echo '">Save Changes</button>';
 						}else{
-							$sql_server = base64_url_decode($_POST['sql_server']);
-							$sql_db = base64_url_decode($_POST['sql_db']);
-							$sql_user = base64_url_decode($_POST['sql_user']);
-							$sql_password = base64_url_decode($_POST['sql_password']);
-							$sql_connection=mysqli_connect($sql_server,$sql_user,$sql_password,$sql_db);
+							$config['sql']['server'] = base64_url_decode($_POST['sql_server']);
+							$config['sql']['db'] = base64_url_decode($_POST['sql_db']);
+							$config['sql']['user'] = base64_url_decode($_POST['sql_user']);
+							$config['sql']['passwd'] = base64_url_decode($_POST['sql_password']);
+							$sql_connection=@mysqli_connect($config['sql']['server'],$config['sql']['user'],$config['sql']['passwd'],$config['sql']['db']);
 							if (mysqli_connect_errno($sql_connection)!=0) 
-								die('Could not connect to SQL DB: '.mysqli_connect_errno($sqlConnection).' '.mysqli_connect_error($sqlConnection));
+								die('Could not connect to SQL DB: '.mysqli_connect_errno($sql_connection).' '.mysqli_connect_error($sql_connection));
 							else
 								adminWriteConfig();
 						}
@@ -304,7 +266,7 @@ Enable Scrollwheel:</td><td><script type="text/javascript"> document.write(getHT
 							echo '<img src="omni.png" onload="';
 							echo 'opGroups=[';
 							$temp = '';
-							foreach($opGroups as $o){
+							foreach($config['opGroups'] as $o){
 								$temp .= "'".$o."',";
 							}
 							echo substr($temp,0,-1);
@@ -317,6 +279,7 @@ Enable Scrollwheel:</td><td><script type="text/javascript"> document.write(getHT
 							foreach($temp as $t)
 								if($t && $t!='')
 									$opGroups[] = base64_url_decode($t);
+							$config['opGroups'] = $opGroups;
 							adminWriteConfig();
 						}
 					break;
@@ -324,60 +287,51 @@ Enable Scrollwheel:</td><td><script type="text/javascript"> document.write(getHT
 						if(!isset($_POST['botCont']) || !isset($_POST['botContT']) || !isset($_POST['ircBotBotPasswd']) || !isset($_POST['ircBotBotNick']) || !isset($_POST['ircBotTopicBotNick'])){
 							echo '<div style="font-weight:bold">IRC-Bot Settings</div>';
 							echo '<span class="highlight">You will have to manually restart the irc bots after preforming changes here!</span><br>';
-							echo 'Bot Password:<input type="text" value="'.$ircBot_botPasswd.'" id="ircBotBotPasswd"><br>';
-							echo 'Main Bot Nick:<input type="text" value="'.$ircBot_botNick.'" id="ircBotBotNick"><br>';
-							echo 'Topic Bot Nick:<input type="text" value="'.$ircBot_topicBotNick.'" id="ircBotTopicBotNick"><br>';
+							echo 'Bot Password:<input type="text" value="'.$config['irc']['password'].'" id="ircBotBotPasswd"><br>';
+							echo 'Main Bot Nick:<input type="text" value="'.$config['irc']['main']['nick'].'" id="ircBotBotNick"><br>';
+							echo 'Topic Bot Nick:<input type="text" value="'.$config['irc']['topic']['nick'].'" id="ircBotTopicBotNick"><br>';
 							echo '<span style="font-weight:bold">Main Bot</span><br><div id="botCont"></div>';
 							echo '<span style="font-weight:bold">Topic Bot</span><br><div id="botContT"></div>';
 							echo '<img src="omni.png" onload="';
 							echo 'ircBot=[';
-							$i = 0;
 							$temp = '';
-							foreach($ircBot_servers as $s){
-								$temp .= '[\''.$s[0].'\','.$s[1].',\''.str_replace("\r","\\\\r",str_replace("\n","\\\\n",addslashes($ircBot_ident[$i]))).'\'],';
-								$i++;
+							foreach($config['irc']['main']['servers'] as $s){
+								$temp .= '[\''.$s['server'].'\','.$s['port'].',\''.str_replace("\r","\\\\r",str_replace("\n","\\\\n",addslashes($s['ident']))).'\'],';
 							}
 							echo substr($temp,0,-1);
 							echo '];';
 							echo 'ircBotT=[';
-							$i = 0;
 							$temp = '';
-							foreach($ircBot_serversT as $s){
-								$temp .= '[\''.$s[0].'\','.$s[1].',\''.str_replace("\r","\\\\r",str_replace("\n","\\\\n",addslashes($ircBot_identT[$i]))).'\'],';
-								$i++;
+							foreach($config['irc']['topic']['servers'] as $s){
+								$temp .= '[\''.$s['server'].'\','.$s['port'].',\''.str_replace("\r","\\\\r",str_replace("\n","\\\\n",addslashes($s['ident']))).'\'],';
 							}
 							echo substr($temp,0,-1);
 							echo '];drawBotSettings();';
 							echo '" style="display:none;">';
 							echo '<button onclick="saveBotCfg()">Save Changes</button>';
 						}else{
-							$ircBot_botPasswd = base64_url_decode($_POST['ircBotBotPasswd']);
-							$ircBot_botNick = base64_url_decode($_POST['ircBotBotNick']);
-							$ircBot_topicBotNick = base64_url_decode($_POST['ircBotTopicBotNick']);
+							$config['irc']['password'] = base64_url_decode($_POST['ircBotBotPasswd']);
+							$config['irc']['main']['nick'] = base64_url_decode($_POST['ircBotBotNick']);
+							$config['irc']['topic']['nick'] = base64_url_decode($_POST['ircBotTopicBotNick']);
 							$ircBot_servers = Array();
-							$ircBot_ident = Array();
 							$temp = explode(';',$_POST['botCont']);
-							$i = 0;
 							foreach($temp as $t){
 								if($t && $t!=''){
 									$e = explode(':',$t);
-									$ircBot_servers[]=Array(base64_url_decode($e[0]),(int)$e[1]);
-									$ircBot_ident[]=base64_url_decode($e[2]);
-									$i++;
+									$ircBot_servers[]=Array('server' => base64_url_decode($e[0]),'port' => (int)$e[1],'ident' => base64_url_decode($e[2]));
 								}
 							}
 							$ircBot_serversT = Array();
-							$ircBot_identT = Array();
 							$temp = explode(';',$_POST['botContT']);
 							$i = 0;
 							foreach($temp as $t){
 								if($t && $t!=''){
 									$e = explode(':',$t);
-									$ircBot_serversT[]=Array(base64_url_decode($e[0]),(int)$e[1]);
-									$ircBot_identT[]=base64_url_decode($e[2]);
-									$i++;
+									$ircBot_serversT[]=Array('server' => base64_url_decode($e[0]),'port' => (int)$e[1],'ident' => base64_url_decode($e[2]));
 								}
 							}
+							$config['irc']['main']['servers'] = $ircBot_servers;
+							$config['irc']['topic']['servers'] = $ircBot_serversT;
 							adminWriteConfig();
 						}
 					break;
@@ -386,13 +340,13 @@ Enable Scrollwheel:</td><td><script type="text/javascript"> document.write(getHT
 								!isset($_POST['curidFilePath']) || !isset($_POST['calcKey']) || !isset($_POST['externalStyleSheet'])){
 							echo '<div style="font-weight:bold">Misc Settings</div>';
 							echo '<span class="highlight">Some of these values shouldn\'t be messed with - beware.</span><br>';
-							echo 'Hostname:<input type="text" value="'.$hostname.'" id="hostname"><br>';
-							echo 'Name Search URL:<input type="text" value="'.$searchNamesUrl.'" id="searchNamesUrl"><br>';
-							echo 'Check Login URL:<input type="text" value="'.$checkLoginUrl.'" id="checkLoginUrl"><br>';
-							echo 'Security Cookie:<input type="text" value="'.$securityCookie.'" id="securityCookie"><br>';
-							echo 'Cur-id file path:<input type="text" value="'.$curidFilePath.'" id="curidFilePath"><br>';
-							echo 'Calculator key:<input type="text" value="'.$calcKey.'" id="calcKey"><br>';
-							echo 'External Stylesheet:<input type="text" value="'.$externalStyleSheet.'" id="externalStyleSheet"><br>';
+							echo 'Hostname:<input type="text" value="'.$config['settings']['hostname'].'" id="hostname"><br>';
+							echo 'Name Search URL:<input type="text" value="'.$config['settings']['serchNamesUrl'].'" id="searchNamesUrl"><br>';
+							echo 'Check Login URL:<input type="text" value="'.$config['settings']['checkLoginUrl'].'" id="checkLoginUrl"><br>';
+							echo 'Security Cookie:<input type="text" value="'.$config['security']['cookie'].'" id="securityCookie"><br>';
+							echo 'Cur-id file path:<input type="text" value="'.$config['settings']['curidFilePath'].'" id="curidFilePath"><br>';
+							echo 'Calculator key:<input type="text" value="'.$config['security']['calcKey'].'" id="calcKey"><br>';
+							echo 'External Stylesheet:<input type="text" value="'.$config['settings']['externalStyleSheet'].'" id="externalStyleSheet"><br>';
 							
 							echo '<button onclick="';
 							echo 'setPage(\'misc\',\'hostname=\'+base64.encode(document.getElementById(\'hostname\').value)';
@@ -405,16 +359,16 @@ Enable Scrollwheel:</td><td><script type="text/javascript"> document.write(getHT
 							echo ')';
 							echo '">Save Changes</button>';
 						}else{
-							$hostname = base64_url_decode($_POST['hostname']);
-							$searchNamesUrl = base64_url_decode($_POST['searchNamesUrl']);
-							$checkLoginUrl = base64_url_decode($_POST['checkLoginUrl']);
-							$securityCookie = base64_url_decode($_POST['securityCookie']);
-							$curidFilePath = base64_url_decode($_POST['curidFilePath']);
-							$calcKey = base64_url_decode($_POST['calcKey']);
-							$externalStyleSheet = base64_url_decode($_POST['externalStyleSheet']);
+							$config['settings']['hostname'] = base64_url_decode($_POST['hostname']);
+							$config['settings']['serchNamesUrl'] = base64_url_decode($_POST['searchNamesUrl']);
+							$config['settings']['checkLoginUrl'] = base64_url_decode($_POST['checkLoginUrl']);
+							$config['security']['cookie'] = base64_url_decode($_POST['securityCookie']);
+							$config['settings']['curidFilePath'] = base64_url_decode($_POST['curidFilePath']);
+							$config['security']['calcKey'] = base64_url_decode($_POST['calcKey']);
+							$config['settings']['externalStyleSheet'] = base64_url_decode($_POST['externalStyleSheet']);
 							adminWriteConfig();
 						}
-					breaK;
+					break;
 					default:
 						echo 'Invalid Page';
 				}
@@ -430,12 +384,12 @@ Enable Scrollwheel:</td><td><script type="text/javascript"> document.write(getHT
 		<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 		<title>OmnomIRC V2</title>
+		<link rel="icon" type="image/png" href="omni.png">
 		<link rel="stylesheet" type="text/css" href="style.css" />
 		<?php
-		if($externalStyleSheet!='')
-			echo '<link rel="stylesheet" type="text/css" href="'.$externalStyleSheet.'" />';
+		if($config['settings']['externalStyleSheet']!='')
+			echo '<link rel="stylesheet" type="text/css" href="'.$config['settings']['externalStyleSheet'].'" />';
 		?>
-		<script src="config.php?js"></script>
 		<script src="btoa.js"></script>
 		<script type='text/javascript'>
 			function getPage(name){
@@ -670,6 +624,7 @@ Enable Scrollwheel:</td><td><script type="text/javascript"> document.write(getHT
 		<div id='adminContent'>Loading...</div>
 		</div>
 		<div id='adminFooter'><a href='index.php'>Back to OmnomIRC</a></div>
+		<script type="text/javascript" src="jquery-1.11.0.min.js"></script>
 		<script type="text/javascript">
 			function signCallback(sig,nick,id) {
 				Signature = sig;
@@ -679,13 +634,15 @@ Enable Scrollwheel:</td><td><script type="text/javascript"> document.write(getHT
 				getPage('index');
 			}
 			<?php
-			if($oirc_installed){
+			if($config['info']['installed']){
 			?>
-			var script= document.createElement('script'),
-				body= document.getElementsByTagName('body')[0];
-			script.type= 'text/javascript';
-			script.src=<?php if(isset($_COOKIE[$securityCookie]))echo '"'.$checkLoginUrl.'?sid='.urlencode(htmlspecialchars(str_replace(";","%^%",$_COOKIE[$securityCookie]))).'";'."\n"; else echo '"'.$checkLoginUrl.'?sid=THEGAME";'."\n"; ?>
-			body.appendChild(script);
+			$.getJSON('config.php?js',function(data){
+				HOSTNAME = data.hostname;
+				SEARCHNAMESURL = data.searchNamesUrl;
+				$.getJSON(<?php if(isset($_COOKIE[$config['security']['cookie']]))echo '"'.$config['settings']['checkLoginUrl'].'?sid='.urlencode(htmlspecialchars(str_replace(";","%^%",$_COOKIE[$config['security']['cookie']]))).'";'."\n"; else echo '"'.$config['settings']['checkLoginUrl'].'?sid=THEGAME"'; ?>,function(data){
+					signCallback(data.signature,data.nick,data.uid);
+				});
+			});
 			<?php
 			}else{
 				echo 'signCallback("","",0);';
@@ -696,75 +653,34 @@ Enable Scrollwheel:</td><td><script type="text/javascript"> document.write(getHT
 		</html>
 		<?php
 	}
+}elseif(isset($_GET['chans'])){
 }else{
 ?>
+<!DOCTYPE html>
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 <title>OmnomIRC V2</title>
+<link rel="icon" type="image/png" href="omni.png">
 <link rel="stylesheet" type="text/css" href="style.css" />
 <?php
-if($externalStyleSheet!='')
-	echo '<link rel="stylesheet" type="text/css" href="'.$externalStyleSheet.'" />';
+if($config['settings']['externalStyleSheet']!='')
+	echo '<link rel="stylesheet" type="text/css" href="'.$config['settings']['externalStyleSheet'].'" />';
 ?>
-<script type="text/javascript" src="config.php?js"></script>
 <script type="text/javascript" src="btoa.js"></script>
+<script type="text/javascript" src="jquery-1.11.0.min.js"></script>
+<script type="text/javascript" src="omnomirc.js"></script>
 <script type="text/javascript">
-	document.domain=HOSTNAME;
-	
-	function AJAXSend(){
-		Message = document.getElementById("message").value;
-		sendAJAXMessage(userName,Signature,Message,"#omnimaga",omnimagaUserId);
-		oldMessages.push(Message);
-		document.getElementById("message").value = "";
-		document.getElementById("message").focus();
-		if (oldMessages.length>20)
-			oldMessages.shift();
-		messageCounter = oldMessages.length;
-		if (supports_html5_storage())
-			localStorage.setItem("oldMessages-"+getChannelEn(),oldMessages.join("\n"));
-		else
-			setCookie("oldMessages-"+getChannelEn(),oldMessages.join("\n"),30);
-	}
-	
-	function resize(){
-		var offset = 42;
-		if ("\v" != "v"){
-			winbg2=document.getElementById("windowbg2");
-			msg = document.getElementById("message");
-			send = document.getElementById("send");
-			newHeight = window.innerHeight - (msg.clientHeight + 14) + "px";
-			winbg2.style.height = newHeight;
-
-			//messageBox.style.height = winbg2.clientHeight - offset + "px";
-			mBoxCont.style.height = winbg2.clientHeight - offset + "px";
-			mBoxCont.scrollTop = mBoxCont.scrollHeight;
-			//msg.style.width = mBoxCont.clientWidth - send.clientWidth - "39" + "px";
-			//msg.style.left = "0px";
-		}else{
-			page = document.getElementsByTagName("html")[0];
-			winbg2=document.getElementById("windowbg2");
-			msg = document.getElementById("message");
-			send = document.getElementById("send");
-			winbg2.style.height = page.clientHeight - msg.clientHeight - offset + "px";
-			//messageBox.style.height = winbg2.clientHeight - offset + "px";
-			mBoxCont.style.height = winbg2.clientHeight - offset + "px";
-			mBoxCont.scrollTop = mBoxCont.scrollHeight;
-			//msg.style.width = mBoxCont.clientWidth - send.clientWidth - "39" + "px";
-			//msg.style.left = "0px";
-		}
-	}
-	window.onresize = resize;
+document.domain=<?php echo '"'.$config['settings']['hostname'].'"'?>;
 </script>
 </head>
-<body style="overflow:hidden;margin:0px;padding:0px;*height:100%">
+<body>
 <div class="windowbg2" id="windowbg2">
 <div id="Channels">
 <div id="ChanListButtons">
 	<span style="font-size:10pt;" class="arrowButton" onmousedown="menul=setInterval('document.getElementById(\'ChanListCont\').scrollLeft -= 9',50)" onmouseup="clearInterval(menul)" onmouseout="clearInterval(menul)">&#9668;</span>
 	<span style="font-size:10pt;" class="arrowButton" onmousedown="menur=setInterval('document.getElementById(\'ChanListCont\').scrollLeft += 9',50)" onmouseup="clearInterval(menur)" onmouseout="clearInterval(menur)">&#9658;</span>
 </div>
-
 <div id="ChanListCont">
 	<div id="ChanList"></div>
 </div>
@@ -781,17 +697,15 @@ if($externalStyleSheet!='')
 <br/>
 <br/>
 <br/>
-<div id="mboxCont"></div>
-	<span class="arrowButtonHoriz3"><div style="font-size:12pt;width:12px;height:9pt;top:0;position:absolute;font-weight:bolder;margin-top:10pt;margin-left:-10pt;" class="arrowButtonHoriz2">&#9650;</div>
-	<div style="font-size:12pt;width:12px;height:9pt;top:0;position:absolute;margin-top:10pt;margin-left:-10pt;" onmousedown="downIntM = setInterval('document.getElementById(\'mboxCont\').scrollTop -= 9;scrolledDown=false;',50);" onmouseout="clearInterval(downIntM);" onmouseup="clearInterval(downIntM);"></div></span>
-	<span class="arrowButtonHoriz3"><div style="font-size:12pt;width:12px;height:9pt;bottom:9pt;position:absolute;margin-top:-10pt;margin-left:-10pt;font-weight:bolder;" class="arrowButtonHoriz2">&#9660;</div>
-	<div style="font-size:12pt;width:12px;height:9pt;bottom:9pt;position:absolute;margin-top:-10pt;margin-left:-10pt;" onmousedown="upIntM = setInterval('document.getElementById(\'mboxCont\').scrollTop += 9;if (mBoxCont.scrollTop+mBoxCont.clientHeight==mBoxCont.scrollHeight)scrolledDown=true;',50);" onmouseout="clearInterval(upIntM);" onmouseup="clearInterval(upIntM);"></div></span>
-
+<div id="mBoxCont">
+	<table id="MessageBox" cellpadding="0px" cellspacing="0px" style="width:100%;height:100%;">
+	</table>
+</div>
 <div id="UserListContainer">
 	<table id="hotlinks">
 		<?php
 		$i = true;
-		foreach($hotlinks as $link){
+		foreach($config['hotlinks'] as $link){
 			if($i){
 				echo '<tr>';
 			}
@@ -814,13 +728,10 @@ if($externalStyleSheet!='')
 		?>
 	</table>
 	<div id="UserListInnerCont"><div id="UserList"></div></div>
-	<span class="arrowButtonHoriz3"><div style="width:12px;height:9pt;top:0pt;position:absolute;font-weight:bolder;margin-top:10pt;" class="arrowButtonHoriz2">&#9650;</div>
-	<div style="width:12px;height:9pt;top:0pt;position:absolute;margin-top:10pt;" onmousedown="downInt = setInterval('userListDiv.scrollTop -= 9',50);" onmouseout="clearInterval(downInt);" onmouseup="clearInterval(downInt);"></div></span>
-	<span class="arrowButtonHoriz3"><div style="width:12px;height:9pt;top:100%;position:absolute;margin-top:-10pt;font-weight:bolder;" class="arrowButtonHoriz2">&#9660;</div>
-	<div style="width:12px;height:9pt;top:100%;position:absolute;margin-top:-10pt;" onmousedown="upInt = setInterval('userListDiv.scrollTop += 9',50);" onmouseout="clearInterval(upInt);" onmouseup="clearInterval(upInt);"></div></span>
-	</div>
 </div>
-</div><img id="smileyMenuButton" src="smileys/smiley.gif" style="cursor:pointer;margin-left:2px;margin-right:2px;" onclick="if(showSmileys){if(document.getElementById('smileyselect').style.display==''){document.getElementById('smileyselect').style.display='none';this.src='smileys/smiley.gif';}else{document.getElementById('smileyselect').style.display='';this.src='smileys/tongue.gif';}}"><form style="Display:inline;" name="irc" action="javascript:void(0)" onSubmit="AJAXSend()"><input autocomplete="off" accesskey="i" type="text" name="message" id="message" size="128" maxlength="256" alt="OmnomIRC" title="OmnomIRC"/><input type="submit" value="Send" id="send" /></form>
+</div>
+</div>
+<img id="smileyMenuButton" src="smileys/smiley.gif" style="margin-left:2px;margin-right:2px;"><form style="Display:inline;" name="irc" action="javascript:void(0)" id="sendMessage"><input autocomplete="off" accesskey="i" type="text" name="message" id="message" size="128" maxlength="256" alt="OmnomIRC" title="OmnomIRC"/><input type="submit" value="Send" id="send" /></form>
 <div id="about" style="display:none;"><div style="position: relative; left: -50%;"><span style="position:absolute;z-index:9002;top:1px;right:2px"><a onclick="document.getElementById('about').style.display='none';">Close</a></span>
 	<div style="text-align:center;"><img src="omnomirc.png" alt="omnomirc"></div>
 	<p>OmnomIRC is developed by <a href="http://www.omnimaga.org" alt="Omnimaga" target="_blank">Omnimaga</a></p>
@@ -831,88 +742,8 @@ if($externalStyleSheet!='')
 	<a href="https://github.com/Sorunome/OmnomIRC2" target="_blank">GitHub</a>
 </div></div>
 <div id="smileyselect" style="display:none;">
-	<img src="smileys/smiley.gif" alt="Smiley" title="Smiley" onclick="replaceText(' :)', document.forms.irc.message); return false;">
-	<img src="smileys/wink.gif" alt="Wink" title="Wink" onclick="replaceText(' ;)', document.forms.irc.message); return false;">
-	<img src="smileys/cheesy.gif" alt="Cheesy" title="Cheesy" onclick="replaceText(' :D', document.forms.irc.message); return false;">
-	<img src="smileys/grin.gif" alt="Grin" title="Grin" onclick="replaceText(' ;D', document.forms.irc.message); return false;">
-	<img src="smileys/angry.gif" alt="Angry" title="Angry" onclick="replaceText(' &gt;:(', document.forms.irc.message); return false;">
-	<img src="smileys/sad.gif" alt="Sad" title="Sad" onclick="replaceText(' :(', document.forms.irc.message); return false;">
-	<img src="smileys/shocked.gif" alt="Shocked" title="Shocked" onclick="replaceText(' :o', document.forms.irc.message); return false;">
-	<img src="smileys/cool.gif" alt="Cool" title="Cool" onclick="replaceText(' 8)', document.forms.irc.message); return false;">
-	<img src="smileys/huh.gif" alt="Huh?" title="Huh?" onclick="replaceText(' ???', document.forms.irc.message); return false;">
-	<img src="smileys/rolleyes.gif" alt="Roll Eyes" title="Roll Eyes" onclick="replaceText(' ::)', document.forms.irc.message); return false;">
-	<img src="smileys/tongue.gif" alt="Tongue" title="Tongue" onclick="replaceText(' :P', document.forms.irc.message); return false;">
-	<img src="smileys/embarrassed.gif" alt="Embarrassed" title="Embarrassed" onclick="replaceText(' :-[', document.forms.irc.message); return false;">
-	<img src="smileys/lipsrsealed.gif" alt="Lips Sealed" title="Lips Sealed" onclick="replaceText(' :-X', document.forms.irc.message); return false;">
-	<img src="smileys/undecided.gif" alt="Undecided" title="Undecided" onclick="replaceText(' :-\\', document.forms.irc.message); return false;">
-	<img src="smileys/kiss.gif" alt="Kiss" title="Kiss" onclick="replaceText(' :-*', document.forms.irc.message); return false;">
-	<img src="smileys/cry.gif" alt="Cry" title="Cry" onclick="replaceText(' :\'(', document.forms.irc.message); return false;">
-	<img src="smileys/thumbsupsmiley.gif" alt="Good job" title="Good job" onclick="replaceText(' :thumbsup:', document.forms.irc.message); return false;">
-	<img src="smileys/evil.gif" alt="Evil" title="Evil" onclick="replaceText(' &gt;:D', document.forms.irc.message); return false;">
-	<img src="smileys/shocked2.gif" alt="shocked" title="shocked" onclick="replaceText(' O.O', document.forms.irc.message); return false;">
-	<img src="smileys/azn.gif" alt="Azn" title="Azn" onclick="replaceText(' ^-^', document.forms.irc.message); return false;">
-	<img src="smileys/alien2.gif" alt="Alien" title="Alien" onclick="replaceText(' &gt;B)', document.forms.irc.message); return false;">
-	<img src="smileys/banghead.gif" alt="Frustrated" title="Frustrated" onclick="replaceText(' :banghead:', document.forms.irc.message); return false;">
-	<img src="smileys/ange.gif" alt="Angel" title="Angel" onclick="replaceText(' :angel:', document.forms.irc.message); return false;">
-	<img src="smileys/blah.gif" alt="Blah" title="Blah" onclick="replaceText(' ._.', document.forms.irc.message); return false;">
-	<img src="smileys/devil.gif" alt="Devil" title="Devil" onclick="replaceText(' :devil:', document.forms.irc.message); return false;">
-	<img src="smileys/dry.gif" alt="&lt;_&lt;" title="&lt;_&lt;" onclick="replaceText(' &lt;_&lt;', document.forms.irc.message); return false;">
-	<img src="smileys/evillaugh.gif" alt="Evil Laugh" title="Evil Laugh" onclick="replaceText(' :evillaugh:', document.forms.irc.message); return false;">
-	<img src="smileys/fou.gif" alt="Crazy" title="Crazy" onclick="replaceText(' :crazy:', document.forms.irc.message); return false;">
-	<img src="smileys/happy0075.gif" alt="You just lost the game" title="You just lost the game" onclick="replaceText(' :hyper:', document.forms.irc.message); return false;">
-	<img src="smileys/love.gif" alt="Love" title="Love" onclick="replaceText(' :love:', document.forms.irc.message); return false;">
-	<img src="smileys/mad.gif" alt="Mad" title="Mad" onclick="replaceText(' :mad:', document.forms.irc.message); return false;">
-	<img src="smileys/smiley_woot.gif" alt="w00t" title="w00t" onclick="replaceText(' :w00t:', document.forms.irc.message); return false;">
-	<img src="smileys/psychedelicO_O.gif" alt="I must have had too much radiation for breakfast..." title="I must have had too much radiation for breakfast..." onclick="replaceText(' *.*', document.forms.irc.message); return false;">
-	<img src="smileys/bigfrown.gif" alt="Big frown" title="Big frown" onclick="replaceText(' D:', document.forms.irc.message); return false;">
-	<img src="smileys/XD.gif" alt="Big smile" title="Big smile" onclick="replaceText(' XD', document.forms.irc.message); return false;">
-	<img src="smileys/X_X.gif" alt="x.x" title="x.x" onclick="replaceText(' x.x', document.forms.irc.message); return false;">
-	<img src="smileys/ninja.gif" alt="Get Ninja'd" title="Get Ninja'd" onclick="replaceText(' :ninja:', document.forms.irc.message); return false;">
 </div>
-<div id="indicator" style="position:absolute;z-index:44;margin:0;padding:0;top:0;right:0;"></div>
 <div id="lastSeenCont" style="display:none;"></div>
-
-<script type="text/javascript" src="Omnom_Options.js"></script>
-<script type="text/javascript" src="Omnom_Parser.js"></script>
-<script type="text/javascript" src="Omnom_Tab.js"></script>
-<script type="text/javascript" src="Omnom_Misc.js"></script>
-<script type="text/javascript">
-<?php
-$chanStr = '';
-foreach ($channels as $chan)
-	if ($chan[1])$chanStr = $chanStr . '["'.base64_url_encode($chan[0]).'",false],';
-$chanStr = substr($chanStr,0,-1);
-
-echo 'var channels=[';
-echo $chanStr;
-echo '];';
-
-$exChanStr = "";
-foreach ($channels as $chan)
-	if (!$chan[1])$exChanStr = $exChanStr . '["'.base64_url_encode($chan[0]).'",false],';
-$exChanStr = substr($exChanStr,0,-1);
-
-echo 'var exChannels=[';
-echo $exChanStr;
-echo '];';
-?>
-</script>
-<script type="text/javascript">
-	startIndicator();
-	
-	function signCallback(sig,nick,id) {
-		Signature = sig;
-		userName = nick;
-		omnimagaUserId = id;
-		load();
-	}
-	resize();
-	var body= document.getElementsByTagName('body')[0];
-	var script= document.createElement('script');
-	script.type= 'text/javascript';
-	script.src=<?php if(isset($_COOKIE[$securityCookie]))echo '"'.$checkLoginUrl.'?sid='.urlencode(htmlspecialchars(str_replace(";","%^%",$_COOKIE[$securityCookie]))).'";'."\n"; else echo '"'.$checkLoginUrl.'?sid=THEGAME";'."\n"; ?>
-	body.appendChild(script);
-</script>
 <audio id="ding" src="beep.wav" hidden></audio>
 </body>
 </html>

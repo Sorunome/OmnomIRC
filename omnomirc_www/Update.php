@@ -65,10 +65,14 @@
 	while(true){
 		if($countBeforeQuit++ == 50){//Timeout after 25 seconds.
 			doUserUpdate();
+			header('Content-type: text/json');
+			echo json_encode([
+				'error' => 'timeout'
+			]);
 			die();
 		}
 		
-		if((int)file_get_contents($curidFilePath)<=$curline) {
+		if((int)file_get_contents($config['settings']['curidFilePath'])<=$curline) {
 			usleep(500000);
 			continue;
 		}
@@ -94,6 +98,7 @@
 				$ignorelist = $userSql['ignores'];
 			}
 		}
+		$json = '{"lines":[';
 		if (!isset($result['line_number'])){
 			if (!isset($_GET['calc'])){
 				$temp = $sql->query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND locate('%s',`message`) != 0 AND NOT (((`type` = 'pm' OR `type` = 'pmaction') AND `name1` <> '%s') OR (`type` = 'server'))",$curline + 0,substr($nick,0,4), $nick);
@@ -114,10 +119,30 @@
 			}
 			if(!isset($_GET['calc'])){
 				if(strpos($userSql['ignores'],strtolower($result['name1'])."\n")===false){
-					echo $result['line_number'].':highlight:0:0:'.base64_url_encode($result['channel']).'::'.base64_url_encode($result['name1']).':'.base64_url_encode($result['message']);
+					$json .= json_encode([
+						'curLine' => (int)$result['line_number'],
+						'type' => $result['type'],
+						'network' => (int)$result['Online'],
+						'time' => (int)$result['time'],
+						'name' => $result['name1'],
+						'message' => $result['message'],
+						'name2' => $result['name2'],
+						'chan' => $result['channel']
+					]).',';
 				}else{
-					echo $result['line_number'].':curline:0:0:';
+					$json .= json_encode([
+						'curLine' => (int)$result['line_number'],
+						'type' => 'curline',
+						'network' => 0,
+						'time' => date(),
+						'name' => '',
+						'message' => '',
+						'name2' => '',
+						'chan' => ''
+					]).',';
 				}
+				header('Content-Type: text/json');
+				echo substr($json,0,-1).']}';
 				die; //That's it, folks!
 			}
 		}
@@ -126,34 +151,27 @@
 				if(!isset($result['time']))
 					$result['time'] = time();
 				if(strpos($userSql['ignores'],strtolower($result['name1'])."\n")===false){
-					$lineBeginning = $result['line_number'].':'.$result['type'].':'.$result['Online'].':'.$result['time'].':'.base64_url_encode(htmlspecialchars($result['name1'])).':';
-					switch(strtolower($result['type'])){
-						case 'pm':
-						case 'message':
-						case 'action':
-						case 'pmaction':
-							echo $lineBeginning.base64_url_encode(htmlspecialchars($result['message'])).':'.base64_url_encode('0');
-							break;
-						case 'join':
-							echo $lineBeginning;
-							break;
-						case 'kick':
-							echo $lineBeginning.base64_url_encode(htmlspecialchars($result['name2'])).':'.base64_url_encode(htmlspecialchars($result['message']));
-							break;
-						case 'quit':
-						case 'mode':
-						case 'server':
-						case 'part':
-						case 'topic':
-							echo $lineBeginning.base64_url_encode(htmlspecialchars(trim($result['message'])));
-							break;
-						case 'nick':
-							echo $lineBeginning.base64_url_encode(htmlspecialchars($result['name2']));
-							break;
-					}
-					echo "\n";
+					$json .= json_encode([
+						'curLine' => (int)$result['line_number'],
+						'type' => $result['type'],
+						'network' => (int)$result['Online'],
+						'time' => (int)$result['time'],
+						'name' => $result['name1'],
+						'message' => $result['message'],
+						'name2' => $result['name2'],
+						'chan' => $result['channel']
+					]).',';
 				}else{
-					echo $result['line_number'].':curline:0:0:';
+					$json .= json_encode([
+						'curLine' => (int)$result['line_number'],
+						'type' => 'curline',
+						'network' => 0,
+						'time' => date(),
+						'name' => '',
+						'message' => '',
+						'name2' => '',
+						'chan' => ''
+					]).',';
 				}
 			}else{
 				if($result['Online']=='2')
@@ -203,6 +221,10 @@
 				}
 				echo "\n";
 			}
+		}
+		if(!isset($_GET['calc'])){
+			header('Content-Type: text/json');
+			echo substr($json,0,-1).']}';
 		}
 		break;
 	}
