@@ -1,14 +1,33 @@
 <?php
+/*
+    OmnomIRC COPYRIGHT 2010,2011 Netham45
+                       2012-2014 Sorunome
+
+    This file is part of OmnomIRC.
+
+    OmnomIRC is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    OmnomIRC is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
+*/
 	function UpdateUser($nick,$channel,$online){
 		global $sql;
 		if($channel[0]=='*')
 			return;
-		$result = $sql->query("SELECT time FROM `irc_users` WHERE `username` = '%s' AND `channel` = '%s' AND `online` = 1",$nick,$channel);
+		$result = $sql->query("SELECT time,isOnline FROM `irc_users` WHERE `username` = '%s' AND `channel` = '%s' AND `online` = %d",$nick,$channel,(int)$online);
 		if(sizeof($result)){ //Update  
-			$sql->query("UPDATE `irc_users` SET `time`='%s',`isOnline`='1' WHERE `username` = '%s' AND `channel` = '%s' AND `online` = 1",time(),$nick,$channel);
-			$row = $result[0];
-			if ($row['time'] < strtotime('-1 minute')) //First time they joined in a minute.
+			$sql->query("UPDATE `irc_users` SET `time`='%s',`isOnline`='1' WHERE `username` = '%s' AND `channel` = '%s' AND `online` = %d",time(),$nick,$channel,(int)$online);
+			if((int)$result[0]['isOnline'] == 0){ //First time they joined in a minute.
 				notifyJoin($nick,$channel);
+			}
 		}else{ //Insert
 			$sql->query("INSERT INTO `irc_users` (`username`,`channel`,`time`,`online`) VALUES('%s','%s','%s',1)",$nick,$channel,time());
 			notifyJoin($nick,$channel);
@@ -28,11 +47,15 @@
 	
 	function notifyJoin($nick,$channel){
 		global $sql;
-		$sql->query("INSERT INTO `irc_lines` (name1,type,channel,time,online) VALUES('%s','join','%s','%s',1)",$nick,$channel,time());
+		if($nick){
+			$sql->query("INSERT INTO `irc_lines` (name1,type,channel,time,online) VALUES('%s','join','%s','%s',1)",$nick,$channel,time());
+		}
 	}
 	function notifyPart($nick,$channel){
 		global $sql;
-		$sql->query("INSERT INTO `irc_lines` (name1,type,channel,time,online) VALUES('%s','part','%s','%s',1)",$nick,$channel,time());
+		if($nick){
+			$sql->query("INSERT INTO `irc_lines` (name1,type,channel,time,online) VALUES('%s','part','%s','%s',1)",$nick,$channel,time());
+		}
 	}
 	function CleanOfflineUsers(){
 		global $sql;

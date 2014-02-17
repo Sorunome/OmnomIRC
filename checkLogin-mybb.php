@@ -41,7 +41,13 @@ if(isset($_GET['op'])){
 		echo $signature."\n".$nick."\n".$mybb->user['uid'];
 	elseif(isset($_GET['textmode']))
 		header('Location: http://chat.forum.acr.victorz.ca/textmode.php?login&nick='.urlencode($nick).'&sig='.urlencode($signature).'&id='.$mybb->user['uid']);
-	else
-		echo "signCallback('$signature','$nick','".$mybb->user['uid']."');";
+	else{
+		header('Content-type: text/json');
+		echo json_encode([
+			'nick' => $nick,
+			'signature' => $signature,
+			'uid' => $mybb->user['uid']
+		]);
+	}
 }
 ?>

@@ -1,6 +1,7 @@
 <?php
 /*
     OmnomIRC COPYRIGHT 2010,2011 Netham45
+                       2012-2014 Sorunome
 
     This file is part of OmnomIRC.
 
@@ -296,14 +297,14 @@ Options:
 							echo 'ircBot=[';
 							$temp = '';
 							foreach($config['irc']['main']['servers'] as $s){
-								$temp .= '[\''.$s['server'].'\','.$s['port'].',\''.str_replace("\r","\\\\r",str_replace("\n","\\\\n",addslashes($s['ident']))).'\'],';
+								$temp .= '[\''.$s['server'].'\','.$s['port'].',\''.$s['nickserv'].'\','.$s['network'].'],';
 							}
 							echo substr($temp,0,-1);
 							echo '];';
 							echo 'ircBotT=[';
 							$temp = '';
 							foreach($config['irc']['topic']['servers'] as $s){
-								$temp .= '[\''.$s['server'].'\','.$s['port'].',\''.str_replace("\r","\\\\r",str_replace("\n","\\\\n",addslashes($s['ident']))).'\'],';
+								$temp .= '[\''.$s['server'].'\','.$s['port'].',\''.$s['nickserv'].'\','.$s['network'].'],';
 							}
 							echo substr($temp,0,-1);
 							echo '];drawBotSettings();';
@@ -318,7 +319,7 @@ Options:
 							foreach($temp as $t){
 								if($t && $t!=''){
 									$e = explode(':',$t);
-									$ircBot_servers[]=Array('server' => base64_url_decode($e[0]),'port' => (int)$e[1],'ident' => base64_url_decode($e[2]));
+ 									$ircBot_servers[]=Array('server' => base64_url_decode($e[0]),'port' => (int)$e[1],'nickserv' => base64_url_decode($e[2]),'network' => (int)$e[3]);
 								}
 							}
 							$ircBot_serversT = Array();
@@ -327,7 +328,7 @@ Options:
 							foreach($temp as $t){
 								if($t && $t!=''){
 									$e = explode(':',$t);
-									$ircBot_serversT[]=Array('server' => base64_url_decode($e[0]),'port' => (int)$e[1],'ident' => base64_url_decode($e[2]));
+									$ircBot_serversT[]=Array('server' => base64_url_decode($e[0]),'port' => (int)$e[1],'nickserv' => base64_url_decode($e[2]),'network' => (int)$e[3]);
 								}
 							}
 							$config['irc']['main']['servers'] = $ircBot_servers;
@@ -336,12 +337,11 @@ Options:
 						}
 					break;
 					case 'misc':
-						if(!isset($_POST['searchNamesUrl']) || !isset($_POST['checkLoginUrl']) || !isset($_POST['hostname']) || !isset($_POST['securityCookie']) ||
+						if(!isset($_POST['checkLoginUrl']) || !isset($_POST['hostname']) || !isset($_POST['securityCookie']) ||
 								!isset($_POST['curidFilePath']) || !isset($_POST['calcKey']) || !isset($_POST['externalStyleSheet'])){
 							echo '<div style="font-weight:bold">Misc Settings</div>';
 							echo '<span class="highlight">Some of these values shouldn\'t be messed with - beware.</span><br>';
 							echo 'Hostname:<input type="text" value="'.$config['settings']['hostname'].'" id="hostname"><br>';
-							echo 'Name Search URL:<input type="text" value="'.$config['settings']['serchNamesUrl'].'" id="searchNamesUrl"><br>';
 							echo 'Check Login URL:<input type="text" value="'.$config['settings']['checkLoginUrl'].'" id="checkLoginUrl"><br>';
 							echo 'Security Cookie:<input type="text" value="'.$config['security']['cookie'].'" id="securityCookie"><br>';
 							echo 'Cur-id file path:<input type="text" value="'.$config['settings']['curidFilePath'].'" id="curidFilePath"><br>';
@@ -350,7 +350,6 @@ Options:
 							
 							echo '<button onclick="';
 							echo 'setPage(\'misc\',\'hostname=\'+base64.encode(document.getElementById(\'hostname\').value)';
-							echo '+\'&searchNamesUrl=\'+base64.encode(document.getElementById(\'searchNamesUrl\').value)';
 							echo '+\'&checkLoginUrl=\'+base64.encode(document.getElementById(\'checkLoginUrl\').value)';
 							echo '+\'&securityCookie=\'+base64.encode(document.getElementById(\'securityCookie\').value)';
 							echo '+\'&curidFilePath=\'+base64.encode(document.getElementById(\'curidFilePath\').value)';
@@ -360,7 +359,6 @@ Options:
 							echo '">Save Changes</button>';
 						}else{
 							$config['settings']['hostname'] = base64_url_decode($_POST['hostname']);
-							$config['settings']['serchNamesUrl'] = base64_url_decode($_POST['searchNamesUrl']);
 							$config['settings']['checkLoginUrl'] = base64_url_decode($_POST['checkLoginUrl']);
 							$config['security']['cookie'] = base64_url_decode($_POST['securityCookie']);
 							$config['settings']['curidFilePath'] = base64_url_decode($_POST['curidFilePath']);
@@ -485,12 +483,12 @@ Options:
 					botTStr = '';
 				if(ircBot.length!=0){
 					for(var i=0;i<ircBot.length;i++){
-						botStr+=base64.encode(ircBot[i][0])+':'+ircBot[i][1].toString()+':'+base64.encode(ircBot[i][2].split("\\n").join("\n").split("\\r").join("\r"))+';';
+						botStr+=base64.encode(ircBot[i][0])+':'+ircBot[i][1].toString()+':'+base64.encode(ircBot[i][2].toString())+':'+ircBot[i][3].toString()+';';
 					}
 				}
 				if(ircBotT.length!=0){
 					for(var i=0;i<ircBotT.length;i++){
-						botTStr+=base64.encode(ircBotT[i][0])+':'+ircBotT[i][1].toString()+':'+base64.encode(ircBotT[i][2].split("\\n").join("\n").split("\\r").join("\r"))+';';
+						botTStr+=base64.encode(ircBotT[i][0])+':'+ircBotT[i][1].toString()+':'+base64.encode(ircBotT[i][2].toString())+':'+ircBotT[i][3].toString()+';';
 					}
 				}
 				setPage('irc','botCont='+botStr+'&botContT='+botTStr+'&ircBotBotPasswd='+base64.encode(document.getElementById('ircBotBotPasswd').value)+'&ircBotBotNick='+base64.encode(document.getElementById('ircBotBotNick').value)+
@@ -508,6 +506,7 @@ Options:
 				a[num][0] = elem.getElementsByTagName('input')[0].value;
 				a[num][1] = parseInt(elem.getElementsByTagName('input')[1].value);
 				a[num][2] = elem.getElementsByTagName('input')[2].value;
+				a[num][3] = parseInt(elem.getElementsByTagName('input')[3].value);
 				if(type)
 					ircBot = a;
 				else
@@ -524,27 +523,27 @@ Options:
 					a = ircBotT;
 				}
 				elem.innerHTML = '<input type="text" value="'+a[num][0]+'" name="server"><input type="text" value="'+a[num][1].toString()+'" name="port">'+
-					'<input type="text" value="'+a[num][2]+'" name="ident"><a onclick="saveBot('+num+','+type+');">done</a>';
+					'<input type="text" value="'+a[num][2]+'" name="nickserv"><input type="number" value="'+a[num][3].toString()+'" name="network"><a onclick="saveBot('+num+','+type+');">done</a>';
 			}
 			function drawBotSettings(){
 				var elem = document.getElementById('botCont');
 				elem.innerHTML = '';
 				if(ircBot.length!=0){
 					for(var i=0;i<ircBot.length;i++){
-						elem.innerHTML += '<span id="b'+i+'"><a onclick="ircBot=deleteFromArray(ircBot,'+i+');drawBotSettings();return false">x</a> '+ircBot[i][0]+':'+ircBot[i][1].toString()+' '+ircBot[i][2]+
+						elem.innerHTML += '<span id="b'+i+'"><a onclick="ircBot=deleteFromArray(ircBot,'+i+');drawBotSettings();return false">x</a> '+ircBot[i][0]+':'+ircBot[i][1].toString()+' '+ircBot[i][2]+' '+ircBot[i][3].toString()+
 							' <a onclick="editBot('+i+',true);return false">edit</a> <a onclick="ircBot=moveArrayUp(ircBot,'+i+');drawBotSettings();return false">^</a> <a onclick="ircBot=moveArrayDown(ircBot,'+i+');drawBotSettings();return false">v</a></span><br>';
 					}
 				}
-				elem.innerHTML += '<a onclick="ircBot.push([\'&amp;lt;server&amp;gt;\',6667,\'&amp;lt;ident&amp;gt;\']);drawBotSettings();editBot(ircBot.length-1,true);return false">Add server</a>';
+				elem.innerHTML += '<a onclick="ircBot.push([\'&amp;lt;server&amp;gt;\',6667,\'\',4]);drawBotSettings();editBot(ircBot.length-1,true);return false">Add server</a>';
 				elem = document.getElementById('botContT');
 				elem.innerHTML = '';
 				if(ircBotT.length!=0){
 					for(var i=0;i<ircBotT.length;i++){
-						elem.innerHTML += '<span id="bt'+i+'"><a onclick="ircBotT=deleteFromArray(ircBotT,'+i+');drawBotSettings();return false">x</a> '+ircBotT[i][0]+':'+ircBotT[i][1].toString()+' '+ircBotT[i][2]+
+						elem.innerHTML += '<span id="bt'+i+'"><a onclick="ircBotT=deleteFromArray(ircBotT,'+i+');drawBotSettings();return false">x</a> '+ircBotT[i][0]+':'+ircBotT[i][1].toString()+' '+ircBotT[i][2]+' '+ircBotT[i][3].toString()+
 							' <a onclick="editBot('+i+',false);return false">edit</a> <a onclick="ircBotT=moveArrayUp(ircBotT,'+i+');drawBotSettings();return false">^</a> <a onclick="ircBotT=moveArrayDown(ircBotT,'+i+');drawBotSettings();return false">v</a></span><br>';
 					}
 				}
-				elem.innerHTML += '<a onclick="ircBotT.push([\'&amp;lt;server&amp;gt;\',6667,\'&amp;lt;ident&amp;gt;\']);drawBotSettings();editBot(ircBotT.length-1,false);return false">Add server</a>';
+				elem.innerHTML += '<a onclick="ircBotT.push([\'&amp;lt;server&amp;gt;\',6667,\'\',4]);drawBotSettings();editBot(ircBotT.length-1,false);return false">Add server</a>';
 			}
 			function saveOp(){
 				var opStr = '';
@@ -638,8 +637,7 @@ Options:
 			?>
 			$.getJSON('config.php?js',function(data){
 				HOSTNAME = data.hostname;
-				SEARCHNAMESURL = data.searchNamesUrl;
-				$.getJSON(<?php if(isset($_COOKIE[$config['security']['cookie']]))echo '"'.$config['settings']['checkLoginUrl'].'?sid='.urlencode(htmlspecialchars(str_replace(";","%^%",$_COOKIE[$config['security']['cookie']]))).'";'."\n"; else echo '"'.$config['settings']['checkLoginUrl'].'?sid=THEGAME"'; ?>,function(data){
+				$.getJSON(<?php if(isset($_COOKIE[$config['security']['cookie']]))echo '"'.$config['settings']['checkLoginUrl'].'?sid='.urlencode(htmlspecialchars(str_replace(";","%^%",$_COOKIE[$config['security']['cookie']]))).'"'; else echo '"'.$config['settings']['checkLoginUrl'].'?sid=THEGAME"'; ?>+'&jsoncallback=?',function(data){
 					signCallback(data.signature,data.nick,data.uid);
 				});
 			});

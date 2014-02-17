@@ -1,21 +1,40 @@
+/*
+    OmnomIRC COPYRIGHT 2010,2011 Netham45
+                       2012-2014 Sorunome
+
+    This file is part of OmnomIRC.
+
+    OmnomIRC is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    OmnomIRC is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
+*/
 (function($){
 	var settings = {
 			hostname:'',
-			searchNamesUrl:'',
 			nick:'',
 			signature:'',
 			numHigh:4,
 			uid:0,
 			checkLoginUrl:'',
+			networks:[],
 			fetch:function(fn){
 				var self = this;
 				$.getJSON('config.php?js',function(data){
 					self.hostname = data.hostname;
-					self.searchNamesUrl = data.searchNamesUrl;
 					channels.channels = data.channels;
 					parser.smileys = data.smileys;
+					self.networks = data.networks;
 					self.checkLoginUrl = data.checkLoginUrl;
-					$.getJSON(self.checkLoginUrl,function(data){
+					$.getJSON(self.checkLoginUrl+'&jsoncallback=?',function(data){
 						self.nick = data.nick;
 						self.signature = data.signature;
 						self.uid = data.uid;
@@ -394,13 +413,18 @@
 				var self = this;
 				self.inRequest = true;
 				self.handler = $.getJSON('Update.php?high='+(options.get(13,'3')+1).toString()+'&channel='+base64.encode(channels.current)+'&lineNum='+self.curLine.toString()+'&'+settings.getUrlParams(),function(data){
+					var newRequest = true;
 					self.errorCount = 0;
 					if(data.lines!==undefined){
 						$.each(data.lines,function(i,line){
-							parser.addLine(line);
+							return newRequest = parser.addLine(line);
 						});
 					}
-					self.send();
+					if(newRequest){
+						setTimeout(function(){
+							self.send();
+						},100);
+					}
 				}).fail(function(){
 					self.errorCount++;
 					if(self.errorCount>=10){
@@ -587,11 +611,13 @@
 					})
 				);
 			},
-			join:function(i,fn){
+			inChan:false,
+			join:function(i,fn,override){
 				var self = this;
-				if(self.channels[i]!==undefined){
+				if(self.channels[i]!==undefined && (self.inChan||override)){
 					indicator.start();
 					request.cancle();
+					self.inChan = false;
 					$('#MessageBox').empty();
 					$('.chan').removeClass('curchan');
 					$.getJSON('Load.php?count=125&channel='+base64.encode(self.channels[i].chan)+'&'+settings.getUrlParams(),function(data){
@@ -605,10 +631,10 @@
 								$('#adminLink').css('display','none');
 							}
 							users.users = data.users;
+							users.draw();
 							$.each(data.lines,function(i,line){
 								parser.addLine(line);
 							});
-							users.draw();
 							request.send();
 						}else{
 							send.internal('<span style="color:#C73232;"><b>ERROR:</b> banned</banned>');
@@ -617,6 +643,10 @@
 						if(fn!==undefined){
 							fn();
 						}
+						setTimeout(function(){
+							scroll.down();
+						},500);
+						self.inChan = true;
 						indicator.stop();
 					});
 				}
@@ -728,17 +758,22 @@
 			},
 			add:function(u){
 				var self = this;
-				self.users.push(u);
-				self.draw();
+				if(channels.inChan){
+					self.users.push(u);
+					self.draw();
+				}
 			},
 			remove:function(u){
 				var self = this;
-				$.each(self.users,function(i,us){
-					if(us == u){
-						self.users.splice(i,1);
-					}
-				});
-				self.draw();
+				if(channels.inChan){
+					$.each(self.users,function(i,us){
+						if(us.nick == u.nick && us.network == u.network){
+							self.users.splice(i,1);
+							return false;
+						}
+					});
+					self.draw();
+				}
 			},
 			draw:function(){
 				var self = this;
@@ -748,12 +783,13 @@
 				});
 				$('#UserList').empty().append(
 					$.map(self.users,function(u){
-						var getInfo;
+						var getInfo,
+							ne = encodeURIComponent(u.nick),
+							n = $('<span>').text(u.nick).html();
 						return $('<span>')
-							.attr('alt',(u.network==0?'IRC User':(u.network==1?'OmnomIRC User':'Unknown Network')))
+							.attr('alt',(settings.networks[u.network]!==undefined?settings.networks[u.network].name:'Unknown Network'))
 							.append(
-								(u.network==0?'#'+u.nick:(u.network==1?'<a target="_top" href="'+settings.searchNamesUrl+u.nick+'">'+
-									'<img src="omni.png">'+u.nick+'</a>':'!'+u.nick)),
+								(settings.networks[u.network]!==undefined?settings.networks[u.network].userlist.split('NICKENCODE').join(ne).split('NICK').join(n):n),
 								'<br>'
 							)
 							.mouseover(function(){
@@ -1236,6 +1272,7 @@
 			smileys:[],
 			maxLines:200,
 			parseName:function(n,o){
+				var ne = encodeURIComponent(n);
 				n = $('<span>').text(n).html();
 				var rcolors = [19,20,22,24,25,26,27,28,29],
 					sum = i = 0,
@@ -1244,18 +1281,14 @@
 					while(n[i]){
 						sum += n.charCodeAt(i++);
 					}
-					cn = $('<span>').addClass('uName-'+rcolors[sum %= 9].toString()).text(n);
+					cn = $('<span>').append($('<span>').addClass('uName-'+rcolors[sum %= 9].toString()).html(n)).html();
 				}else{
 					cn = n;
 				}
-				switch(o){
-					case 1: // omnomirc
-						return $('<a>').attr({target:'_top',href:settings.searchNamesUrl+n}).append(cn);
-					case 1: // gCn
-						return [$('<span>').css('color','#8A5D22').text('(C)'),' ',cn];
-					default:
-						return cn;
+				if(settings.networks[o]!==undefined){
+					return settings.networks[o].normal.split('NICKENCODE').join(ne).split('NICK').join(cn);
 				}
+				return cn;
 			},
 			parseSmileys:function(s){
 				var self = this,
@@ -1290,6 +1323,9 @@
 					isUnderline = false,
 					s,
 					colorStrTemp = '1,0';
+				if(!colorStr){
+					return '';
+				}
 				colorStr = colorStr.split("\x16\x16").join('')+"\x0f";
 				arrayResults = colorStr.split(RegExp("([\x02\x03\x0f\x16\x1d\x1f])"));
 				colorStr='';
@@ -1418,13 +1454,17 @@
 				switch(line.type){
 					case 'reload':
 						addLine = false;
-						var num;
-						$.each(channels.channels,function(i,c){
-							if(c.chan==channels.current){
-								num = i;
-							}
-						});
-						channels.join(num);
+						if(channels.inChan){
+							var num;
+							$.each(channels.channels,function(i,c){
+								if(c.chan==channels.current){
+									num = i;
+									return false;
+								}
+							});
+							channels.join(num);
+							return false;
+						}
 						break;
 					case 'join':
 						tdMessage = [name,' has joined '+channels.current];
@@ -1473,9 +1513,9 @@
 						tdMessage = [name,' set '+channels.current+' mode ',message];
 						break;
 					case 'nick':
-						tdMessage = [name,' has changed nicks to ',self.parseName(line.message,line.network)];
+						tdMessage = [name,' has changed nicks to ',self.parseName(line.name2,line.network)];
 						users.add({
-							nick:line.message,
+							nick:line.name2,
 							network:line.network
 						});
 						users.remove({
@@ -1491,12 +1531,16 @@
 						}
 						break;
 					case 'pm':
-						if(channels.current.toLowerCase() != '*'+line.nick.toLowerCase() && line.nick != settings.nick){
-							tdName = ['(PM)',name];
-							channels.openPm(line.nick);
-							notification.make('(PM) <'+name+'> '+message,line.chan);
+						if(channels.inChan){
+							if(channels.current.toLowerCase() != '*'+line.nick.toLowerCase() && line.nick != settings.nick){
+								tdName = ['(PM)',name];
+								channels.openPm(line.nick);
+								notification.make('(PM) <'+name+'> '+message,line.chan);
+							}else{
+								tdName = name;
+							}
 						}else{
-							tdName = name;
+							addLine = false;
 						}
 						break;
 					case 'pmaction':
@@ -1553,6 +1597,7 @@
 					);
 					scroll.slide();
 				}
+				return true;
 			}
 		};
 	$(document).ready(function(){
@@ -1567,7 +1612,7 @@
 					channels.load();
 					channels.join(options.get(4,String.fromCharCode(45)).charCodeAt(0) - 45,function(){
 						channels.draw();
-					});
+					},true);
 				});
 			}else{
 				$('#windowbg2').css('height',parseInt($('html').height()) - parseInt($('#message').height() + 14));

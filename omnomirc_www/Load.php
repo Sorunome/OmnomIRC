@@ -1,6 +1,7 @@
 <?PHP
 /*
     OmnomIRC COPYRIGHT 2010,2011 Netham45
+                       2012-2014 Sorunome
 
     This file is part of OmnomIRC.
 
@@ -95,7 +96,7 @@
 		}
 		foreach($res as $result){
 			if(strpos($userSql['ignores'],strtolower($result['name1'])."\n")===false){
-				$json .= json_encode([
+				$json .= json_encode(Array(
 					'curLine' => (int)$result['line_number'],
 					'type' => $result['type'],
 					'network' => (int)$result['Online'],
@@ -104,7 +105,7 @@
 					'message' => $result['message'],
 					'name2' => $result['name2'],
 					'chan' => $result['channel']
-				]).',';
+				)).',';
 			}
 		}
 		$temp = $sql->query("SELECT MAX(line_number) AS max FROM `irc_lines`");
@@ -115,7 +116,7 @@
 		}else{
 			$curtopic = '';
 		}
-		$json .= json_encode([
+		$json .= json_encode(Array(
 			'curLine' => (int)$curMax,
 			'type' => 'topic',
 			'network' => -1,
@@ -124,7 +125,7 @@
 			'message' => $curtopic,
 			'name2' => '',
 			'chan' => $result['channel']
-		]).'],"users":[';
+		)).'],"users":[';
 		
 		$users = Array();
 		
@@ -142,10 +143,10 @@
 		$strip = false;
 		foreach($users as $user){
 			$strip = true;
-			$json .= json_encode([
+			$json .= json_encode(Array(
 				'nick' => $user[1],
 				'network' => (int)$user[2]
-			]).',';
+			)).',';
 		}
 		header('Content-Type: text/json');
 		echo ($strip?substr($json,0,-1):$json).']}';

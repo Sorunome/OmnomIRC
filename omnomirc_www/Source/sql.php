@@ -1,4 +1,23 @@
 <?php
+/*
+    OmnomIRC COPYRIGHT 2010,2011 Netham45
+                       2012-2014 Sorunome
+
+    This file is part of OmnomIRC.
+
+    OmnomIRC is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    OmnomIRC is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
+*/
 class sqli{
 	private $mysqliConnection;
 	private function connectSql(){
@@ -34,7 +53,7 @@ class sqli{
 			if($i++>=150)
 				break;
 		}
-		if($res === []){
+		if($res === Array()){
 			$fields = $result->fetch_fields();
 			for($i=0;$i<count($fields);$i++)
 				$res[$fields[$i]->name] = NULL;

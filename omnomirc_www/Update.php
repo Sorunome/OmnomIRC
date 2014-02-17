@@ -1,6 +1,7 @@
 <?PHP
 /*
     OmnomIRC COPYRIGHT 2010,2011 Netham45
+                       2012-2014 Sorunome
 
     This file is part of OmnomIRC.
 
@@ -23,9 +24,9 @@
 	function doUserUpdate(){
 		global $defaultChan,$nick,$channel;
 		if(isset($_GET['calc']))
-			UpdateUser('OmnomIRC',$defaultChan,'2');
+			UpdateUser('OmnomIRC',$defaultChan,2);
 		elseif($nick != '0')
-			UpdateUser($nick,$channel,'1');
+			UpdateUser($nick,$channel,1);
 		CleanOfflineUsers();
 	}
 	
@@ -66,9 +67,9 @@
 		if($countBeforeQuit++ == 50){//Timeout after 25 seconds.
 			doUserUpdate();
 			header('Content-type: text/json');
-			echo json_encode([
+			echo json_encode(Array(
 				'error' => 'timeout'
-			]);
+			));
 			die();
 		}
 		
@@ -119,7 +120,7 @@
 			}
 			if(!isset($_GET['calc'])){
 				if(strpos($userSql['ignores'],strtolower($result['name1'])."\n")===false){
-					$json .= json_encode([
+					$json .= json_encode(Array(
 						'curLine' => (int)$result['line_number'],
 						'type' => $result['type'],
 						'network' => (int)$result['Online'],
@@ -128,9 +129,9 @@
 						'message' => $result['message'],
 						'name2' => $result['name2'],
 						'chan' => $result['channel']
-					]).',';
+					)).',';
 				}else{
-					$json .= json_encode([
+					$json .= json_encode(Array(
 						'curLine' => (int)$result['line_number'],
 						'type' => 'curline',
 						'network' => 0,
@@ -139,7 +140,7 @@
 						'message' => '',
 						'name2' => '',
 						'chan' => ''
-					]).',';
+					)).',';
 				}
 				header('Content-Type: text/json');
 				echo substr($json,0,-1).']}';
@@ -151,7 +152,7 @@
 				if(!isset($result['time']))
 					$result['time'] = time();
 				if(strpos($userSql['ignores'],strtolower($result['name1'])."\n")===false){
-					$json .= json_encode([
+					$json .= json_encode(Array(
 						'curLine' => (int)$result['line_number'],
 						'type' => $result['type'],
 						'network' => (int)$result['Online'],
@@ -160,9 +161,9 @@
 						'message' => $result['message'],
 						'name2' => $result['name2'],
 						'chan' => $result['channel']
-					]).',';
+					)).',';
 				}else{
-					$json .= json_encode([
+					$json .= json_encode(Array(
 						'curLine' => (int)$result['line_number'],
 						'type' => 'curline',
 						'network' => 0,
@@ -171,7 +172,7 @@
 						'message' => '',
 						'name2' => '',
 						'chan' => ''
-					]).',';
+					)).',';
 				}
 			}else{
 				if($result['Online']=='2')

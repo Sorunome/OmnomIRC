@@ -1,4 +1,23 @@
 <?php
+/*
+    OmnomIRC COPYRIGHT 2010,2011 Netham45
+                       2012-2014 Sorunome
+
+    This file is part of OmnomIRC.
+
+    OmnomIRC is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    OmnomIRC is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
+*/
 function adminWriteConfig($output=true){
 	global $config;
 	$configFile = '<?php
@@ -35,21 +54,21 @@ JSONEND
 $defaultChan = $config[\'channels\'][0][\'chan\'];
 if(isset($_GET[\'js\'])){
 	header(\'Content-type: text/json\');
-	$channels = [];
+	$channels = Array();
 	foreach($config["channels"] as $chan){
-		$channels[] = [
+		$channels[] = Array(
 			"chan" => $chan["chan"],
 			"high" => false,
 			"ex" => !$chan["visible"]
-		];
+		);
 	}
-	echo json_encode([
+	echo json_encode(Array(
 		"hostname" => $config[\'settings\'][\'hostname\'],
-		"searchNamesUrl" => $config[\'settings\'][\'searchNamesUrl\'],
 		"channels" => $channels,
 		"smileys" => $config["smileys"],
+		"networks" => $config["networks"],
 		"checkLoginUrl" => (isset($_COOKIE[$config["security"]["cookie"]])?$config["settings"]["checkLoginUrl"]."?sid=".urlencode(htmlspecialchars(str_replace(";","%^%",$_COOKIE[$config["security"]["cookie"]]))):$config["settings"]["checkLoginUrl"]."?sid=THEGAME")
-	]);
+	));
 }
 ?>';
 	if(file_put_contents(realpath(dirname(__FILE__)).'/../config.php',$configFile)){

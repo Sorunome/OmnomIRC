@@ -1,9 +1,8 @@
 <?PHP
 
 /*
-ip 108.174.51.58
-
     OmnomIRC COPYRIGHT 2010,2011 Netham45
+                       2012-2014 Sorunome
 
     This file is part of OmnomIRC.
 

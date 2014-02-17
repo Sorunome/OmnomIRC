@@ -41,7 +41,13 @@ if(isset($_GET['op'])) {
 		echo $signature."\n".$nick."\n".$context['user']['id'];
 	elseif (isset($_GET['textmode']))
 		header('Location: http://omnomirc.www.omnimaga.org/textmode.php?login&nick='.urlencode($nick).'&sig='.urlencode($signature).'&id='.$context['user']['id']);
-	else
-		echo "signCallback('$signature','$nick','".$context['user']['id']."');";
+	else{
+		header('Content-type: text/json');
+		echo json_encode(Array(
+			'nick' => $nick,
+			'signature' => $signature,
+			'uid' => $context['user']['id']
+		));
+	}
 }
 ?>
