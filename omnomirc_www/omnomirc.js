@@ -787,7 +787,7 @@
 							ne = encodeURIComponent(u.nick),
 							n = $('<span>').text(u.nick).html();
 						return $('<span>')
-							.attr('alt',(settings.networks[u.network]!==undefined?settings.networks[u.network].name:'Unknown Network'))
+							.attr('title',(settings.networks[u.network]!==undefined?settings.networks[u.network].name:'Unknown Network'))
 							.append(
 								(settings.networks[u.network]!==undefined?settings.networks[u.network].userlist.split('NICKENCODE').join(ne).split('NICK').join(n):n),
 								'<br>'
@@ -1287,9 +1287,9 @@
 					cn = n;
 				}
 				if(settings.networks[o]!==undefined){
-					return settings.networks[o].normal.split('NICKENCODE').join(ne).split('NICK').join(cn);
+					return '<span title="'+settings.networks[o].name+'">'+settings.networks[o].normal.split('NICKENCODE').join(ne).split('NICK').join(cn)+'</span>';
 				}
-				return cn;
+				return '<span title="Unknown Network">'+cn+'</span>';
 			},
 			parseSmileys:function(s){
 				var self = this,
@@ -1426,7 +1426,6 @@
 			parseMessage:function(s){
 				var self = this;
 				s = $('<span>').text(s).html();
-				s = self.parseHighlight(s);
 				s = self.parseLinks(s);
 				if(options.get(12,'T')=='T'){
 					s = self.parseSmileys(s);
@@ -1445,7 +1444,7 @@
 					addLine = true,
 					statusTxt = '';
 				if((line.type == 'message' || line.type == 'action') && line.name.toLowerCase() != 'new'){
-					message = self.parseHighlight(message,line);
+					tdMessage = message = self.parseHighlight(message);
 				}
 				if(line.curLine > request.curLine){
 					request.curLine = line.curLine;
