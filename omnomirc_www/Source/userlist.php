@@ -22,14 +22,14 @@
 		global $sql;
 		if($channel[0]=='*')
 			return;
-		$result = $sql->query("SELECT time,isOnline FROM `irc_users` WHERE `username` = '%s' AND `channel` = '%s' AND `online` = %d",$nick,$channel,(int)$online);
-		if(sizeof($result)){ //Update  
-			$sql->query("UPDATE `irc_users` SET `time`='%s',`isOnline`='1' WHERE `username` = '%s' AND `channel` = '%s' AND `online` = %d",time(),$nick,$channel,(int)$online);
+		$result = $sql->query("SELECT usernum,time,isOnline FROM `irc_users` WHERE `username` = '%s' AND `channel` = '%s' AND `online` = %d",$nick,$channel,(int)$online);
+		if($result[0]['usernum']!==NULL){ //Update  
+			$sql->query("UPDATE `irc_users` SET `time`='%s',`isOnline`='1' WHERE `usernum` = %d",time(),(int)$result[0]['usernum']);
 			if((int)$result[0]['isOnline'] == 0){ //First time they joined in a minute.
 				notifyJoin($nick,$channel);
 			}
 		}else{ //Insert
-			$sql->query("INSERT INTO `irc_users` (`username`,`channel`,`time`,`online`) VALUES('%s','%s','%s',1)",$nick,$channel,time());
+			$sql->query("INSERT INTO `irc_users` (`username`,`channel`,`time`,`online`) VALUES('%s','%s','%s',%d)",$nick,$channel,time(),(int)$online);
 			notifyJoin($nick,$channel);
 		}
 	}

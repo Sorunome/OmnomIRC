@@ -276,10 +276,10 @@
 			init:function(){
 				var self = this;
 				self.id = Math.random().toString(36)+(new Date()).getTime().toString();
-				ls.set('OmnomBrowserTab',self.Id);
+				ls.set('OmnomBrowserTab',self.id);
 				$(window)
 					.focus(function(){
-						ls.set('OmnomBrowserTab',self.Id);
+						ls.set('OmnomBrowserTab',self.id);
 					})
 			},
 			current:function(){
@@ -1091,6 +1091,7 @@
 				}
 				scroll.enableUserlist();
 				tab.registerHook();
+				instant.init();
 				$('#toggleButton')
 					.click(function(e){
 						e.preventDefault();
@@ -1409,18 +1410,8 @@
 		
 				return colorStr;
 			},
-			parseMessage:function(s){
-				var self = this;
-				s = $('<span>').text(s).html();
-				s = self.parseLinks(s);
-				if(options.get(12,'T')=='T'){
-					s = self.parseSmileys(s);
-				}
-				s = self.parseColors(s);
-				return s;
-			},
 			parseHighlight:function(s){
-				if(s.toLowerCase().indexOf(settings.nick.toLowerCase().substr(0,options.get(13,'3')+1)) >= 0 && settings.nick != "Guest"){
+				if(s.toLowerCase().indexOf(settings.nick.toLowerCase().substr(0,parseInt(options.get(13,'3'))+1)) >= 0 && settings.nick != "Guest"){
 					var style = '';
 					if(options.get(2,'T')!='T'){
 						style += 'background:none;padding:none;border:none;';
@@ -1430,6 +1421,17 @@
 					}
 					return '<span class="highlight" style="'+style+'">'+s+'</span>';
 				}
+				return s;
+			},
+			parseMessage:function(s){
+				var self = this;
+				s = $('<span>').text(s).html();
+				s = self.parseHighlight(s);
+				s = self.parseLinks(s);
+				if(options.get(12,'T')=='T'){
+					s = self.parseSmileys(s);
+				}
+				s = self.parseColors(s);
 				return s;
 			},
 			lineHigh:false,
@@ -1531,29 +1533,37 @@
 						}
 						break;
 					case 'pm':
-						if(channels.inChan){
-							if(channels.current.toLowerCase() != '*'+line.nick.toLowerCase() && line.nick != settings.nick){
+						if(channels.current.toLowerCase() != '*'+line.name.toLowerCase() && line.name != settings.nick){
+							if(channels.inChan){
 								tdName = ['(PM)',name];
-								channels.openPm(line.nick);
-								notification.make('(PM) <'+name+'> '+message,line.chan);
+								channels.openPm(line.name);
+								notification.make('(PM) <'+line.name+'> '+line.message,line.chan);
 							}else{
-								tdName = name;
+								addLine = false;
 							}
 						}else{
-							addLine = false;
+							tdName = name;
+							line.type = 'message';
 						}
 						break;
 					case 'pmaction':
-						if(channels.current.toLowerCase() != '*'+line.nick.toLowerCase() && line.nick != settings.nick){
-							tdMessage = ['(PM)',name,' ',message];
-							channels.openPm(line.nick);
-							notification.make('* (PM)'+name+' '+message,line.chan);
+						if(channels.current.toLowerCase() != '*'+line.name.toLowerCase() && line.name != settings.nick){
+							if(channels.inChan){
+								tdMessage = ['(PM)',name,' ',message];
+								channels.openPm(line.name);
+								notification.make('* (PM)'+line.name+' '+line.message,line.chan);
+								line.type = 'pm';
+							}else{
+								addLine = false;
+							}
 						}else{
 							tdMessage = [name,' ',message];
+							line.type = 'message';
 						}
+						break;
 					case 'highlight':
 						if(line.name.toLowerCase() != 'new'){
-							notification.make('('+line.chan+') <'+name+'> '+message,line.chan);
+							notification.make('('+line.chan+') <'+line.name+'> '+line.message,line.chan);
 						}
 						addLine = false;
 						break;

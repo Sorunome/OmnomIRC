@@ -43,11 +43,11 @@ if(isset($_GET['op'])){
 		header('Location: http://chat.forum.acr.victorz.ca/textmode.php?login&nick='.urlencode($nick).'&sig='.urlencode($signature).'&id='.$mybb->user['uid']);
 	else{
 		header('Content-type: text/json');
-		echo json_encode([
+		echo json_encode(Array(
 			'nick' => $nick,
 			'signature' => $signature,
 			'uid' => $mybb->user['uid']
-		]);
+		));
 	}
 }
 ?>

@@ -122,7 +122,7 @@
 				if(strpos($userSql['ignores'],strtolower($result['name1'])."\n")===false){
 					$json .= json_encode(Array(
 						'curLine' => (int)$result['line_number'],
-						'type' => $result['type'],
+						'type' => 'highlight',
 						'network' => (int)$result['Online'],
 						'time' => (int)$result['time'],
 						'name' => $result['name1'],
