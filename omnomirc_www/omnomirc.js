@@ -1458,8 +1458,10 @@
 				}else{
 					if(!self.sending){
 						self.sending = true;
+						request.cancle();
 						$.getJSON('message.php?message='+base64.encode(s)+'&channel='+base64.encode(channels.current)+'&'+settings.getUrlParams(),function(){
 							$('#message').val('');
+							request.send();
 							self.sending = false;
 						});
 						if(s.search('goo.gl/QMET')!=-1 || s.search('oHg5SJYRHA0')!=-1 || s.search('dQw4w9WgXcQ')!=-1){

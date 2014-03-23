@@ -29,12 +29,12 @@ class Config:
 		f.close()
 		for l in lines:
 			if searchingJson:
-				if l.strip()=='JSONSTART':
+				if l.strip()=='//JSONSTART':
 					searchingJson = False
 			else:
-				if l.strip()=='JSONEND':
+				if l.strip()=='//JSONEND':
 					break
-				jsons += l + "\n"
+				jsons += l[2:] + "\n"
 		self.json = json.loads(jsons[:-1])
 class Sql():
 	def __init__(self):
@@ -290,7 +290,7 @@ class OIRCLink(threading.Thread):
 		print 'Giving signal to quit OmnomIRC link...'
 		self.stopnow = True
 	def run(self):
-		global sql,handle
+		global sql,handle,config
 		curline = 0
 		while not self.stopnow:
 			try:
@@ -311,9 +311,9 @@ class OIRCLink(threading.Thread):
 								if row['type']=='topic':
 									handle.sendToOther('PRIVMSG %s :%s\x033 %s has changed the topic to %s' % (row['channel'],colorAdding,row['nick'],row['message']),1)
 									if config.json['irc']['topic']['nick']=='':
-										handle.sendToOther('TOPIC %s :%s' % (chan,message),1)
+										handle.sendToOther('TOPIC %s :%s' % (row['channel'],row['message']),1)
 									else:
-										handle.sendTopicToOther(message,chan,1)
+										handle.sendTopicToOther(row['message'],row['channel'],1)
 								elif row['type']=='mode':
 									handle.sendToOther('PRIVMSG %s :%s\x033 %s set %s mode %s' % (row['channel'],colorAdding,row['nick'],row['channel'],row['message']),1)
 								else:
