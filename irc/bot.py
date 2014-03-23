@@ -15,7 +15,7 @@
 #
 #    You should have received a copy of the GNU General Public License
 #    along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
-import threading,socket,string,time,sys,json,MySQLdb
+import threading,socket,string,time,sys,json,MySQLdb,traceback
 print 'Starting OmnomIRC bot...'
 DOCUMENTROOT = '/usr/share/nginx/html/oirc'
 class Config:
@@ -64,11 +64,13 @@ class Sql():
 					break
 				rows.append(row)
 			cur.close()
+			db.commit()
 			db.close()
 			return rows
 		except Exception as inst:
 			print '(sql) Error'
 			print inst
+			traceback.print_exc()
 			return False
 class Bot(threading.Thread):
 	def __init__(self,server,port,nick,ns,chans,main,passwd,i):
@@ -114,7 +116,7 @@ class Bot(threading.Thread):
 		print '(1)<< ',{'name1':n1,'name2':n2,'type':t,'message':m,'channel':c}
 		sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`) VALUES ('%s','%s','%s','%s','%s','%s',%d)",[str(n1),str(n2),str(m),str(t),str(c),str(int(time.time())),int(self.i)])
 		if t=='topic':
-			temp = sql.query("SELECT * FROM `irc_topics` WHERE chan='%s'",[str(c).lower()])
+			temp = sql.query("SELECT channum FROM `irc_topics` WHERE chan='%s'",[str(c).lower()])
 			if len(temp)==0:
 				sql.query("INSERT INTO `irc_topics` (chan,topic) VALUES('%s','%s')",[str(c).lower(),str(m)])
 			else:
@@ -213,6 +215,7 @@ class Bot(threading.Thread):
 				self.readbuffer += self.s.recv(1024)
 			except Exception as inst:
 				print inst
+				traceback.print_exc()
 			temp=string.split(self.readbuffer,'\n')
 			self.readbuffer=temp.pop()
 			for line in temp:
@@ -228,6 +231,7 @@ class Bot(threading.Thread):
 				except Exception as inst:
 					print '('+str(self.i)+') parse Error'
 					print inst
+					traceback.print_exc()
 	def joinChans(self):
 		for c in self.chans:
 			self.send('JOIN %s' % c['chan'],True)
@@ -254,6 +258,7 @@ class Bot(threading.Thread):
 				self.readbuffer += self.s.recv(1024)
 			except Exception as inst:
 				print inst
+				traceback.print_exc()
 			temp=string.split(self.readbuffer,'\n')
 			self.readbuffer=temp.pop()
 			for line in temp:
@@ -268,12 +273,13 @@ class Bot(threading.Thread):
 						motdEnd = True
 					if not identified and ((line[1] == 'NOTICE' and 'NickServ' in line[0])):
 						if identifiedStep==0:
-							self.send('PRIVMSG NickServ :IDENTIFY %s' % self.ns)
+							self.send('PRIVMSG NickServ :IDENTIFY %s' % self.ns,True)
 							identifiedStep = 1
 						elif identifiedStep==1:
 							identified = True
 				except Exception as inst:
 					print inst
+					traceback.print_exc()
 		self.joinChans()
 		self.serve()
 class OIRCLink(threading.Thread):
@@ -291,29 +297,38 @@ class OIRCLink(threading.Thread):
 				temp = handle.getCurline()
 				if temp>curline:
 					curline = temp
-					res = sql.query('SELECT * FROM irc_outgoing_messages')
+					res = sql.query('SELECT fromSource,channel,type,action,prikey,nick,message FROM irc_outgoing_messages')
 					if len(res) > 0:
 						print '(1)>> ',res
 						lastline = 0
 						for row in res:
-							colorAdding = '\x0312(O)'
-							if row['fromSource']==2:
-								colorAdding = '\x037(C)'
-							if row['channel'][0] != '#':
-								continue
-							if row['type']=='topic':
-								handle.sendToOther('PRIVMSG %s :%s\x033 %s has changed the topic to %s' % (row['channel'],colorAdding,['nick'],row['message']),1)
-							elif row['type']=='mode':
-								handle.sendToOther('PRIVMSG %s :%s\x033 %s set %s mode %s' % (row['channel'],colorAdding,row['nick'],row['channel'],row['nick']),1)
-							else:
-								if int(row['action']) == 0:
-									handle.sendToOther('PRIVMSG %s :%s\x0f<%s> %s' % (row['channel'],colorAdding,row['nick'],row['message']),1)
-								elif int(row['action']) == 1:
-									handle.sendToOther('PRIVMSG %s :%s\x036* %s %s' % (row['channel'],colorAdding,row['nick'],row['messae']),1)
+							try:
+								colorAdding = '\x0312(O)'
+								if row['fromSource']==2:
+									colorAdding = '\x037(C)'
+								if row['channel'][0] != '#':
+									continue
+								if row['type']=='topic':
+									handle.sendToOther('PRIVMSG %s :%s\x033 %s has changed the topic to %s' % (row['channel'],colorAdding,row['nick'],row['message']),1)
+									if config.json['irc']['topic']['nick']=='':
+										handle.sendToOther('TOPIC %s :%s' % (chan,message),1)
+									else:
+										handle.sendTopicToOther(message,chan,1)
+								elif row['type']=='mode':
+									handle.sendToOther('PRIVMSG %s :%s\x033 %s set %s mode %s' % (row['channel'],colorAdding,row['nick'],row['channel'],row['message']),1)
+								else:
+									if int(row['action']) == 0:
+										handle.sendToOther('PRIVMSG %s :%s\x0f<%s> %s' % (row['channel'],colorAdding,row['nick'],row['message']),1)
+									elif int(row['action']) == 1:
+										handle.sendToOther('PRIVMSG %s :%s\x036* %s %s' % (row['channel'],colorAdding,row['nick'],row['message'][1:]),1)
+							except Exception as inst:
+								print inst
+								traceback.print_exc()
 							lastline = row['prikey']
 						sql.query('DELETE FROM `irc_outgoing_messages` WHERE prikey < %d',[int(lastline)+1])
 			except Exception as inst:
 				print inst
+				traceback.print_exc()
 			time.sleep(0.2)
 class Main():
 	def __init__(self):
@@ -329,6 +344,7 @@ class Main():
 		except Exception as inst:
 			print 'curline error'
 			print inst
+			traceback.print_exc()
 	def getCurline(self):
 		global config
 		f = open(config.json['settings']['curidFilePath'])

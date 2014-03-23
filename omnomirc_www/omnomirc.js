@@ -34,6 +34,7 @@
 					parser.smileys = data.smileys;
 					self.networks = data.networks;
 					self.checkLoginUrl = data.checkLoginUrl;
+					options.defaults = data.defaults;
 					$.getJSON(self.checkLoginUrl+'&jsoncallback=?',function(data){
 						self.nick = data.nick;
 						self.signature = data.signature;
@@ -52,13 +53,13 @@
 		ls = {
 			getCookie:function(c_name){
 				var i,x,y,ARRcookies=document.cookie.split(";");
-				for (i=0;i<ARRcookies.length;i++) {
+				for(i=0;i<ARRcookies.length;i++){
 					x=ARRcookies[i].substr(0,ARRcookies[i].indexOf("="));
 					y=ARRcookies[i].substr(ARRcookies[i].indexOf("=")+1);
 					x=x.replace(/^\s+|\s+$/g,"");
-					if (x==c_name) {
+					if(x==c_name){
 						return unescape(y);
-						}
+					}
 				}
 			},
 			setCookie:function(c_name,value,exdays) {
@@ -88,7 +89,142 @@
 				}
 			}
 		},
+		admin = {
+			sendEdit:function(page,json){
+				$.post('admin.php?set='+page+'&'+settings.getUrlParams(),{data:JSON.stringify(json)},function(data){
+					var alertStr = '';
+					if(data.errors!==undefined){
+						$.map(data.errors,function(error){
+							alertStr += 'ERROR: '+error+"\n";
+						});
+					}else{
+						alertStr = data.message;
+					}
+					alert(alertStr);
+				});
+			},
+			getInputBoxSettings:function(p,name,data){
+				var self = this;
+				$('#adminContent').append(
+					'<div style="font-weight:bold">'+name+' Settings</div>',
+					$.map(data,function(d,i){
+						if(i!=='warnings'){
+							return $('<div>')
+								.append(
+									i,
+									': ',
+									$('<input>')
+										.attr({
+											type:'text',
+											name:i
+										})
+										.val(d)
+								);
+						}
+					}),
+					$('<button>')
+						.text('submit')
+						.click(function(){
+							var json = {};
+							$('input').each(function(i,v){
+								json[$(v).attr('name')] = $(v).val();
+							});
+							self.sendEdit(p,json);
+						})
+				);
+			},
+			getJSONEditSettings:function(p,name,data){
+				var self = this,
+					json = data;
+				$('#adminContent').append(
+					'<div style="font-weight:bold">'+name+' Settings</div>',
+					$('<div>').addClass('json-editor').jsonEditor(json,{
+						change:function(data){
+							json = data;
+						}
+					}),
+					$('<button>')
+						.text('submit')
+						.click(function(){
+							self.sendEdit(p,json);
+						})
+				);
+			},
+			loadPage:function(p){
+				var self = this;
+				indicator.start();
+				$('#adminContent').text('Loading...');
+				$.getJSON('admin.php?get='+encodeURIComponent(p)+'&'+settings.getUrlParams(),function(data){
+					$('#adminContent').empty();
+					if(data.errors!==undefined){
+						$('#adminContent').append(
+							$.map(data.errors,function(error){
+								return '<b>ERROR:</b> '+error;
+							})
+						);
+					}else{
+						switch(p){
+							case 'index':
+								if(!data.installed){
+									$('#adminContent').append('<span class="highlight">Warning: You are currently in instalation mode!</span>');
+								}
+								$('#adminContent').append(
+									'OmnomIRC Version: '+data.version+'<br>',
+									$('<button>')
+										.text('Back up config')
+										.click(function(){
+											self.sendEdit('backupConfig',{});
+										})
+								);
+								break;
+							case 'channels':
+								self.getJSONEditSettings(p,'Channel',data.channels);
+								break;
+							case 'hotlinks':
+								self.getJSONEditSettings(p,'Hotlink',data.hotlinks);
+								break;
+							case 'smileys':
+								self.getJSONEditSettings(p,'Smiley',data.smileys);
+								break;
+							case 'networks':
+								self.getJSONEditSettings(p,'Network',data.networks);
+								break;
+							case 'sql':
+								$.extend(data,{
+									passwd:''
+								});
+								self.getInputBoxSettings(p,'SQL',data);
+								break;
+							case 'op':
+								self.getJSONEditSettings(p,'OP',data.opGroups);
+								break;
+							case 'irc':
+								self.getJSONEditSettings(p,'IRC',data.irc);
+								break;
+							case 'misc':
+								self.getInputBoxSettings(p,'Misc',data);
+								break;
+						}
+					}
+					indicator.stop();
+				});
+			},
+			init:function(){
+				var self = this;
+				$('#adminNav a').click(function(e){
+					e.preventDefault();
+					self.loadPage($(this).attr('page'));
+				});
+				settings.fetch(function(){
+					self.loadPage('index');
+				});
+				$(window).resize(function(){
+					$('#adminContent').height($(window).height() - 50);
+				}).trigger('resize');
+			}
+		},
 		options = {
+			defaults:'',
 			set:function(optionsNum,value){
 				var self = this;
 				if(optionsNum < 1 || optionsNum > 40){
@@ -115,7 +251,7 @@
 				}
 				result = optionsString.charAt(optionsNum-1);
 				if(result=='-'){
-					return defaultOption;
+					return (self.defaults.charAt(optionsNum-1)!=''?self.defaults.charAt(optionsNum-1):defaultOption);
 				}
 				return result;
 			},
@@ -220,6 +356,11 @@
 						notification.request();
 						return false;
 					}
+				},
+				{
+					disp:'Show OmnomIRC join/part messages',
+					id:17,
+					defaultOption:'F'
 				}
 			],
 			getHTML:function(){
@@ -273,17 +414,28 @@
 		},
 		instant = {
 			id:'',
+			update:function(){
+				var self = this;
+				ls.set('OmnomBrowserTab',self.id);
+				ls.set('OmnomNewInstant','false');
+			},
 			init:function(){
 				var self = this;
 				self.id = Math.random().toString(36)+(new Date()).getTime().toString();
 				ls.set('OmnomBrowserTab',self.id);
 				$(window)
 					.focus(function(){
-						ls.set('OmnomBrowserTab',self.id);
+						self.update();
 					})
+					.unload(function(){
+						ls.set('OmnomNewInstant','true');
+					});
 			},
 			current:function(){
 				var self = this;
+				if(ls.get('OmnomNewInstant')=='true'){
+					self.update();
+				}
 				return self.id == ls.get('OmnomBrowserTab');
 			}
 		},
@@ -423,7 +575,7 @@
 					if(newRequest){
 						setTimeout(function(){
 							self.send();
-						},100);
+						},(page.isBlurred?2500:200));
 					}
 				}).fail(function(){
 					self.errorCount++;
@@ -432,7 +584,9 @@
 					}else if(!self.inRequest){
 						self.errorCount = 0;
 					}else{
-						self.send();
+						setTimeout(function(){
+							self.send();
+						},(page.isBlurred?2500:200));
 					}
 				});
 			}
@@ -618,6 +772,7 @@
 					indicator.start();
 					request.cancle();
 					self.inChan = false;
+					$('#message').attr('disabled','true');
 					$('#MessageBox').empty();
 					$('.chan').removeClass('curchan');
 					$.getJSON('Load.php?count=125&channel='+base64.encode(self.channels[i].chan)+'&'+settings.getUrlParams(),function(data){
@@ -643,9 +798,9 @@
 						if(fn!==undefined){
 							fn();
 						}
-						setTimeout(function(){
-							scroll.down();
-						},500);
+						if(settings.nick!='Guest'){
+							$('#message').removeAttr('disabled');
+						}
 						self.inChan = true;
 						indicator.stop();
 					});
@@ -756,6 +911,17 @@
 				}
 				return start;
 			},
+			exists:function(u){
+				var self = this,
+					result = false;
+				$.each(self.users,function(i,us){
+					if(us.nick.toLowerCase() == u.nick.toLowerCase() && us.network == u.network){
+						result = true;
+						return false;
+					}
+				});
+				return result;
+			},
 			add:function(u){
 				var self = this;
 				if(channels.inChan){
@@ -793,9 +959,9 @@
 								'<br>'
 							)
 							.mouseover(function(){
-								getInfo = $.get('Load.php?userinfo&name='+base64.encode(u.nick)+'&chan='+base64.encode(channels.current)+'&online='+u.network.toString(),function(data){
-									if(!isNaN(parseInt(data))){
-										$('#lastSeenCont').text('Last Seen: '+(new Date(parseInt(data)*1000)).toLocaleString());
+								getInfo = $.getJSON('Load.php?userinfo&name='+base64.encode(u.nick)+'&chan='+base64.encode(channels.current)+'&online='+u.network.toString(),function(data){
+									if(data.last){
+										$('#lastSeenCont').text('Last Seen: '+(new Date(data.last*1000)).toLocaleString());
 									}else{
 										$('#lastSeenCont').text('Last Seen: never');
 									}
@@ -1021,6 +1187,24 @@
 								}catch(e){}
 							})
 					).appendTo('body');
+			},
+			init:function(){
+				var self = this;
+				if(options.get(15,'T')=='T'){
+					self.showBar();
+				}else{
+					self.showButtons();
+				}
+				if(options.get(16,'F')=='T'){
+					self.enableWheel();
+				}
+				self.enableUserlist();
+				$('#mBoxCont').scroll(function(e){
+					self.reCalcBar();
+				});
+				$(document).add(window).add('body').add('html').scroll(function(e){
+					e.preventDefault();
+				});
 			}
 		},
 		page = {
@@ -1057,6 +1241,46 @@
 				);
 			},
 			mBoxContWidthOffset:99,
+			registerToggle:function(){
+				$('#toggleButton')
+					.click(function(e){
+						e.preventDefault();
+						options.set(5,!(options.get(5,'T')=='T')?'T':'F');
+						document.location.reload();
+					});
+			},
+			load:function(){
+				var self = this;
+				indicator.start();
+				if(options.get(5,'T')=='T'){
+					self.init();
+					settings.fetch(function(){
+						self.initSmileys();
+						send.registerHook();
+						oldMessages.registerHook();
+						channels.load();
+						channels.join(options.get(4,String.fromCharCode(45)).charCodeAt(0) - 45,function(){
+							channels.draw();
+						},true);
+					});
+				}else{
+					self.registerToggle();
+					$('#windowbg2').css('height',parseInt($('html').height()) - parseInt($('#message').height() + 14));
+					$('#mBoxCont').css('height',parseInt($('#windowbg2').height()) - 42).empty().append(
+						'<br>',
+						$('<a>')
+							.css('font-size',20)
+							.text('OmnomIRC is disabled. Click here to enable.')
+							.click(function(e){
+								e.preventDefault();
+								options.set(5,'T');
+								window.location.reload();
+							})
+					);
+					indicator.stop();
+				}
+			},
+			isBlurred:false,
 			init:function(){
 				var self = this;
 				$(window).resize(function(){
@@ -1067,7 +1291,11 @@
 						scroll.reCalcBar();
 					}
 					scroll.down();
-				}).trigger('resize');
+				}).trigger('resize').blur(function(){
+					self.isBlurred = true;
+				}).focus(function(){
+					self.isBlurred = false;
+				});
 				if(options.get(14,'F')!='T'){
 					self.mBoxContWidthOffset = 90;
 					$('<style>')
@@ -1081,23 +1309,10 @@
 						)
 						.appendTo('head');
 				}
-				if(options.get(15,'T')=='T'){
-					scroll.showBar();
-				}else{
-					scroll.showButtons();
-				}
-				if(options.get(16,'F')=='T'){
-					scroll.enableWheel();
-				}
-				scroll.enableUserlist();
+				scroll.init();
 				tab.registerHook();
 				instant.init();
-				$('#toggleButton')
-					.click(function(e){
-						e.preventDefault();
-						options.set(5,!(options.get(5,'T')=='T')?'T':'F');
-						document.location.reload();
-					})
+				self.registerToggle();
 			}
 		},
 		statusBar = {
@@ -1153,7 +1368,8 @@
 						channels.part((parameters!=''?parameters:undefined));
 						return true;
 					case 'help':
-						send.internal('<span style="color:#2A8C2A;">For full help go here: <a href="http://ourl.ca/17329" target="_top">http://ourl.ca/17329</a></span>');
+						send.internal('<span style="color:#2A8C2A;">Commands: me, ignore, unignore, ignorelist, join, part, query, msg, window</span>');
+						send.internal('<span style="color:#2A8C2A;">For full help go here: <a href="http://ourl.ca/19926" target="_top">http://ourl.ca/19926</a></span>');
 						return true;
 					case 'ponies':
 						var fs=document.createElement("script");fs.onload=function(){
@@ -1233,24 +1449,30 @@
 					chan:channels.current
 				});
 			},
+			sending:false,
 			send:function(s){
+				var self = this;
 				oldMessages.add(s);
 				if(s[0] == '/' && commands.parse(s.substr(1))){
 					$('#message').val('');
 				}else{
-					$.get('message.php?message='+base64.encode(s)+'&channel='+base64.encode(channels.current)+'&'+settings.getUrlParams(),function(){
-						$('#message').val('');
-					});
-					if(s.search('goo.gl/QMET')!=-1 || s.search('oHg5SJYRHA0')!=-1 || s.search('dQw4w9WgXcQ')!=-1){
-						$('<div>')
-							.css({
-								position:'absolute',
-								zIndex:39,
-								top:39,
-								left:0
-							})
-							.html('<object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=6,0,29,0"><param name="movie" value="http://134.0.27.190/juju/i-lost-the-ga.me/rickroll.swf"><param name="quality" value="high"><embed src="http://134.0.27.190/juju/i-lost-the-ga.me/rickroll.swf" quality="high" pluginspage="http://www.macromedia.com/go/getflashplayer" type="application/x-shockwave-flash"></embed></object>')
-							.appendTo('body');
+					if(!self.sending){
+						self.sending = true;
+						$.getJSON('message.php?message='+base64.encode(s)+'&channel='+base64.encode(channels.current)+'&'+settings.getUrlParams(),function(){
+							$('#message').val('');
+							self.sending = false;
+						});
+						if(s.search('goo.gl/QMET')!=-1 || s.search('oHg5SJYRHA0')!=-1 || s.search('dQw4w9WgXcQ')!=-1){
+							$('<div>')
+								.css({
+									position:'absolute',
+									zIndex:39,
+									top:39,
+									left:0
+								})
+								.html('<object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=6,0,29,0"><param name="movie" value="http://134.0.27.190/juju/i-lost-the-ga.me/rickroll.swf"><param name="quality" value="high"><embed src="http://134.0.27.190/juju/i-lost-the-ga.me/rickroll.swf" quality="high" pluginspage="http://www.macromedia.com/go/getflashplayer" type="application/x-shockwave-flash"></embed></object>')
+								.appendTo('body');
+						}
 					}
 				}
 			},
@@ -1260,7 +1482,9 @@
 					$('#sendMessage')
 						.submit(function(e){
 							e.preventDefault();
-							self.send(this.message.value);
+							if(!$('#message').attr('disabled') && $('#message').val()!=''){
+								self.send(this.message.value);
+							}
 						});
 				}else{
 					$('#message')
@@ -1299,7 +1523,7 @@
 				}
 				var addStuff = '';
 				$.each(self.smileys,function(i,smiley){
-					s = s.replace(RegExp(smiley.regex),smiley.replace.split('ADDSTUFF').join(addStuff).split('PIC').join(smiley.pic).split('ALT').join(smiley.alt));
+					s = s.replace(RegExp(smiley.regex,'g'),smiley.replace.split('ADDSTUFF').join(addStuff).split('PIC').join(smiley.pic).split('ALT').join(smiley.alt));
 				});
 				return s;
 			},
@@ -1417,7 +1641,7 @@
 						style += 'background:none;padding:none;border:none;';
 					}
 					if(options.get(1,'T')=='T'){
-						style += '"font-weight:bold;';
+						style += 'font-weight:bold;';
 					}
 					return '<span class="highlight" style="'+style+'">'+s+'</span>';
 				}
@@ -1450,7 +1674,7 @@
 					request.curLine = line.curLine;
 				}
 				if($mBox.find('tr').length>self.maxLines){
-					$mBox.find('tr').slice(1).remove();
+					$mBox.find('tr:first').remove();
 				}
 				switch(line.type){
 					case 'reload':
@@ -1473,7 +1697,7 @@
 							nick:line.name,
 							network:line.network
 						});
-						if(line.network==1){
+						if(line.network==1 && options.get(17,'F')=='F'){
 							addLine = false;
 						}
 						break;
@@ -1483,7 +1707,7 @@
 							nick:line.name,
 							network:line.network
 						});
-						if(line.network==1){
+						if(line.network==1 && options.get(17,'F')=='F'){
 							addLine = false;
 						}
 						break;
@@ -1511,6 +1735,16 @@
 						tdMessage = [name,' ',message];
 						break;
 					case 'mode':
+						if(typeof(message)=='string'){
+							message = message.split(' ');
+							$.each(message,function(i,v){
+								var n = $('<span>').html(v).text();
+								if(n.indexOf('+')==-1 && n.indexOf('-')==-1){
+									message[i] = self.parseName(v,line.network);
+								}
+							});
+							message = message.join(' ');
+						}
 						tdMessage = [name,' set '+channels.current+' mode ',message];
 						break;
 					case 'nick':
@@ -1578,12 +1812,12 @@
 					if($('<span>').append(tdName).text() == '*'){
 						statusTxt = $('<span>').append(tdName).text()+' ';
 					}else{
-						statusTxt = '<'+line.nick+'> ';
+						statusTxt = '<'+line.name+'> ';
 					}
 					if(options.get(10,'F')=='T'){
 						statusTxt = '['+(new Date(line.time*1000)).toLocaleTimeString()+'] '+statusTxt;
 					}
-					statusTxt = statusTxt + $('<span>').append(tdMessage).text();
+					statusTxt += $('<span>').append(tdMessage).text();
 					statusBar.set(statusTxt);
 					$mBox.append(
 						$('<tr>')
@@ -1602,43 +1836,28 @@
 								$('<td>')
 									.addClass(line.type)
 									.append(tdMessage)
-							)
-					);
+							 )
+					).find('img').load(function(e){
+						scroll.slide();
+					});
 					scroll.slide();
 				}
 				return true;
 			}
 		};
 	$(document).ready(function(){
-		if($('#mBoxCont').length!=0){
-			indicator.start();
-			if(options.get(5,'T')=='T'){
-				page.init();
+		switch($('body').attr('page')){
+			case 'options':
 				settings.fetch(function(){
-					page.initSmileys();
-					send.registerHook();
-					oldMessages.registerHook();
-					channels.load();
-					channels.join(options.get(4,String.fromCharCode(45)).charCodeAt(0) - 45,function(){
-						channels.draw();
-					},true);
+					$('#options').append(options.getHTML());
 				});
-			}else{
-				$('#windowbg2').css('height',parseInt($('html').height()) - parseInt($('#message').height() + 14));
-				$('#mBoxCont').css('height',parseInt($('#windowbg2').height()) - 42).empty().append(
-					'<br>',
-					$('<a>')
-						.css('font-size',20)
-						.text('OmnomIRC is disabled. Click here to enable.')
-						.click(function(e){
-							e.preventDefault();
-							options.set(5,'T');
-							window.location.reload();
-						})
-				);
-			}
-		}else{
-			$('#options').append(options.getHTML());
+				break;
+			case 'admin':
+				admin.init();
+				break;
+			case 'main':
+			default:
+				page.load();
 		}
 	});
 })(jQuery);
