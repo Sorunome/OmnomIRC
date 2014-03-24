@@ -7,7 +7,7 @@
 td.curchan,
 #scrollBarLine,
 #UserListInnerCont,
-.linehigh {
+.lineHigh {
 	background:#262626;
 	border-color:#4d4d4d;
 }
@@ -18,14 +18,18 @@ td.curchan,
 #Channels {
 	box-shadow: inset 0 -1px #4d4d4d;
 }
-td.chan {
+.chan {
 	border: 1px solid rgba(77,77,77,0.4);
 	border-top-color: rgba(77,77,77,0.8);
+	color: #81bf29;
 }
-td.curchan {
-	border-bottom-color:#4d4d4d;
+.chan.curchan {
+	background-color:#262626;
+	border-color:rgba(77,77,77,0.4);
+	border-bottom-color:#262626;
+	color:#81bf29;
 }
-td.chan:hover {
+.chan:hover {
 	background: rgba(42,42,42,0.8);
 }
 .linehigh {
@@ -44,7 +48,8 @@ body,
 #UserListInnerCont,
 .irc-date,
 td.curchan,
-.highlight{
+.highlight,
+.optionsTable .option.selected{
 	color:#a2a2a2;
 }
 td.chan{
@@ -61,4 +66,11 @@ input[type=text]{
 	background-color:#202020;
 	color:#a2a2a2;
 	border:1px solid #000000;
+}
+.optionsTable .option{
+	color:#81bf29;
+	border-right-color:#a2a2a2;
+}
+.optionsTable .option:hover{
+	text-shadow:0 0 4px rgba(0,40,170,0.5);
 }

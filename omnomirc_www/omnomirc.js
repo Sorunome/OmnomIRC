@@ -1252,9 +1252,9 @@
 			load:function(){
 				var self = this;
 				indicator.start();
-				if(options.get(5,'T')=='T'){
-					self.init();
-					settings.fetch(function(){
+				settings.fetch(function(){
+					if(options.get(5,'T')=='T'){
+						self.init();
 						self.initSmileys();
 						send.registerHook();
 						oldMessages.registerHook();
@@ -1262,23 +1262,23 @@
 						channels.join(options.get(4,String.fromCharCode(45)).charCodeAt(0) - 45,function(){
 							channels.draw();
 						},true);
-					});
-				}else{
-					self.registerToggle();
-					$('#windowbg2').css('height',parseInt($('html').height()) - parseInt($('#message').height() + 14));
-					$('#mBoxCont').css('height',parseInt($('#windowbg2').height()) - 42).empty().append(
-						'<br>',
-						$('<a>')
-							.css('font-size',20)
-							.text('OmnomIRC is disabled. Click here to enable.')
-							.click(function(e){
-								e.preventDefault();
-								options.set(5,'T');
-								window.location.reload();
-							})
-					);
-					indicator.stop();
-				}
+					}else{
+						self.registerToggle();
+						$('#windowbg2').css('height',parseInt($('html').height()) - parseInt($('#message').height() + 14));
+						$('#mBoxCont').css('height',parseInt($('#windowbg2').height()) - 42).empty().append(
+							'<br>',
+							$('<a>')
+								.css('font-size',20)
+								.text('OmnomIRC is disabled. Click here to enable.')
+								.click(function(e){
+									e.preventDefault();
+									options.set(5,'T');
+									window.location.reload();
+								})
+						);
+						indicator.stop();
+					}
+				});
 			},
 			isBlurred:false,
 			init:function(){

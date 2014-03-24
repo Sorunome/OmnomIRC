@@ -28,7 +28,7 @@ if(!isset($_GET['op'])){
 	}else{
 		$nick = $mybb->user['username'];
 		$signature = base64_url_encode(mcrypt_encrypt ( MCRYPT_RIJNDAEL_256 , $encriptKeyToUse , $nick , MCRYPT_MODE_ECB));
-		$uid = $mybb->user['uid']
+		$uid = $mybb->user['uid'];
 	}
 }
 
@@ -42,7 +42,7 @@ if(isset($_GET['op'])){
 		$group = $user['usergroup'];
 	header('Content-type: text/json');
 	echo json_encode(array(
-		'group' => $group;
+		'group' => $group
 	));
 }else{
 	if(isset($_GET['txt'])){
