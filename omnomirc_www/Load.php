@@ -42,7 +42,7 @@ if(isset($_GET['count'])){
 	$json->addWarning('Didn\'t set a count, defaulting to one.');
 }
 $channel = $you->chan;
-if($you->banned()){
+if($you->isBanned()){
 	$json->add('banned',true);
 	$json->add('admin',false);
 	$json->add('lines',Array());

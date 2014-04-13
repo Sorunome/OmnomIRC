@@ -15,7 +15,7 @@
 #
 #    You should have received a copy of the GNU General Public License
 #    along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
-import threading,socket,string,time,sys,json,MySQLdb,traceback
+import threading,socket,string,time,sys,json,MySQLdb,traceback,errno
 print 'Starting OmnomIRC bot...'
 DOCUMENTROOT = '/usr/share/nginx/html/oirc'
 class Config:
@@ -76,6 +76,7 @@ class Bot(threading.Thread):
 	def __init__(self,server,port,nick,ns,chans,main,passwd,i):
 		threading.Thread.__init__(self)
 		self.stopnow = False
+		self.restart = False
 		self.server = server
 		self.port = port
 		self.nick = nick
@@ -101,10 +102,15 @@ class Bot(threading.Thread):
 	def sendTopic(self,s,c):
 		self.s.sendall('TOPIC %s :%s\r\n' % (c,s))
 		print '('+str(self.i)+')'+self.sendStr+' '+c+' '+s
-	def send(self,s,override = False):
-		if self.main or override:
-			self.s.sendall('%s\r\n' % s)
-			print '('+str(self.i)+')'+self.sendStr+' '+s
+	def send(self,s,override = False,overrideRestart = False):
+		try:
+			if self.main or override:
+				self.s.sendall('%s\r\n' % s)
+				print '('+str(self.i)+')'+self.sendStr+' '+s
+		except:
+			if not self.stopnow and not overrideRestart:
+				self.restart = True
+				self.stopThread()
 	def connectToIRC(self):
 		self.s = socket.socket()
 		self.s.settimeout(60)
@@ -172,9 +178,11 @@ class Bot(threading.Thread):
 					handle.sendToOther('PRIVMSG %s :(#)<%s> %s' % (chan,nick,message),self.i)
 					self.addLine(nick,'','message',message,chan)
 		elif line[1]=='JOIN':
-			handle.sendToOther('PRIVMSG %s :(#)\x033* %s has joined %s' % (chan[1:],nick,chan[1:]),self.i)
-			self.addLine(nick,'','join','',chan[1:])
-			self.addUser(nick,chan[1:])
+			if chan[0]!='#':
+				chan = chan[1:]
+			handle.sendToOther('PRIVMSG %s :(#)\x033* %s has joined %s' % (chan,nick,chan),self.i)
+			self.addLine(nick,'','join','',chan)
+			self.addUser(nick,chan)
 		elif line[1]=='PART':
 			handle.sendToOther('PRIVMSG %s :(#)\x032* %s has left %s (%s)' % (chan,nick,chan,message),self.i)
 			self.addLine(nick,'','part',message,chan)
@@ -213,6 +221,11 @@ class Bot(threading.Thread):
 		while not self.stopnow:
 			try:
 				self.readbuffer += self.s.recv(1024)
+			except socket.error,e:
+				if isinstance(e.args,tuple):
+					if e == errno.EPIPE:
+						self.stopnow = True
+						self.restart = True
 			except Exception as inst:
 				print inst
 				traceback.print_exc()
@@ -232,6 +245,12 @@ class Bot(threading.Thread):
 					print '('+str(self.i)+') parse Error'
 					print inst
 					traceback.print_exc()
+		self.send('QUIT :Bye!',True,False)
+		self.s.close()
+		if self.restart:
+			print 'Restarting bot ('+str(self.i)+add
+			time.sleep(15)
+			self.run()
 	def joinChans(self):
 		for c in self.chans:
 			self.send('JOIN %s' % c['chan'],True)
@@ -239,6 +258,8 @@ class Bot(threading.Thread):
 				self.send('WHO %s' % c['chan'])
 	def run(self):
 		global sql
+		self.restart = False
+		self.stopnow = False
 		if self.main:
 			add = ')'
 		else:

@@ -74,7 +74,7 @@ if(substr($parts[0],0,1)=='/'){
 			$returnmessage = "";
 			$sendNormal = false;
 			$sendPm = true;
-			$userSql = getUserstuffQuery($nick);
+			$userSql = $you->info();
 			if(strpos($userSql['ignores'],$ignoreuser."\n")===false){
 				$userSql['ignores'].=$ignoreuser."\n";
 				$sql->query("UPDATE `irc_userstuff` SET ignores='%s' WHERE name='%s'",$userSql["ignores"],strtolower($nick));
@@ -90,11 +90,10 @@ if(substr($parts[0],0,1)=='/'){
 			$returnmessage = '';
 			$sendNormal = false;
 			$sendPm = true;
-			$userSql = getUserstuffQuery($nick);
+			$userSql = $you->info();
 			$allIgnoreUsers = explode("\n","\n".$userSql['ignores']);
 			$unignored = false;
-			for($i;$i<sizeof($allIgnoreUsers);$i++){
-				echo $allIgnoreUsers[$i].' '.$ignoreuser."\n";
+			for($i=0;$i<sizeof($allIgnoreUsers);$i++){
 				if($allIgnoreUsers[$i]==$ignoreuser){
 					$unignored = true;
 					unset($allIgnoreUsers[$i]);
@@ -120,7 +119,7 @@ if(substr($parts[0],0,1)=='/'){
 			$returnmessage = '';
 			$sendNormal = false;
 			$sendPm = true;
-			$userSql = getUserstuffQuery($nick);
+			$userSql = $you->info();
 			$returnmessage = "\x033Ignored users: ".str_replace("\n",",",$userSql["ignores"]);
 			break;
 		case 'position':
@@ -155,7 +154,8 @@ if(substr($parts[0],0,1)=='/'){
 			if($you->isOp()){
 				unset($parts[0]);
 				$userToOp = trim(implode(' ',$parts));
-				$userSql = getUserstuffQuery($userToOp);
+				$remote = new You($userToOp);
+				$userSql = $remote->info();
 				if(strpos($userSql['ops'],$channel."\n")===false) {
 					$userSql['ops'].=$channel."\n";
 					$sql->query("UPDATE `irc_userstuff` SET ops='%s' WHERE name='%s'",$userSql["ops"],strtolower($userToOp));
@@ -175,11 +175,11 @@ if(substr($parts[0],0,1)=='/'){
 			if($you->isOp()){
 				unset($parts[0]);
 				$userToOp = trim(implode(" ",$parts));
-				$userSql = getUserstuffQuery($userToOp);
+				$remote = new You($userToOp);
+				$userSql = $remote->info();
 				$allOpChans = explode("\n","\n".$userSql['ops']);
 				$deoped = false;
-				for($i;$i<sizeof($allOpChans);$i++){
-					echo $allOpChans[$i]." ".$channel."\n";
+				for($i=0;$i<sizeof($allOpChans);$i++){
 					if ($allOpChans[$i]==$channel){
 						$deoped = true;
 						unset($allOpChans[$i]);
@@ -205,7 +205,8 @@ if(substr($parts[0],0,1)=='/'){
 			if($you->isOp()){
 				unset($parts[0]);
 				$userToOp = trim(implode(' ',$parts));
-				$userSql = getUserstuffQuery($userToOp);
+				$remote = new You($userToOp);
+				$userSql = $remote->info();
 				if(strpos($userSql['bans'],$channel."\n")===false){
 					$userSql['bans'].=$channel."\n";
 					$sql->query("UPDATE `irc_userstuff` SET bans='%s' WHERE name='%s'",$userSql["bans"],strtolower($userToOp));
@@ -226,11 +227,11 @@ if(substr($parts[0],0,1)=='/'){
 			if($you->isOp()){
 				unset($parts[0]);
 				$userToOp = trim(implode(' ',$parts));
-				$userSql = getUserstuffQuery($userToOp);
+				$remote = new You($userToOp);
+				$userSql = $remote->info();
 				$allOpChans = explode("\n","\n".$userSql['bans']);
 				$deoped = false;
-				for($i;$i<sizeof($allOpChans);$i++){
-					echo $allOpChans[$i].' '.$channel."\n";
+				for($i=0;$i<sizeof($allOpChans);$i++){
 					if($allOpChans[$i]==$channel){
 						$deoped = true;
 						unset($allOpChans[$i]);

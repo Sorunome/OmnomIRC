@@ -30,7 +30,7 @@ if(isset($_GET['lineNum'])){
 	$curline = (int)file_get_contents($config['settings']['curidFilePath']);
 	$json->addWarning('lineNum not set, defaulting to newest one ('.$curline.')');
 }
-if($you->banned()){
+if($you->isBanned()){
 	$json->add('banned',true);
 	$json->addError('banned');
 	echo $json->get();
