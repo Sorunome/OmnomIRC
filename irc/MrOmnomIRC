@@ -1,0 +1,10 @@
+#!/bin/bash
+echo "OmnomIRC Daemon Script"
+echo "======================="
+while :
+do
+	python2 bot.py
+	echo "Starting up again due to crash..."
+	echo "Will start up again after 30 seconds."
+	sleep 30s
+done
