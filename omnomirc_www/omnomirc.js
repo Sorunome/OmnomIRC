@@ -29,7 +29,7 @@
 			return {
 				fetch:function(fn){
 					$.getJSON('config.php?js',function(data){
-						hostname = hostname;
+						hostname = data.hostname;
 						channels.setChans(data.channels);
 						parser.setSmileys(data.smileys);
 						networks = data.networks;
@@ -39,7 +39,7 @@
 							nick = data.nick;
 							signature = data.signature;
 							uid = data.uid;
-							if(fn!=undefined){
+							if(fn!==undefined){
 								fn();
 							}
 						});
@@ -316,10 +316,10 @@
 											return $('<option>')
 												.attr((options.get(13,'3')==i?'selected':'false'),'selected')
 												.val(i)
-												.text(i+1)
+												.text(i+1);
 										})
 									)
-								 )
+								);
 						}
 					},
 					{
@@ -365,7 +365,7 @@
 					refreshCache = true;
 				},
 				get:function(optionsNum,defaultOption){
-					var optionsString = (refreshCache?cache=ls.get('OmnomIRCSettings'):cache),
+					var optionsString = (refreshCache?(cache=ls.get('OmnomIRCSettings')):cache),
 						result;
 					refreshCache = false;
 					if(optionsString==null){
@@ -383,7 +383,7 @@
 								.addClass('optionsTable')
 								.append(
 									$.map(optionMenu,function(o){
-										return (alternator = !alternator?$('<tr>')
+										return ((alternator = !alternator)?$('<tr>')
 											.append(
 												$.merge(
 												[$('<td>')
@@ -409,9 +409,9 @@
 															$(this).addClass('selected').prev().removeClass('selected');
 														}
 													})]:o.handler()))
-											):'')
+											):'');
 									})
-								)
+								);
 					}),
 					$('<div>').append(
 						'&nbsp;',
