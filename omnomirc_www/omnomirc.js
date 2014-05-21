@@ -171,7 +171,13 @@
 							switch(p){
 								case 'index':
 									if(!data.installed){
-										$('#adminContent').append('<span class="highlight">Warning: You are currently in instalation mode!</span>');
+										$('#adminContent').append('<span class="highlight">Warning: You are currently in instalation mode!</span><br>',
+											$('<button>')
+												.text('Install')
+												.click(function(){
+													sendEdit('install',{});
+												})
+											,'<br>');
 									}
 									$('#adminContent').append(
 										'OmnomIRC Version: '+data.version+'<br>',
@@ -1013,9 +1019,9 @@
 			var isDown = false,
 				enableWheel = function(){
 					$('#mBoxCont').bind('DOMMouseScroll mousewheel',function(e){
-						if(e.preventDefault){
-							e.preventDefault();
-						}
+						e.preventDefault();
+						e.stopPropagation();
+						e.cancleBubble = true;
 						isDown = false;
 						document.getElementById('mBoxCont').scrollTop = Math.min(document.getElementById('mBoxCont').scrollHeight-document.getElementById('mBoxCont').clientHeight,Math.max(0,document.getElementById('mBoxCont').scrollTop-(/Firefox/i.test(navigator.userAgent)?(e.originalEvent.detail*(-20)):(e.originalEvent.wheelDelta/2))));
 						if(document.getElementById('mBoxCont').scrollTop==(document.getElementById('mBoxCont').scrollHeight-document.getElementById('mBoxCont').clientHeight)){
@@ -1248,7 +1254,7 @@
 					}
 					$('#smileyselect').append(
 						$.map(parser.getSmileys(),function(s){
-							return [$('<img>')
+							return [(s.inMenu?($('<img>')
 								.attr({
 									src:s.pic,
 									alt:s.alt,
@@ -1256,7 +1262,7 @@
 								})
 								.click(function(){
 									replaceText(' '+s.code,$('#message')[0]);
-								}),' ']
+								})):''),' ']
 								
 						})
 					);
@@ -1302,6 +1308,10 @@
 					tab.init();
 					instant.init();
 					registerToggle();
+					$('#aboutButton').click(function(e){
+						e.preventDefault();
+						$('#about').toggle();
+					});
 				};
 			return {
 				load:function(){
