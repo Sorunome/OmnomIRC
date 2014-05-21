@@ -69,9 +69,10 @@
 					}
 				},
 				setCookie = function(c_name,value,exdays){
-					var exdate=new Date();
+					var exdate=new Date(),
+						c_value = escape(value);
 					exdate.setDate(exdate.getDate() + exdays);
-					var c_value=escape(value) + ((exdays==null) ? "" : "; expires="+exdate.toUTCString());
+					c_value += ((exdays===null) ? "" : "; expires="+exdate.toUTCString());
 					document.cookie=c_name + "=" + c_value;
 				},
 				support = function(){
@@ -176,8 +177,8 @@
 												.text('Install')
 												.click(function(){
 													sendEdit('install',{});
-												})
-											,'<br>');
+												}),
+											'<br>');
 									}
 									$('#adminContent').append(
 										'OmnomIRC Version: '+data.version+'<br>',
@@ -356,7 +357,7 @@
 						return;
 					}
 					var optionsString = ls.get('OmnomIRCSettings');
-					if(optionsString==null){
+					if(optionsString===null){
 						ls.set('OmnomIRCSettings','----------------------------------------');
 						optionsString = ls.get('OmnomIRCSettings');
 					}
@@ -368,12 +369,12 @@
 					var optionsString = (refreshCache?(cache=ls.get('OmnomIRCSettings')):cache),
 						result;
 					refreshCache = false;
-					if(optionsString==null){
+					if(optionsString===null){
 						return defaultOption;
 					}
 					result = optionsString.charAt(optionsNum-1);
 					if(result=='-'){
-						return (defaults.charAt(optionsNum-1)!=''?defaults.charAt(optionsNum-1):defaultOption);
+						return (defaults.charAt(optionsNum-1)!==''?defaults.charAt(optionsNum-1):defaultOption);
 					}
 					return result;
 				},
@@ -481,7 +482,7 @@
 											width:3,
 											height:3,
 											backgroundColor:(p?'black':'')
-										})
+										});
 								})
 							);
 							var temp = pixels[0];
@@ -503,30 +504,31 @@
 		})(),
 		notification = (function(){
 			var support = function(){
-					if((window.webkitNotifications!=undefined && window.webkitNotifications!=null && window.webkitNotifications) || (typeof Notification!=='undefined' && Notification && Notification.permission!=='denied')){
+					if((window.webkitNotifications!==undefined && window.webkitNotifications!==null && window.webkitNotifications) || (typeof Notification!=='undefined' && Notification && Notification.permission!=='denied')){
 						return true;
 					}
 					return false;
 				},
 				show = function(s){
-					if(window.webkitNotifications!=undefined && window.webkitNotifications!=null && window.webkitNotifications && window.webkitNotifications.checkPermission() == 0){
-						var n = window.webkitNotifications.createNotification('http://www.omnimaga.org/favicon.ico','OmnomIRC Highlight',s);
+					var n;
+					if(window.webkitNotifications!==undefined && window.webkitNotifications!==null && window.webkitNotifications && window.webkitNotifications.checkPermission() === 0){
+						n = window.webkitNotifications.createNotification('http://www.omnimaga.org/favicon.ico','OmnomIRC Highlight',s);
 						n.show();
 					}else if(typeof Notification!=='undefined' && Notification && Notification.permission==='granted'){
-						var n = new Notification('OmnomIRC Highlight',{
+						n = new Notification('OmnomIRC Highlight',{
 							icon:'http://www.omnimaga.org/favicon.ico',
 							body:s
 						});
-						n.onshow = function(){ 
-							setTimeout(n.close,30000); 
-						}
+						n.onshow = function(){
+							setTimeout(n.close,30000);
+						};
 					}
 				};
 			return {
 				request:function(){
-					if(window.webkitNotifications!=undefined && window.webkitNotifications!=null && window.webkitNotifications){
+					if(window.webkitNotifications!==undefined && window.webkitNotifications!==null && window.webkitNotifications){
 						window.webkitNotifications.requestPermission(function(){
-							if (window.webkitNotifications.checkPermission() == 0){
+							if (window.webkitNotifications.checkPermission() === 0){
 								show('Notifications Enabled!');
 								options.set(7,'T');
 								document.location.reload();
@@ -576,12 +578,12 @@
 				},
 				send:function(){
 					inRequest = true;
-					handler = $.getJSON('Update.php?high='+(parseInt(options.get(13,'3'))+1).toString()+'&channel='+base64.encode(channels.getCurrent())+'&lineNum='+curLine.toString()+'&'+settings.getUrlParams(),function(data){
+					handler = $.getJSON('Update.php?high='+(parseInt(options.get(13,'3'),10)+1).toString()+'&channel='+base64.encode(channels.getCurrent())+'&lineNum='+curLine.toString()+'&'+settings.getUrlParams(),function(data){
 						var newRequest = true;
 						errorCount = 0;
 						if(data.lines!==undefined){
 							$.each(data.lines,function(i,line){
-								return newRequest = parser.addLine(line);
+								newRequest = parser.addLine(line);
 							});
 						}
 						if(newRequest){
@@ -651,7 +653,7 @@
 											.click(function(){
 												channels.join(i);
 											})
-									)
+									);
 							}
 						})
 					);
@@ -740,18 +742,18 @@
 							}
 						});
 					}
-					if(isNaN(parseInt(i))){
+					if(isNaN(parseInt(i,10))){
 						$.each(chans,function(ci,c){
 							if(c.chan == i){
 								i = ci;
 							}
 						});
 					}
-					if(isNaN(parseInt(i)) || i===undefined){
+					if(isNaN(parseInt(i,10)) || i===undefined){
 						send.internal('<span style="color:#C73232;"> Part Error: I cannot part '+i+'. (You are not in it.)</span>');
 						return;
 					}
-					i = parseInt(i);
+					i = parseInt(i,10);
 					if(chans[i].chan.substr(0,1)=='#'){
 						send.internal('<span style="color:#C73232;"> Part Error: I cannot part '+chans[i].chan+'. (IRC channel.)</span>');
 						return;
@@ -816,7 +818,7 @@
 				},
 				init:function(){
 					var chanList = ls.get('OmnomChannels');
-					if(chanList!=null && chanList!=''){
+					if(chanList!==null && chanList!==''){
 						$.each(chanList.split('%'),function(i,c){
 							chans.push({
 								chan:base64.decode(c),
@@ -851,7 +853,7 @@
 						return tabWord;
 					}
 					startPos = endPos = message.selectionStart;
-					startChar = message.value.charAt(startPos)
+					startChar = message.value.charAt(startPos);
 					while(startChar != ' ' && --startPos > 0){
 						startChar = message.value.charAt(startPos);
 					}
@@ -878,7 +880,7 @@
 						if(startChar == ' '){
 							startChar+=2;
 						}
-						if(startPos==0){
+						if(startPos===0){
 							tabAppendStr = ': ';
 						}
 						endPos = message.selectionStart;
@@ -918,7 +920,7 @@
 							}
 						});
 				}
-			}
+			};
 		})(),
 		users = (function(){
 			var usrs = [],
@@ -939,7 +941,7 @@
 						startAt = 0;
 					}
 					$.each(usrs,function(i,u){
-						if(u.nick.toLowerCase().indexOf(start.toLowerCase()) == 0 && startAt-- <= 0 && res === false){
+						if(u.nick.toLowerCase().indexOf(start.toLowerCase()) === 0 && startAt-- <= 0 && res === false){
 							res = u.nick;
 						}
 					});
@@ -994,9 +996,9 @@
 								.mouseout(function(){
 									try{
 										getInfo.abort();
-									}catch(e){};
+									}catch(e){}
 									$('#lastSeenCont').css('display','none');
-								})
+								});
 						}),
 						'<br><br>'
 					);
@@ -1033,7 +1035,7 @@
 					});
 				},
 				reCalcBar = function(){
-					if($('#scrollBar').length!=0){
+					if($('#scrollBar').length!==0){
 						$('#scrollBar').css('top',(document.getElementById('mBoxCont').scrollTop/(document.getElementById('mBoxCont').scrollHeight-document.getElementById('mBoxCont').clientHeight))*($('body')[0].offsetHeight-$('#scrollBar')[0].offsetHeight-38)+38);
 					}
 				},
@@ -1045,22 +1047,22 @@
 								e.preventDefault();
 							}
 							e = e.originalEvent;
-							$(this).css('top',Math.min(0,Math.max(((/Opera/i.test(navigator.userAgent))?-30:0)+document.getElementById('UserListInnerCont').clientHeight-this.scrollHeight,parseInt(this.style.top)+(/Firefox/i.test(navigator.userAgent)?(e.detail*(-20)):(e.wheelDelta/2)))));
-						})
+							$(this).css('top',Math.min(0,Math.max(((/Opera/i.test(navigator.userAgent))?-30:0)+document.getElementById('UserListInnerCont').clientHeight-this.scrollHeight,parseInt(this.style.top,10)+(/Firefox/i.test(navigator.userAgent)?(e.detail*(-20)):(e.wheelDelta/2)))));
+						});
 						
 				},
 				showBar = function(){
 					var mouseMoveFn = function(e){
 							var y = e.clientY;
 							if($('#scrollBar').data('isClicked')){
-								$('#scrollBar').css('top',parseInt($('#scrollBar').css('top'))+(y-$('#scrollBar').data('prevY')));
-								document.getElementById('mBoxCont').scrollTop = ((parseInt($('#scrollBar').css('top'))-38)/($('body')[0].offsetHeight-$('#scrollBar')[0].offsetHeight-38))*(document.getElementById('mBoxCont').scrollHeight-document.getElementById('mBoxCont').clientHeight);
+								$('#scrollBar').css('top',parseInt($('#scrollBar').css('top'),10)+(y-$('#scrollBar').data('prevY')));
+								document.getElementById('mBoxCont').scrollTop = ((parseInt($('#scrollBar').css('top'),10)-38)/($('body')[0].offsetHeight-$('#scrollBar')[0].offsetHeight-38))*(document.getElementById('mBoxCont').scrollHeight-document.getElementById('mBoxCont').clientHeight);
 								isDown = false;
-								if(parseInt($('#scrollBar').css('top'))<38){
+								if(parseInt($('#scrollBar').css('top'),10)<38){
 									$('#scrollBar').css('top',38);
 									document.getElementById('mBoxCont').scrollTop = 0;
 								}
-								if(parseInt($('#scrollBar').css('top'))>($('body')[0].offsetHeight-$('#scrollBar')[0].offsetHeight)){
+								if(parseInt($('#scrollBar').css('top'),10)>($('body')[0].offsetHeight-$('#scrollBar')[0].offsetHeight)){
 									$('#scrollBar').css('top',$('body')[0].offsetHeight-$('#scrollBar')[0].offsetHeight);
 									document.getElementById('mBoxCont').scrollTop =  $('#mBoxCont').prop('scrollHeight')-$('#mBoxCont')[0].clientHeight;
 									isDown = true;
@@ -1262,7 +1264,7 @@
 								})
 								.click(function(){
 									replaceText(' '+s.code,$('#message')[0]);
-								})):''),' ']
+								})):''),' '];
 								
 						})
 					);
