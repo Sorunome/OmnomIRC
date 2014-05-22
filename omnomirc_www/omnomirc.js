@@ -608,7 +608,8 @@
 										});
 								})
 							);
-							var temp = pixels[0];
+							var temp = pixels[0],
+								i;
 							for(i=1;i<=7;i++){
 								pixels[(i-1)] = pixels[i];
 							}
@@ -628,7 +629,7 @@
 		notification = (function(){
 			var notification_support = window.webkitNotifications!==undefined && window.webkitNotifications!==null && window.webkitNotifications,
 				support = function(){
-					if(notification_support || (typeof Notification!=='undefined' && Notification && Notification.permission!=='denied')){
+					if(notification_support || (typeof Notification!='undefined' && Notification && Notification.permission!='denied')){
 						return true;
 					}
 					return false;
@@ -638,7 +639,7 @@
 					if(notification_support && window.webkitNotifications.checkPermission() === 0){
 						n = window.webkitNotifications.createNotification('http://www.omnimaga.org/favicon.ico','OmnomIRC Highlight',s);
 						n.show();
-					}else if(typeof Notification!=='undefined' && Notification && Notification.permission==='granted'){
+					}else if(typeof Notification!='undefined' && Notification && Notification.permission=='granted'){
 						n = new Notification('OmnomIRC Highlight',{
 							icon:'http://www.omnimaga.org/favicon.ico',
 							body:s
@@ -702,7 +703,13 @@
 				},
 				send:function(){
 					inRequest = true;
-					handler = network.getJSON('Update.php?high='+(parseInt(options.get(13,'3'),10)+1).toString()+'&channel='+base64.encode(channels.getCurrent())+'&lineNum='+curLine.toString()+'&'+settings.getUrlParams(),function(data){
+					handler = network.getJSON(
+							'Update.php?high='+
+							(parseInt(options.get(13,'3'),10)+1).toString()+
+							'&channel='+base64.encode(channels.getCurrent())+
+							'&lineNum='+curLine.toString()+'&'+
+							settings.getUrlParams(),
+					function(data){
 						var newRequest = true;
 						errorCount = 0;
 						if(data.lines!==undefined){
@@ -1452,7 +1459,7 @@
 							channels.join(options.get(4,String.fromCharCode(45)).charCodeAt(0) - 45);
 						}else{
 							registerToggle();
-							$('#windowbg2').css('height',parseInt($('html').height(),10) - parseInt($('#message').height() + 14),10);
+							$('#windowbg2').css('height',parseInt($('html').height(),10) - parseInt($('#message').height() + 14,10));
 							$('#mBoxCont').css('height',parseInt($('#windowbg2').height(),10) - 42).empty().append(
 								'<br>',
 								$('<a>')
@@ -1714,11 +1721,13 @@
 					colorStr = colorStr.split("\x16\x16").join('')+"\x0f";
 					arrayResults = colorStr.split(RegExp("([\x02\x03\x0f\x16\x1d\x1f])"));
 					colorStr='';
-					for(var i=0;i<arrayResults.length;i++){
+					var i,j;
+					for(i=0;i<arrayResults.length;i++){
 						switch(arrayResults[i]){
 							case "\x03":
-								for (var j=0;j<numSpan;j++)
+								for(j=0;j<numSpan;j++){
 									colorStr+="</span>";
+								}
 								numSpan=1;
 								i++;
 								colorStrTemp = arrayResults[i];
@@ -1747,7 +1756,7 @@
 								}
 								break;
 							case "\x16":
-								for(var j=0;j<numSpan;j++)
+								for(j=0;j<numSpan;j++)
 									colorStr+="</span>";
 								numSpan=2;
 								var stemp;
@@ -1778,10 +1787,10 @@
 									isItalic=false;
 								}
 								if(isBool){
-									colorStr+="</b>"
+									colorStr+="</b>";
 									isBool = false;
 								}
-								for(var j=0;j<numSpan;j++)
+								for(j=0;j<numSpan;j++)
 									colorStr+="</span>";
 								numSpan=0;
 								break;
@@ -2025,7 +2034,7 @@
 			case 'admin':
 				admin.init();
 				break;
-			case 'main':
+			//case 'main': // no need, already caught by default.
 			default:
 				page.load();
 		}
