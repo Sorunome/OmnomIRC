@@ -28,14 +28,14 @@
 				networks = [];
 			return {
 				fetch:function(fn){
-					$.getJSON('config.php?js',function(data){
+					network.getJSON('config.php?js',function(data){
 						hostname = data.hostname;
 						channels.setChans(data.channels);
 						parser.setSmileys(data.smileys);
 						networks = data.networks;
 						checkLoginUrl = data.checkLoginUrl;
 						options.setDefaults(data.defaults);
-						$.getJSON(checkLoginUrl+'&jsoncallback=?',function(data){
+						network.getJSON(checkLoginUrl+'&jsoncallback=?',function(data){
 							nick = data.nick;
 							signature = data.signature;
 							uid = data.uid;
@@ -46,7 +46,7 @@
 					});
 				},
 				getUrlParams:function(){
-					return 'nick='+base64.encode(nick)+'&signature='+base64.encode(signature)+'&time='+(+new Date).toString()+'&id='+uid;
+					return 'nick='+base64.encode(nick)+'&signature='+base64.encode(signature)+'&time='+(+new Date()).toString()+'&id='+uid;
 				},
 				networks:function(){
 					return networks;
@@ -95,6 +95,129 @@
 					}else{
 						setCookie(name,value,30);
 					}
+				}
+			};
+		})(),
+		network = (function(){
+			var errors = [],
+				warnings = [],
+				removeSig = function(s){
+					try{
+						var parts = s.split('signature='),
+							moreParts = parts[1].split('&');
+						moreParts[0] = '---';
+						parts[1] = moreParts.join('&');
+						return parts.join('signature=');
+					}catch(e){
+						if(s.indexOf('signature')!==-1){
+							return 'omited due to security reasons';
+						}
+						return s;
+					}
+				},
+				addError = function(s,e){
+					s = removeSig(s);
+					errors.push({
+						time:(new Date().getTime()),
+						file:s,
+						content:e
+					});
+					$('#errors')
+						.css('display','')
+						.find('.count')
+						.text(errors.length);
+				},
+				addWarning = function(s,e){
+					s = removeSig(s);
+					warnings.push({
+						time:(new Date().getTime()),
+						file:s,
+						content:e
+					});
+					$('#warnings')
+						.css('display','')
+						.find('.count')
+						.text(warnings.length);
+				};
+			return {
+				getJSON:function(s,fn){
+					return $.getJSON(s,function(data){
+						if(data.errors!==undefined){
+							$.each(data.errors,function(i,e){
+								if(e.type!==undefined){
+									addError(s,e);
+								}else{
+									addError(s,{
+										type:'misc',
+										message:e
+									});
+								}
+							});
+						}
+						if(data.warnings!==undefined){
+							$.each(data.warnings,function(i,w){
+								if(w.type!==undefined){
+									addWarning(s,w);
+								}else{
+									addWarning(s,{
+										type:'misc',
+										message:w
+									});
+								}
+							});
+						}
+						fn(data);
+					});
+				},
+				init:function(){
+					var makePopup = function(type,data){
+						return $('<div>')
+								.css({
+									backgroundColor:'#FFFFFF',
+									zIndex:50,
+									position:'absolute',
+									top:0,
+									left:0,
+									padding:5,
+									border:'1px solid black'
+								})
+								.append(
+									$('<a>')
+										.text('Close')
+										.click(function(e){
+											e.preventDefault();
+											$(this).parent().remove();
+										}),
+									'&nbsp;',
+									$('<b>')
+										.text(type),
+									$('<div>')
+										.append(
+											$.map(data,function(e){
+												return $('<div>')
+													.css('border-bottom','1px solid black')
+													.append(
+														'Time: ',
+														(new Date(e.time)).toLocaleTimeString(),
+														'<br>File: ',
+														e.file,
+														$.map(e.content,function(val,i){
+															return ['<br>',i,': ',val];
+														})
+													);
+											})
+										)
+								)
+								.appendTo('body');
+					}
+					$('#errors > .icon')
+						.click(function(){
+							makePopup('Errors',errors);
+						});
+					$('#warnings > .icon')
+						.click(function(){
+							makePopup('Warnings',warnings);
+						});
 				}
 			};
 		})(),
@@ -160,7 +283,7 @@
 				loadPage = function(p){
 					indicator.start();
 					$('#adminContent').text('Loading...');
-					$.getJSON('admin.php?get='+encodeURIComponent(p)+'&'+settings.getUrlParams(),function(data){
+					network.getJSON('admin.php?get='+encodeURIComponent(p)+'&'+settings.getUrlParams(),function(data){
 						$('#adminContent').empty();
 						if(data.errors!==undefined){
 							$('#adminContent').append(
@@ -579,7 +702,7 @@
 				},
 				send:function(){
 					inRequest = true;
-					handler = $.getJSON('Update.php?high='+(parseInt(options.get(13,'3'),10)+1).toString()+'&channel='+base64.encode(channels.getCurrent())+'&lineNum='+curLine.toString()+'&'+settings.getUrlParams(),function(data){
+					handler = network.getJSON('Update.php?high='+(parseInt(options.get(13,'3'),10)+1).toString()+'&channel='+base64.encode(channels.getCurrent())+'&lineNum='+curLine.toString()+'&'+settings.getUrlParams(),function(data){
 						var newRequest = true;
 						errorCount = 0;
 						if(data.lines!==undefined){
@@ -779,7 +902,7 @@
 						if(requestHandler!==false){
 							requestHandler.abort();
 						}
-						requestHandler = $.getJSON('Load.php?count=125&channel='+base64.encode(chans[i].chan)+'&'+settings.getUrlParams(),function(data){
+						requestHandler = network.getJSON('Load.php?count=125&channel='+base64.encode(chans[i].chan)+'&'+settings.getUrlParams(),function(data){
 							current = chans[i].chan;
 							oldMessages.read();
 							options.set(4,String.fromCharCode(i+45));
@@ -985,7 +1108,7 @@
 									'<br>'
 								)
 								.mouseover(function(){
-									getInfo = $.getJSON('Load.php?userinfo&name='+base64.encode(u.nick)+'&chan='+base64.encode(channels.getCurrent())+'&online='+u.network.toString(),function(data){
+									getInfo = network.getJSON('Load.php?userinfo&name='+base64.encode(u.nick)+'&chan='+base64.encode(channels.getCurrent())+'&online='+u.network.toString(),function(data){
 										if(data.last){
 											$('#lastSeenCont').text('Last Seen: '+(new Date(data.last*1000)).toLocaleString());
 										}else{
@@ -1348,7 +1471,7 @@
 				isBlurred:function(){
 					return isBlurred;
 				}
-			}
+			};
 		})(),
 		statusBar = (function(){
 			var text = '',
@@ -1401,7 +1524,7 @@
 							return true;
 						case 'p':
 						case 'part':
-							channels.part((parameters!=''?parameters:undefined));
+							channels.part((parameters!==''?parameters:undefined));
 							return true;
 						case 'help':
 							send.internal('<span style="color:#2A8C2A;">Commands: me, ignore, unignore, ignorelist, join, part, query, msg, window</span>');
@@ -1433,9 +1556,9 @@
 								if(counter==messages.length){
 									current = $(this).val();
 								}
-								if(messages.length!=0){
+								if(messages.length!==0){
 									if(e.keyCode==38){ //up
-										if(counter!=0){
+										if(counter!==0){
 											counter--;
 										}
 										$(this).val(messages[counter]);
@@ -1463,14 +1586,14 @@
 				},
 				read:function(){
 					var temp = ls.get('oldMessages-'+base64.encode(channels.getCurrent(true)));
-					if(temp!=null){
+					if(temp!==null){
 						messages = temp.split("\n");
 					}else{
 						messages = [];
 					}
 					counter = messages.length;
 				}
-			}
+			};
 		})(),
 		send = (function(){
 			var sending = false,
@@ -1482,7 +1605,7 @@
 						if(!sending){
 							sending = true;
 							request.cancel();
-							$.getJSON('message.php?message='+base64.encode(s)+'&channel='+base64.encode(channels.getCurrent())+'&'+settings.getUrlParams(),function(){
+							network.getJSON('message.php?message='+base64.encode(s)+'&channel='+base64.encode(channels.getCurrent())+'&'+settings.getUrlParams(),function(){
 								$('#message').val('');
 								request.send();
 								sending = false;
@@ -1518,7 +1641,7 @@
 						$('#sendMessage')
 							.submit(function(e){
 								e.preventDefault();
-								if(!$('#message').attr('disabled') && $('#message').val()!=''){
+								if(!$('#message').attr('disabled') && $('#message').val()!==''){
 									sendMessage(this.message.value);
 								}
 							});
@@ -1528,7 +1651,7 @@
 							.val('You need to login if you want to chat!');
 					}
 				}
-			}
+			};
 		})(),
 		parser = (function(){
 			var smileys = [],
@@ -1559,7 +1682,6 @@
 					if(!s){
 						return '';
 					}
-					var addStuff = '';
 					$.each(smileys,function(i,smiley){
 						s = s.replace(RegExp(smiley.regex,'g'),smiley.replace.split('ADDSTUFF').join(addStuff).split('PIC').join(smiley.pic).split('ALT').join(smiley.alt));
 					});
@@ -1567,7 +1689,7 @@
 				},
 				parseLinks = function(text){
 					text = text.replace(/(\x01)/g,"");
-					if (!text || text == null || text == undefined){
+					if (!text || text === null || text === undefined){
 						return;
 					}
 					//text = text.replace(/http:\/\/www\.omnimaga\.org\//g,"\x01www.omnimaga.org/");
@@ -1893,6 +2015,7 @@
 			};
 		})();
 	$(document).ready(function(){
+		network.init();
 		switch($('body').attr('page')){
 			case 'options':
 				settings.fetch(function(){

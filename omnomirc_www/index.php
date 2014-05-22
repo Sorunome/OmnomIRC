@@ -174,6 +174,14 @@ document.domain="'.$config['settings']['hostname'].'"
 </div>
 </div>
 <img id="smileyMenuButton" src="smileys/smiley.gif" style="margin-left:2px;margin-right:2px;"><form style="Display:inline;" name="irc" action="javascript:void(0)" id="sendMessage"><input autocomplete="off" accesskey="i" type="text" name="message" id="message" size="128" maxlength="256" alt="OmnomIRC" title="OmnomIRC"/><input type="submit" value="Send" id="send" /></form>
+<div id="icons">
+	<span id="warnings" style="display:none;">
+	<span class="count">0</span><span class="icon"></span>
+	</span>
+	<span id="errors" style="display:none;">
+	&nbsp;<span class="count">0</span><span class="icon"></span>
+	</span>
+</div>
 <div id="about" style="display:none;"><div style="position: relative; left: -50%;"><span style="position:absolute;z-index:9002;top:1px;right:2px"><a onclick="document.getElementById(\'about\').style.display=\'none\';">Close</a></span>
 	<div style="text-align:center;"><img src="omnomirc.png" alt="omnomirc"></div>
 	<p>OmnomIRC is developed by <a href="http://www.omnimaga.org" alt="Omnimaga" target="_blank">Omnimaga</a></p>

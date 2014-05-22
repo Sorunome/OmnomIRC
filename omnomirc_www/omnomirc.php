@@ -18,8 +18,53 @@
     You should have received a copy of the GNU General Public License
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
-error_reporting(E_ALL);
-ini_set('display_errors','1');
+class Json{
+	private $json;
+	private $warnings;
+	private $errors;
+	public function clear(){
+		$this->warnings = Array();
+		$this->errors = Array();
+		$this->json = Array();
+	}
+	public function __construct(){
+		$this->clear();
+	}
+	public function addWarning($s){
+		$this->warnings[] = $s;
+	}
+	public function addError($s){
+		$this->errors[] = $s;
+	}
+	public function add($key,$value){
+		$this->json[$key] = $value;
+	}
+	public function get(){
+		$this->json['warnings'] = $this->warnings;
+		$this->json['errors'] = $this->errors;
+		return json_encode($this->json);
+	}
+	public function hasErrors(){
+		return sizeof($this->errors) > 0;
+	}
+	public function hasWarnings(){
+		return sizeof($this->warnings) > 0;
+	}
+}
+$json = new Json();
+function errorHandler($errno,$errstr,$errfile,$errline){
+	global $json;
+	switch($errno){
+		case E_USER_WARNING:
+		case E_USER_NOTICE:
+			$json->addWarning(Array('type' => 'php','number' => $errno,'message'=>$errstr,'file' => $errfile,'line' => $errline));
+			break;
+		case E_USER_ERROR:
+		default:
+			$json->addError(Array('type' => 'php','number' => $errno,'message'=>$errstr,'file' => $errfile,'line' => $errline));
+	}
+}
+set_error_handler('errorHandler',E_ALL);
 header('Last-Modified: Thu, 01-Jan-1970 00:00:01 GMT');
 header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Cache-Control: post-check=0, pre-check=0',false);
@@ -79,44 +124,6 @@ class Sqli{
 	}
 }
 $sql = new Sqli();
-class Json{
-	private $json;
-	private $warnings;
-	private $errors;
-	public function clear(){
-		$this->warnings = Array();
-		$this->errors = Array();
-		$this->json = Array();
-	}
-	public function __construct(){
-		$this->clear();
-	}
-	public function addWarning($s){
-		$this->warnings[] = $s;
-	}
-	public function addError($s){
-		$this->errors[] = $s;
-	}
-	public function add($key,$value){
-		$this->json[$key] = $value;
-	}
-	public function get(){
-		if(count($this->warnings)!=0){
-			$this->json['warnings'] = $this->warnings;
-		}
-		if(count($this->errors)!=0){
-			$this->json['errors'] = $this->errors;
-		}
-		return json_encode($this->json);
-	}
-	public function hasErrors(){
-		return sizeof($this->errors) > 0;
-	}
-	public function hasWarnings(){
-		return sizeof($this->warnings) > 0;
-	}
-}
-$json = new Json();
 class Secure{
 	public function sign($s){
 		global $config;
