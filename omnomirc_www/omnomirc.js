@@ -503,15 +503,16 @@
 			};
 		})(),
 		notification = (function(){
-			var support = function(){
-					if((window.webkitNotifications!==undefined && window.webkitNotifications!==null && window.webkitNotifications) || (typeof Notification!=='undefined' && Notification && Notification.permission!=='denied')){
+			var notification_support = window.webkitNotifications!==undefined && window.webkitNotifications!==null && window.webkitNotifications,
+				support = function(){
+					if(notification_support || (typeof Notification!=='undefined' && Notification && Notification.permission!=='denied')){
 						return true;
 					}
 					return false;
 				},
 				show = function(s){
 					var n;
-					if(window.webkitNotifications!==undefined && window.webkitNotifications!==null && window.webkitNotifications && window.webkitNotifications.checkPermission() === 0){
+					if(notification_support && window.webkitNotifications.checkPermission() === 0){
 						n = window.webkitNotifications.createNotification('http://www.omnimaga.org/favicon.ico','OmnomIRC Highlight',s);
 						n.show();
 					}else if(typeof Notification!=='undefined' && Notification && Notification.permission==='granted'){
@@ -526,7 +527,7 @@
 				};
 			return {
 				request:function(){
-					if(window.webkitNotifications!==undefined && window.webkitNotifications!==null && window.webkitNotifications){
+					if(notification_support){
 						window.webkitNotifications.requestPermission(function(){
 							if (window.webkitNotifications.checkPermission() === 0){
 								show('Notifications Enabled!');
