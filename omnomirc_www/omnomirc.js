@@ -69,11 +69,11 @@
 					}
 				},
 				setCookie = function(c_name,value,exdays){
-					var exdate=new Date(),
+					var exdate = new Date(),
 						c_value = escape(value);
 					exdate.setDate(exdate.getDate() + exdays);
-					c_value += ((exdays===null) ? "" : "; expires="+exdate.toUTCString());
-					document.cookie=c_name + "=" + c_value;
+					c_value += ((exdays===null) ? '' : '; expires='+exdate.toUTCString());
+					document.cookie=c_name + '=' + c_value;
 				},
 				support = function(){
 					try{
@@ -482,7 +482,7 @@
 											width:3,
 											height:3,
 											backgroundColor:(p?'black':'')
-										});
+										})
 								})
 							);
 							var temp = pixels[0];
@@ -521,7 +521,7 @@
 						});
 						n.onshow = function(){
 							setTimeout(n.close,30000);
-						};
+						}
 					}
 				};
 			return {
@@ -583,7 +583,7 @@
 						errorCount = 0;
 						if(data.lines!==undefined){
 							$.each(data.lines,function(i,line){
-								newRequest = parser.addLine(line);
+								return newRequest = parser.addLine(line);
 							});
 						}
 						if(newRequest){
@@ -653,7 +653,7 @@
 											.click(function(){
 												channels.join(i);
 											})
-									);
+									)
 							}
 						})
 					);
@@ -1047,7 +1047,7 @@
 								e.preventDefault();
 							}
 							e = e.originalEvent;
-							$(this).css('top',Math.min(0,Math.max(((/Opera/i.test(navigator.userAgent))?-30:0)+document.getElementById('UserListInnerCont').clientHeight-this.scrollHeight,parseInt(this.style.top,10)+(/Firefox/i.test(navigator.userAgent)?(e.detail*(-20)):(e.wheelDelta/2)))));
+							$(this).css('top',Math.min(0,Math.max(((/Opera/i.test(navigator.userAgent))?-30:0)+document.getElementById('UserListInnerCont').clientHeight-this.scrollHeight,parseInt(this.style.top)+(/Firefox/i.test(navigator.userAgent)?(e.detail*(-20)):(e.wheelDelta/2)))));
 						});
 						
 				},
@@ -1281,8 +1281,8 @@
 				isBlurred = false,
 				init = function(){
 					$(window).resize(function(){
-						$('#windowbg2').css('height',parseInt($('html').height()) - parseInt($('#message').height() + 14));
-						$('#mBoxCont').css('height',parseInt($('#windowbg2').height()) - 42);
+						$('#windowbg2').css('height',parseInt($('html').height(),10) - parseInt($('#message').height() + 14,10));
+						$('#mBoxCont').css('height',parseInt($('#windowbg2').height(),10) - 42);
 						if(options.get(15,'T')=='T'){
 							$('#mBoxCont').css('width',((document.body.offsetWidth/100)*mBoxContWidthOffset)-22);
 							scroll.reCalcBar();
@@ -1328,8 +1328,8 @@
 							channels.join(options.get(4,String.fromCharCode(45)).charCodeAt(0) - 45);
 						}else{
 							registerToggle();
-							$('#windowbg2').css('height',parseInt($('html').height()) - parseInt($('#message').height() + 14));
-							$('#mBoxCont').css('height',parseInt($('#windowbg2').height()) - 42).empty().append(
+							$('#windowbg2').css('height',parseInt($('html').height(),10) - parseInt($('#message').height() + 14),10);
+							$('#mBoxCont').css('height',parseInt($('#windowbg2').height(),10) - 42).empty().append(
 								'<br>',
 								$('<a>')
 									.css('font-size',20)
@@ -1394,8 +1394,8 @@
 						case 'win':
 						case 'w':
 						case 'window':
-							if(parseInt(parameters) < channels.getChans().length && parseInt(parameters) >= 0){
-								channels.join(parseInt(parameters));
+							if(parseInt(parameters,10) < channels.getChans().length && parseInt(parameters,10) >= 0){
+								channels.join(parseInt(parameters,10));
 							}
 							return true;
 						case 'p':
@@ -1532,7 +1532,9 @@
 		parser = (function(){
 			var smileys = [],
 				maxLines = 200,
+				lastMessage = 0,
 				parseName = function(n,o){
+					n = (n=="\x00"?'':n); //fix 0-string bug
 					var ne = encodeURIComponent(n);
 					n = $('<span>').text(n).html();
 					var rcolors = [19,20,22,24,25,26,27,28,29],
@@ -1669,7 +1671,7 @@
 					return colorStr;
 				},
 				parseHighlight = function(s){
-					if(s.toLowerCase().indexOf(settings.nick().toLowerCase().substr(0,parseInt(options.get(13,'3'))+1)) >= 0 && settings.nick() != "Guest"){
+					if(s.toLowerCase().indexOf(settings.nick().toLowerCase().substr(0,parseInt(options.get(13,'3'),10)+1)) >= 0 && settings.nick() != "Guest"){
 						var style = '';
 						if(options.get(2,'T')!='T'){
 							style += 'background:none;padding:none;border:none;';
@@ -1682,6 +1684,7 @@
 					return s;
 				},
 				parseMessage = function(s){
+					s = (s=="\x00"?'':s); //fix 0-string bug
 					s = $('<span>').text(s).html();
 					s = parseLinks(s);
 					if(options.get(12,'T')=='T'){
@@ -1859,6 +1862,7 @@
 									height:1
 								})
 								.addClass((options.get(6,'T')=='T' && (lineHigh = !lineHigh)?'lineHigh':''))
+								.addClass(((new Date(lastMessage)).getDay()!=(new Date(line.time*1000)).getDay())?'seperator':'') //new day indicator
 								.append(
 									(options.get(10,'F')=='T'?$('<td>')
 										.addClass('irc-date')
@@ -1869,11 +1873,13 @@
 									$('<td>')
 										.addClass(line.type)
 										.append(tdMessage)
-								 )
+								)
 						).find('img').load(function(e){
 							scroll.slide();
 						});
 						scroll.slide();
+						
+						lastMessage = line.time*1000;
 					}
 					return true;
 				},
