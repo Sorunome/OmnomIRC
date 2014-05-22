@@ -55,7 +55,6 @@ $you->update();
 while(true){
 	if($countBeforeQuit++ == 50){//Timeout after 25 seconds.
 		$you->update();
-		$json->addWarning('timeout');
 		echo $json->get();
 		die();
 	}

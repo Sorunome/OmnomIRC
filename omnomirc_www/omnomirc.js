@@ -209,7 +209,7 @@
 										)
 								)
 								.appendTo('body');
-					}
+					};
 					$('#errors > .icon')
 						.click(function(){
 							makePopup('Errors',errors);
