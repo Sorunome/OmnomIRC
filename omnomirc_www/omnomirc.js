@@ -485,7 +485,8 @@
 										});
 								})
 							);
-							var temp = pixels[0];
+							var temp = pixels[0],
+								i;
 							for(i=1;i<=7;i++){
 								pixels[(i-1)] = pixels[i];
 							}
@@ -505,7 +506,7 @@
 		notification = (function(){
 			var notification_support = window.webkitNotifications!==undefined && window.webkitNotifications!==null && window.webkitNotifications,
 				support = function(){
-					if(notification_support || (typeof Notification!=='undefined' && Notification && Notification.permission!=='denied')){
+					if(notification_support || (typeof Notification!='undefined' && Notification && Notification.permission!='denied')){
 						return true;
 					}
 					return false;
@@ -515,7 +516,7 @@
 					if(notification_support && window.webkitNotifications.checkPermission() === 0){
 						n = window.webkitNotifications.createNotification('http://www.omnimaga.org/favicon.ico','OmnomIRC Highlight',s);
 						n.show();
-					}else if(typeof Notification!=='undefined' && Notification && Notification.permission==='granted'){
+					}else if(typeof Notification!='undefined' && Notification && Notification.permission=='granted'){
 						n = new Notification('OmnomIRC Highlight',{
 							icon:'http://www.omnimaga.org/favicon.ico',
 							body:s
@@ -579,7 +580,13 @@
 				},
 				send:function(){
 					inRequest = true;
-					handler = $.getJSON('Update.php?high='+(parseInt(options.get(13,'3'),10)+1).toString()+'&channel='+base64.encode(channels.getCurrent())+'&lineNum='+curLine.toString()+'&'+settings.getUrlParams(),function(data){
+					handler = $.getJSON(
+							'Update.php?high='+
+							(parseInt(options.get(13,'3'),10)+1).toString()+
+							'&channel='+base64.encode(channels.getCurrent())+
+							'&lineNum='+curLine.toString()+'&'+
+							settings.getUrlParams(),
+					function(data){
 						var newRequest = true;
 						errorCount = 0;
 						if(data.lines!==undefined){
@@ -1329,7 +1336,7 @@
 							channels.join(options.get(4,String.fromCharCode(45)).charCodeAt(0) - 45);
 						}else{
 							registerToggle();
-							$('#windowbg2').css('height',parseInt($('html').height(),10) - parseInt($('#message').height() + 14),10);
+							$('#windowbg2').css('height',parseInt($('html').height(),10) - parseInt($('#message').height() + 14,10));
 							$('#mBoxCont').css('height',parseInt($('#windowbg2').height(),10) - 42).empty().append(
 								'<br>',
 								$('<a>')
@@ -1348,7 +1355,7 @@
 				isBlurred:function(){
 					return isBlurred;
 				}
-			}
+			};
 		})(),
 		statusBar = (function(){
 			var text = '',
@@ -1401,7 +1408,7 @@
 							return true;
 						case 'p':
 						case 'part':
-							channels.part((parameters!=''?parameters:undefined));
+							channels.part((parameters!==''?parameters:undefined));
 							return true;
 						case 'help':
 							send.internal('<span style="color:#2A8C2A;">Commands: me, ignore, unignore, ignorelist, join, part, query, msg, window</span>');
@@ -1433,9 +1440,9 @@
 								if(counter==messages.length){
 									current = $(this).val();
 								}
-								if(messages.length!=0){
+								if(messages.length!==0){
 									if(e.keyCode==38){ //up
-										if(counter!=0){
+										if(counter!==0){
 											counter--;
 										}
 										$(this).val(messages[counter]);
@@ -1463,14 +1470,14 @@
 				},
 				read:function(){
 					var temp = ls.get('oldMessages-'+base64.encode(channels.getCurrent(true)));
-					if(temp!=null){
+					if(temp!==null){
 						messages = temp.split("\n");
 					}else{
 						messages = [];
 					}
 					counter = messages.length;
 				}
-			}
+			};
 		})(),
 		send = (function(){
 			var sending = false,
@@ -1518,7 +1525,7 @@
 						$('#sendMessage')
 							.submit(function(e){
 								e.preventDefault();
-								if(!$('#message').attr('disabled') && $('#message').val()!=''){
+								if(!$('#message').attr('disabled') && $('#message').val()!==''){
 									sendMessage(this.message.value);
 								}
 							});
@@ -1528,7 +1535,7 @@
 							.val('You need to login if you want to chat!');
 					}
 				}
-			}
+			};
 		})(),
 		parser = (function(){
 			var smileys = [],
@@ -1559,7 +1566,7 @@
 					if(!s){
 						return '';
 					}
-					var addStuff = '';
+					addStuff = '';
 					$.each(smileys,function(i,smiley){
 						s = s.replace(RegExp(smiley.regex,'g'),smiley.replace.split('ADDSTUFF').join(addStuff).split('PIC').join(smiley.pic).split('ALT').join(smiley.alt));
 					});
@@ -1567,7 +1574,7 @@
 				},
 				parseLinks = function(text){
 					text = text.replace(/(\x01)/g,"");
-					if (!text || text == null || text == undefined){
+					if (!text || text === null || text === undefined){
 						return;
 					}
 					//text = text.replace(/http:\/\/www\.omnimaga\.org\//g,"\x01www.omnimaga.org/");
@@ -1592,11 +1599,13 @@
 					colorStr = colorStr.split("\x16\x16").join('')+"\x0f";
 					arrayResults = colorStr.split(RegExp("([\x02\x03\x0f\x16\x1d\x1f])"));
 					colorStr='';
-					for(var i=0;i<arrayResults.length;i++){
+					var i,j;
+					for(i=0;i<arrayResults.length;i++){
 						switch(arrayResults[i]){
 							case "\x03":
-								for (var j=0;j<numSpan;j++)
+								for(j=0;j<numSpan;j++){
 									colorStr+="</span>";
+								}
 								numSpan=1;
 								i++;
 								colorStrTemp = arrayResults[i];
@@ -1625,7 +1634,7 @@
 								}
 								break;
 							case "\x16":
-								for(var j=0;j<numSpan;j++)
+								for(j=0;j<numSpan;j++)
 									colorStr+="</span>";
 								numSpan=2;
 								var stemp;
@@ -1656,10 +1665,10 @@
 									isItalic=false;
 								}
 								if(isBool){
-									colorStr+="</b>"
+									colorStr+="</b>";
 									isBool = false;
 								}
-								for(var j=0;j<numSpan;j++)
+								for(j=0;j<numSpan;j++)
 									colorStr+="</span>";
 								numSpan=0;
 								break;
@@ -1902,7 +1911,7 @@
 			case 'admin':
 				admin.init();
 				break;
-			case 'main':
+			//case 'main': // no need, already caught by default.
 			default:
 				page.load();
 		}
