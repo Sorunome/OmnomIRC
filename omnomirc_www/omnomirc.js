@@ -46,7 +46,7 @@
 					});
 				},
 				getUrlParams:function(){
-					return 'nick='+base64.encode(nick)+'&signature='+base64.encode(signature)+'&time='+(new Date).getTime().toString()+'&id='+uid;
+					return 'nick='+base64.encode(nick)+'&signature='+base64.encode(signature)+'&time='+(+new Date).toString()+'&id='+uid;
 				},
 				networks:function(){
 					return networks;
@@ -571,7 +571,7 @@
 				inRequest = false,
 				handler = false;
 			return {
-				cancle:function(){
+				cancel:function(){
 					if(inRequest){
 						inRequest = false;
 						handler.abort();
@@ -772,7 +772,7 @@
 				join:function(i,fn){
 					if(chans[i]!==undefined){
 						indicator.start();
-						request.cancle();
+						request.cancel();
 						$('#message').attr('disabled','true');
 						$('#MessageBox').empty();
 						$('.chan').removeClass('curchan');
@@ -1024,7 +1024,7 @@
 					$('#mBoxCont').bind('DOMMouseScroll mousewheel',function(e){
 						e.preventDefault();
 						e.stopPropagation();
-						e.cancleBubble = true;
+						e.cancelBubble = true;
 						isDown = false;
 						document.getElementById('mBoxCont').scrollTop = Math.min(document.getElementById('mBoxCont').scrollHeight-document.getElementById('mBoxCont').clientHeight,Math.max(0,document.getElementById('mBoxCont').scrollTop-(/Firefox/i.test(navigator.userAgent)?(e.originalEvent.detail*(-20)):(e.originalEvent.wheelDelta/2))));
 						if(document.getElementById('mBoxCont').scrollTop==(document.getElementById('mBoxCont').scrollHeight-document.getElementById('mBoxCont').clientHeight)){
@@ -1481,7 +1481,7 @@
 					}else{
 						if(!sending){
 							sending = true;
-							request.cancle();
+							request.cancel();
 							$.getJSON('message.php?message='+base64.encode(s)+'&channel='+base64.encode(channels.getCurrent())+'&'+settings.getUrlParams(),function(){
 								$('#message').val('');
 								request.send();
