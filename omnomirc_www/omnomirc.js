@@ -482,7 +482,7 @@
 											width:3,
 											height:3,
 											backgroundColor:(p?'black':'')
-										})
+										});
 								})
 							);
 							var temp = pixels[0];
@@ -521,7 +521,7 @@
 						});
 						n.onshow = function(){
 							setTimeout(n.close,30000);
-						}
+						};
 					}
 				};
 			return {
@@ -653,7 +653,7 @@
 											.click(function(){
 												channels.join(i);
 											})
-									)
+									);
 							}
 						})
 					);
@@ -1047,7 +1047,7 @@
 								e.preventDefault();
 							}
 							e = e.originalEvent;
-							$(this).css('top',Math.min(0,Math.max(((/Opera/i.test(navigator.userAgent))?-30:0)+document.getElementById('UserListInnerCont').clientHeight-this.scrollHeight,parseInt(this.style.top)+(/Firefox/i.test(navigator.userAgent)?(e.detail*(-20)):(e.wheelDelta/2)))));
+							$(this).css('top',Math.min(0,Math.max(((/Opera/i.test(navigator.userAgent))?-30:0)+document.getElementById('UserListInnerCont').clientHeight-this.scrollHeight,parseInt(this.style.top,10)+(/Firefox/i.test(navigator.userAgent)?(e.detail*(-20)):(e.wheelDelta/2)))));
 						});
 						
 				},
