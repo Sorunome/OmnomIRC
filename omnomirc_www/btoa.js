@@ -254,7 +254,7 @@ base64.makeDOMException = function() {
 		};
 		return ex;
 	}
-}
+};
 
 
 base64.getbyte64 = function(s, i) {
@@ -266,7 +266,7 @@ base64.getbyte64 = function(s, i) {
 		//throw base64.makeDOMException();
 	}
 	return idx;
-}
+};
 
 
 base64.decode = function(s) {
