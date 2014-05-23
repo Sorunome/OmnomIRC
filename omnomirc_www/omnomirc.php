@@ -59,7 +59,7 @@ function errorHandler($errno,$errstr,$errfile,$errline){
 		case E_USER_NOTICE:
 			$json->addWarning(Array('type' => 'php','number' => $errno,'message'=>$errstr,'file' => $errfile,'line' => $errline));
 			break;
-		case E_USER_ERROR:
+		//case E_USER_ERROR: // commented out because if it's going to default, why even check for it and waste cycles?
 		default:
 			$json->addError(Array('type' => 'php','number' => $errno,'message'=>$errstr,'file' => $errfile,'line' => $errline));
 	}
