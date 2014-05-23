@@ -1,5 +1,5 @@
 /*
-	This file is part of OmnomIRC. It is not created by OmnomIRC authors. It is believed that this is in agreement with
+	This file is part of OmnomIRC. It is not created by OmnomIRC authors (It has been modified though). It is believed that this is in agreement with
 	all applicable licenses and restrictions.
 */
 /*
@@ -14,9 +14,9 @@ function replaceText(text, textarea) {
 		caretPos.text = caretPos.text.charAt(caretPos.text.length - 1) == ' ' ? text + ' ' : text;
 		caretPos.select();
 	} else if (typeof(textarea.selectionStart) != "undefined") {
-		var begin = textarea.value.substr(0, textarea.selectionStart);
-		var end = textarea.value.substr(textarea.selectionEnd);
-		var scrollPos = textarea.scrollTop;
+		var begin = textarea.value.substr(0, textarea.selectionStart),
+			end = textarea.value.substr(textarea.selectionEnd),
+			scrollPos = textarea.scrollTop;
 		textarea.value = begin + text + end;
 		if (textarea.setSelectionRange) {
 			textarea.focus();
@@ -38,20 +38,22 @@ function surroundText(text1, text2, textarea) {
 			caretPos.moveStart("character", -text2.length);
 			caretPos.moveEnd("character", -text2.length);
 			caretPos.select();
-		} else
+		} else {
 			textarea.focus(caretPos);
+		}
 	} else if (typeof(textarea.selectionStart) != "undefined") {
-		var begin = textarea.value.substr(0, textarea.selectionStart);
-		var selection = textarea.value.substr(textarea.selectionStart, textarea.selectionEnd - textarea.selectionStart);
-		var end = textarea.value.substr(textarea.selectionEnd);
-		var newCursorPos = textarea.selectionStart;
-		var scrollPos = textarea.scrollTop;
+		var begin = textarea.value.substr(0, textarea.selectionStart),
+			selection = textarea.value.substr(textarea.selectionStart, textarea.selectionEnd - textarea.selectionStart),
+			end = textarea.value.substr(textarea.selectionEnd),
+			newCursorPos = textarea.selectionStart,
+			scrollPos = textarea.scrollTop;
 		textarea.value = begin + text1 + selection + text2 + end;
 		if (textarea.setSelectionRange) {
-			if (selection.length === 0)
+			if (selection.length === 0) {
 				textarea.setSelectionRange(newCursorPos + text1.length, newCursorPos + text1.length);
-			else
+			} else {
 				textarea.setSelectionRange(newCursorPos, newCursorPos + text1.length + selection.length + text2.length);
+			}
 			textarea.focus();
 		}
 		textarea.scrollTop = scrollPos;
@@ -144,18 +146,33 @@ function utf8Encode(str) {
 //it is a private function for internal use in utf8Decode function 
 
 function _utf8Decode(utf8str) {
-	var str = [];
-	var code, code2, code3, code4, j = 0;
-	for (var i = 0; i < utf8str.length;) {
+	var str = [],
+		code,
+		code2,
+		code3,
+		code4,
+		j = 0,
+		i;
+	for (i = 0; i < utf8str.length;) {
 		code = utf8str.charCodeAt(i++);
-		if (code > 127) code2 = utf8str.charCodeAt(i++);
-		if (code > 223) code3 = utf8str.charCodeAt(i++);
-		if (code > 239) code4 = utf8str.charCodeAt(i++);
-
-		if (code < 128) str[j++] = chr(code);
-		else if (code < 224) str[j++] = chr(((code - 192) << 6) + (code2 - 128));
-		else if (code < 240) str[j++] = chr(((code - 224) << 12) + ((code2 - 128) << 6) + (code3 - 128));
-		else str[j++] = chr(((code - 240) << 18) + ((code2 - 128) << 12) + ((code3 - 128) << 6) + (code4 - 128));
+		if (code > 127) {
+			code2 = utf8str.charCodeAt(i++);
+		}
+		if (code > 223) {
+			code3 = utf8str.charCodeAt(i++);
+		}
+		if (code > 239) {
+			code4 = utf8str.charCodeAt(i++);
+		}
+		if (code < 128) {
+			str[j++] = chr(code);
+		}else if (code < 224) {
+			str[j++] = chr(((code - 192) << 6) + (code2 - 128));
+		}else if (code < 240) {
+			str[j++] = chr(((code - 224) << 12) + ((code2 - 128) << 6) + (code3 - 128));
+		}else {
+			str[j++] = chr(((code - 240) << 18) + ((code2 - 128) << 12) + ((code3 - 128) << 6) + (code4 - 128));
+		}
 	}
 	return str.join('');
 }
@@ -163,10 +180,10 @@ function _utf8Decode(utf8str) {
 //Decodes a UTF8 formated string
 
 function utf8Decode(utf8str) {
-	var str = [];
-	var pos = 0;
-	var tmpStr = '';
-	var j = 0;
+	var str = [],
+		pos = 0,
+		tmpStr = '',
+		j = 0;
 	while ((pos = utf8str.search(/[^\x00-\x7F]/)) != -1) {
 		tmpStr = utf8str.match(/([^\x00-\x7F]+[\x00-\x7F]{0,10})+/)[0];
 		str[j++] = utf8str.substr(0, pos) + _utf8Decode(tmpStr);
@@ -233,7 +250,6 @@ base64.makeDOMException = function() {
 	// sadly in FF,Safari,Chrome you can't make a DOMException
 	var e, tmp;
 
-
 	try {
 		return new DOMException(DOMException.INVALID_CHARACTER_ERR);
 	} catch (tmp) {
@@ -242,11 +258,9 @@ base64.makeDOMException = function() {
 		// https://developer.mozilla.org/en/Core_JavaScript_1.5_Reference/Global_Objects/Error/prototype
 		var ex = new Error("DOM Exception 5");
 
-
 		// ex.number and ex.description is IE-specific.
 		ex.code = ex.number = 5;
 		ex.name = ex.description = "INVALID_CHARACTER_ERR";
-
 
 		// Safari/Chrome output format
 		ex.toString = function() {
@@ -254,40 +268,34 @@ base64.makeDOMException = function() {
 		};
 		return ex;
 	}
-}
-
+};
 
 base64.getbyte64 = function(s, i) {
 	// This is oddly fast, except on Chrome/V8.
 	//  Minimal or no improvement in performance by using a
 	//   object with properties mapping chars to value (eg. 'A': 0)
 	var idx = base64.ALPHA.indexOf(s.charAt(i));
-	if (idx === -1) {
-		//throw base64.makeDOMException();
-	}
+	/*if (idx === -1) {
+		throw base64.makeDOMException();
+	}*/
 	return idx;
-}
-
+};
 
 base64.decode = function(s) {
 
 	// convert to string
-	s = '' + s;
-	s = s.replace("+", "-");
-	s = s.replace("/", "_");
-	s = s.replace("=", ",");
+	s = (''+s).replace("+", "-").replace("/", "_").replace("=", ",");
 	var getbyte64 = base64.getbyte64,
 		pads, i, b10,
-		imax = s.length;
+		imax = s.length,
+		x = [];
 	if (imax === 0) {
 		return s;
 	}
 
-
 	if (imax % 4 !== 0) {
 		//throw base64.makeDOMException();
 	}
-
 
 	pads = 0;
 	if (s.charAt(imax - 1) === base64.PADCHAR) {
@@ -298,15 +306,11 @@ base64.decode = function(s) {
 		// either way, we want to ignore this last block
 		imax -= 4;
 	}
-
-
-	var x = [];
 	for (i = 0; i < imax; i += 4) {
 		b10 = (getbyte64(s, i) << 18) | (getbyte64(s, i + 1) << 12) |
 			(getbyte64(s, i + 2) << 6) | getbyte64(s, i + 3);
 		x.push(String.fromCharCode(b10 >> 16, (b10 >> 8) & 0xff, b10 & 0xff));
 	}
-
 
 	switch (pads) {
 		case 1:
@@ -323,11 +327,12 @@ base64.decode = function(s) {
 
 
 base64.getbyte = function(s, i) {
-	var x = s.charCodeAt(i);
+	return s.charCodeAt(i);
+	/*var x = s.charCodeAt(i);
 	if (x > 255) {
-		//throw base64.makeDOMException();
+		throw base64.makeDOMException();
 	}
-	return x;
+	return x;*/
 };
 
 
@@ -336,21 +341,15 @@ base64.encode = function(s) {
 	if (arguments.length !== 1) {
 		throw new SyntaxError("Not enough arguments");
 	}
-	var padchar = base64.PADCHAR;
-	var alpha = base64.ALPHA;
-	var getbyte = base64.getbyte;
-
-
-	var i, b10;
-	var x = [];
-
-
 	// convert to string
 	s = '' + s;
-
-
-	var imax = s.length - s.length % 3;
-
+	var padchar = base64.PADCHAR,
+		alpha = base64.ALPHA,
+		getbyte = base64.getbyte,
+		i,
+		b10,
+		x = [],
+		imax = s.length - s.length % 3;
 
 	if (s.length === 0) {
 		return s;
@@ -365,13 +364,21 @@ base64.encode = function(s) {
 	switch (s.length - imax) {
 		case 1:
 			b10 = getbyte(s, i) << 16;
-			x.push(alpha.charAt(b10 >> 18) + alpha.charAt((b10 >> 12) & 0x3F) +
-				padchar + padchar);
+			x.push(
+				alpha.charAt(b10 >> 18) +
+				alpha.charAt((b10 >> 12) & 0x3F) +
+				padchar +
+				padchar
+			);
 			break;
 		case 2:
 			b10 = (getbyte(s, i) << 16) | (getbyte(s, i + 1) << 8);
-			x.push(alpha.charAt(b10 >> 18) + alpha.charAt((b10 >> 12) & 0x3F) +
-				alpha.charAt((b10 >> 6) & 0x3f) + padchar);
+			x.push(
+				alpha.charAt(b10 >> 18) +
+				alpha.charAt((b10 >> 12) & 0x3F) +
+				alpha.charAt((b10 >> 6) & 0x3f) +
+				padchar
+			);
 			break;
 	}
 	s = x.join('');
