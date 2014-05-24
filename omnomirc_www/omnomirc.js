@@ -172,15 +172,7 @@
 				init:function(){
 					var makePopup = function(type,data){
 						return $('<div>')
-								.css({
-									backgroundColor:'#FFFFFF',
-									zIndex:50,
-									position:'absolute',
-									top:0,
-									left:0,
-									padding:5,
-									border:'1px solid black'
-								})
+								.addClass('errorPopup')
 								.append(
 									$('<a>')
 										.text('Close')
@@ -200,9 +192,9 @@
 														'Time: ',
 														(new Date(e.time)).toLocaleTimeString(),
 														'<br>File: ',
-														e.file,
+														$('<span>').text(e.file).html(),
 														$.map(e.content,function(val,i){
-															return ['<br>',i,': ',val];
+															return ['<br>',$('<span>').text(i).html(),': ',$('<span>').text(val).html()];
 														})
 													);
 											})
@@ -1150,6 +1142,33 @@
 		})(),
 		scroll = (function(){
 			var isDown = false,
+				enableButtons = function(){
+					var addHook = function(elem,effect,inc){
+							var interval;
+							$(elem)
+								.mousedown(function(){
+									interval = setInterval(function(){
+										document.getElementById(effect).scrollLeft += inc;
+									},50)
+								})
+								.mouseup(function(){
+									try{
+										clearInterval(interval);
+									}catch(e){}
+								})
+								.mouseout(function(){
+									try{
+										clearInterval(interval);
+									}catch(e){}
+								});
+						};
+					addHook('#arrowLeftChan','ChanListCont',-9);
+					addHook('#arrowRightChan','ChanListCont',9);
+					
+					addHook('#arrowLeftTopic','topicCont',-9);
+					addHook('#arrowRightTopic','topicCont',9);
+					
+				},
 				enableWheel = function(){
 					$('#mBoxCont').bind('DOMMouseScroll mousewheel',function(e){
 						e.preventDefault();
@@ -1348,6 +1367,7 @@
 					}
 				},
 				init:function(){
+					enableButtons();
 					if(options.get(15,'T')=='T'){
 						showBar();
 					}else{
@@ -1424,7 +1444,7 @@
 					}).focus(function(){
 						isBlurred = false;
 					});
-					if(options.get(14,'F')!='T'){
+					if(options.get(14,'F')!='T'){ // hide userlist is off
 						mBoxContWidthOffset = 90;
 						$('<style>')
 							.append(
@@ -1433,7 +1453,8 @@
 								'#message{width:82%;width:calc(91% - 115px);width:-webkit-calc(91% - 115px);}',
 								'#mBoxCont{width:90%;}',
 								'.arrowButtonHoriz2,.arrowButtonHoriz3 > div:nth-child(2){left:89%;left:calc(90% - 5px);left:-webkit-calc(90% - 5px);}',
-								'#UserListContainer{left:90%;height:100%;transition:none;-webkit-transition:none;-o-transition-property:none;-o-transition-duration:none;-o-transition-delay:none;}'
+								'#UserListContainer{left:90%;height:100%;transition:none;-webkit-transition:none;-o-transition-property:none;-o-transition-duration:none;-o-transition-delay:none;}',
+								'#icons{right:270px;}'
 							)
 							.appendTo('head');
 					}
@@ -1934,7 +1955,7 @@
 							}
 							break;
 						case 'pm':
-							if(channels.getCurrent().toLowerCase() != '*'+line.name.toLowerCase() && line.name != settings.nick()){
+							if(channels.getCurrent(true).toLowerCase() != '*'+line.name.toLowerCase() && line.name.toLowerCase() != settings.nick().toLowerCase()){
 								if(channels.getCurrent()!==''){
 									tdName = ['(PM)',name];
 									channels.openPm(line.name);
@@ -1948,7 +1969,7 @@
 							}
 							break;
 						case 'pmaction':
-							if(channels.getCurrent().toLowerCase() != '*'+line.name.toLowerCase() && line.name != settings.nick()){
+							if(channels.getCurrent(true).toLowerCase() != '*'+line.name.toLowerCase() && line.name.toLowerCase() != settings.nick().toLowerCase()){
 								if(channels.getCurrent()!==''){
 									tdMessage = ['(PM)',name,' ',message];
 									channels.openPm(line.name);

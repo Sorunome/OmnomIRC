@@ -142,8 +142,8 @@ document.domain="'.$config['settings']['hostname'].'"
 <div class="windowbg2" id="windowbg2">
 <div id="Channels">
 <div id="ChanListButtons">
-	<span style="font-size:10pt;" class="arrowButton" onmousedown="menul=setInterval(\'document.getElementById(\\\'ChanListCont\\\').scrollLeft -= 9\',50)" onmouseup="clearInterval(menul)" onmouseout="clearInterval(menul)">&#9668;</span>
-	<span style="font-size:10pt;" class="arrowButton" onmousedown="menur=setInterval(\'document.getElementById(\\\'ChanListCont\\\').scrollLeft += 9\',50)" onmouseup="clearInterval(menur)" onmouseout="clearInterval(menur)">&#9658;</span>
+	<span style="font-size:10pt;" class="arrowButton" id="arrowLeftChan">&#9668;</span>
+	<span style="font-size:10pt;" class="arrowButton" id="arrowRightChan">&#9658;</span>
 </div>
 <div id="ChanListCont">
 	<div id="ChanList"></div>
@@ -151,8 +151,8 @@ document.domain="'.$config['settings']['hostname'].'"
 </div>
 <div id="topicbox">
 	<div id="TopicButtons">
-		<span style="font-size:8pt;" class="arrowButton" onmousedown="menul=setInterval(\'document.getElementById(\\\'topicCont\\\').scrollLeft -= 9\',50)" onmouseup="clearInterval(menul)" onmouseout="clearInterval(menul)">&#9668;</span>
-		<span style="font-size:8pt;" class="arrowButton" onmousedown="menur=setInterval(\'document.getElementById(\\\'topicCont\\\').scrollLeft += 9\',50)" onmouseup="clearInterval(menur)" onmouseout="clearInterval(menur)">&#9658;</span>
+		<span style="font-size:8pt;" class="arrowButton" id="arrowLeftTopic">&#9668;</span>
+		<span style="font-size:8pt;" class="arrowButton" id="arrowRightTopic">&#9658;</span>
 	</div>
 	<div id="topicCont">
 		<div id="topic" style="white-space:nowrap;"></div>

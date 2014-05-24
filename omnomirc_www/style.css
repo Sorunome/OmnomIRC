@@ -624,7 +624,7 @@ table#MessageBox {
 #icons {
 	position:absolute;
 	bottom:3px;
-	right:270px;
+	right:95px;
 	z-index:45;
 	line-height:16px;
 	vertical-align:middle;
@@ -646,4 +646,15 @@ table#MessageBox {
 	margin:0 0 0 2px;
 	background:url(icons.png) no-repeat scroll -34px 0px;
 	cursor:pointer;
+}
+.errorPopup {
+	background-color:#FFFFFF;
+	z-index:50;
+	position:absolute;
+	top:0;
+	left:0;
+	padding:5;
+	border:1px solid black;
+	overflow:auto;
+	height:100%;
 }
