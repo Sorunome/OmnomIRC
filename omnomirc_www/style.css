@@ -658,3 +658,10 @@ table#MessageBox {
 	overflow:auto;
 	height:100%;
 }
+#logsHeader{
+	overflow:hidden;
+	background: #cae4ff;
+	border-right: 1px solid #6699ff;
+	border-left: none;
+	border-bottom: 1px solid #6699ff;
+}

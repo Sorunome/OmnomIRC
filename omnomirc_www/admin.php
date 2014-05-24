@@ -18,7 +18,7 @@
     You should have received a copy of the GNU General Public License
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
-
+$ADMINPAGE = true;
 include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 function getRandKey(){
 	$randKey = rand(100,9999).'-'.rand(10000,999999);
@@ -26,7 +26,7 @@ function getRandKey(){
 	$randKey = base64_url_encode($randKey);
 	return md5($randKey);
 }
-function writeConfig(){
+function writeConfig($silent){
 	global $config,$json;
 	$file = '<?php
 /* This is a automatically generated config-file by OmnomIRC, please use the admin pannel to edit it! */
@@ -76,7 +76,9 @@ if(isset($_GET["js"])){
 }
 ?>';
 	if(file_put_contents(realpath(dirname(__FILE__)).'/config.php',$file)){
-		$json->add('message','config written');
+		if(!$silent){
+			$json->add('message','config written');
+		}
 	}else{
 		$json->addError('Couldn\'t write config');
 	}
@@ -85,15 +87,12 @@ if($you->isGlobalOp() || !$config['info']['installed']){
 	if($config['security']['sigKey']==''){
 		$config['security']['sigKey'] = getRandKey();
 		$json->addWarning('SigKey wasn\'t set, storing random value');
-		writeConfig();
+		writeConfig(true);
 	}
-	if($config['irc']['password']){
+	if($config['irc']['password']==''){
 		$config['irc']['password'] = getRandKey();
 		$json->addWarning('IRC bot password wasn\'t set, storing random value');
-		writeConfig();
-	}
-	if(!$config['info']['installed']){
-		$json->clear();
+		writeConfig(true);
 	}
 	if(isset($_GET['get'])){
 		switch($_GET['get']){

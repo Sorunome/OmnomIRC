@@ -47,7 +47,6 @@ if($you->isBanned()){
 	$json->add('admin',false);
 	$json->add('lines',Array());
 	$json->add('users',Array());
-	$json->addError('banned');
 	echo $json->get();
 	die();
 }

@@ -277,61 +277,53 @@
 					$('#adminContent').text('Loading...');
 					network.getJSON('admin.php?get='+encodeURIComponent(p)+'&'+settings.getUrlParams(),function(data){
 						$('#adminContent').empty();
-						if(data.errors!==undefined){
-							$('#adminContent').append(
-								$.map(data.errors,function(error){
-									return '<b>ERROR:</b> '+error;
-								})
-							);
-						}else{
-							switch(p){
-								case 'index':
-									if(!data.installed){
-										$('#adminContent').append('<span class="highlight">Warning: You are currently in instalation mode!</span><br>',
-											$('<button>')
-												.text('Install')
-												.click(function(){
-													sendEdit('install',{});
-												}),
-											'<br>');
-									}
-									$('#adminContent').append(
-										'OmnomIRC Version: '+data.version+'<br>',
+						switch(p){
+							case 'index':
+								if(!data.installed){
+									$('#adminContent').append('<span class="highlight">Warning: You are currently in instalation mode!</span><br>',
 										$('<button>')
-											.text('Back up config')
+											.text('Install')
 											.click(function(){
-												sendEdit('backupConfig',{});
-											})
-									);
-									break;
-								case 'channels':
-									getJSONEditSettings(p,'Channel',data.channels);
-									break;
-								case 'hotlinks':
-									getJSONEditSettings(p,'Hotlink',data.hotlinks);
-									break;
-								case 'smileys':
-									getJSONEditSettings(p,'Smiley',data.smileys);
-									break;
-								case 'networks':
-									getJSONEditSettings(p,'Network',data.networks);
-									break;
-								case 'sql':
-									$.extend(data,{
-										passwd:''
-									});
-									getInputBoxSettings(p,'SQL',data);
-									break;
-								case 'op':
-									getJSONEditSettings(p,'OP',data.opGroups);
-									break;
-								case 'irc':
-									getJSONEditSettings(p,'IRC',data.irc);
-									break;
-								case 'misc':
-									getInputBoxSettings(p,'Misc',data);
-									break;
-							}
+												sendEdit('install',{});
+											}),
+										'<br>');
+								}
+								$('#adminContent').append(
+									'OmnomIRC Version: '+data.version+'<br>',
+									$('<button>')
+										.text('Back up config')
+										.click(function(){
+											sendEdit('backupConfig',{});
+										})
+								);
+								break;
+							case 'channels':
+								getJSONEditSettings(p,'Channel',data.channels);
+								break;
+							case 'hotlinks':
+								getJSONEditSettings(p,'Hotlink',data.hotlinks);
+								break;
+							case 'smileys':
+								getJSONEditSettings(p,'Smiley',data.smileys);
+								break;
+							case 'networks':
+								getJSONEditSettings(p,'Network',data.networks);
+								break;
+							case 'sql':
+								$.extend(data,{
+									passwd:''
+								});
+								getInputBoxSettings(p,'SQL',data);
+								break;
+							case 'op':
+								getJSONEditSettings(p,'OP',data.opGroups);
+								break;
+							case 'irc':
+								getJSONEditSettings(p,'IRC',data.irc);
+								break;
+							case 'misc':
+								getInputBoxSettings(p,'Misc',data);
+								break;
 						}
 						indicator.stop();
 					});
@@ -1461,6 +1453,7 @@
 					scroll.init();
 					tab.init();
 					instant.init();
+					logs.init();
 					registerToggle();
 					$('#aboutButton').click(function(e){
 						e.preventDefault();
@@ -1681,6 +1674,89 @@
 				}
 			};
 		})(),
+		logs = (function(){
+			var isOpen = false,
+				open = function(){
+					var d = new Date();
+					indicator.start();
+					request.cancel();
+					$('#message').attr('disabled','true');
+					users.setUsers([]); //empty userlist
+					users.draw();
+					$('#chattingHeader').css('display','none');
+					$('#logsHeader').css('display','block');
+					
+					$('#logChanIndicator').text(channels.getCurrent());
+					
+					$('#logDate').val(parseInt(d.getDate(),10)+'-'+parseInt(d.getMonth()+1,10)+'-'+parseInt(d.getFullYear(),10));
+					isOpen = true;
+					fetch();
+				},
+				close = function(){
+					var num;
+					
+					$('#chattingHeader').css('display','block');
+					$('#logsHeader').css('display','none');
+					$.each(channels.getChans(),function(i,c){
+						if(c.chan==channels.getCurrent()){
+							num = i;
+							return false;
+						}
+					});
+					channels.join(num);
+					isOpen = false;
+				},
+				fetchPart = function(n){
+					network.getJSON('Log.php?day='+base64.encode($('#logDate').val())+'&offset='+parseInt(n,10)+'&channel='+base64.encode(channels.getCurrent())+'&'+settings.getUrlParams(),function(data){
+						if(!data.banned){
+							if(data.lines.length>=300){
+								fetchPart(n+300);
+							}
+							$.each(data.lines,function(i,line){
+								parser.addLine(line,true);
+							});
+							if(data.lines.length<300){
+								indicator.stop();
+							}
+						}else{
+							send.internal('<span style="color:#C73232;"><b>ERROR:</b> banned</banned>');
+						}
+					});
+				},
+				fetch = function(){
+					indicator.start();
+					
+					$('#MessageBox').empty();
+					
+					fetchPart(0);
+				},
+				toggle = function(){
+					if(isOpen){
+						close();
+					}else{
+						open();
+					}
+				};
+			return {
+				init:function(){
+					$('#logCloseButton')
+						.click(function(e){
+							e.preventDefault();
+							close();
+						});
+					$('#logGoButton')
+						.click(function(e){
+							e.preventDefault();
+							fetch();
+						});
+					$('#logsButton').click(function(e){
+						e.preventDefault();
+						toggle();
+					});
+					//$('#logDate').datepicker();
+				}
+			}
+		})();
 		parser = (function(){
 			var smileys = [],
 				maxLines = 200,
@@ -1848,7 +1924,7 @@
 				},
 				lineHigh = false;
 			return {
-				addLine:function(line){
+				addLine:function(line,logMode){
 					var $mBox = $('#MessageBox'),
 						name = parseName(line.name,line.network),
 						message = parseMessage(line.message),
@@ -1862,13 +1938,10 @@
 					if(line.curLine > request.getCurLine()){
 						request.setCurLine(line.curLine);
 					}
-					if($mBox.find('tr').length>maxLines){
-						$mBox.find('tr:first').remove();
-					}
 					switch(line.type){
 						case 'reload':
 							addLine = false;
-							if(channels.getCurrent()!==''){
+							if(logMode!==true && channels.getCurrent()!==''){
 								var num;
 								$.each(channels.getChans(),function(i,c){
 									if(c.chan==channels.getCurrent()){
@@ -1882,40 +1955,48 @@
 							break;
 						case 'join':
 							tdMessage = [name,' has joined '+channels.getCurrent()];
-							users.add({
-								nick:line.name,
-								network:line.network
-							});
+							if(logMode!==true){
+								users.add({
+									nick:line.name,
+									network:line.network
+								});
+							}
 							if(line.network==1 && options.get(17,'F')=='F'){
 								addLine = false;
 							}
 							break;
 						case 'part':
 							tdMessage = [name,' has left '+channels.getCurrent()+' (',message,')'];
-							users.remove({
-								nick:line.name,
-								network:line.network
-							});
+							if(logMode!==true){
+								users.remove({
+									nick:line.name,
+									network:line.network
+								});
+							}
 							if(line.network==1 && options.get(17,'F')=='F'){
 								addLine = false;
 							}
 							break;
 						case 'quit':
 							tdMessage = [name,' has quit IRC (',message,')'];
-							users.remove({
-								nick:line.name,
-								network:line.network
-							});
+							if(logMode!==true){
+								users.remove({
+									nick:line.name,
+									network:line.network
+								});
+							}
 							if(line.network==1){
 								addLine = false;
 							}
 							break;
 						case 'kick':
 							tdMessage = [name,' has kicked ',parseName(line.name2,line.network),' from '+channels.getCurrent()+' (',message,')'];
-							users.remove({
-								nick:line.name2,
-								network:line.network
-							});
+							if(logMode!==true){
+								users.remove({
+									nick:line.name2,
+									network:line.network
+								});
+							}
 							break;
 						case 'message':
 							tdName = name;
@@ -1938,14 +2019,16 @@
 							break;
 						case 'nick':
 							tdMessage = [name,' has changed nicks to ',parseName(line.name2,line.network)];
-							users.add({
-								nick:line.name2,
-								network:line.network
-							});
-							users.remove({
-								nick:line.name,
-								network:line.network
-							});
+							if(logMode!==true){
+								users.add({
+									nick:line.name2,
+									network:line.network
+								});
+								users.remove({
+									nick:line.name,
+									network:line.network
+								});
+							}
 							break;
 						case 'topic':
 							topic.set(message);
@@ -1956,7 +2039,7 @@
 							break;
 						case 'pm':
 							if(channels.getCurrent(true).toLowerCase() != '*'+line.name.toLowerCase() && line.name.toLowerCase() != settings.nick().toLowerCase()){
-								if(channels.getCurrent()!==''){
+								if(channels.getCurrent()!=='' && logMode!==true){
 									tdName = ['(PM)',name];
 									channels.openPm(line.name);
 									notification.make('(PM) <'+line.name+'> '+line.message,line.chan);
@@ -1970,7 +2053,7 @@
 							break;
 						case 'pmaction':
 							if(channels.getCurrent(true).toLowerCase() != '*'+line.name.toLowerCase() && line.name.toLowerCase() != settings.nick().toLowerCase()){
-								if(channels.getCurrent()!==''){
+								if(channels.getCurrent()!=='' && logMode!==true){
 									tdMessage = ['(PM)',name,' ',message];
 									channels.openPm(line.name);
 									notification.make('* (PM)'+line.name+' '+line.message,line.chan);
@@ -1998,6 +2081,10 @@
 							addLine = false;
 					}
 					if(addLine){
+						if(($mBox.find('tr').length>maxLines) && logMode!==true){
+							$mBox.find('tr:first').remove();
+						}
+						
 						if($('<span>').append(tdName).text() == '*'){
 							statusTxt = $('<span>').append(tdName).text()+' ';
 						}else{

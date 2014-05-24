@@ -59,7 +59,7 @@ function errorHandler($errno,$errstr,$errfile,$errline){
 		case E_USER_NOTICE:
 			$json->addWarning(Array('type' => 'php','number' => $errno,'message'=>$errstr,'file' => $errfile,'line' => $errline));
 			break;
-		case E_USER_ERROR:
+		//case E_USER_ERROR: // no need, already caught by default.
 		default:
 			$json->addError(Array('type' => 'php','number' => $errno,'message'=>$errstr,'file' => $errfile,'line' => $errline));
 	}
@@ -164,7 +164,7 @@ class You{
 	private $infoStuff;
 	public $chan;
 	public function __construct($n = false){
-		global $security,$defaultChan,$json;
+		global $security,$defaultChan,$json,$ADMINPAGE;
 		if($n!==false){
 			$this->nick = $n;
 		}elseif(isset($_GET['nick'])){
@@ -193,7 +193,9 @@ class You{
 				$this->chan = '0';
 			}
 		}else{
-			$json->addWarning('Didn\'t set a channel, defaulting to '.$defaultChan);
+			if($ADMINPAGE!==true){
+				$json->addWarning('Didn\'t set a channel, defaulting to '.$defaultChan);
+			}
 			$this->chan = $defaultChan;
 		}
 		$this->globalOps = NULL;

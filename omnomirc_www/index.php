@@ -98,6 +98,14 @@ tr td:nth-child(5) {
 <div style="font-size:20px;font-weight:bold;margin-top:5px;">OmnomIRC Options</div>
 <div id="options"></div>
 <div style="top:100%;margin-top:-33pt;position:absolute;"><a href="index.php"><span style="font-size:30pt;">&#8592;</span><span style="font-size:18pt;top:-3pt;position:relative;">Back<span></a></div>
+<div id="icons" style="right:5px;">
+	<span id="warnings" style="display:none;">
+	<span class="count">0</span><span class="icon"></span>
+	</span>
+	<span id="errors" style="display:none;">
+	&nbsp;<span class="count">0</span><span class="icon"></span>
+	</span>
+</div>
 ','options');
 }elseif(isset($_GET['admin']) || !$config['info']['installed']){
 echo getPage('OmnomIRC options','
@@ -110,6 +118,15 @@ echo getPage('OmnomIRC options','
 <div id="adminContent" style="overflow-y:auto;">Loading...</div>
 </div>
 <div id="adminFooter"><a href="index.php">Back to OmnomIRC</a></div>
+
+<div id="icons" style="right:5px;">
+	<span id="warnings" style="display:none;">
+	<span class="count">0</span><span class="icon"></span>
+	</span>
+	<span id="errors" style="display:none;">
+	&nbsp;<span class="count">0</span><span class="icon"></span>
+	</span>
+</div>
 ','admin');
 }else{
 $hotlinksHTML = '';
@@ -140,27 +157,31 @@ document.domain="'.$config['settings']['hostname'].'"
 </script>
 ','
 <div class="windowbg2" id="windowbg2">
-<div id="Channels">
-<div id="ChanListButtons">
-	<span style="font-size:10pt;" class="arrowButton" id="arrowLeftChan">&#9668;</span>
-	<span style="font-size:10pt;" class="arrowButton" id="arrowRightChan">&#9658;</span>
-</div>
-<div id="ChanListCont">
-	<div id="ChanList"></div>
-</div>
-</div>
-<div id="topicbox">
-	<div id="TopicButtons">
-		<span style="font-size:8pt;" class="arrowButton" id="arrowLeftTopic">&#9668;</span>
-		<span style="font-size:8pt;" class="arrowButton" id="arrowRightTopic">&#9658;</span>
+<div id="chattingHeader" style="margin:0;padding:0;height:39px;">
+	<div id="Channels">
+		<div id="ChanListButtons">
+			<span style="font-size:10pt;" class="arrowButton" id="arrowLeftChan">&#9668;</span>
+			<span style="font-size:10pt;" class="arrowButton" id="arrowRightChan">&#9658;</span>
+		</div>
+		<div id="ChanListCont">
+			<div id="ChanList"></div>
+		</div>
 	</div>
-	<div id="topicCont">
-		<div id="topic" style="white-space:nowrap;"></div>
+	<div id="topicbox">
+		<div id="TopicButtons">
+			<span style="font-size:8pt;" class="arrowButton" id="arrowLeftTopic">&#9668;</span>
+			<span style="font-size:8pt;" class="arrowButton" id="arrowRightTopic">&#9658;</span>
+		</div>
+		<div id="topicCont">
+			<div id="topic" style="white-space:nowrap;"></div>
+		</div>
 	</div>
 </div>
-<br/>
-<br/>
-<br/>
+<div id="logsHeader" style="margin:0;padding:0;height:39px;display:none;">
+	<b>Log viewer</b> (<a id="logCloseButton">Close</a>)<br>
+	Channel: <span id="logChanIndicator"></span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Day: <input type="text" id="logDate"><a id="logGoButton">Go</a>
+</div>
+
 <div id="mBoxCont">
 	<table id="MessageBox" cellpadding="0px" cellspacing="0px" style="width:100%;height:100%;">
 	</table>
