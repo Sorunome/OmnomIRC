@@ -280,7 +280,11 @@
 						switch(p){
 							case 'index':
 								if(!data.installed){
-									$('#adminContent').append('<span class="highlight">Warning: You are currently in instalation mode!</span><br>',
+									$('#adminContent').append(
+										$('<span>')
+											.addClass('highlight')
+											.text('Warning: You are currently in instalation mode!'),
+										'<br>',
 										$('<button>')
 											.text('Install')
 											.click(function(){
@@ -1144,7 +1148,7 @@
 								.mousedown(function(){
 									interval = setInterval(function(){
 										document.getElementById(effect).scrollLeft += inc;
-									},50)
+									},50);
 								})
 								.mouseup(function(){
 									try{
@@ -1763,7 +1767,7 @@
 					});
 					//$('#logDate').datepicker();
 				}
-			}
+			};
 		})();
 		parser = (function(){
 			var smileys = [],
