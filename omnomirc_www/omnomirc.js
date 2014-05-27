@@ -1020,15 +1020,17 @@
 				init:function(){
 					$('#message')
 						.keydown(function(e){
+							console.log();
 							if(e.keyCode == 9){
-								if(e.preventDefault){
+								if(!e.ctrlKey){
 									e.preventDefault();
+									
+									tabWord = getCurrentWord();
+									getTabComplete();
+									tabCount++;
+									isInTab = true;
+									setTimeout(1,1);
 								}
-								tabWord = getCurrentWord();
-								getTabComplete();
-								tabCount++;
-								isInTab = true;
-								setTimeout(1,1);
 							}else{
 								tabWord = '';
 								tabCount = 0;
