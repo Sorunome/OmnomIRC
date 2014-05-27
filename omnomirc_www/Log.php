@@ -40,14 +40,12 @@ $json->add('banned',false);
 $json->add('admin',$you->isGlobalOp());
 
 if(isset($_GET['day'])){
-	$t_low = (int)DateTime::createFromFormat('j-n-Y',base64_url_decode($_GET['day']))->getTimestamp();
+	$t_low = (int)DateTime::createFromFormat('j-n-Y H:i:s',base64_url_decode($_GET['day']).' 00:00:00')->getTimestamp();
 }else{
 	$t_low = (int)time();
 	$json->addWarning('No day set, defaulting to today');
 }
 $t_high = $t_low + (3600 * 24);
-
-
 
 if($channel[0] == "*"){ // PM
 	$sender = substr($channel,1);

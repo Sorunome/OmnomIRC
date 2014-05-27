@@ -11,7 +11,22 @@ CREATE TABLE IF NOT EXISTS `irc_lines` (
   `channel` varchar(45) NOT NULL,
   `time` varchar(45) NOT NULL,
   `Online` int(10) NOT NULL DEFAULT '0',
-  PRIMARY KEY (`line_number`)
+  PRIMARY KEY (`line_number`),
+  KEY `time` (`time`)
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=1182570 ;
+
+DROP TABLE IF EXISTS `irc_lines_old`;
+CREATE TABLE IF NOT EXISTS `irc_lines_old` (
+  `line_number` int(10) unsigned NOT NULL AUTO_INCREMENT,
+  `name1` varchar(45) NOT NULL,
+  `name2` varchar(45) DEFAULT NULL,
+  `message` varchar(1024) DEFAULT NULL,
+  `type` varchar(45) NOT NULL,
+  `channel` varchar(45) NOT NULL,
+  `time` varchar(45) NOT NULL,
+  `Online` int(10) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`line_number`),
+  KEY `time` (`time`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 AUTO_INCREMENT=1182570 ;
 
 DROP TABLE IF EXISTS `irc_outgoing_messages`;

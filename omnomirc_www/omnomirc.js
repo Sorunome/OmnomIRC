@@ -908,6 +908,7 @@
 								$.each(data.lines,function(i,line){
 									parser.addLine(line);
 								});
+								scroll.down();
 								requestHandler = false;
 								request.send();
 							}else{
@@ -1353,6 +1354,10 @@
 					document.getElementById('mBoxCont').scrollTop = $('#mBoxCont').prop('scrollHeight');
 					isDown = true;
 				},
+				up:function(){
+					document.getElementById('mBoxCont').scrollTop = 0;
+					isDown = false;
+				},
 				slide:function(){
 					if(isDown){
 						scroll.down();
@@ -1715,6 +1720,7 @@
 							$.each(data.lines,function(i,line){
 								parser.addLine(line,true);
 							});
+							scroll.up();
 							if(data.lines.length<300){
 								indicator.stop();
 							}

@@ -81,13 +81,17 @@ function base64_url_decode($input){
 class Sqli{
 	private $mysqliConnection;
 	private function connectSql(){
-		global $config;
+		global $config,$json;
 		if(isset($this->mysqliConnection)){
 			return $this->mysqliConnection;
 		}
 		$mysqli = new mysqli($config['sql']['server'],$config['sql']['user'],$config['sql']['passwd'],$config['sql']['db']);
-		if ($mysqli->connect_errno) 
+		if($mysqli->connect_errno){
 			die('Could not connect to SQL DB: '.$mysqli->connect_errno.' '.$mysqli->connect_error);
+		}
+		if(!$mysqli->set_charset('utf8')){
+			$json->addError(Array('type' => 'mysql','message' => 'Couldn\'t use utf8'));
+		}
 		$this->mysqliConnection = $mysqli;
 		return $mysqli;
 	}
@@ -100,15 +104,18 @@ class Sqli{
 		for($i=1;$i<count($params);$i++)
 			$args[$i-1] = $mysqli->real_escape_string($params[$i]);
 		$result = $mysqli->query(vsprintf($query,$args));
-		if($mysqli->errno==1065) //empty
+		if($mysqli->errno==1065){ //empty
 			return array();
-		if($mysqli->errno!=0) 
+		}
+		if($mysqli->errno!=0){
 			die($mysqli->error.' Query: '.vsprintf($query,$args));
-		if($result===true) //nothing returned
+		}
+		if($result===true){ //nothing returned
 			return array();
+		}
 		$res = array();
 		$i = 0;
-		while($row = $result->fetch_assoc()) {
+		while($row = $result->fetch_assoc()){
 			$res[] = $row;
 			if($i++>=300)
 				break;
