@@ -117,7 +117,7 @@ class Sqli{
 		$i = 0;
 		while($row = $result->fetch_assoc()){
 			$res[] = $row;
-			if($i++>=300)
+			if($i++>=1000)
 				break;
 		}
 		if($res === Array()){

@@ -1723,14 +1723,14 @@
 				fetchPart = function(n){
 					network.getJSON('Log.php?day='+base64.encode($('#logDate').val())+'&offset='+parseInt(n,10)+'&channel='+base64.encode(channels.getCurrent())+'&'+settings.getUrlParams(),function(data){
 						if(!data.banned){
-							if(data.lines.length>=300){
-								fetchPart(n+300);
+							if(data.lines.length>=1000){
+								fetchPart(n+1000);
 							}
 							$.each(data.lines,function(i,line){
 								parser.addLine(line,true);
 							});
 							scroll.up();
-							if(data.lines.length<300){
+							if(data.lines.length<1000){
 								indicator.stop();
 							}
 						}else{

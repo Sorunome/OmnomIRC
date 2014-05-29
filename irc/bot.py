@@ -156,21 +156,21 @@ class Bot(threading.Thread):
 			self.send('PRIVMSG %s :%s\x033* %s has changed the topic to %s' % (c,colorAdding,n1,m))
 		elif t=='nick':
 			self.send('PRIVMSG %s :%s\x033* %s has changed nicks to %s' % (c,colorAdding,n1,n2))
-	def addLine(self,n1,n2,t,m,c,addToSql):
+	def addLine(self,n1,n2,t,m,c,sendToOther):
 		global sql,handle
-		handle.sendToOther(n1,n2,t,m,c,self.i)
-		if addToSql:
-			print '(1)<< ',{'name1':n1,'name2':n2,'type':t,'message':m,'channel':c}
-			sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`) VALUES ('%s','%s','%s','%s','%s','%s',%d)",[str(n1),str(n2),str(m),str(t),str(c),str(int(time.time())),int(self.i)])
-			if t=='topic':
-				temp = sql.query("SELECT channum FROM `irc_topics` WHERE chan='%s'",[str(c).lower()])
-				if len(temp)==0:
-					sql.query("INSERT INTO `irc_topics` (chan,topic) VALUES('%s','%s')",[str(c).lower(),str(m)])
-				else:
-					sql.query("UPDATE `irc_topics` SET topic='%s' WHERE chan='%s'",[str(m),str(c).lower()])
-			if t=='action' or t=='message':
-				sql.query("UPDATE `irc_users` SET lastMsg='%s' WHERE username='%s' AND channel='%s' AND online=%d",[str(int(time.time())),str(n1),str(c),int(self.i)])
-			handle.updateCurline()
+		if sendToOther:
+			handle.sendToOther(n1,n2,t,m,c,self.i)
+		print '(1)<< ',{'name1':n1,'name2':n2,'type':t,'message':m,'channel':c}
+		sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`) VALUES ('%s','%s','%s','%s','%s','%s',%d)",[str(n1),str(n2),str(m),str(t),str(c),str(int(time.time())),int(self.i)])
+		if t=='topic':
+			temp = sql.query("SELECT channum FROM `irc_topics` WHERE chan='%s'",[str(c).lower()])
+			if len(temp)==0:
+				sql.query("INSERT INTO `irc_topics` (chan,topic) VALUES('%s','%s')",[str(c).lower(),str(m)])
+			else:
+				sql.query("UPDATE `irc_topics` SET topic='%s' WHERE chan='%s'",[str(m),str(c).lower()])
+		if t=='action' or t=='message':
+			sql.query("UPDATE `irc_users` SET lastMsg='%s' WHERE username='%s' AND channel='%s' AND online=%d",[str(int(time.time())),str(n1),str(c),int(self.i)])
+		handle.updateCurline()
 		
 	def addUser(self,u,c):
 		if self.userlist.has_key(c):
