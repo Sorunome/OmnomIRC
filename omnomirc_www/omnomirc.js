@@ -231,7 +231,7 @@
 					$('#adminContent').append(
 						'<div style="font-weight:bold">'+name+' Settings</div>',
 						$.map(data,function(d,i){
-							if(i!=='warnings'){
+							if(i!=='warnings' && i!=='errors'){
 								return $('<div>')
 									.append(
 										i,
@@ -324,6 +324,9 @@
 								break;
 							case 'irc':
 								getJSONEditSettings(p,'IRC',data.irc);
+								break;
+							case 'gcn':
+								getJSONEditSettings(p,'gCn',data.gcn);
 								break;
 							case 'misc':
 								getInputBoxSettings(p,'Misc',data);

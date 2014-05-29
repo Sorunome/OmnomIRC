@@ -124,6 +124,9 @@ if($you->isGlobalOp() || !$config['info']['installed']){
 			case 'networks':
 				$json->add('networks',$config['networks']);
 				break;
+			case 'gcn':
+				$json->add('gcn',$config['gcn']);
+				break;
 			case 'misc':
 				$json->add('hostname',$config['settings']['hostname']);
 				$json->add('checkLoginUrl',$config['settings']['checkLoginUrl']);
@@ -191,6 +194,10 @@ if($you->isGlobalOp() || !$config['info']['installed']){
 				break;
 			case 'networks':
 				$config['networks'] = $jsonData;
+				writeConfig();
+				break;
+			case 'gcn':
+				$config['gcn'] = $jsonData;
 				writeConfig();
 				break;
 			case 'misc':
