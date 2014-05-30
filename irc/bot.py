@@ -266,17 +266,6 @@ class Bot(threading.Thread):
 			temp=string.split(self.readbuffer,'\n')
 			self.readbuffer=temp.pop()
 			for line in temp:
-				#try:
-				#	line = line.encode('utf-8')
-				#except:
-				#	try:
-				#		line = line.encode('ascii')
-				#	except:
-				#		try:
-				#			line = line.encode('windows-1258')
-				#		except:
-				#			line = line
-				#			print 'test'
 				print '('+str(self.i)+')'+self.recieveStr+' '+line
 				line=string.rstrip(line)
 				line=string.split(line)
@@ -297,10 +286,12 @@ class Bot(threading.Thread):
 			time.sleep(15)
 			self.run()
 	def joinChans(self):
+		chanstr = ''
 		for c in self.chans:
-			self.send('JOIN %s' % c['chan'],True)
-			if self.main:
-				self.send('WHO %s' % c['chan'])
+			chanstr += c['chan']+','
+		self.send('JOIN %s' % chanstr[:-1],True)
+		if self.main:
+			self.send('WHO %s' % chanstr[:-1])
 	def run(self):
 		global sql
 		self.restart = False
@@ -371,6 +362,12 @@ class OIRCLink(threading.Thread):
 						lastline = 0
 						for row in res:
 							try:
+								for i in ['nick','type','message','channel']:
+									try:
+										row[i] = row[i].encode('utf-8')
+									except:
+										if row[i] != '':
+											row[i] = row[i].decode(chardet.detect(row[i])['encoding']).encode('utf-8')
 								if row['channel'][0] != '#':
 									continue
 								print row
