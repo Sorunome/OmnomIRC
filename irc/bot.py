@@ -228,7 +228,7 @@ class Bot(threading.Thread):
 			self.removeUser(line[3],chan)
 		elif line[1]=='TOPIC':
 			if nick.lower()!=config.json['irc']['topic']['nick'].lower() and nick.lower()!=config.json['irc']['main']['nick'].lower():
-				self.addLine(nick,'','topic',message,chan,False)
+				self.addLine(nick,'','topic',message,chan,True)
 				if config.json['irc']['topic']['nick']=='':
 					handle.sendToOtherRaw('TOPIC %s :%s' % (chan,message),self.i)
 				else:
