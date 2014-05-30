@@ -72,7 +72,7 @@ $lines[] = Array(
 	'name' => '',
 	'message' => $curtopic,
 	'name2' => '',
-	'chan' => $result['channel']
+	'chan' => $you->chan
 );
 $json->add('lines',$lines);
 $users = Array();

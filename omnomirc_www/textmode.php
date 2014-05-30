@@ -19,23 +19,25 @@
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
 session_start();
+if(isset($_GET['login'])){
+	$_SESSION['content'] = '';
+}
 $textmode = true;
 include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 
 
 if(isset($_GET['message'])){
-	echo "<html><body><form action='textmode.php?sendMessage&curline=".((int)$_GET['curline'])."&".$you->getUrlParams()."' method='post'><input type='text' name='message' autofocus autocomplete=\"off\" style='width:100%'><input type='Submit' value='Send'></form><a href=\"textmode.php?curline=".((int)$_GET['curline'])."&".$you->getUrlParams()."\">Cancle</a><table>".$_SESSION['content']."</table></body></html>";
+	echo "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" /></head><body><form action='textmode.php?sendMessage&curline=".((int)$_GET['curline'])."&".$you->getUrlParams()."' method='post'><input type='text' name='message' autofocus autocomplete=\"off\" style='width:100%'><input type='Submit' value='Send'></form><a href=\"textmode.php?curline=".((int)$_GET['curline'])."&".$you->getUrlParams()."\">Cancle</a><table>".$_SESSION['content']."</table></body></html>";
 }elseif (isset($_GET['sendMessage'])){
-	header("Location: message.php?textmode&curline=".$_GET['curline']."&".$you->getUrlParams()."&message=".base64_url_encode($_POST['message']));
+	header("Location: message.php?textmode&curline=".((int)$_GET['curline'])."&".$you->getUrlParams()."&message=".base64_url_encode($_POST['message']));
 }else{
-	
+	$banned = false;
 	if(isset($_GET['update']) && isset($_GET['curline']) && !(isset($_SESSION['content']) && $_SESSION['content']==='')){
 		$curline = (int)$_GET['curline'];
 		$query = $sql->query("SELECT * FROM `irc_lines` WHERE `line_number` > %s AND (`channel` = '%s' OR `channel` = '%s') ORDER BY `line_number` ASC",(int)$curline,$you->chan,$you->nick);
 		$lines = $omnomirc->getLines($query);
 	}else{
 		$curline = 0;
-		$banned = fale;
 		if($you->isBanned()){
 			$banned = true;
 			$liens = Array(
@@ -53,8 +55,8 @@ if(isset($_GET['message'])){
 		}else{
 			$lines = $omnomirc->loadChannel(25);
 		}
+		$_SESSION['content'] = '';
 	}
-	$_SESSION['content'] = '';
 	foreach($lines as $result){
 		$line = "<tr>";
 		$starBeginning = '<td>* '.htmlspecialchars($result['name']).' ';
@@ -95,8 +97,8 @@ if(isset($_GET['message'])){
 				$line .= '<td>* '.htmlspecialchars($result['message']).'</td>';
 				break;
 		}
-		if((int)$result['line_number'] > $curline){
-			$curline = (int)$result['line_number'];
+		if((int)$result['curLine'] > $curline){
+			$curline = (int)$result['curLine'];
 		}
 		if(isset($_SESSION['content'])){
 			$_SESSION['content'] = $line."</tr>".$_SESSION['content'];
@@ -104,6 +106,6 @@ if(isset($_GET['message'])){
 			$_SESSION['content'] = $line."</tr>";
 		}
 	}
-	echo "<html><head>".($banned?'':("<meta http-equiv=\"refresh\" content=\"5;url=textmode.php?update=".time()."&curline=".$curline."&".$you->getUrlParams()."\">"))."</head><body><a href=\"textmode.php?message&curline=".$_SESSION['curline']."&".$you->getUrlParams()."\" autofocus>Click here to write a message</a><br>Channel: ".($you->chan)."<table>".$_SESSION['content']."</table></body></html>";
+	echo "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />".($banned?'':("<meta http-equiv=\"refresh\" content=\"5;url=textmode.php?update=".time()."&curline=".$curline."&".$you->getUrlParams()."\">"))."</head><body><a href=\"textmode.php?message&curline=".$curline."&".$you->getUrlParams()."\" autofocus>Click here to write a message</a><br>Channel: ".($you->chan)."<table>".$_SESSION['content']."</table></body></html>";
 }
 ?>

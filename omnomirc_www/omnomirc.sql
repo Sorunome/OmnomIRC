@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS `irc_permissions` (
   `modes` varchar(120) NOT NULL,
   `isChanModes` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`generic_autoincrementing_prikey`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 ;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8 ;
 
 DROP TABLE IF EXISTS `irc_topics`;
 CREATE TABLE IF NOT EXISTS `irc_topics` (

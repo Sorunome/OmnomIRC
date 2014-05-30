@@ -326,7 +326,7 @@ class You{
 }
 $you = new You();
 class OmnomIRC{
-	public function getLines($res,$overrideIgnores = false){
+	public function getLines($res,$table = 'irc_lines',$overrideIgnores = false){
 		global $you;
 		$userSql = $you->info();
 		if($userSql['name']!=NULL){
@@ -415,7 +415,7 @@ class OmnomIRC{
 					",$table,$you->chan,$you->nick,$you->nick,$you->chan,(int)$count);
 			}
 			
-			$lines = $this->getLines($res);
+			$lines = $this->getLines($res,$table);
 			
 			if(count($lines)<$count && $table=='irc_lines'){
 				$count -= count($lines);

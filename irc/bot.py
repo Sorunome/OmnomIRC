@@ -1,3 +1,6 @@
+## -*- coding: utf-8 -*-
+
+
 #    OmnomIRC COPYRIGHT 2010,2011 Netham45
 #                       2012-2014 Sorunome
 #
@@ -15,7 +18,7 @@
 #
 #    You should have received a copy of the GNU General Public License
 #    along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
-import threading,socket,string,time,sys,json,MySQLdb,traceback,errno
+import threading,socket,string,time,sys,json,MySQLdb,traceback,errno,chardet
 import SocketServer,struct
 print 'Starting OmnomIRC bot...'
 DOCUMENTROOT = '/usr/share/nginx/html/oirc'
@@ -63,10 +66,12 @@ class Sql():
 	def query(self,q,p = []):
 		global config
 		try:
-			db = MySQLdb.connect(config.json['sql']['server'],config.json['sql']['user'],config.json['sql']['passwd'],config.json['sql']['db'])
+			db = MySQLdb.connect(config.json['sql']['server'],config.json['sql']['user'],config.json['sql']['passwd'],config.json['sql']['db'],charset='utf8')
 			cur = db.cursor()
 			for i in range(len(p)):
 				if isinstance(p[i],str):
+					if p[i]!='':
+						p[i] = p[i].decode(chardet.detect(p[i])['encoding']).encode('utf-8')
 					p[i] = db.escape_string(p[i])
 			cur.execute(q % tuple(p))
 			rows = []
@@ -261,6 +266,17 @@ class Bot(threading.Thread):
 			temp=string.split(self.readbuffer,'\n')
 			self.readbuffer=temp.pop()
 			for line in temp:
+				#try:
+				#	line = line.encode('utf-8')
+				#except:
+				#	try:
+				#		line = line.encode('ascii')
+				#	except:
+				#		try:
+				#			line = line.encode('windows-1258')
+				#		except:
+				#			line = line
+				#			print 'test'
 				print '('+str(self.i)+')'+self.recieveStr+' '+line
 				line=string.rstrip(line)
 				line=string.split(line)
