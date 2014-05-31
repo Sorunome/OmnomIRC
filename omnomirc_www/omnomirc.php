@@ -374,7 +374,7 @@ class OmnomIRC{
 							)
 						)
 						ORDER BY `line_number` DESC
-						LIMIT %s
+						LIMIT %d
 					) AS x
 					ORDER BY `line_number` ASC
 					",$table,substr($you->chan,1),$you->nick,$you->nick,substr($you->chan,1),(int)$count);
@@ -408,8 +408,8 @@ class OmnomIRC{
 							AND
 							LOWER(`name2`)=LOWER('%s')
 						)
-						ORDER BY `line_number` DESC 
-						LIMIT %s
+						ORDER BY `line_number` DESC
+						LIMIT %d
 					) AS x
 					ORDER BY `line_number` ASC
 					",$table,$you->chan,$you->nick,$you->nick,$you->chan,(int)$count);

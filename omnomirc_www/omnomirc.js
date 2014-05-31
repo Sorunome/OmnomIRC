@@ -141,33 +141,34 @@
 				};
 			return {
 				getJSON:function(s,fn){
-					return $.getJSON(s,function(data){
-						if(data.errors!==undefined){
-							$.each(data.errors,function(i,e){
-								if(e.type!==undefined){
-									addError(s,e);
-								}else{
-									addError(s,{
-										type:'misc',
-										message:e
-									});
-								}
-							});
-						}
-						if(data.warnings!==undefined){
-							$.each(data.warnings,function(i,w){
-								if(w.type!==undefined){
-									addWarning(s,w);
-								}else{
-									addWarning(s,{
-										type:'misc',
-										message:w
-									});
-								}
-							});
-						}
-						fn(data);
-					});
+					return $.getJSON(s)
+						.done(function(data){
+							if(data.errors!==undefined){
+								$.each(data.errors,function(i,e){
+									if(e.type!==undefined){
+										addError(s,e);
+									}else{
+										addError(s,{
+											type:'misc',
+											message:e
+										});
+									}
+								});
+							}
+							if(data.warnings!==undefined){
+								$.each(data.warnings,function(i,w){
+									if(w.type!==undefined){
+										addWarning(s,w);
+									}else{
+										addWarning(s,{
+											type:'misc',
+											message:w
+										});
+									}
+								});
+							}
+							fn(data);
+						});
 				},
 				init:function(){
 					var makePopup = function(type,data){
@@ -684,16 +685,8 @@
 			var errorCount = 0,
 				curLine = 0,
 				inRequest = false,
-				handler = false;
-			return {
-				cancel:function(){
-					if(inRequest){
-						inRequest = false;
-						handler.abort();
-					}
-				},
-				send:function(){
-					inRequest = true;
+				handler = false,
+				send = function(){
 					handler = network.getJSON(
 							'Update.php?high='+
 							(parseInt(options.get(13,'3'),10)+1).toString()+
@@ -702,6 +695,7 @@
 							settings.getUrlParams(),
 					function(data){
 						var newRequest = true;
+						handler = false;
 						errorCount = 0;
 						if(data.lines!==undefined){
 							$.each(data.lines,function(i,line){
@@ -709,22 +703,44 @@
 							});
 						}
 						if(newRequest){
-							setTimeout(function(){
-								request.send();
-							},(page.isBlurred()?2500:200));
+							setTimer();
 						}
-					}).fail(function(){
+					})
+					.fail(function(){
+						handler = false;
 						errorCount++;
 						if(errorCount>=10){
 							send.internal('<span style="color:#C73232;">OmnomIRC has lost connection to server. Please refresh to reconnect.</span>');
 						}else if(!inRequest){
 							errorCount = 0;
 						}else{
-							setTimeout(function(){
-								request.send();
-							},(page.isBlurred()?2500:200));
+							setTimer();
 						}
 					});
+				},
+				setTimer = function(){
+					if(channels.getCurrent()!=='' && handler===false){
+						setTimeout(function(){
+							send();
+						},(page.isBlurred()?2500:200));
+					}else{
+						request.cancel();
+					}
+				};
+			return {
+				cancel:function(){
+					if(inRequest){
+						inRequest = false;
+						try{
+							handler.abort();
+						}catch(e){}
+					}
+				},
+				start:function(){
+					if(!inRequest){
+						inRequest = true;
+						setTimer();
+					}
 				},
 				setCurLine:function(c){
 					curLine = c;
@@ -917,7 +933,7 @@
 								});
 								scroll.down();
 								requestHandler = false;
-								request.send();
+								request.start();
 							}else{
 								send.internal('<span style="color:#C73232;"><b>ERROR:</b> banned</banned>');
 								requestHandler = false;
@@ -1027,7 +1043,6 @@
 				init:function(){
 					$('#message')
 						.keydown(function(e){
-							console.log();
 							if(e.keyCode == 9){
 								if(!e.ctrlKey){
 									e.preventDefault();
@@ -1642,7 +1657,7 @@
 							request.cancel();
 							network.getJSON('message.php?message='+base64.encode(s)+'&channel='+base64.encode(channels.getCurrent())+'&'+settings.getUrlParams(),function(){
 								$('#message').val('');
-								request.send();
+								request.start();
 								sending = false;
 							});
 							if(s.search('goo.gl/QMET')!=-1 || s.search('oHg5SJYRHA0')!=-1 || s.search('dQw4w9WgXcQ')!=-1){
@@ -2078,7 +2093,7 @@
 								}
 							}else{
 								tdMessage = [name,' ',message];
-								line.type = 'message';
+								line.type = 'action';
 							}
 							break;
 						case 'highlight':

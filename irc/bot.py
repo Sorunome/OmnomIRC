@@ -70,8 +70,11 @@ class Sql():
 			cur = db.cursor()
 			for i in range(len(p)):
 				if isinstance(p[i],str):
-					if p[i]!='':
-						p[i] = p[i].decode(chardet.detect(p[i])['encoding']).encode('utf-8')
+					try:
+						p[i] = p[i].encode('utf-8')
+					except:
+						if p[i]!='':
+							p[i] = p[i].decode(chardet.detect(p[i])['encoding']).encode('utf-8')
 					p[i] = db.escape_string(p[i])
 			cur.execute(q % tuple(p))
 			rows = []
@@ -221,9 +224,13 @@ class Bot(threading.Thread):
 				chan = chan[1:]
 			self.addLine(nick,'','join','',chan,True)
 			self.addUser(nick,chan)
+			if nick.lower()==self.nick.lower():
+				self.getUsersInChan(chan)
 		elif line[1]=='PART':
 			self.addLine(nick,'','part',message,chan,True)
 			self.removeUser(nick,chan)
+			if nick.lower()==self.nick.lower():
+				self.delUsersInChan(chan)
 		elif line[1]=='QUIT':
 			self.handleQuit(nick,' '.join(line[2:])[1:])
 		elif line[1]=='MODE':
@@ -285,13 +292,15 @@ class Bot(threading.Thread):
 			print 'Restarting bot ('+str(self.i)+add
 			time.sleep(15)
 			self.run()
+	def delUsersInChan(self,c):
+		sql.query("DELETE FROM `irc_users` WHERE online = %d AND channel = '%s'",[int(self.i),c])
+	def getUsersInChan(self,c):
+		self.delUsersInChan(c)
+		self.send('WHO %s' % c)
 	def joinChans(self):
 		chanstr = ''
 		for c in self.chans:
-			chanstr += c['chan']+','
-		self.send('JOIN %s' % chanstr[:-1],True)
-		if self.main:
-			self.send('WHO %s' % chanstr[:-1])
+			self.send('JOIN %s' % c['chan'],True)
 	def run(self):
 		global sql
 		self.restart = False

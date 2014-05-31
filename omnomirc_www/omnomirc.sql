@@ -103,10 +103,10 @@ CREATE EVENT `Clean up Userslist` ON SCHEDULE EVERY 1 DAY STARTS '2013-10-31 00:
 DELIMITER $$
 DROP EVENT IF EXISTS `Flush Logs Nightly`$$
 CREATE EVENT `Flush Logs Nightly` ON SCHEDULE EVERY 1 DAY STARTS '2013-10-31 00:00:00' ON COMPLETION NOT PRESERVE ENABLE COMMENT 'Flushes the logs into the archive table' DO BEGIN
-	SET @time := (select max(time) from irc_lines);
-	INSERT INTO irc_lines_old (name1,name2,message,type,channel,time,Online)
-	SELECT name1,name2,message,type,channel,time,Online
-	FROM irc_lines;
-	DELETE FROM irc_lines WHERE time < @time;
+	SET @time := (select max(`time`) from `irc_lines`);
+	INSERT INTO `irc_lines_old` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`Online`)
+	SELECT `name1`,`name2`,`message`,`type`,`channel`,`time`,`Online`
+	FROM `irc_lines` ORDER BY `line_number` ASC;
+	DELETE FROM `irc_lines` WHERE `time` < @time;
 END$$
 DELIMITER ;
