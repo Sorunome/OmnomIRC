@@ -48,7 +48,7 @@ if(isset($_GET['op'])){
 	if(isset($_GET['txt'])){
 		echo $signature."\n".$nick."\n".$uid;
 	}elseif(isset($_GET['textmode'])){
-		header('Location: http://chat.forum.acr.victorz.ca/textmode.php?login&nick='.urlencode($nick).'&sig='.urlencode($signature).'&id='.$uid);
+		header('Location: http://chat.forum.acr.victorz.ca/textmode.php?login&nick='.urlencode($nick).'&signature='.urlencode($signature).'&id='.$uid);
 	}else{
 		header('Content-type: text/json');
 		$json = json_encode(Array(

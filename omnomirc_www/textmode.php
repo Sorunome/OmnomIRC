@@ -62,6 +62,8 @@ if(isset($_GET['message'])){
 		$starBeginning = '<td>* '.htmlspecialchars($result['name']).' ';
 		switch (strtolower($result['type'])){
 			case 'pm':
+				$line .= '(pm)<td>&lt;'.htmlspecialchars($result['name']).'&gt; '.htmlspecialchars($result['message']).'</td>';
+				break;
 			case 'message':
 				$line .= '<td>&lt;'.htmlspecialchars($result['name']).'&gt; '.htmlspecialchars($result['message']).'</td>';
 				break;

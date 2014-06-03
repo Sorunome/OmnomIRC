@@ -687,36 +687,42 @@
 				inRequest = false,
 				handler = false,
 				send = function(){
+					if(channels.getCurrent()===''){
+						return;
+					}
 					handler = network.getJSON(
 							'Update.php?high='+
 							(parseInt(options.get(13,'3'),10)+1).toString()+
 							'&channel='+base64.encode(channels.getCurrent())+
 							'&lineNum='+curLine.toString()+'&'+
 							settings.getUrlParams(),
-					function(data){
-						var newRequest = true;
-						handler = false;
-						errorCount = 0;
-						if(data.lines!==undefined){
-							$.each(data.lines,function(i,line){
-								return newRequest = parser.addLine(line);
-							});
-						}
-						if(newRequest){
-							setTimer();
-						}
-					})
-					.fail(function(){
-						handler = false;
-						errorCount++;
-						if(errorCount>=10){
-							send.internal('<span style="color:#C73232;">OmnomIRC has lost connection to server. Please refresh to reconnect.</span>');
-						}else if(!inRequest){
+						function(data){
+							var newRequest = true;
+							if(channels.getCurrent()===''){
+								return;
+							}
+							handler = false;
 							errorCount = 0;
-						}else{
-							setTimer();
-						}
-					});
+							if(data.lines!==undefined){
+								$.each(data.lines,function(i,line){
+									return newRequest = parser.addLine(line);
+								});
+							}
+							if(newRequest){
+								setTimer();
+							}
+						})
+						.fail(function(){
+							handler = false;
+							errorCount++;
+							if(errorCount>=10){
+								send.internal('<span style="color:#C73232;">OmnomIRC has lost connection to server. Please refresh to reconnect.</span>');
+							}else if(!inRequest){
+								errorCount = 0;
+							}else{
+								setTimer();
+							}
+						});
 				},
 				setTimer = function(){
 					if(channels.getCurrent()!=='' && handler===false){
