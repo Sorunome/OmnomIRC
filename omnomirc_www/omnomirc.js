@@ -1802,7 +1802,8 @@
 					var ne = encodeURIComponent(n);
 					n = $('<span>').text(n).html();
 					var rcolors = [19,20,22,24,25,26,27,28,29],
-						sum = i = 0,
+						sum = 0,
+						i = 0, // using the var0 = var1= 0 trick means that var1 would be global.
 						cn = n;
 					if(options.get(3,'F')=='T'){
 						while(n[i]){
