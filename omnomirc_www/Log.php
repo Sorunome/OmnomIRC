@@ -46,48 +46,43 @@ if(isset($_GET['day'])){
 	$json->addWarning('No day set, defaulting to today');
 }
 $t_high = $t_low + (3600 * 24);
-
-if($channel[0] == "*"){ // PM
-	$sender = substr($channel,1);
-	$channel = $you->nick;
-	$res = $sql->query("SELECT * FROM `irc_lines` 
-							WHERE (
-								((`channel` = '%s'
-								AND `name1` = '%s')
-								OR
-								(`channel` = '%s'
-								AND `name1` = '%s'))
-									AND NOT ((`type` = 'join' OR `type` = 'part') AND `Online` = 1)
-							) AND
-								`time` >= %d
-									AND
-								`time` <= %d
-							ORDER BY `line_number` ASC 
-							LIMIT %d,300
-						",$channel,$sender,$sender,$channel,$t_low,$t_high,$offset);
-}else{
-	$res = $sql->query("SELECT * FROM `irc_lines` 
-								WHERE (
-										(`type` != 'server' AND ((`channel` = '%s' OR `channel` = '%s')
-										AND NOT ((`type` = 'join' OR `type` = 'part') AND `Online` = 1)))
-										OR (`type` = 'server' AND channel='%s' AND name2='%s')
-									) AND
-										`time` >= %d
-									AND
-										`time` <= %d
-								ORDER BY `line_number` ASC 
-								LIMIT %d,300
-									",$channel,$you->nick,$you->nick,$channel,$t_low,$t_high,$offset);
-}
-$userSql = $you->info();
-if($userSql['name']!=NULL){
-	$ignorelist = $userSql['ignores'];
-}
 $lines = Array();
-foreach($res as $result){
-	if(strpos($userSql['ignores'],strtolower($result['name1'])."\n")===false){
+$table = 'irc_lines_old';
+while(true){
+	if($channel[0] == "*"){ // PM
+		$res = $sql->query("SELECT * FROM `%s` 
+								WHERE (
+									((`channel` = '%s'
+									AND `name1` = '%s')
+									OR
+									(`channel` = '%s'
+									AND `name1` = '%s'))
+								) AND
+									`time` >= %d
+										AND
+									`time` <= %d
+								ORDER BY `line_number` ASC 
+								LIMIT %d,1000
+							",$table,substr($channel,1),$you->nick,$you->nick,substr($channel,1),$t_low,$t_high,$offset);
+	}else{
+		$res = $sql->query("SELECT * FROM `%s` 
+									WHERE (
+											(`type` != 'server' AND ((`channel` = '%s' OR `channel` = '%s')
+											)
+											)
+											OR (`type` = 'server' AND channel='%s' AND name2='%s')
+										) AND
+											`time` >= %d
+										AND
+											`time` <= %d
+									ORDER BY `line_number` ASC 
+									LIMIT %d,1000
+										",$table,$channel,$you->nick,$you->nick,$channel,$t_low,$t_high,$offset);
+	}
+	
+	foreach($res as $result){
 		$lines[] = Array(
-			'curLine' => (int)$result['line_number'],
+			'curLine' => ($table=='irc_lines'?(int)$result['line_number']:0),
 			'type' => $result['type'],
 			'network' => (int)$result['Online'],
 			'time' => (int)$result['time'],
@@ -97,6 +92,11 @@ foreach($res as $result){
 			'chan' => $result['channel']
 		);
 	}
+	if(count($lines)<1000 && $table == 'irc_lines_old'){
+		$table = 'irc_lines';
+		continue;
+	}
+	break;
 }
 
 $json->add('lines',$lines);

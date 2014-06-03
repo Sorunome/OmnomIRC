@@ -53,54 +53,9 @@ if($you->isBanned()){
 $json->add('banned',false);
 $json->add('admin',$you->isGlobalOp());
 
+$lines = $omnomirc->loadChannel($count);
 
 
-if($channel[0] == "*"){ // PM
-	$sender = substr($channel,1);
-	$channel = $you->nick;
-	$res = $sql->query("SELECT x.* FROM (
-												SELECT * FROM `irc_lines` 
-												WHERE 
-												((`channel` = '%s'
-												AND `name1` = '%s')
-												OR
-												(`channel` = '%s'
-												AND `name1` = '%s'))
-													AND NOT ((`type` = 'join' OR `type` = 'part') AND `Online` = 1)
-												ORDER BY `line_number` DESC 
-												LIMIT %s
-											) AS x
-											ORDER BY `line_number` ASC",$channel,$sender,$sender,$channel,$count + 0);
-}else{
-	$res = $sql->query("SELECT x.* FROM (
-												SELECT * FROM `irc_lines` 
-												WHERE (`type` != 'server' AND ((`channel` = '%s' OR `channel` = '%s')
-													AND NOT ((`type` = 'join' OR `type` = 'part') AND `Online` = 1)))
-													OR (`type` = 'server' AND channel='%s' AND name2='%s')
-												ORDER BY `line_number` DESC 
-												LIMIT %s
-											) AS x
-											ORDER BY `line_number` ASC",$channel,$you->nick,$you->nick,$channel,$count + 0);
-}
-$userSql = $you->info();
-if($userSql['name']!=NULL){
-	$ignorelist = $userSql['ignores'];
-}
-$lines = Array();
-foreach($res as $result){
-	if(strpos($userSql['ignores'],strtolower($result['name1'])."\n")===false){
-		$lines[] = Array(
-			'curLine' => (int)$result['line_number'],
-			'type' => $result['type'],
-			'network' => (int)$result['Online'],
-			'time' => (int)$result['time'],
-			'name' => $result['name1'],
-			'message' => $result['message'],
-			'name2' => $result['name2'],
-			'chan' => $result['channel']
-		);
-	}
-}
 $temp = $sql->query("SELECT MAX(line_number) AS max FROM `irc_lines`");
 $curMax = $temp[0]['max'];
 $curtopic = $sql->query("SELECT topic FROM `irc_topics` WHERE `chan`='%s'",strtolower($channel));
@@ -117,7 +72,7 @@ $lines[] = Array(
 	'name' => '',
 	'message' => $curtopic,
 	'name2' => '',
-	'chan' => $result['channel']
+	'chan' => $you->chan
 );
 $json->add('lines',$lines);
 $users = Array();

@@ -18,7 +18,10 @@
     You should have received a copy of the GNU General Public License
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
-
+if(isset($_GET['textmode'])){
+	$textmode = true;
+	session_start();
+}
 include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 function removeLinebrakes($s){
 	return str_replace("\0",'',str_replace("\r",'',str_replace("\n",'',$s)));
@@ -47,7 +50,7 @@ $sendNormal = true;
 $reload = false;
 $sendPm = false;
 $userSql = $you->info();
-if(strpos($userSql['bans'],base64_url_decode($_GET['channel'])."\n")!==false){
+if(strpos($userSql['bans'],$you->chan."\n")!==false){
 	$json->addError('banned');
 	echo $json->get();
 	die();
@@ -56,17 +59,38 @@ if(substr($parts[0],0,1)=='/'){
 	switch(strtolower(substr($parts[0],1))) {
 		case 'me':
 			$type = 'action';
-			$message = preg_replace('/\/me/i','',$message,1);
+			$message = substr($message,4);
+			break;
+		case 'join':
+			$channel = substr($message,6);
+			if($channel[0]!='#' && $channel[0]!='&'){
+				$channel = '@'.$channel;
+			}
+			$you->setChan($channel);
+			$_SESSION['content'] = '';
+			$sendNormal = false;
+			break;
+		case 'query':
+			$channel = '*'.substr($message,7);
+			$you->setChan($channel);
+			$_SESSION['content'] = '';
+			$sendNormal = false;
 			break;
 		case 'msg':
 		case 'pm':
 			$pm=true;
 			$channel = $parts[1];
-			$message = '';
-			unset($parts[0]);
-			unset($parts[1]);
-			$message = implode(' ',$parts);
-			$type = 'pm';
+			if($channel[0]!='#' && $channel[0]!='@' && $channel[0]!='*'){
+				$message = '';
+				unset($parts[0]);
+				unset($parts[1]);
+				$message = implode(' ',$parts);
+				$type = 'pm';
+			}else{
+				$sendNormal = false;
+				$sendPm = true;
+				$returnmessage = "\x034ERROR: can't PM a channel";
+			}
 			break;
 		case 'ignore':
 			unset($parts[0]);
@@ -275,7 +299,7 @@ if($channel[0] == '*'){
 
 if($sendNormal){
 	$sql->query("UPDATE `irc_users` SET lastMsg='%s' WHERE username='%s' AND channel='%s' AND online=1",time(),$nick,$channel);
-	$sql->query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES('%s','%s','%s',%d,1,'%s')",$message,$nick,$channel,($type=="action")?1:0,"msg");
+	$sql->query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES('%s','%s','%s',%d,1,'%s')",$message,$nick,$channel,($type=="action")?1:0,$type);
 	$sql->query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s',1)",$nick,$message,$type,$channel,time());
 }
 if($sendPm){
@@ -286,7 +310,7 @@ if($reload){
 }
 if(isset($_GET['textmode'])){
 	session_start();
-	echo "<html><head><meta http-equiv=\"refresh\" content=\"1;url=textmode.php?update=".$_SESSION['curline']."\"></head><body>Sending message...</body></html>";
+	echo "<html><head><meta http-equiv=\"refresh\" content=\"1;url=textmode.php?update=".time()."&curline=".((int)$_GET['curline'])."&".$you->getUrlParams()."\"></head><body>Sending message...</body></html>";
 }else{
 	$json->add('success',true);
 	echo $json->get();

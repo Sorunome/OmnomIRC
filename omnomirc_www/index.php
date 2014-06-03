@@ -114,7 +114,7 @@ echo getPage('OmnomIRC options','
 ','
 <div id="container">
 <div style="font-weight:bold;">OmnomIRC Admin Pannel</div>
-<div id="adminNav"><a page="index">Index</a> | <a page="channels">Channels</a> | <a page="hotlinks">Hotlinks</a> | <a page="smileys">Smileys</a> | <a page="networks">Networks</a> | <a page="sql">SQL</a> | <a page="op">Ops</a> | <a page="irc">IRC</a> | <a page="misc">Misc</a></div>
+<div id="adminNav"><a page="index">Index</a> | <a page="channels">Channels</a> | <a page="hotlinks">Hotlinks</a> | <a page="smileys">Smileys</a> | <a page="networks">Networks</a> | <a page="sql">SQL</a> | <a page="op">Ops</a> | <a page="irc">IRC</a> | <a page="gcn">gCn</a> | <a page="misc">Misc</a></div>
 <div id="adminContent" style="overflow-y:auto;">Loading...</div>
 </div>
 <div id="adminFooter"><a href="index.php">Back to OmnomIRC</a></div>

@@ -52,6 +52,7 @@ class Json{
 	}
 }
 $json = new Json();
+
 function errorHandler($errno,$errstr,$errfile,$errline){
 	global $json;
 	switch($errno){
@@ -64,12 +65,14 @@ function errorHandler($errno,$errstr,$errfile,$errline){
 			$json->addError(Array('type' => 'php','number' => $errno,'message'=>$errstr,'file' => $errfile,'line' => $errline));
 	}
 }
-set_error_handler('errorHandler',E_ALL);
+if(!(isset($textmode) && $textmode===true)){
+	set_error_handler('errorHandler',E_ALL);
+	header('Content-Type: text/json');
+}
 header('Last-Modified: Thu, 01-Jan-1970 00:00:01 GMT');
 header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Cache-Control: post-check=0, pre-check=0',false);
 header('Pragma: no-cache');
-header('Content-Type: text/json');
 date_default_timezone_set('UTC'); 
 include_once(realpath(dirname(__FILE__)).'/config.php');
 function base64_url_encode($input){
@@ -117,7 +120,7 @@ class Sqli{
 		$i = 0;
 		while($row = $result->fetch_assoc()){
 			$res[] = $row;
-			if($i++>=300)
+			if($i++>=1000)
 				break;
 		}
 		if($res === Array()){
@@ -178,7 +181,7 @@ class You{
 			$this->nick = base64_url_decode($_GET['nick']);
 		}else{
 			$json->addError('Nick not set');
-			$this->nick = '0';
+			$this->nick = '';
 		}
 		if(isset($_GET['signature'])){
 			$this->sig = base64_url_decode($_GET['signature']);
@@ -193,12 +196,7 @@ class You{
 			$this->id = 0;
 		}
 		if(isset($_GET['channel'])){
-			$this->chan = base64_url_decode($_GET['channel']);
-			$this->chan = ($this->chan==''?'0':$this->chan);
-			if($this->chan[0]!="*" and $this->chan[0]!="#" and $this->chan[0]!="@" and $this->chan[0]!="&"){
-				$json->addError('Invalid channel');
-				$this->chan = '0';
-			}
+			$this->setChan(base64_url_decode($_GET['channel']));
 		}else{
 			if($ADMINPAGE!==true){
 				$json->addWarning('Didn\'t set a channel, defaulting to '.$defaultChan);
@@ -208,10 +206,41 @@ class You{
 		$this->globalOps = NULL;
 		$this->ops = NULL;
 		$this->infoStuff = NULL;
-		$this->loggedIn = ($this->sig == base64_url_encode($security->sign($this->nick)));
+		$this->loggedIn = ($this->sig == base64_url_encode($security->sign($this->nick)) && $this->nick!=='');
 		if(!$this->loggedIn){
 			$json->addWarning('Not logged in');
 		}
+	}
+	public function setChan($channel){
+		global $json,$config;
+		$this->chan = $channel;
+		if($this->chan == ''){
+			$json->addError('Invalid channel');
+			echo $json->get();
+			die();
+		}
+		if($this->chan[0]!="*" and $this->chan[0]!="#" and $this->chan[0]!="@" and $this->chan[0]!="&"){
+			$json->addError('Invalid channel');
+			echo $json->get();
+			die();
+		}
+		if($this->chan[0]=='#' || $this->chan[0]=='&'){
+			$foundChan = false;
+			foreach($config['channels'] as $chan){
+				if(strtolower($chan['chan'])==strtolower($this->chan)){
+					$foundChan = true;
+					break;
+				}
+			}
+			if(!$foundChan){
+				$json->addError('Invalid channel');
+				echo $json->get();
+				die();
+			}
+		}
+	}
+	public function getUrlParams(){
+		return 'nick='.base64_url_encode($this->nick).'&signature='.base64_url_encode($this->sig).'&id='.($this->id).'&channel='.base64_encode($this->chan);
 	}
 	public function update(){
 		global $sql,$users;
@@ -296,4 +325,108 @@ class You{
 	}
 }
 $you = new You();
+class OmnomIRC{
+	public function getLines($res,$table = 'irc_lines',$overrideIgnores = false){
+		global $you;
+		$userSql = $you->info();
+		if($userSql['name']!=NULL){
+			$ignorelist = $userSql['ignores'];
+		}
+		$lines = Array();
+		foreach($res as $result){
+			if((strpos($userSql['ignores'],strtolower($result['name1'])."\n")===false) || $overrideIgnores){
+				$lines[] = Array(
+					'curLine' => ($table=='irc_lines'?(int)$result['line_number']:0),
+					'type' => $result['type'],
+					'network' => (int)$result['Online'],
+					'time' => (int)$result['time'],
+					'name' => $result['name1'],
+					'message' => $result['message'],
+					'name2' => $result['name2'],
+					'chan' => $result['channel']
+				);
+			}
+		}
+		return $lines;
+	}
+	public function loadChannel($count){
+		global $you,$sql;
+		$table = 'irc_lines';
+		$linesExtra = Array();
+		
+		while(true){
+			if($you->chan[0] == '*'){ // PM
+				$res = $sql->query("
+					SELECT x.* FROM (
+						SELECT * FROM `%s` 
+						WHERE
+						(
+							(
+								LOWER(`channel`) = LOWER('%s')
+								AND
+								LOWER(`name1`) = LOWER('%s')
+							)
+							OR
+							(
+								LOWER(`channel`) = LOWER('%s')
+								AND
+								LOWER(`name1`) = LOWER('%s')
+							)
+						)
+						ORDER BY `line_number` DESC
+						LIMIT %d
+					) AS x
+					ORDER BY `line_number` ASC
+					",$table,substr($you->chan,1),$you->nick,$you->nick,substr($you->chan,1),(int)$count);
+			}else{
+				$res = $sql->query("
+					SELECT x.* FROM (
+						SELECT * FROM `%s`
+						WHERE
+						(
+							`type` != 'server'
+							AND
+							`type` != 'pm'
+							AND
+							(
+								(
+									LOWER(`channel`) = LOWER('%s')
+									OR
+									LOWER(`channel`) = LOWER('%s')
+								)
+							)
+							AND NOT
+							(
+								(`type` = 'join' OR `type` = 'part') AND `Online` = 1
+							)
+						)
+						OR
+						(
+							`type` = 'server'
+							AND
+							LOWER(`channel`)=LOWER('%s')
+							AND
+							LOWER(`name2`)=LOWER('%s')
+						)
+						ORDER BY `line_number` DESC
+						LIMIT %d
+					) AS x
+					ORDER BY `line_number` ASC
+					",$table,$you->chan,$you->nick,$you->nick,$you->chan,(int)$count);
+			}
+			
+			$lines = $this->getLines($res,$table);
+			
+			if(count($lines)<$count && $table=='irc_lines'){
+				$count -= count($lines);
+				$table = 'irc_lines_old';
+				$linesExtra = $lines;
+				continue;
+			}
+			break;
+		}
+		return array_merge($lines,$linesExtra);
+	}
+}
+$omnomirc = new OmnomIRC();
 ?>
