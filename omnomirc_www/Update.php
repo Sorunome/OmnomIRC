@@ -23,7 +23,7 @@ include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 if(isset($_GET['lineNum'])){
 	$curline = (int)$_GET['lineNum'];
 	if($curline < (int)file_get_contents($config['settings']['curidFilePath'])-200){
-		$json->addWarning('lineNum too much in the past, giving only 200');
+		$json->addWarning('lineNum too far in the past, giving only 200');
 		$curline = (int)file_get_contents($config['settings']['curidFilePath'])-200;
 	}
 }else{

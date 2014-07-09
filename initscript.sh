@@ -1,6 +1,6 @@
 #!/bin/bash
 
-####Cofnig####
+####Config####
 SCRIPT="python2 /home/oirc/bot.py"
 RUNAS=oirc
 

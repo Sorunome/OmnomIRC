@@ -110,3 +110,4 @@ CREATE EVENT `Flush Logs Nightly` ON SCHEDULE EVERY 1 DAY STARTS '2013-10-31 00:
 	DELETE FROM `irc_lines` WHERE `time` < @time;
 END$$
 DELIMITER ;
+SET GLOBAL event_scheduler = "ON";

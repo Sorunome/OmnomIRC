@@ -560,7 +560,9 @@ class Main():
 		f = open(config.json['settings']['curidFilePath'])
 		lines = f.readlines()
 		f.close()
-		return int(lines[0])
+		if len(lines)>=1:
+			return int(lines[0])
+		return 0
 	def sendTopicToOther(self,s,c,i):
 		for b in self.topicBots:
 			if i != b.i and not b.main:
