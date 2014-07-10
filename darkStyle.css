@@ -35,12 +35,12 @@ td.curchan,
 .linehigh {
 	border: none;
 }
-#scrollbar:active{
+#scrollBar:active{
 	box-shadow: 0 0 4px #4d4d4d;
 }
 body,
-#scrollbar:hover,
-#scrollbar:active,
+#scrollBar:hover,
+#scrollBar:active,
 #UserListInnerCont:hover{
 	background-color:#121212;
 }
