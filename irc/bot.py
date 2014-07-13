@@ -211,6 +211,8 @@ class Bot(threading.Thread):
 		message = ' '.join(line[3:])[1:]
 		nick = line[0].split('!')[0][1:]
 		chan = line[2]
+		if chan[0]!='#':
+			chan = chan[1:]
 		if line[1]=='PRIVMSG':
 			if line[2][0]!='#' and line[3] == ':DOTHIS' and line[4] == self.passwd:
 				self.send(' '.join(line[5:]))
@@ -220,8 +222,6 @@ class Bot(threading.Thread):
 				else:
 					self.addLine(nick,'','message',message,chan,True)
 		elif line[1]=='JOIN':
-			if chan[0]!='#':
-				chan = chan[1:]
 			self.addLine(nick,'','join','',chan,True)
 			self.addUser(nick,chan)
 			if nick.lower()==self.nick.lower():
