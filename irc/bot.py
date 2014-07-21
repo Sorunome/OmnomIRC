@@ -18,9 +18,8 @@
 #
 #    You should have received a copy of the GNU General Public License
 #    along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
-import threading,socket,string,time,sys,json,MySQLdb,traceback,errno,chardet
-import SocketServer,struct
-print 'Starting OmnomIRC bot...'
+import threading,socket,string,time,sys,json,MySQLdb,traceback,errno,chardet,SocketServer,struct,signal
+print('Starting OmnomIRC bot...')
 DOCUMENTROOT = '/usr/share/nginx/html/oirc'
 
 def findchan(chan):
@@ -71,7 +70,7 @@ class Sql():
 			for i in range(len(p)):
 				if isinstance(p[i],str):
 					try:
-						p[i] = p[i].encode('utf-8')
+						p[i] = p[i].decode('utf-8').encode('utf-8')
 					except:
 						if p[i]!='':
 							p[i] = p[i].decode(chardet.detect(p[i])['encoding']).encode('utf-8')
@@ -88,8 +87,8 @@ class Sql():
 			db.close()
 			return rows
 		except Exception as inst:
-			print '(sql) Error'
-			print inst
+			print('(sql) Error')
+			print(inst)
 			traceback.print_exc()
 			return False
 
@@ -119,24 +118,24 @@ class Bot(threading.Thread):
 			add = ')'
 		else:
 			add = 'T)'
-		print 'Giving signal to quit irc bot... ('+str(self.i)+add
+		print('Giving signal to quit irc bot... ('+str(self.i)+add)
 		self.s.close()
 		self.stopnow = True
 	def sendTopic(self,s,c):
 		self.s.sendall('TOPIC %s :%s\r\n' % (c,s))
-		print '('+str(self.i)+')'+self.sendStr+' '+c+' '+s
+		print('('+str(self.i)+')'+self.sendStr+' '+c+' '+s)
 	def send(self,s,override = False,overrideRestart = False):
 		try:
 			if self.main or override:
 				self.s.sendall('%s\r\n' % s)
-				print '('+str(self.i)+')'+self.sendStr+' '+s
+				print('('+str(self.i)+')'+self.sendStr+' '+s)
 		except:
 			if not self.stopnow and not overrideRestart:
 				self.restart = True
 				self.stopThread()
 	def connectToIRC(self):
 		self.s = socket.socket()
-		self.s.settimeout(60)
+		self.s.settimeout(5)
 		self.s.connect((self.server,self.port))
 		self.send('USER %s %s %s :%s' % (self.nick,self.nick,self.nick,self.nick),True)
 		self.send('NICK %s' % (self.nick),True)
@@ -168,7 +167,7 @@ class Bot(threading.Thread):
 		global sql,handle
 		if sendToOther:
 			handle.sendToOther(n1,n2,t,m,c,self.i)
-		print '(1)<< ',{'name1':n1,'name2':n2,'type':t,'message':m,'channel':c}
+		print('(1)<< ',{'name1':n1,'name2':n2,'type':t,'message':m,'channel':c})
 		sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`) VALUES ('%s','%s','%s','%s','%s','%s',%d)",[str(n1),str(n2),str(m),str(t),str(c),str(int(time.time())),int(self.i)])
 		if t=='topic':
 			temp = sql.query("SELECT channum FROM `irc_topics` WHERE chan='%s'",[str(c).lower()])
@@ -258,38 +257,45 @@ class Bot(threading.Thread):
 			add = ')'
 		else:
 			add = 'T)'
-		print 'Entering main loop ('+str(self.i)+add
+		print('Entering main loop ('+str(self.i)+add)
+		counter = 0
 		while not self.stopnow:
 			try:
 				self.readbuffer += self.s.recv(1024)
-			except socket.error,e:
+			except socket.error as e:
 				if isinstance(e.args,tuple):
 					if e == errno.EPIPE:
 						self.stopnow = True
 						self.restart = True
 			except Exception as inst:
-				print inst
+				print(inst)
 				traceback.print_exc()
 			temp=string.split(self.readbuffer,'\n')
 			self.readbuffer=temp.pop()
+			counter += 1
 			for line in temp:
-				print '('+str(self.i)+')'+self.recieveStr+' '+line
+				print('('+str(self.i)+')'+self.recieveStr+' '+line)
 				line=string.rstrip(line)
 				line=string.split(line)
 				try:
+					counter = 0
 					if(line[0]=='PING'):
 						self.send('PONG %s' % line[1],True)
 						continue
 					if self.main:
 						self.doMain(line)
 				except Exception as inst:
-					print '('+str(self.i)+') parse Error'
-					print inst
+					print('('+str(self.i)+') parse Error')
+					print(inst)
 					traceback.print_exc()
+			if counter > 100:
+				self.stopnow = True
+				self.restart = True
+				print('Restarting due to no pings ('+str(self.i)+add)
 		self.send('QUIT :Bye!',True,False)
 		self.s.close()
 		if self.restart:
-			print 'Restarting bot ('+str(self.i)+add
+			print('Restarting bot ('+str(self.i)+add)
 			time.sleep(15)
 			self.run()
 	def delUsersInChan(self,c):
@@ -309,7 +315,7 @@ class Bot(threading.Thread):
 			add = ')'
 		else:
 			add = 'T)'
-		print 'Starting bot... ('+str(self.i)+add
+		print('Starting bot... ('+str(self.i)+add)
 		if self.main:
 			sql.query('DELETE FROM `irc_users` WHERE online = %d',[int(self.i)])
 		self.connectToIRC()
@@ -323,12 +329,12 @@ class Bot(threading.Thread):
 			try:
 				self.readbuffer += self.s.recv(1024)
 			except Exception as inst:
-				print inst
+				print(inst)
 				traceback.print_exc()
 			temp=string.split(self.readbuffer,'\n')
 			self.readbuffer=temp.pop()
 			for line in temp:
-				print '('+str(self.i)+')'+self.recieveStr+' '+line
+				print('('+str(self.i)+')'+self.recieveStr+' '+line)
 				line=string.rstrip(line)
 				line=string.split(line)
 				try:
@@ -344,7 +350,7 @@ class Bot(threading.Thread):
 						elif identifiedStep==1:
 							identified = True
 				except Exception as inst:
-					print inst
+					print(inst)
 					traceback.print_exc()
 		self.joinChans()
 		self.serve()
@@ -355,7 +361,7 @@ class OIRCLink(threading.Thread):
 		threading.Thread.__init__(self)
 		self.stopnow = False
 	def stopThread(self):
-		print 'Giving signal to quit OmnomIRC link...'
+		print('Giving signal to quit OmnomIRC link...')
 		self.stopnow = True
 	def run(self):
 		global sql,handle,config
@@ -367,19 +373,19 @@ class OIRCLink(threading.Thread):
 					curline = temp
 					res = sql.query('SELECT fromSource,channel,type,action,prikey,nick,message FROM irc_outgoing_messages')
 					if len(res) > 0:
-						print '(1)>> ',res
+						print('(1)>> ',res)
 						lastline = 0
 						for row in res:
 							try:
 								for i in ['nick','type','message','channel']:
 									try:
-										row[i] = row[i].encode('utf-8')
+										row[i] = row[i].decode('utf-8').encode('utf-8')
 									except:
 										if row[i] != '':
 											row[i] = row[i].decode(chardet.detect(row[i])['encoding']).encode('utf-8')
 								if row['channel'][0] != '#':
 									continue
-								print row
+								print(row)
 								handle.sendToOther(row['nick'],'',row['type'],row['message'],row['channel'],row['fromSource'])
 								
 								if row['type']=='topic':
@@ -388,12 +394,12 @@ class OIRCLink(threading.Thread):
 									else:
 										handle.sendTopicToOther(row['message'],row['channel'],1)
 							except Exception as inst:
-								print inst
+								print(inst)
 								traceback.print_exc()
 							lastline = row['prikey']
 						sql.query('DELETE FROM `irc_outgoing_messages` WHERE prikey < %d',[int(lastline)+1])
 			except Exception as inst:
-				print inst
+				print(inst)
 				traceback.print_exc()
 			time.sleep(0.2)
 
@@ -409,13 +415,13 @@ class CalculatorThread(SocketServer.BaseRequestHandler):
 	def userPart(self):
 		handle.removeUser(self.calcName,self.chan,2)
 	def stopThread(self):
-		print 'Giving signal to quit calculator...'
+		print('Giving signal to quit calculator...')
 		self.stopnow = True
 		self.send('\xAD'+('**** Server going down! ****').encode('ASCII'))
 		self.request.close()
 	def checkExit(self):
 		if self.stopnow:
-			print 'exiting...'
+			print('exiting...')
 			exit()
 	def sendToIRC(self,t,m):
 		handle.sendToOther(self.calcName,'',t,m,self.chan,2)
@@ -448,8 +454,8 @@ class CalculatorThread(SocketServer.BaseRequestHandler):
 		self.request.sendall(message)
 	def handle(self):
 		global config
-		print threading.current_thread()
-		print 'New calculator\n'
+		print(threading.current_thread())
+		print('New calculator\n')
 		try:
 			self.request.settimeout(60)
 			connectedCalcs.append(self)
@@ -458,9 +464,9 @@ class CalculatorThread(SocketServer.BaseRequestHandler):
 				time.sleep(0.0001)
 				try:
 					data = self.request.recv(1024)
-				except Exception,err:
-					print 'Error:'
-					print err
+				except Exception as err:
+					print('Error:')
+					print(err)
 					break
 				if not data:  # EOF
 					break
@@ -515,8 +521,8 @@ class CalculatorThread(SocketServer.BaseRequestHandler):
 							self.sendToIRC('message',message)
 				
 				if printString!='':
-					print threading.current_thread()
-					print printString
+					print(threading.current_thread())
+					print(printString)
 			if self.connectedToIRC:
 				self.userPart()
 				self.sendToIRC('quit','client disconnect')
@@ -524,9 +530,9 @@ class CalculatorThread(SocketServer.BaseRequestHandler):
 		except:
 			traceback.print_exc()
 			self.sendToIRC('quit','server error')
-		print threading.current_thread()
+		print(threading.current_thread())
 		connectedCalcs.remove(self)
-		print 'Thread done\n'
+		print('Thread done\n')
 class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 	allow_reuse_address = True
 	pass
@@ -544,8 +550,8 @@ class Main():
 			f.write(str(sql.query("SELECT MAX(line_number) AS max FROM irc_lines")[0]['max']))
 			f.close()
 		except Exception as inst:
-			print 'curline error'
-			print inst
+			print('curline error')
+			print(inst)
 			traceback.print_exc()
 	def addUser(self,u,c,i):
 		temp = sql.query("SELECT usernum FROM irc_users WHERE username='%s' AND channel='%s' AND online=%d",[str(u),str(c),int(i)])
@@ -577,7 +583,7 @@ class Main():
 				if s != b.i and b.main:
 					b.sendLine(n1,n2,t,m,c,s)
 			except Exception as inst:
-				print inst
+				print(inst)
 				traceback.print_exc()
 		if config.json['gcn']['enabled']:
 			for calc in connectedCalcs:
@@ -585,9 +591,12 @@ class Main():
 					if calc.connectedToIRC and (not (s==2 and n1==calc.calcName)) and c.lower()==calc.chan.lower():
 						calc.sendLine(n1,n2,t,m,c,s)
 				except Exception as inst:
-					print inst
+					print(inst)
 					traceback.print_exc()
+	def sigquit(self):
+		print('sigquit')
 	def serve(self):
+		signal.signal(signal.SIGQUIT,self.sigquit)
 		for s in config.json['irc']['main']['servers']:
 			self.mainBots.append(Bot(s['server'],s['port'],config.json['irc']['main']['nick'],s['nickserv'],config.json['channels']+config.json['exChans'],True,config.json['irc']['password'],int(s['network'])))
 			self.mainBots[len(self.mainBots)-1].start()
@@ -609,8 +618,10 @@ class Main():
 				while True:
 					time.sleep(60)
 		except KeyboardInterrupt:
-			print 'KeyboardInterrupt, exiting...'
+			print('KeyboardInterrupt, exiting...')
 			self.quit()
+		except:
+			traceback.print_exc()
 	def quit(self,code=1):
 		global connectedCalcs
 		for b in self.mainBots:
