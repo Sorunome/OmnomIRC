@@ -183,7 +183,7 @@ document.domain="'.$config['settings']['hostname'].'"
 </div>
 
 <div id="mBoxCont">
-	<table id="MessageBox" cellpadding="0px" cellspacing="0px" style="width:100%;height:100%;">
+	<table id="MessageBox" cellpadding="0px" cellspacing="0px" style="width:100%;height:inherit;">
 	</table>
 </div>
 <div id="UserListContainer">
