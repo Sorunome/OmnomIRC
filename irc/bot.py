@@ -202,11 +202,14 @@ class Bot(threading.Thread):
 	def handleNickChange(self,old,new):
 		global handle
 		for c,us in self.userlist.iteritems():
+			changedNicks = []
 			for u in us:
 				if u==old:
 					self.removeUser(old,c)
 					self.addUser(new,c)
-					self.addLine(old,new,'nick','',c,True)
+					if not new in changedNicks:
+						self.addLine(old,new,'nick','',c,True)
+						changedNicks.append(new)
 	def doMain(self,line):
 		global handle,config
 		message = ' '.join(line[3:])[1:]
