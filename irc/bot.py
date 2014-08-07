@@ -178,7 +178,6 @@ class Bot(threading.Thread):
 		if t=='action' or t=='message':
 			sql.query("UPDATE `irc_users` SET lastMsg='%s' WHERE username='%s' AND channel='%s' AND online=%d",[str(int(time.time())),str(n1),str(c),int(self.i)])
 		handle.updateCurline()
-		
 	def addUser(self,u,c):
 		if self.userlist.has_key(c):
 			self.userlist[c].append(u)
@@ -193,10 +192,13 @@ class Bot(threading.Thread):
 	def handleQuit(self,n,m):
 		global handle
 		for c,us in self.userlist.iteritems():
+			removedUsers = []
 			for u in us:
 				if u==n:
 					self.removeUser(n,c)
-					self.addLine(n,'','quit',m,c,True)
+					if not n in removedUsers:
+						self.addLine(n,'','quit',m,c,True)
+						removedUsers.append(n);
 	def handleNickChange(self,old,new):
 		global handle
 		for c,us in self.userlist.iteritems():
