@@ -255,7 +255,7 @@ class Bot(threading.Thread):
 			self.addUser(line[7],line[3])
 		elif line[1]=='315':
 			self.addLine('OmnomIRC','','reload','THE GAME',line[3],False)
-			handle.updateCurline()
+			handle.updateCurline() # others do this automatically
 	def serve(self):
 		global sql
 		if self.main:
@@ -306,7 +306,10 @@ class Bot(threading.Thread):
 					print(inst)
 					traceback.print_exc()
 		self.send('QUIT :%s' % quitMsg,True,False)
-		self.handleQuit('OmnomIRC',quitMsg)
+		self.handleQuit(self.nick,quitMsg)
+		if self.main:
+			sql.query('DELETE FROM `irc_users` WHERE online = %d',[int(self.i)])
+			handle.updateCurline() # others do this automatically
 		self.s.close()
 		if self.restart:
 			print('Restarting bot ('+str(self.i)+add)
