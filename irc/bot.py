@@ -263,7 +263,9 @@ class Bot(threading.Thread):
 		else:
 			add = 'T)'
 		print('Entering main loop ('+str(self.i)+add)
-		counter = 0
+		lastPingTime = time.time()
+		lastLineTime = time.time()
+		quitMsg = 'Bye!';
 		while not self.stopnow:
 			try:
 				self.readbuffer += self.s.recv(1024)
@@ -272,18 +274,28 @@ class Bot(threading.Thread):
 					if e == errno.EPIPE:
 						self.stopnow = True
 						self.restart = True
+						quitMsg = 'Being stupid'
+						print('Restarting due to stupidness ('+str(self.i)+add)
 			except Exception as inst:
 				print(inst)
 				traceback.print_exc()
 			temp=string.split(self.readbuffer,'\n')
 			self.readbuffer=temp.pop()
-			counter += 1
+			if lastPingTime+30 <= time.time():
+				self.send('PING %s' % time.time(),True)
+				lastPingTime = time.time()
 			for line in temp:
 				print('('+str(self.i)+')'+self.recieveStr+' '+line)
 				line=string.rstrip(line)
 				line=string.split(line)
 				try:
-					counter = 0
+					if lastLineTime+40 <= time.time(): # allow up to 10 seconds lag
+						self.stopnow = True
+						self.restart = True
+						quitMsg = 'No pings'
+						print('Restarting due to no pings ('+str(self.i)+add)
+					lastLineTime = time.time()
+					
 					if(line[0]=='PING'):
 						self.send('PONG %s' % line[1],True)
 						continue
@@ -293,11 +305,8 @@ class Bot(threading.Thread):
 					print('('+str(self.i)+') parse Error')
 					print(inst)
 					traceback.print_exc()
-			if counter > 100:
-				self.stopnow = True
-				self.restart = True
-				print('Restarting due to no pings ('+str(self.i)+add)
-		self.send('QUIT :Bye!',True,False)
+		self.send('QUIT :%s' % quitMsg,True,False)
+		self.handleQuit('OmnomIRC',quitMsg)
 		self.s.close()
 		if self.restart:
 			print('Restarting bot ('+str(self.i)+add)
