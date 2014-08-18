@@ -84,6 +84,15 @@ CREATE TABLE IF NOT EXISTS `irc_userstuff` (
   PRIMARY KEY (`usernum`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;
 
+DROP TABLE IF EXISTS `irc_vars`;
+CREATE TABLE IF NOT EXISTS `irc_vars` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` text NOT NULL,
+  `value` text NOT NULL,
+  `type` int(11) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 ;
+
 
 
 DROP EVENT IF EXISTS `Clean up Userstuff`;
