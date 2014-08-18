@@ -1,8 +1,8 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', '1');
-$encriptKeyToUse = 'derpderp';
+$encriptKeyToUse = 'key from Config.php (created while installation)';
 $checkCookie = '__cfduid';
+$oircUrl = 'http://omnomirc.www.omnimaga.org';
+
 function base64_url_encode($input){
 	return strtr(base64_encode($input),'+/=','-_,');
 }
@@ -19,13 +19,13 @@ if(!isset($_GET['op'])){
 	}elseif(!isset($_GET['textmode'])){
 		header('Content-type: text/javascript');
 	}
-	if($loguser['name']=="" || $loguser['powerlevel']<0 || isIPBanned($_SERVER['REMOTE_ADDR'])){
-		$nick = "Guest";
-		$signature = "";
+	if($loguser['name']=='' || $loguser['powerlevel']<0 || isIPBanned($_SERVER['REMOTE_ADDR'])){
+		$nick = 'Guest';
+		$signature = '';
 		$uid = 0;
 	}else{
-		$nick = $loguser['displayname']==""?$loguser['name']:$loguser['displayname'];
-		$signature = base64_url_encode(mcrypt_encrypt ( MCRYPT_RIJNDAEL_256 , $encriptKeyToUse , $nick , MCRYPT_MODE_ECB));
+		$nick = ($loguser['displayname']==''?$loguser['name']:$loguser['displayname']);
+		$signature = base64_url_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256,$encriptKeyToUse,$nick,MCRYPT_MODE_ECB));
 		$uid = $loguser['id'];
 	}
 }
@@ -35,19 +35,20 @@ if(isset($_GET['op'])){
 	header('Content-type: text/json');
 	$id = $_GET['u'];
 	$user = Fetch(Query("select * from {users} where id={0}", $id));
-	$group = '';
-	$n = $user['displayname']==""?$user['name']:$user['displayname'];
-	if(base64_url_decode($_GET['nick'])==$n)
-		$group = $user['powerlevel']>=1;
+	$group = 'false';
+	$n = ($user['displayname']==''?$user['name']:$user['displayname']);
+	if(base64_url_decode($_GET['nick'])==$n && $user['powerlevel']>=1){
+		$group = 'true';
+	}
 	header('Content-type: text/json');
-	echo json_encode(array(
+	echo json_encode(Array(
 		'group' => $group
 	));
 }else{
 	if(isset($_GET['txt'])){
 		echo $signature."\n".$nick."\n".$uid;
 	}elseif(isset($_GET['textmode'])){
-		header('Location: http://chat.ponyville.qc.to/textmode.php?login&nick='.urlencode($nick).'&signature='.urlencode($signature).'&id='.$uid);
+		header('Location: '.$oircUrl.'/textmode.php?login&nick='.urlencode($nick).'&signature='.urlencode($signature).'&id='.$uid);
 	}else{
 		header('Content-type: text/json');
 		$json = json_encode(Array(
