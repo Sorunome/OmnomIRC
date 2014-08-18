@@ -114,9 +114,9 @@ class Sqli{
 			die($mysqli->error.' Query: '.vsprintf($query,$args));
 		}
 		if($result===true){ //nothing returned
-			return array();
+			return Array();
 		}
-		$res = array();
+		$res = Array();
 		$i = 0;
 		while($row = $result->fetch_assoc()){
 			$res[] = $row;
@@ -134,6 +134,137 @@ class Sqli{
 	}
 }
 $sql = new Sqli();
+class GlobalVars{
+	public function set($s,$c,$t = NULL){ //set a global variable
+		global $sql;
+		$type = NULL;
+		if($t===NULL){ //no third parameter, we detect the type
+			switch(gettype($c)){
+				case 'integer':
+					$type = 1;
+					break;
+				case 'double':
+					$type = 2;
+					break;
+				case 'boolean':
+					$type = 4;
+					break;
+				case 'array':
+					$c = json_encode($c);
+					if(json_last_error()===0){
+						$type = 5;
+					}
+					break;
+				case 'object':
+					$c = json_encode($c);
+					if(json_last_error()===0){
+						$type = 3;
+					}
+					break;
+				case 'string':
+				default:
+					json_decode($c);
+					if(json_last_error()){
+						$type = 0;
+					}else{
+						$type = 3;
+					}
+			}
+		}else{
+			switch($t){ //user said which type he wants, we try to convert the variable
+				case 'integer':
+				case 'int':
+					$c = (int)$c;
+					$type = 1;
+					break;
+				case 'double':
+				case 'float':
+					$c = (float)$c;
+					$type = 2;
+					break;
+				case 'boolean':
+				case 'bool':
+					$c = (bool)$c;
+					$type = 4;
+					break;
+				case 'string':
+				case 'str':
+					$c = (string)$c;
+					$type = 0;
+					break;
+				case 'json':
+				case 'object':
+					if(gettype($c)=='string'){
+						json_decode($c);
+						if(json_last_error()){
+							return false;
+						}
+					}else{
+						$c = json_encode($c);
+						if(json_last_error()){
+							return false;
+						}
+					}
+					$type = 3;
+					break;
+				case 'array': //array is actually JSON, only with enabling the array option when parsing
+					if(gettype($c)=='string'){
+						json_decode($c);
+						if(json_last_error()){
+							return false;
+						}
+					}else{
+						$c = json_encode($c);
+						if(json_last_error()){
+							return false;
+						}
+					}
+					$type = 5;
+					break;
+			}
+		}
+		if($type===NULL){ //if we couldn't set a type return false
+			return false;
+		}
+		$r = $sql->query("SELECT id,type FROM irc_vars WHERE name='%s'",$s);
+		$r = $r[0];
+		if(isset($r['id'])){ //check if we need to update or add a new
+			$sql->query("UPDATE irc_vars SET value='%s',type='%s' WHERE name='%s'",$c,$type,$s);
+		}else{
+			$sql->query("INSERT INTO irc_vars (name,value,type) VALUES('%s','%s',%d)",$s,$c,(int)$type);
+		}
+		return true;
+	}
+	public function get($s){
+		global $sql;
+		$res = $sql->query("SELECT value,type FROM irc_vars WHERE name='%s'",$s);
+		$res = $res[0];
+		switch((int)$res['type']){ //convert to types, else return false
+			case 0:
+				return (string)$res['value'];
+			case 1:
+				return (int)$res['value'];
+			case 2:
+				return (float)$res['value'];
+			case 3:
+				$json = json_decode($res['value']);
+				if(json_last_error()){
+					return false;
+				}
+				return $json;
+			case 4:
+				return (bool)$res['value'];
+			case 5:
+				$json = json_decode($res['value'],true);
+				if(json_last_error()){
+					return false;
+				}
+				return $json;
+		}
+		return false;
+	}
+}
+$vars = new GlobalVars();
 class Secure{
 	public function sign($s){
 		global $config;
@@ -196,7 +327,11 @@ class You{
 			$this->id = 0;
 		}
 		if(isset($_GET['channel'])){
-			$this->setChan(base64_url_decode($_GET['channel']));
+			if(preg_match('/^[0-9]+$/',$_GET['channel'])){
+				$this->setChan($_GET['channel']);
+			}else{
+				$this->setChan(base64_url_decode($_GET['channel']));
+			}
 		}else{
 			if($ADMINPAGE!==true){
 				$json->addWarning('Didn\'t set a channel, defaulting to '.$defaultChan);
@@ -213,22 +348,29 @@ class You{
 	}
 	public function setChan($channel){
 		global $json,$config;
-		$this->chan = $channel;
-		if($this->chan == ''){
+		if($channel == ''){
 			$json->addError('Invalid channel');
 			echo $json->get();
 			die();
 		}
-		if($this->chan[0]!="*" and $this->chan[0]!="#" and $this->chan[0]!="@" and $this->chan[0]!="&"){
+		if(!preg_match('/^[0-9]+$/',$channel) && $channel[0]!="*" && $channel[0]!="#" && $channel[0]!="@" && $channel[0]!="&"){
 			$json->addError('Invalid channel');
 			echo $json->get();
 			die();
 		}
-		if($this->chan[0]=='#' || $this->chan[0]=='&'){
+		if($channel[0]=='#' || $channel[0]=='&' || preg_match('/^[0-9]+$/',$channel)){
 			$foundChan = false;
 			foreach($config['channels'] as $chan){
-				if(strtolower($chan['chan'])==strtolower($this->chan)){
-					$foundChan = true;
+				if($chan['enabled']){
+					foreach($chan['networks'] as $cn){
+						if($cn['id'] == 1 && (strtolower($cn['name'])==strtolower($channel) || $chan['id']==$channel)){
+							$channel = $chan['id'];
+							$foundChan = true;
+							break;
+						}
+					}
+				}
+				if($foundChan){
 					break;
 				}
 			}
@@ -238,6 +380,7 @@ class You{
 				die();
 			}
 		}
+		$this->chan = $channel;
 	}
 	public function getUrlParams(){
 		return 'nick='.base64_url_encode($this->nick).'&signature='.base64_url_encode($this->sig).'&id='.($this->id).'&channel='.base64_encode($this->chan);

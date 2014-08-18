@@ -22,9 +22,11 @@ import threading,socket,string,time,sys,json,MySQLdb,traceback,errno,chardet,Soc
 print('Starting OmnomIRC bot...')
 DOCUMENTROOT = '/usr/share/nginx/html/oirc'
 
+#TODO: fix findChan and calc chatting
+
 def findchan(chan):
 	for item in config.json['channels']+config.json['exChans']:
-		if chan.lower() == item['chan'].lower()	:
+		if chan.lower() == item['chan'].lower():
 			return True
 			break
 	return False
@@ -102,17 +104,33 @@ class Bot(threading.Thread):
 		self.port = port
 		self.nick = nick
 		self.ns = ns
-		self.chans = chans
 		self.main = main
 		self.passwd = passwd
 		self.i = i
 		self.userlist = {}
+		self.chans = {}
+		for ch in config.json['channels']:
+			if ch['enabled']:
+				for c in ch['networks']:
+					if c['id'] == i:
+						self.chans[ch['id']] = c['name']
+						break
 		if self.main:
 			self.recieveStr = '>>'
 			self.sendStr = '<<'
 		else:
 			self.recieveStr = 'T>'
 			self.sendStr = 'T<'
+	def idToChan(self,i):
+		if i in self.chans:
+			return self.chans[i]
+		return -1
+	def chanToId(self,c):
+		global config
+		for i,ch in self.chans.iteritems():
+			if c.lower() == ch.lower():
+				return i
+		return -1
 	def stopThread(self):
 		if self.main:
 			add = ')'
@@ -122,8 +140,10 @@ class Bot(threading.Thread):
 		self.s.close()
 		self.stopnow = True
 	def sendTopic(self,s,c):
-		self.s.sendall('TOPIC %s :%s\r\n' % (c,s))
-		print('('+str(self.i)+')'+self.sendStr+' '+c+' '+s)
+		c = self.idToChan(c)
+		if c != -1:
+			self.s.sendall('TOPIC %s :%s\r\n' % (c,s))
+			print('('+str(self.i)+')'+self.sendStr+' '+c+' '+s)
 	def send(self,s,override = False,overrideRestart = False):
 		try:
 			if self.main or override:
@@ -140,76 +160,88 @@ class Bot(threading.Thread):
 		self.send('USER %s %s %s :%s' % (self.nick,self.nick,self.nick,self.nick),True)
 		self.send('NICK %s' % (self.nick),True)
 	def sendLine(self,n1,n2,t,m,c,s): #name 1, name 2, type, message, channel, source
-		colorAdding = '(#)'
-		if s==1:
-			colorAdding = '\x0312(O)\x0F'
-		elif s==2:
-			colorAdding = '\x0310(C)\x0F'
-		if t=='message':
-			self.send('PRIVMSG %s :%s<%s> %s' % (c,colorAdding,n1,m))
-		elif t=='action':
-			self.send('PRIVMSG %s :%s\x036* %s %s' % (c,colorAdding,n1,m))
-		elif t=='join':
-			self.send('PRIVMSG %s :%s\x033* %s has joined %s' % (c,colorAdding,n1,c))
-		elif t=='part':
-			self.send('PRIVMSG %s :%s\x032* %s has left %s (%s)' % (c,colorAdding,n1,c,m))
-		elif t=='quit':
-			self.send('PRIVMSG %s :%s\x032* %s has quit %s (%s)' % (c,colorAdding,n1,c,m))
-		elif t=='mode':
-			self.send('PRIVMSG %s :%s\x033* %s set %s mode %s' % (c,colorAdding,n1,c,m))
-		elif t=='kick':
-			self.send('PRIVMSG %s :%s\x034* %s has kicked %s from %s (%s)' % (c,colorAdding,n1,n2,c,m))
-		elif t=='topic':
-			self.send('PRIVMSG %s :%s\x033* %s has changed the topic to %s' % (c,colorAdding,n1,m))
-		elif t=='nick':
-			self.send('PRIVMSG %s :%s\x033* %s has changed nicks to %s' % (c,colorAdding,n1,n2))
+		c = self.idToChan(c)
+		if c != -1:
+			colorAdding = '(#)'
+			if s==1:
+				colorAdding = '\x0312(O)\x0F'
+			elif s==2:
+				colorAdding = '\x0310(C)\x0F'
+			if t=='message':
+				self.send('PRIVMSG %s :%s<%s> %s' % (c,colorAdding,n1,m))
+			elif t=='action':
+				self.send('PRIVMSG %s :%s\x036* %s %s' % (c,colorAdding,n1,m))
+			elif t=='join':
+				self.send('PRIVMSG %s :%s\x033* %s has joined %s' % (c,colorAdding,n1,c))
+			elif t=='part':
+				self.send('PRIVMSG %s :%s\x032* %s has left %s (%s)' % (c,colorAdding,n1,c,m))
+			elif t=='quit':
+				self.send('PRIVMSG %s :%s\x032* %s has quit %s (%s)' % (c,colorAdding,n1,c,m))
+			elif t=='mode':
+				self.send('PRIVMSG %s :%s\x033* %s set %s mode %s' % (c,colorAdding,n1,c,m))
+			elif t=='kick':
+				self.send('PRIVMSG %s :%s\x034* %s has kicked %s from %s (%s)' % (c,colorAdding,n1,n2,c,m))
+			elif t=='topic':
+				self.send('PRIVMSG %s :%s\x033* %s has changed the topic to %s' % (c,colorAdding,n1,m))
+			elif t=='nick':
+				self.send('PRIVMSG %s :%s\x033* %s has changed nicks to %s' % (c,colorAdding,n1,n2))
 	def addLine(self,n1,n2,t,m,c,sendToOther):
 		global sql,handle
-		if sendToOther:
-			handle.sendToOther(n1,n2,t,m,c,self.i)
-		print('(1)<< ',{'name1':n1,'name2':n2,'type':t,'message':m,'channel':c})
-		sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`) VALUES ('%s','%s','%s','%s','%s','%s',%d)",[str(n1),str(n2),str(m),str(t),str(c),str(int(time.time())),int(self.i)])
-		if t=='topic':
-			temp = sql.query("SELECT channum FROM `irc_topics` WHERE chan='%s'",[str(c).lower()])
-			if len(temp)==0:
-				sql.query("INSERT INTO `irc_topics` (chan,topic) VALUES('%s','%s')",[str(c).lower(),str(m)])
-			else:
-				sql.query("UPDATE `irc_topics` SET topic='%s' WHERE chan='%s'",[str(m),str(c).lower()])
-		if t=='action' or t=='message':
-			sql.query("UPDATE `irc_users` SET lastMsg='%s' WHERE username='%s' AND channel='%s' AND online=%d",[str(int(time.time())),str(n1),str(c),int(self.i)])
-		handle.updateCurline()
+		c = self.chanToId(c)
+		if c != -1:
+			if sendToOther:
+				handle.sendToOther(n1,n2,t,m,c,self.i)
+			print('(1)<< ',{'name1':n1,'name2':n2,'type':t,'message':m,'channel':c})
+			sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`) VALUES ('%s','%s','%s','%s','%s','%s',%d)",[str(n1),str(n2),str(m),str(t),str(c),str(int(time.time())),int(self.i)])
+			if t=='topic':
+				temp = sql.query("SELECT channum FROM `irc_topics` WHERE chan='%s'",[str(c).lower()])
+				if len(temp)==0:
+					sql.query("INSERT INTO `irc_topics` (chan,topic) VALUES('%s','%s')",[str(c).lower(),str(m)])
+				else:
+					sql.query("UPDATE `irc_topics` SET topic='%s' WHERE chan='%s'",[str(m),str(c).lower()])
+			if t=='action' or t=='message':
+				sql.query("UPDATE `irc_users` SET lastMsg='%s' WHERE username='%s' AND channel='%s' AND online=%d",[str(int(time.time())),str(n1),str(c),int(self.i)])
+			handle.updateCurline()
 	def addUser(self,u,c):
-		if self.userlist.has_key(c):
-			self.userlist[c].append(u)
-		else:
-			self.userlist[c] = [u]
-		handle.addUser(u,c,self.i)
+		c = self.chanToId(c)
+		if c != -1:
+			if self.userlist.has_key(c):
+				self.userlist[c].append(u)
+			else:
+				self.userlist[c] = [u]
+			handle.addUser(u,c,self.i)
 	def removeUser(self,u,c):
 		global sql
-		if self.userlist.has_key(c):
-			self.userlist[c].remove(u)
-		handle.removeUser(u,c,self.i)
+		c = self.chanToId(c)
+		if c != -1:
+			if self.userlist.has_key(c):
+				self.userlist[c].remove(u)
+			handle.removeUser(u,c,self.i)
 	def handleQuit(self,n,m):
 		global handle
 		for c,us in self.userlist.iteritems():
 			removedUsers = []
 			for u in us:
 				if u==n:
-					self.removeUser(n,c)
-					if not n in removedUsers:
-						self.addLine(n,'','quit',m,c,True)
-						removedUsers.append(n);
+					c = self.idToChan(c) # userlist array uses ids
+					if c != -1:
+						self.removeUser(n,c)
+						if not n in removedUsers:
+							self.addLine(n,'','quit',m,c,True)
+							removedUsers.append(n);
 	def handleNickChange(self,old,new):
 		global handle
 		for c,us in self.userlist.iteritems():
 			changedNicks = []
 			for u in us:
 				if u==old:
-					self.removeUser(old,c)
-					self.addUser(new,c)
-					if not new in changedNicks:
-						self.addLine(old,new,'nick','',c,True)
-						changedNicks.append(new)
+					c = self.idToChan(c) # userlist array uses ids
+					if c != -1:
+						self.removeUser(old,c)
+						self.addUser(new,c)
+						if not new in changedNicks:
+							self.addLine(old,new,'nick','',c,True)
+							changedNicks.append(new)
 	def doMain(self,line):
 		global handle,config
 		message = ' '.join(line[3:])[1:]
@@ -316,14 +348,15 @@ class Bot(threading.Thread):
 			time.sleep(15)
 			self.run()
 	def delUsersInChan(self,c):
-		sql.query("DELETE FROM `irc_users` WHERE online = %d AND channel = '%s'",[int(self.i),c])
+		c = self.chanToId(c)
+		if c != -1:
+			sql.query("DELETE FROM `irc_users` WHERE online = %d AND channel = '%s'",[int(self.i),c])
 	def getUsersInChan(self,c):
 		self.delUsersInChan(c)
 		self.send('WHO %s' % c)
 	def joinChans(self):
-		chanstr = ''
-		for c in self.chans:
-			self.send('JOIN %s' % c['chan'],True)
+		for i,c in self.chans.iteritems():
+			self.send('JOIN %s' % c,True)
 	def run(self):
 		global sql
 		self.restart = False
@@ -400,16 +433,18 @@ class OIRCLink(threading.Thread):
 									except:
 										if row[i] != '':
 											row[i] = row[i].decode(chardet.detect(row[i])['encoding']).encode('utf-8')
-								if row['channel'][0] != '#':
+								try:
+									int(row['channel'])
+								except ValueError:
 									continue
 								print(row)
-								handle.sendToOther(row['nick'],'',row['type'],row['message'],row['channel'],row['fromSource'])
+								handle.sendToOther(row['nick'],'',row['type'],row['message'],int(row['channel']),row['fromSource'])
 								
 								if row['type']=='topic':
 									if config.json['irc']['topic']['nick']=='':
-										handle.sendToOtherRaw('TOPIC %s :%s' % (row['channel'],row['message']),1)
+										handle.sendToOtherRaw('TOPIC %s :%s' % (int(row['channel']),row['message']),1)
 									else:
-										handle.sendTopicToOther(row['message'],row['channel'],1)
+										handle.sendTopicToOther(row['message'],int(row['channel']),1)
 							except Exception as inst:
 								print(inst)
 								traceback.print_exc()

@@ -63,7 +63,7 @@ if(substr($parts[0],0,1)=='/'){
 			break;
 		case 'join':
 			$channel = substr($message,6);
-			if($channel[0]!='#' && $channel[0]!='&'){
+			if($channel[0]!='#' && $channel[0]!='&' && !preg_match('/^[0-9]+$/',$channel)){
 				$channel = '@'.$channel;
 			}
 			$you->setChan($channel);
@@ -80,7 +80,7 @@ if(substr($parts[0],0,1)=='/'){
 		case 'pm':
 			$pm=true;
 			$channel = $parts[1];
-			if($channel[0]!='#' && $channel[0]!='@' && $channel[0]!='*'){
+			if($channel[0]!='#' && $channel[0]!='@' && $channel[0]!='*' && !preg_match('/^[0-9]+$/',$channel)){
 				$message = '';
 				unset($parts[0]);
 				unset($parts[1]);

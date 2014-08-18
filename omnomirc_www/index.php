@@ -131,7 +131,11 @@ echo getPage('OmnomIRC options','
 }else{
 $hotlinksHTML = '';
 $i = true;
-foreach($config['hotlinks'] as $link){
+
+$textmode = true; // else omnomirc.php will set json headers
+include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
+
+foreach($vars->get('hotlinks') as $link){
 	if($i){
 		$hotlinksHTML .= '<tr>';
 	}

@@ -675,7 +675,7 @@
 							$('#ding')[0].play();
 						}
 					}
-					if(c!=channels.getCurrent()){
+					if(c!=channels.getCurrentName()){
 						channels.highlight(c);
 					}
 				}
@@ -693,7 +693,7 @@
 					handler = network.getJSON(
 							'Update.php?high='+
 							(parseInt(options.get(13,'3'),10)+1).toString()+
-							'&channel='+base64.encode(channels.getCurrent())+
+							'&channel='+channels.getCurrent(false,true)+
 							'&lineNum='+curLine.toString()+'&'+
 							settings.getUrlParams(),
 						function(data){
@@ -759,6 +759,8 @@
 		channels = (function(){
 			var chans = [],
 				current = '',
+				currentb64 = '',
+				currentName = '',
 				save = function(){
 					var chanList = '';
 					$.each(chans,function(i,c){
@@ -778,7 +780,7 @@
 									.addClass('chanList'+(c.high?' highlightChan':''))
 									.append(
 										$('<span>')
-											.addClass('chan '+(c.chan==current?' curchan':''))
+											.addClass('chan '+(getHandler(i)==current?' curchan':''))
 											.append(
 												(c.chan.substr(0,1)!='#'?
 												$('<span>')
@@ -802,7 +804,16 @@
 						})
 					);
 				},
-				requestHandler = false;
+				requestHandler = false,
+				getHandler = function(i,b64){
+					if(chans[i].id!=-1){
+						return chans[i].id;
+					}
+					if(b64){
+						return base64.encode(chans[i].chan);
+					}
+					return chans[i].chan;
+				};
 			return {
 				highlight:function(c){
 					$.each(chans,function(i,ci){
@@ -831,7 +842,9 @@
 						chans.push({
 							chan:s,
 							high:false,
-							ex:false
+							ex:false,
+							id:-1,
+							order:-1
 						});
 						save();
 						draw();
@@ -863,7 +876,9 @@
 						chans.push({
 							chan:s,
 							high:!join,
-							ex:false
+							ex:false,
+							id:-1,
+							order:-1
 						});
 						save();
 						draw();
@@ -881,7 +896,7 @@
 					var select = false;
 					if(i===undefined){
 						$.each(chans,function(ci,c){
-							if(c.chan == current){
+							if(c.chan == current || c.id == current){
 								i = ci;
 							}
 						});
@@ -902,7 +917,7 @@
 						send.internal('<span style="color:#C73232;"> Part Error: I cannot part '+chans[i].chan+'. (IRC channel.)</span>');
 						return;
 					}
-					if(chans[i].chan == current){
+					if(getHandler(i) == current){
 						select = true;
 					}
 					chans.splice(i,1);
@@ -922,8 +937,10 @@
 						if(requestHandler!==false){
 							requestHandler.abort();
 						}
-						requestHandler = network.getJSON('Load.php?count=125&channel='+base64.encode(chans[i].chan)+'&'+settings.getUrlParams(),function(data){
-							current = chans[i].chan;
+						requestHandler = network.getJSON('Load.php?count=125&channel='+getHandler(i,true)+'&'+settings.getUrlParams(),function(data){
+							current = getHandler(i);
+							currentb64 = getHandler(i,true);
+							currentName = chans[i].chan;
 							oldMessages.read();
 							options.set(4,String.fromCharCode(i+45));
 							if(!data.banned){
@@ -955,9 +972,15 @@
 						});
 					}
 				},
-				getCurrent:function(override){
+				getCurrent:function(override,b64){
 					if(requestHandler===false || override){
-						return current;
+						return (b64?currentb64:current);
+					}
+					return '';
+				},
+				getCurrentName:function(){
+					if(requestHandler===false){
+						return currentName;
 					}
 					return '';
 				},
@@ -968,7 +991,9 @@
 							chans.push({
 								chan:base64.decode(c),
 								high:false,
-								ex:false
+								ex:false,
+								id:-1,
+								order:-1
 							});
 						});
 					}
@@ -1130,7 +1155,7 @@
 									'<br>'
 								)
 								.mouseover(function(){
-									getInfo = network.getJSON('Load.php?userinfo&name='+base64.encode(u.nick)+'&chan='+base64.encode(channels.getCurrent())+'&online='+u.network.toString(),function(data){
+									getInfo = network.getJSON('Load.php?userinfo&name='+base64.encode(u.nick)+'&chan='+channels.getCurrent(false,true)+'&online='+u.network.toString(),function(data){
 										if(data.last){
 											$('#lastSeenCont').text('Last Seen: '+(new Date(data.last*1000)).toLocaleString());
 										}else{
@@ -1638,10 +1663,10 @@
 						messages.shift();
 					}
 					counter = messages.length;
-					ls.set('oldMessages-'+base64.encode(channels.getCurrent()),messages.join("\n"));
+					ls.set('oldMessages-'+channels.getCurrent(false,true),messages.join("\n"));
 				},
 				read:function(){
-					var temp = ls.get('oldMessages-'+base64.encode(channels.getCurrent(true)));
+					var temp = ls.get('oldMessages-'+channels.getCurrent(false,true));
 					if(temp!==null){
 						messages = temp.split("\n");
 					}else{
@@ -1661,7 +1686,7 @@
 						if(!sending){
 							sending = true;
 							request.cancel();
-							network.getJSON('message.php?message='+base64.encode(s)+'&channel='+base64.encode(channels.getCurrent())+'&'+settings.getUrlParams(),function(){
+							network.getJSON('message.php?message='+base64.encode(s)+'&channel='+channels.getCurrent(false,true)+'&'+settings.getUrlParams(),function(){
 								$('#message').val('');
 								request.start();
 								sending = false;
@@ -1721,7 +1746,7 @@
 					$('#chattingHeader').css('display','none');
 					$('#logsHeader').css('display','block');
 					
-					$('#logChanIndicator').text(channels.getCurrent());
+					$('#logChanIndicator').text(channels.getCurrentName());
 					
 					$('#logDate').val(parseInt(d.getDate(),10)+'-'+parseInt(d.getMonth()+1,10)+'-'+parseInt(d.getFullYear(),10));
 					isOpen = true;
@@ -1733,7 +1758,7 @@
 					$('#chattingHeader').css('display','block');
 					$('#logsHeader').css('display','none');
 					$.each(channels.getChans(),function(i,c){
-						if(c.chan==channels.getCurrent()){
+						if(c.chan==channels.getCurrent() || c.id==channels.getCurrent()){
 							num = i;
 							return false;
 						}
@@ -1742,7 +1767,7 @@
 					isOpen = false;
 				},
 				fetchPart = function(n){
-					network.getJSON('Log.php?day='+base64.encode($('#logDate').val())+'&offset='+parseInt(n,10)+'&channel='+base64.encode(channels.getCurrent())+'&'+settings.getUrlParams(),function(data){
+					network.getJSON('Log.php?day='+base64.encode($('#logDate').val())+'&offset='+parseInt(n,10)+'&channel='+channels.getCurrent(false,true)+'&'+settings.getUrlParams(),function(data){
 						if(!data.banned){
 							if(data.lines.length>=1000){
 								fetchPart(n+1000);
@@ -1981,7 +2006,7 @@
 							if(logMode!==true && channels.getCurrent()!==''){
 								var num;
 								$.each(channels.getChans(),function(i,c){
-									if(c.chan==channels.getCurrent()){
+									if(c.chan==channels.getCurrent() || c.id==channels.getCurrent()){
 										num = i;
 										return false;
 									}
@@ -1991,7 +2016,7 @@
 							}
 							break;
 						case 'join':
-							tdMessage = [name,' has joined '+channels.getCurrent()];
+							tdMessage = [name,' has joined '+channels.getCurrentName()];
 							if(logMode!==true){
 								users.add({
 									nick:line.name,
@@ -2003,7 +2028,7 @@
 							}
 							break;
 						case 'part':
-							tdMessage = [name,' has left '+channels.getCurrent()+' (',message,')'];
+							tdMessage = [name,' has left '+channels.getCurrentName()+' (',message,')'];
 							if(logMode!==true){
 								users.remove({
 									nick:line.name,
@@ -2027,7 +2052,7 @@
 							}
 							break;
 						case 'kick':
-							tdMessage = [name,' has kicked ',parseName(line.name2,line.network),' from '+channels.getCurrent()+' (',message,')'];
+							tdMessage = [name,' has kicked ',parseName(line.name2,line.network),' from '+channels.getCurrentName()+' (',message,')'];
 							if(logMode!==true){
 								users.remove({
 									nick:line.name2,
@@ -2052,7 +2077,7 @@
 								});
 								message = message.join(' ');
 							}
-							tdMessage = [name,' set '+channels.getCurrent()+' mode ',message];
+							tdMessage = [name,' set '+channels.getCurrentName()+' mode ',message];
 							break;
 						case 'nick':
 							tdMessage = [name,' has changed nicks to ',parseName(line.name2,line.network)];

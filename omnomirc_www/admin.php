@@ -54,21 +54,36 @@ $config = getConfig();
 //JSONSTART
 //'.json_encode($config).'
 //JSONEND
-$defaultChan = $config["channels"][0]["chan"];
+//$defaultChan = $config["channels"][0]["chan"];
 if(isset($_GET["js"])){
+	include_once(realpath(dirname(__FILE__))."/omnomirc.php");
 	header("Content-type: text/json");
 	$channels = Array();
 	foreach($config["channels"] as $chan){
-		$channels[] = Array(
-			"chan" => $chan["chan"],
-			"high" => false,
-			"ex" => !$chan["visible"]
-		);
+		if($chan["enabled"]){
+			foreach($chan["networks"] as $cn){
+				if($cn["id"] == 1){
+					$channels[] = Array(
+						"chan" => $cn["name"],
+						"high" => false,
+						"ex" => $cn["hidden"],
+						"id" => $chan["id"],
+						"order" => $cn["order"]
+					);
+				}
+			}
+		}
 	}
+	usort($channels,function($a,$b){
+		if($a["order"] == $b["order"]){
+			return 0;
+		}
+		return (($a["order"] < $b["order"])?-1:1);
+	});
 	echo json_encode(Array(
 		"hostname" => $config["settings"]["hostname"],
 		"channels" => $channels,
-		"smileys" => $config["smileys"],
+		"smileys" => $vars->get("smileys"),
 		"networks" => $config["networks"],
 		"checkLoginUrl" => (isset($_COOKIE[$config["security"]["cookie"]])?$config["settings"]["checkLoginUrl"]."?sid=".urlencode(htmlspecialchars(str_replace(";","%^%",$_COOKIE[$config["security"]["cookie"]]))):$config["settings"]["checkLoginUrl"]."?sid=THEGAME"),
 		"defaults" => $config["settings"]["defaults"]
@@ -105,7 +120,7 @@ if($you->isGlobalOp() || !$config['info']['installed']){
 				$json->add('exChans',$config['exChans']);
 				break;
 			case 'hotlinks':
-				$json->add('hotlinks',$config['hotlinks']);
+				$json->add('hotlinks',$vars->get('hotlinks'));
 				break;
 			case 'sql':
 				$json->add('server',$config['sql']['server']);
@@ -119,7 +134,7 @@ if($you->isGlobalOp() || !$config['info']['installed']){
 				$json->add('irc',$config['irc']);
 				break;
 			case 'smileys':
-				$json->add('smileys',$config['smileys']);
+				$json->add('smileys',$vars->get('smileys'));
 				break;
 			case 'networks':
 				$json->add('networks',$config['networks']);
@@ -165,8 +180,8 @@ if($you->isGlobalOp() || !$config['info']['installed']){
 				writeConfig();
 				break;
 			case 'hotlinks':
-				$config['hotlinks'] = $jsonData;
-				writeConfig();
+				$vars->set('hotlinks',$jsonData);
+				//writeConfig();
 				break;
 			case 'sql':
 				$config['sql']['server'] = $jsonData['server'];
@@ -189,8 +204,8 @@ if($you->isGlobalOp() || !$config['info']['installed']){
 				writeConfig();
 				break;
 			case 'smileys':
-				$config['smileys'] = $jsonData;
-				writeConfig();
+				$vars->set('smileys',$jsonData);
+				//writeConfig();
 				break;
 			case 'networks':
 				$config['networks'] = $jsonData;
