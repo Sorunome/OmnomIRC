@@ -536,6 +536,7 @@
 							.click(function(e){
 								e.preventDefault();
 								ls.set('OmnomIRCSettings','----------------------------------------');
+								ls.set('OmnomIRCChannels','');
 								document.location.reload();
 							})
 					));
@@ -762,20 +763,110 @@
 				currentb64 = '',
 				currentName = '',
 				save = function(){
-					var chanList = '';
-					$.each(chans,function(i,c){
-						if(c.chan.substr(0,1) != '#'){
-							chanList += base64.encode(c.chan)+'%';
+					ls.set('OmnomIRCChannels',JSON.stringify(chans));
+				},
+				load = function(){
+					try{
+						var chanList = JSON.parse(ls.get('OmnomIRCChannels'));
+						if(chanList!==null && chanList!=[]){
+							chans = $.map(chanList,function(v){
+									if(v.id != -1){
+										var valid = false;
+										$.each(chans,function(i,vc){
+											if(vc.id == v.id){
+												valid = true;
+												v = vc;
+												return false;
+											}
+										});
+										if(!valid){
+											return undefined;
+										}
+									}
+									return v;
+								});
 						}
-					});
-					chanList = chanList.substr(0,chanList.length-1);
-					ls.set('OmnomChannels',chanList);
+					}catch(e){}
 				},
 				draw = function(){
 					$('#ChanList').empty().append(
 						$.map(chans,function(c,i){
 							if((c.ex && options.get(9,'F')=='T') || !c.ex){
+								var mouseX = 0, // new closur as in map
+									startX = 0,
+									initDrag = false,
+									offsetX = 0,
+									canClick = false,
+									width = 0,
+									startDrag = function(elem){
+										width = $(elem).width();
+										canClick = false;
+										$(elem).css({
+												'position':'absolute',
+												'z-index':100,
+												'left':mouseX - offsetX
+											})
+											.after(
+												$('<div>')
+													.attr('id','topicDragPlaceHolder')
+													.css({
+														'display':'inline-block',
+														'width':width
+													})
+											)
+											.addClass('dragging')
+											.find('div').css('display','block').focus();
+										initDrag = false;
+									},
+									mousedownFn = function(e,elem){
+										e.preventDefault();
+										startX = e.clientX;
+										offsetX = startX - $(elem).position().left;
+										initDrag = true;
+									},
+									mousemoveFn = function(e,elem){
+										mouseX = e.clientX;
+										if(initDrag && Math.abs(mouseX - startX) >= 4){
+											initDrag = false;
+											startDrag(elem);
+											e.preventDefault();
+										}else if($(elem).hasClass('dragging')){
+											var newX = mouseX - offsetX;
+											$(elem).css('left',newX);
+											$ne = $('#topicDragPlaceHolder').next('.chanList');
+											$pe = $('#topicDragPlaceHolder').prev('.chanList');
+											if($ne.length > 0 && ($ne.position().left) < (newX + (width/2))){
+												$ne.after($('#topicDragPlaceHolder').remove());
+											}else if($pe.length > 0){
+												if($pe.attr('id') == $(elem).attr('id')){ // we selected our own element!
+													$pe = $pe.prev();
+												}
+												if($pe.length > 0 && $pe.position().left > newX){
+													console.log('yay');
+													$pe.before($('#topicDragPlaceHolder').remove());
+												}
+											}
+										}
+									},
+									mouseupFn = function(e,elem){
+										if(initDrag){
+											initDrag = false;
+										}else{
+											$(elem).find('div').css('display','none');
+											$('#topicDragPlaceHolder').replaceWith(elem);
+											chans = $.map($('.chanList'),function(chan,i){
+												if($(chan).find('span').hasClass('curchan')){
+													options.set(4,String.fromCharCode(i+45));
+												}
+												return $(chan).data('json');
+											});
+											console.log(chans);
+											save();
+											draw();
+										}
+									};
 								return $('<div>')
+									.data('json',c)
 									.attr('id','chan'+i.toString())
 									.addClass('chanList'+(c.high?' highlightChan':''))
 									.append(
@@ -789,17 +880,55 @@
 														width:9,
 														float:'left'
 													})
-													.click(function(){
-														channels.part(i);
+													.mouseup(function(){
+														if(canClick){
+															channels.part(i);
+														}
 													})
 													.text('x')
 												:''),
 												$('<span>').text(c.chan)
 											)
-											.click(function(){
-												channels.join(i);
+											.mouseup(function(){
+												if(canClick){
+													channels.join(i);
+												}
+											}),
+										$('<div>')
+											.css({
+												'position':'fixed',
+												'width':'100%',
+												'height':'100%',
+												'z-index':101,
+												'top':0,
+												'left':0,
+												'display':'none'
 											})
-									);
+											.mousemove(function(e){
+												mousemoveFn(e,$(this).parent());
+											})
+											.mouseup(function(e){
+												mouseupFn(e,$(this).parent());
+											})
+											.mouseout(function(e){
+												mouseupFn(e,$(this).parent());
+											})
+									)
+									.mousedown(function(e){
+										canClick = true;
+										mousedownFn(e,this);
+									})
+									.mousemove(function(e){
+										mousemoveFn(e,this);
+									})
+									.mouseout(function(e){
+										if(initDrag){
+											startDrag(this);
+										}
+									})
+									.mouseup(function(e){
+										mouseupFn(e,this);
+									});
 							}
 						})
 					);
@@ -985,18 +1114,7 @@
 					return '';
 				},
 				init:function(){
-					var chanList = ls.get('OmnomChannels');
-					if(chanList!==null && chanList!==''){
-						$.each(chanList.split('%'),function(i,c){
-							chans.push({
-								chan:base64.decode(c),
-								high:false,
-								ex:false,
-								id:-1,
-								order:-1
-							});
-						});
-					}
+					load();
 					draw();
 				},
 				setChans:function(c){
