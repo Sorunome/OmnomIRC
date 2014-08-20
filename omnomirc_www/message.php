@@ -78,9 +78,9 @@ if(substr($parts[0],0,1)=='/'){
 			break;
 		case 'msg':
 		case 'pm':
-			$pm=true;
-			$channel = $parts[1];
-			if($channel[0]!='#' && $channel[0]!='@' && $channel[0]!='*' && !preg_match('/^[0-9]+$/',$channel)){
+			if(isset($parts[1]) && strlen($parts[1])>=1 && !preg_match('/^([0-9]+$|[#@*])/',$parts[1])){
+				$channel = $parts[1];
+				$pm=true;
 				$message = '';
 				unset($parts[0]);
 				unset($parts[1]);
@@ -150,10 +150,11 @@ if(substr($parts[0],0,1)=='/'){
 			$returnmessage = '';
 			$sendNormal = false;
 			$sendPm = true;
-			if($you->isOp())
+			if($you->isOp()){
 				$returnmessage = "You are op and thus you just lost \x02THE GAME\x02";
-			else
+			}else{
 				$returnmessage = "You aren't op";
+			}
 			break;
 		case 'topic':
 			$sendNormal = false;
