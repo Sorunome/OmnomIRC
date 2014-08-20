@@ -22,14 +22,6 @@ import threading,socket,string,time,sys,json,MySQLdb,traceback,errno,chardet,Soc
 print('Starting OmnomIRC bot...')
 DOCUMENTROOT = '/usr/share/nginx/html/oirc'
 
-#TODO: fix findChan and calc chatting
-
-def findchan(chan):
-	for item in config.json['channels']+config.json['exChans']:
-		if chan.lower() == item['chan'].lower():
-			return True
-			break
-	return False
 
 #config handler
 class Config:
@@ -96,10 +88,11 @@ class Sql():
 
 #irc bot
 class Bot(threading.Thread):
-	def __init__(self,server,port,nick,ns,chans,main,passwd,i):
+	def __init__(self,server,port,nick,ns,main,passwd,i,tbe,mn,tn):
 		threading.Thread.__init__(self)
 		self.stopnow = False
 		self.restart = False
+		self.topicbotExists = tbe
 		self.server = server
 		self.port = port
 		self.nick = nick
@@ -109,6 +102,8 @@ class Bot(threading.Thread):
 		self.i = i
 		self.userlist = {}
 		self.chans = {}
+		self.mainNick = mn
+		self.topicNick = tn
 		for ch in config.json['channels']:
 			if ch['enabled']:
 				for c in ch['networks']:
@@ -126,7 +121,6 @@ class Bot(threading.Thread):
 			return self.chans[i]
 		return -1
 	def chanToId(self,c):
-		global config
 		for i,ch in self.chans.iteritems():
 			if c.lower() == ch.lower():
 				return i
@@ -141,7 +135,7 @@ class Bot(threading.Thread):
 		self.stopnow = True
 	def sendTopic(self,s,c):
 		c = self.idToChan(c)
-		if c != -1:
+		if c != -1 and (self.topicbotExists ^ self.main):
 			self.s.sendall('TOPIC %s :%s\r\n' % (c,s))
 			print('('+str(self.i)+')'+self.sendStr+' '+c+' '+s)
 	def send(self,s,override = False,overrideRestart = False):
@@ -191,7 +185,7 @@ class Bot(threading.Thread):
 		if c != -1:
 			if sendToOther:
 				handle.sendToOther(n1,n2,t,m,c,self.i)
-			print('(1)<< ',{'name1':n1,'name2':n2,'type':t,'message':m,'channel':c})
+			print '(1)<< ',{'name1':n1,'name2':n2,'type':t,'message':m,'channel':c}
 			sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`) VALUES ('%s','%s','%s','%s','%s','%s',%d)",[str(n1),str(n2),str(m),str(t),str(c),str(int(time.time())),int(self.i)])
 			if t=='topic':
 				temp = sql.query("SELECT channum FROM `irc_topics` WHERE chan='%s'",[str(c).lower()])
@@ -242,6 +236,7 @@ class Bot(threading.Thread):
 						if not new in changedNicks:
 							self.addLine(old,new,'nick','',c,True)
 							changedNicks.append(new)
+		return False
 	def doMain(self,line):
 		global handle,config
 		message = ' '.join(line[3:])[1:]
@@ -275,12 +270,9 @@ class Bot(threading.Thread):
 			self.addLine(nick,line[3],'kick',' '.join(line[4:])[1:],chan,True)
 			self.removeUser(line[3],chan)
 		elif line[1]=='TOPIC':
-			if nick.lower()!=config.json['irc']['topic']['nick'].lower() and nick.lower()!=config.json['irc']['main']['nick'].lower():
+			if nick.lower()!=self.mainNick.lower() and nick.lower()!=self.topicNick.lower():
 				self.addLine(nick,'','topic',message,chan,True)
-				if config.json['irc']['topic']['nick']=='':
-					handle.sendToOtherRaw('TOPIC %s :%s' % (chan,message),self.i)
-				else:
-					handle.sendTopicToOther(message,chan,self.i)
+				handle.sendTopicToOther(message,self.chanToId(chan),self.i)
 		elif line[1]=='NICK':
 			self.handleNickChange(nick,line[2][1:])
 		elif line[1]=='352':
@@ -463,9 +455,13 @@ class CalculatorThread(SocketServer.BaseRequestHandler):
 	calcName=''
 	stopnow=False
 	def userJoin(self):
-		handle.addUser(self.calcName,self.chan,2)
+		c = self.chanToId(self.chan)
+		if c!=-1:
+			handle.addUser(self.calcName,c,self.i)
 	def userPart(self):
-		handle.removeUser(self.calcName,self.chan,2)
+		c = self.chanToId(self.chan)
+		if c!=-1:
+			handle.removeUser(self.calcName,c,self.i)
 	def stopThread(self):
 		print('Giving signal to quit calculator...')
 		self.stopnow = True
@@ -476,46 +472,77 @@ class CalculatorThread(SocketServer.BaseRequestHandler):
 			print('exiting...')
 			exit()
 	def sendToIRC(self,t,m):
-		handle.sendToOther(self.calcName,'',t,m,self.chan,2)
-		sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`) VALUES ('%s','%s','%s','%s','%s','%s',%d)",[str(self.calcName),str(''),str(m),str(t),str(self.chan),str(int(time.time())),int(2)])
-		handle.updateCurline()
+		c = self.chanToId(self.chan)
+		if c!=-1:
+			handle.sendToOther(self.calcName,'',t,m,c,self.i)
+			sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`) VALUES ('%s','%s','%s','%s','%s','%s',%d)",[str(self.calcName),str(''),str(m),str(t),str(c),str(int(time.time())),int(self.i)])
+			handle.updateCurline()
 	def sendLine(self,n1,n2,t,m,c,s): #name 1, name 2, type, message, channel, source
-		#n1 = n1.encode('unicode')
-		#m = m.encode('unicode')
-		if t=='message':
-			self.send('\xAD'+'%s:%s' % (n1,m))
-		elif t=='action':
-			self.send('\xAD'+'*%s %s' % (n1,m))
-		elif t=='join':
-			self.send('\xAD'+'*%s has joined %s' % (n1,c))
-		elif t=='part':
-			self.send('\xAD'+'*%s has left %s (%s)' % (n1,c,m))
-		elif t=='quit':
-			self.send('\xAD'+'*%s has quit %s (%s)' % (n1,c,m))
-		elif t=='mode':
-			self.send('\xAD'+'*%s set %s mode %s' % (n1,c,m))
-		elif t=='kick':
-			self.send('\xAD'+'*%s has kicked %s from %s (%s)' % (n1,n2,c,m))
-		elif t=='topic':
-			self.send('\xAD'+'*%s has changed the topic to %s' % (n1,m))
-		elif t=='nick':
-			self.send('\xAD'+'*%s has changed nicks to %s' % (n1,n2))
+		c = self.idToChan(c)
+		if c!=-1:
+			if t=='message':
+				self.send('\xAD'+'%s:%s' % (n1,m))
+			elif t=='action':
+				self.send('\xAD'+'*%s %s' % (n1,m))
+			elif t=='join':
+				self.send('\xAD'+'*%s has joined %s' % (n1,c))
+			elif t=='part':
+				self.send('\xAD'+'*%s has left %s (%s)' % (n1,c,m))
+			elif t=='quit':
+				self.send('\xAD'+'*%s has quit %s (%s)' % (n1,c,m))
+			elif t=='mode':
+				self.send('\xAD'+'*%s set %s mode %s' % (n1,c,m))
+			elif t=='kick':
+				self.send('\xAD'+'*%s has kicked %s from %s (%s)' % (n1,n2,c,m))
+			elif t=='topic':
+				self.send('\xAD'+'*%s has changed the topic to %s' % (n1,m))
+			elif t=='nick':
+				self.send('\xAD'+'*%s has changed nicks to %s' % (n1,n2))
 	def send(self,message):
 		message = '\xFF\x89\x00\x00\x00\x00\x00'+('Omnom').encode('ASCII')+struct.pack('<H',len(message))+message
 		message = struct.pack('<H',len(message)+1)+('b').encode('ASCII')+message+('*').encode('ASCII')
 		self.request.sendall(message)
+	def idToChan(self,i):
+		if i in self.chans:
+			return self.chans[i]
+		return -1
+	def chanToId(self,c):
+		for i,ch in self.chans.iteritems():
+			if c.lower() == ch.lower():
+				return i
+		return -1
+	def findchan(self,chan):
+		for key,value in self.chans.iteritems():
+			if chan.lower() == value.lower():
+				return True
+				break
+		return False
 	def handle(self):
 		global config
 		print(threading.current_thread())
 		print('New calculator\n')
+		self.i = handle.getCalcNetworkId()
+		self.chans = {}
+		self.defaultChan = ''
+		for ch in config.json['channels']:
+			if ch['enabled']:
+				for c in ch['networks']:
+					if c['id'] == self.i:
+						self.chans[ch['id']] = c['name']
+						if self.defaultChan == '':
+							self.defaultChan = c['name']
+						break
+		
 		try:
-			self.request.settimeout(60)
+			self.request.settimeout(10)
 			connectedCalcs.append(self)
 			while not self.stopnow:
 				#data = self.rfile.readline()
 				time.sleep(0.0001)
 				try:
 					data = self.request.recv(1024)
+				except socket.timeout:
+					continue
 				except Exception as err:
 					print('Error:')
 					print(err)
@@ -533,9 +560,9 @@ class CalculatorThread(SocketServer.BaseRequestHandler):
 						self.calcName=self.calcName+data[i]
 					self.chan = self.chan.lower()
 					printString+='Join-message recieved. Calc-Name:'+self.calcName+' Channel:'+self.chan+'\n'
-					if not(findchan(self.chan)):
-						printString+='Invalid channel, defaulting to '+config.json['channels'][0]['chan']+'\n'
-						self.chan=config.json['channels'][0]['chan']
+					if not(self.findchan(self.chan)):
+						printString+='Invalid channel, defaulting to '+self.defaultChan+'\n'
+						self.chan=self.defaultChan
 				if (data[2]=='c'):
 					calcId=data[3:]
 					printString+='Calc-message recieved. Calc-ID:'+calcId+'\n'
@@ -558,7 +585,7 @@ class CalculatorThread(SocketServer.BaseRequestHandler):
 						printString+='msg ('+self.calcName+') '+data[data.find(':',18)+1:-1]+'\n'
 						message=data[data.find(":",18)+1:-1]
 						if message.split(' ')[0].lower()=='/join':
-							if findchan(message[message.find(' ')+1:].lower()):
+							if self.findchan(message[message.find(' ')+1:].lower()):
 								self.sendToIRC('part','')
 								self.userPart()
 								self.chan=message[message.find(' ')+1:].lower()
@@ -582,6 +609,8 @@ class CalculatorThread(SocketServer.BaseRequestHandler):
 		except:
 			traceback.print_exc()
 			self.sendToIRC('quit','server error')
+			if self.connectedToIRC:
+				self.userPart()
 		print(threading.current_thread())
 		connectedCalcs.remove(self)
 		print('Thread done\n')
@@ -593,8 +622,7 @@ class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 class Main():
 	def __init__(self):
 		global config
-		self.mainBots = []
-		self.topicBots = []
+		self.bots = []
 	def updateCurline(self):
 		global config,sql
 		try:
@@ -621,26 +649,28 @@ class Main():
 		if len(lines)>=1:
 			return int(lines[0])
 		return 0
+	def getCalcNetworkId(self):
+		return self.calcNetwork['id']
 	def sendTopicToOther(self,s,c,i):
-		for b in self.topicBots:
-			if i != b.i and not b.main:
+		for b in self.bots:
+			if i != b.i:
 				b.sendTopic(s,c)
 	def sendToOtherRaw(self,s,ib):
-		for b in self.mainBots:
+		for b in self.bots:
 			if ib != b.i and b.main:
 				b.send(s)
 	def sendToOther(self,n1,n2,t,m,c,s):
-		for b in self.mainBots:
+		for b in self.bots:
 			try:
 				if s != b.i and b.main:
 					b.sendLine(n1,n2,t,m,c,s)
 			except Exception as inst:
 				print(inst)
 				traceback.print_exc()
-		if config.json['gcn']['enabled']:
+		if self.calcNetwork != -1:
 			for calc in connectedCalcs:
 				try:
-					if calc.connectedToIRC and (not (s==2 and n1==calc.calcName)) and c.lower()==calc.chan.lower():
+					if calc.connectedToIRC and (not (s==self.calcNetwork['id'] and n1==calc.calcName)) and calc.idToChan(c).lower()==calc.chan.lower():
 						calc.sendLine(n1,n2,t,m,c,s)
 				except Exception as inst:
 					print(inst)
@@ -649,19 +679,24 @@ class Main():
 		print('sigquit')
 	def serve(self):
 		signal.signal(signal.SIGQUIT,self.sigquit)
-		for s in config.json['irc']['main']['servers']:
-			self.mainBots.append(Bot(s['server'],s['port'],config.json['irc']['main']['nick'],s['nickserv'],config.json['channels']+config.json['exChans'],True,config.json['irc']['password'],int(s['network'])))
-			self.mainBots[len(self.mainBots)-1].start()
+		self.calcNetwork = -1
+		for n in config.json['networks']:
+			if n['enabled']:
+				if n['type']==3: # irc
+					haveTopicBot = n['config']['topic']['nick'] != ''
+					self.bots.append(Bot(n['config']['main']['server'],n['config']['main']['port'],n['config']['main']['nick'],n['config']['main']['nickserv'],True,config.json['irc']['password'],int(n['id']),haveTopicBot,n['config']['main']['nick'],n['config']['topic']['nick']))
+					self.bots[len(self.bots)-1].start()
+					if haveTopicBot:
+						self.bots.append(Bot(n['config']['topic']['server'],n['config']['topic']['port'],n['config']['topic']['nick'],n['config']['topic']['nickserv'],False,config.json['irc']['password'],int(n['id']),haveTopicBot,n['config']['main']['nick'],n['config']['topic']['nick']))
+						self.bots[len(self.bots)-1].start()
+				elif n['type']==2: # calc
+					self.calcNetwork = n
 		self.oircLink = OIRCLink()
 		self.oircLink.start()
-		if config.json['irc']['topic']['nick']!='':
-			for s in config.json['irc']['topic']['servers']:
-				self.topicBots.append(Bot(s['server'],s['port'],config.json['irc']['topic']['nick'],s['nickserv'],config.json['channels']+config.json['exChans'],False,config.json['irc']['password'],int(s['network'])))
-				self.topicBots[len(self.topicBots)-1].start()
 		try:
-			if config.json['gcn']['enabled']:
-				sql.query('DELETE FROM `irc_users` WHERE online = %d',[int(2)])
-				self.gCn_server = ThreadedTCPServer((config.json['gcn']['server'],config.json['gcn']['port']),CalculatorThread)
+			if self.calcNetwork!=-1:
+				sql.query('DELETE FROM `irc_users` WHERE online = %d',[self.calcNetwork['id']])
+				self.gCn_server = ThreadedTCPServer((self.calcNetwork['config']['server'],self.calcNetwork['config']['port']),CalculatorThread)
 				gCn_thread = threading.Thread(target=self.gCn_server.serve_forever)
 				gCn_thread.daemon = True
 				gCn_thread.start()
@@ -676,12 +711,10 @@ class Main():
 			traceback.print_exc()
 	def quit(self,code=1):
 		global connectedCalcs
-		for b in self.mainBots:
-			b.stopThread()
-		for b in self.topicBots:
+		for b in self.bots:
 			b.stopThread()
 		self.oircLink.stopThread()
-		if config.json['gcn']['enabled']:
+		if self.calcNetwork != -1:
 			self.gCn_server.shutdown()
 			for i in connectedCalcs:
 				i.stopThread()

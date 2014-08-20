@@ -1601,9 +1601,13 @@
 				},
 				isBlurred = false,
 				init = function(){
+					$('#windowbg2').css('height',parseInt($('html').height(),10) - parseInt($('#message').height() + 14,10));
+					$('#mBoxCont').css('height',parseInt($('#windowbg2').height(),10) - 42);
 					$(window).resize(function(){
-						$('#windowbg2').css('height',parseInt($('html').height(),10) - parseInt($('#message').height() + 14,10));
-						$('#mBoxCont').css('height',parseInt($('#windowbg2').height(),10) - 42);
+						if(!(navigator.userAgent.match(/(iPod|iPhone|iPad)/i) && navigator.userAgent.match(/AppleWebKit/i))){
+							$('#windowbg2').css('height',parseInt($('html').height(),10) - parseInt($('#message').height() + 14,10));
+							$('#mBoxCont').css('height',parseInt($('#windowbg2').height(),10) - 42);
+						}
 						if(options.get(15,'T')=='T'){
 							$('#mBoxCont').css('width',((document.body.offsetWidth/100)*mBoxContWidthOffset)-22);
 							scroll.reCalcBar();
