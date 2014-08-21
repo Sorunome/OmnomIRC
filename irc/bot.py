@@ -151,7 +151,7 @@ class Bot(threading.Thread):
 		self.s = socket.socket()
 		self.s.settimeout(5)
 		self.s.connect((self.server,self.port))
-		self.send('USER %s %s %s :%s' % (self.nick,self.nick,self.nick,self.nick),True)
+		self.send('USER %s %s %s :%s' % ('OmnomIRC','host','server',self.nick),True)
 		self.send('NICK %s' % (self.nick),True)
 	def sendLine(self,n1,n2,t,m,c,s): #name 1, name 2, type, message, channel, source
 		c = self.idToChan(c)
