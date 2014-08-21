@@ -61,9 +61,11 @@ while(true){
 									`time` >= %d
 										AND
 									`time` <= %d
+										AND
+									`online` = %d
 								ORDER BY `line_number` ASC 
 								LIMIT %d,1000
-							",$table,substr($channel,1),$you->nick,$you->nick,substr($channel,1),$t_low,$t_high,$offset);
+							",$table,substr($channel,1),$you->nick,$you->nick,substr($channel,1),$t_low,$t_high,$you->getNetwork(),$offset);
 	}else{
 		$res = $sql->query("SELECT * FROM `%s` 
 									WHERE (

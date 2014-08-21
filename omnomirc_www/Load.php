@@ -76,7 +76,7 @@ $lines[] = Array(
 );
 $json->add('lines',$lines);
 $users = Array();
-$result = $sql->query("SELECT username,online,channel FROM `irc_users` WHERE `channel`='%s' AND `isOnline`='1'",$channel);
+$result = $sql->query("SELECT username,online,channel FROM `irc_users` WHERE `channel`='%s' AND `isOnline`=1",$channel);
 foreach($result as $user){
 	if($user['username']!=NULL){
 		$users[count($users)][0] = strtolower($user['username']);

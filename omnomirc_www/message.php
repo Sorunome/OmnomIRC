@@ -300,14 +300,14 @@ if($channel[0] == '*'){
 
 if($sendNormal){
 	$sql->query("UPDATE `irc_users` SET lastMsg='%s' WHERE username='%s' AND channel='%s' AND online=1",time(),$nick,$channel);
-	$sql->query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES('%s','%s','%s',%d,1,'%s')",$message,$nick,$channel,($type=="action")?1:0,$type);
-	$sql->query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s',1)",$nick,$message,$type,$channel,time());
+	$sql->query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES('%s','%s','%s',%d,%d,'%s')",$message,$nick,$channel,($type=="action")?1:0,$you->getNetwork(),$type);
+	$sql->query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s',%d)",$nick,$message,$type,$channel,time(),$you->getNetwork());
 }
 if($sendPm){
-	$sql->query("INSERT INTO `irc_lines` (name1,message,type,channel,time,name2,online) VALUES('%s','%s','%s','%s','%s','%s',1)","OmnomIRC",$returnmessage,"server",$nick,time(),$channel);
+	$sql->query("INSERT INTO `irc_lines` (name1,message,type,channel,time,name2,online) VALUES('%s','%s','%s','%s','%s','%s',%d)","OmnomIRC",$returnmessage,"server",$nick,time(),$channel,$you->getNetwork());
 }
 if($reload){
-	$sql->query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s',1)","OmnomIRC","THE GAME","reload",$nick,time());
+	$sql->query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s',%d)","OmnomIRC","THE GAME","reload",$nick,time(),$you->getNetwork());
 }
 if(isset($_GET['textmode'])){
 	session_start();

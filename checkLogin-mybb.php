@@ -2,6 +2,7 @@
 $encriptKeyToUse = 'key from Config.php (created while installation)';
 $checkCookie = '__cfduid';
 $oircUrl = 'http://omnomirc.www.omnimaga.org';
+$network = 1;
 
 function base64_url_encode($input){
 	return strtr(base64_encode($input),'+/=','-_,');
@@ -21,14 +22,23 @@ if(!isset($_GET['op'])){
 	}elseif(!isset($_GET['textmode'])){
 		header('Content-type: text/javascript');
 	}
-	if($mybb->user['username']=='' || $mybb->user['isbannedgroup'] || (isset($_GET['sid']) && htmlspecialchars(str_replace(";","%^%",$_COOKIE[$checkCookie]))!=$_GET['sid']) || !isset($_GET['sid'])){
-		$nick = 'Guest';
+	$ts = time();
+	$key = htmlspecialchars(str_replace(";","%^%",$_GET['sid']));
+	$keyParts = explode('|',$key);
+	if(isset($keyParts[1]) && (int)$keyParts[1] < ($ts + 10) && (int)$keyParts[1] > ($ts - 10) && hash('sha512',$_SERVER['REMOTE_ADDR'].$encriptKeyToUse.$ts) == $keyParts[0]){
+		if($mybb->user['username']=='' || $mybb->user['isbannedgroup']){
+			$nick = '';
+			$signature = '';
+			$uid = 0;
+		}else{
+			$nick = $mybb->user['username'];
+			$signature = hash('sha512',$network.$encriptKeyToUse.$nick);
+			$uid = $mybb->user['uid'];
+		}
+	}else{
+		$nick = '';
 		$signature = '';
 		$uid = 0;
-	}else{
-		$nick = $mybb->user['username'];
-		$signature = base64_url_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256,$encriptKeyToUse,$nick,MCRYPT_MODE_ECB));
-		$uid = $mybb->user['uid'];
 	}
 }
 

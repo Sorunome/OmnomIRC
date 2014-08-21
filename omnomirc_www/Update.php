@@ -64,7 +64,38 @@ while(true){
 	}
 	$you->update();
 	if($nick!='0'){
-		$query = $sql->query("SELECT * FROM `irc_lines` WHERE `line_number` > %d AND (((`channel` = '%s' OR `channel` = '%s' OR (`channel` = '%s' AND `name1` = '%s')) AND `type`!='server') OR (`type` = 'server' AND channel='%s' AND name2='%s'))",$curline,$channel,$nick,$pm?$sender:"0",$nick,$nick,$channel);
+		$query = $sql->query("
+			SELECT * FROM `irc_lines`
+			WHERE
+				`line_number` > %d
+			AND
+			(
+				(
+					(
+						`channel` = '%s'
+						OR
+						`channel` = '%s'
+						OR
+						(
+							`channel` = '%s'
+							AND
+							`name1` = '%s'
+							AND
+							`online` = %d
+						)
+					)
+					AND
+					`type`!='server'
+				)
+				OR
+				(
+					`type` = 'server'
+					AND
+					channel='%s'
+					AND
+					name2='%s'
+				)
+		)",$curline,$channel,$nick,$pm?$sender:"0",$nick,$you->getNetwork(),$nick,$channel);
 	}else{
 		$query = $sql->query("SELECT * FROM `irc_lines` WHERE `line_number` > %d AND (`channel` = '%s')",$curline,$channel);
 	}
@@ -76,7 +107,7 @@ while(true){
 	}
 	$lines = Array();
 	if($result['line_number'] === NULL){
-		$temp = $sql->query("SELECT * FROM `irc_lines` WHERE `line_number` > %d AND locate('%s',`message`) != 0 AND NOT (((`type` = 'pm' OR `type` = 'pmaction') AND `name1` <> '%s') OR (`type` = 'server'))",$curline,substr($nick,0,4), $nick);
+		$temp = $sql->query("SELECT * FROM `irc_lines` WHERE `line_number` > %d AND locate('%s',`message`) != 0 AND NOT (((`type` = 'pm' OR `type` = 'pmaction') AND `name1` <> '%s' AND `online` = %d) OR (`type` = 'server'))",$curline,substr($nick,0,4),$nick,$you->getNetwork());
 		$result = $temp[0];
 		if($result['line_number'] === NULL){
 			$temp = $sql->query("SELECT MAX(line_number) AS max FROM `irc_lines`");

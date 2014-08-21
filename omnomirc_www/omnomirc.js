@@ -25,15 +25,17 @@
 				numHigh = 4,
 				uid = 0,
 				checkLoginUrl = '',
+				net = '',
 				networks = [];
 			return {
 				fetch:function(fn){
-					network.getJSON('config.php?js',function(data){
+					network.getJSON('config.php?js'+(document.URL.split('network=')[1]!==undefined?'&network='+document.URL.split('network=')[1].split('&')[0]:''),function(data){
 						hostname = data.hostname;
 						channels.setChans(data.channels);
 						parser.setSmileys(data.smileys);
 						networks = data.networks;
 						checkLoginUrl = data.checkLoginUrl;
+						net = data.network;
 						options.setDefaults(data.defaults);
 						network.getJSON(checkLoginUrl+'&jsoncallback=?',function(data){
 							nick = data.nick;
@@ -46,7 +48,7 @@
 					});
 				},
 				getUrlParams:function(){
-					return 'nick='+base64.encode(nick)+'&signature='+base64.encode(signature)+'&time='+(+new Date()).toString()+'&id='+uid;
+					return 'nick='+base64.encode(nick)+'&signature='+base64.encode(signature)+'&time='+(+new Date()).toString()+'&id='+uid+'&network='+net;
 				},
 				networks:function(){
 					return networks;
@@ -1094,7 +1096,7 @@
 							if(fn!==undefined){
 								fn();
 							}
-							if(settings.nick()!='Guest'){
+							if(settings.nick()!=''){
 								$('#message').removeAttr('disabled');
 							}
 							indicator.stop();
@@ -1840,7 +1842,7 @@
 					});
 				},
 				init:function(){
-					if(settings.nick()!='Guest'){
+					if(settings.nick()!=''){
 						$('#sendMessage')
 							.submit(function(e){
 								e.preventDefault();
@@ -2084,7 +2086,7 @@
 					return colorStr;
 				},
 				parseHighlight = function(s){
-					if(s.toLowerCase().indexOf(settings.nick().toLowerCase().substr(0,parseInt(options.get(13,'3'),10)+1)) >= 0 && settings.nick() != "Guest"){
+					if(s.toLowerCase().indexOf(settings.nick().toLowerCase().substr(0,parseInt(options.get(13,'3'),10)+1)) >= 0 && settings.nick() != ''){
 						var style = '';
 						if(options.get(2,'T')!='T'){
 							style += 'background:none;padding:none;border:none;';

@@ -21,14 +21,23 @@ if(!isset($_GET['op'])){
 	}elseif(!isset($_GET['textmode'])){
 		header('Content-type: text/javascript');
 	}
-	if($user_info['name']=='' || $user_info['is_guest'] || is_not_banned() || (isset($_GET['sid']) && htmlspecialchars(str_replace(";","%^%",$_COOKIE[$checkCookie]))!=$_GET['sid']) || !isset($_GET['sid'])){
-		$nick = 'Guest';
+	$ts = time();
+	$key = htmlspecialchars(str_replace(";","%^%",$_GET['sid']));
+	$keyParts = explode('|',$key);
+	if(isset($keyParts[1]) && (int)$keyParts[1] < ($ts + 10) && (int)$keyParts[1] > ($ts - 10) && hash('sha512',$_SERVER['REMOTE_ADDR'].$encriptKeyToUse.$ts) == $keyParts[0]){
+		if($user_info['name']=='' || $user_info['is_guest'] || is_not_banned()){
+			$nick = '';
+			$signature = '';
+			$uid = 0;
+		}else{
+			$nick = $user_info['name'];
+			$signature = hash('sha512',$network.$encriptKeyToUse.$nick);
+			$uid = $context['user']['id'];
+		}
+	}else{
+		$nick = '';
 		$signature = '';
 		$uid = 0;
-	}else{
-		$nick = $user_info['name'];
-		$signature = base64_url_encode(mcrypt_encrypt(MCRYPT_RIJNDAEL_256,$encriptKeyToUse,$nick,MCRYPT_MODE_ECB));
-		$uid = $context['user']['id'];
 	}
 }
 

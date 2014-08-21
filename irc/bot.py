@@ -154,31 +154,38 @@ class Bot(threading.Thread):
 		self.send('USER %s %s %s :%s' % ('OmnomIRC','host','server',self.nick),True)
 		self.send('NICK %s' % (self.nick),True)
 	def sendLine(self,n1,n2,t,m,c,s): #name 1, name 2, type, message, channel, source
+		global config
 		c = self.idToChan(c)
 		if c != -1:
-			colorAdding = '(#)'
-			if s==1:
-				colorAdding = '\x0312(O)\x0F'
-			elif s==2:
-				colorAdding = '\x0310(C)\x0F'
-			if t=='message':
-				self.send('PRIVMSG %s :%s<%s> %s' % (c,colorAdding,n1,m))
-			elif t=='action':
-				self.send('PRIVMSG %s :%s\x036* %s %s' % (c,colorAdding,n1,m))
-			elif t=='join':
-				self.send('PRIVMSG %s :%s\x033* %s has joined %s' % (c,colorAdding,n1,c))
-			elif t=='part':
-				self.send('PRIVMSG %s :%s\x032* %s has left %s (%s)' % (c,colorAdding,n1,c,m))
-			elif t=='quit':
-				self.send('PRIVMSG %s :%s\x032* %s has quit %s (%s)' % (c,colorAdding,n1,c,m))
-			elif t=='mode':
-				self.send('PRIVMSG %s :%s\x033* %s set %s mode %s' % (c,colorAdding,n1,c,m))
-			elif t=='kick':
-				self.send('PRIVMSG %s :%s\x034* %s has kicked %s from %s (%s)' % (c,colorAdding,n1,n2,c,m))
-			elif t=='topic':
-				self.send('PRIVMSG %s :%s\x033* %s has changed the topic to %s' % (c,colorAdding,n1,m))
-			elif t=='nick':
-				self.send('PRIVMSG %s :%s\x033* %s has changed nicks to %s' % (c,colorAdding,n1,n2))
+			colorAdding = ''
+			for n in config.json['networks']:
+				if n['id'] == s:
+					if n['irc']['color']==-2:
+						colorAdding = '\x02'+n['irc']['prefix']+'\x02'
+					elif n['irc']['color']==-1:
+						colorAdding = n['irc']['prefix']
+					else:
+						colorAdding = '\x03'+str(n['irc']['color'])+n['irc']['prefix']+'\x0F'
+					break
+			if colorAdding!='':
+				if t=='message':
+					self.send('PRIVMSG %s :%s<%s> %s' % (c,colorAdding,n1,m))
+				elif t=='action':
+					self.send('PRIVMSG %s :%s\x036* %s %s' % (c,colorAdding,n1,m))
+				elif t=='join':
+					self.send('PRIVMSG %s :%s\x033* %s has joined %s' % (c,colorAdding,n1,c))
+				elif t=='part':
+					self.send('PRIVMSG %s :%s\x032* %s has left %s (%s)' % (c,colorAdding,n1,c,m))
+				elif t=='quit':
+					self.send('PRIVMSG %s :%s\x032* %s has quit %s (%s)' % (c,colorAdding,n1,c,m))
+				elif t=='mode':
+					self.send('PRIVMSG %s :%s\x033* %s set %s mode %s' % (c,colorAdding,n1,c,m))
+				elif t=='kick':
+					self.send('PRIVMSG %s :%s\x034* %s has kicked %s from %s (%s)' % (c,colorAdding,n1,n2,c,m))
+				elif t=='topic':
+					self.send('PRIVMSG %s :%s\x033* %s has changed the topic to %s' % (c,colorAdding,n1,m))
+				elif t=='nick':
+					self.send('PRIVMSG %s :%s\x033* %s has changed nicks to %s' % (c,colorAdding,n1,n2))
 	def addLine(self,n1,n2,t,m,c,sendToOther):
 		global sql,handle
 		c = self.chanToId(c)
@@ -684,10 +691,10 @@ class Main():
 			if n['enabled']:
 				if n['type']==3: # irc
 					haveTopicBot = n['config']['topic']['nick'] != ''
-					self.bots.append(Bot(n['config']['main']['server'],n['config']['main']['port'],n['config']['main']['nick'],n['config']['main']['nickserv'],True,config.json['irc']['password'],int(n['id']),haveTopicBot,n['config']['main']['nick'],n['config']['topic']['nick']))
+					self.bots.append(Bot(n['config']['main']['server'],n['config']['main']['port'],n['config']['main']['nick'],n['config']['main']['nickserv'],True,config.json['security']['ircPwd'],int(n['id']),haveTopicBot,n['config']['main']['nick'],n['config']['topic']['nick']))
 					self.bots[len(self.bots)-1].start()
 					if haveTopicBot:
-						self.bots.append(Bot(n['config']['topic']['server'],n['config']['topic']['port'],n['config']['topic']['nick'],n['config']['topic']['nickserv'],False,config.json['irc']['password'],int(n['id']),haveTopicBot,n['config']['main']['nick'],n['config']['topic']['nick']))
+						self.bots.append(Bot(n['config']['topic']['server'],n['config']['topic']['port'],n['config']['topic']['nick'],n['config']['topic']['nickserv'],False,config.json['security']['ircPwd'],int(n['id']),haveTopicBot,n['config']['main']['nick'],n['config']['topic']['nick']))
 						self.bots[len(self.bots)-1].start()
 				elif n['type']==2: # calc
 					self.calcNetwork = n

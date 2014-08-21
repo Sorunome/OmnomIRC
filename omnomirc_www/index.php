@@ -20,16 +20,22 @@
 */
 error_reporting(E_ALL);
 ini_set('display_errors','1');
-include_once(realpath(dirname(__FILE__)).'/config.php');
+
+$textmode = true; // else omnomirc.php will set json headers
+include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
+
+
 function getPage($title,$head,$body,$page){
-	global $config;
+	global $config,$networks,$you;
+	$ess = $networks->get($you->getNetwork());
+	$ess = $ess['config']['externalStyleSheet'];
 	return '<!DOCTYPE html>'.
 			'<html>'.
 			'<head>'.
 				'<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />'.
 				'<link rel="icon" type="image/png" href="omni.png">'.
 				'<link rel="stylesheet" type="text/css" href="style.css" />'.
-				($config['settings']['externalStyleSheet']!=''?'<link rel="stylesheet" type="text/css" href="'.$config['settings']['externalStyleSheet'].'" />':'').
+				($ess!=''?'<link rel="stylesheet" type="text/css" href="'.$ess.'" />':'').
 				'<script src="btoa.js"></script>'.
 				'<script type="text/javascript" src="jquery-1.11.0.min.js"></script>'.
 				'<script src="omnomirc.js"></script>'.
@@ -114,7 +120,7 @@ echo getPage('OmnomIRC options','
 ','
 <div id="container">
 <div style="font-weight:bold;">OmnomIRC Admin Pannel</div>
-<div id="adminNav"><a page="index">Index</a> | <a page="channels">Channels</a> | <a page="hotlinks">Hotlinks</a> | <a page="smileys">Smileys</a> | <a page="networks">Networks</a> | <a page="sql">SQL</a> | <a page="op">Ops</a> | <a page="irc">IRC</a> | <a page="gcn">gCn</a> | <a page="misc">Misc</a></div>
+<div id="adminNav"><a page="index">Index</a> | <a page="channels">Channels</a> | <a page="hotlinks">Hotlinks</a> | <a page="smileys">Smileys</a> | <a page="networks">Networks</a> | <a page="sql">SQL</a> | <a page="op">Ops</a> | <a page="misc">Misc</a></div>
 <div id="adminContent" style="overflow-y:auto;">Loading...</div>
 </div>
 <div id="adminFooter"><a href="index.php">Back to OmnomIRC</a></div>
@@ -132,8 +138,6 @@ echo getPage('OmnomIRC options','
 $hotlinksHTML = '';
 $i = true;
 
-$textmode = true; // else omnomirc.php will set json headers
-include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 
 foreach($vars->get('hotlinks') as $link){
 	if($i){

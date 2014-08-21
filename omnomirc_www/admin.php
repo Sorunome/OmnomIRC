@@ -54,7 +54,6 @@ $config = getConfig();
 //JSONSTART
 //'.json_encode($config).'
 //JSONEND
-//$defaultChan = $config["channels"][0]["chan"];
 if(isset($_GET["js"])){
 	include_once(realpath(dirname(__FILE__))."/omnomirc.php");
 	header("Content-type: text/json");
@@ -80,13 +79,19 @@ if(isset($_GET["js"])){
 		}
 		return (($a["order"] < $b["order"])?-1:1);
 	});
+	$net = $networks->get($you->getNetwork());
+	$defaults = $net["config"]["defaults"];
+	$cl = $net["config"]["checkLogin"];
+	$ts = time();
+	$cl .= "?sid=".urlencode(htmlspecialchars(str_replace(";","%^%",hash("sha512",$_SERVER["REMOTE_ADDR"].$config["security"]["sigKey"].$ts)."|".$ts)));
 	echo json_encode(Array(
 		"hostname" => $config["settings"]["hostname"],
 		"channels" => $channels,
 		"smileys" => $vars->get("smileys"),
 		"networks" => $config["networks"],
-		"checkLoginUrl" => (isset($_COOKIE[$config["security"]["cookie"]])?$config["settings"]["checkLoginUrl"]."?sid=".urlencode(htmlspecialchars(str_replace(";","%^%",$_COOKIE[$config["security"]["cookie"]]))):$config["settings"]["checkLoginUrl"]."?sid=THEGAME"),
-		"defaults" => $config["settings"]["defaults"]
+		"network" => $you->getNetwork(),
+		"checkLoginUrl" => $cl,
+		"defaults" => $defaults
 	));
 }
 ?>';
@@ -104,8 +109,8 @@ if($you->isGlobalOp() || !$config['info']['installed']){
 		$json->addWarning('SigKey wasn\'t set, storing random value');
 		writeConfig(true);
 	}
-	if($config['irc']['password']==''){
-		$config['irc']['password'] = getRandKey();
+	if($config['security']['ircPwd']==''){
+		$config['security']['ircPwd'] = getRandKey();
 		$json->addWarning('IRC bot password wasn\'t set, storing random value');
 		writeConfig(true);
 	}
@@ -130,24 +135,15 @@ if($you->isGlobalOp() || !$config['info']['installed']){
 			case 'op':
 				$json->add('opGroups',$config['opGroups']);
 				break;
-			case 'irc':
-				$json->add('irc',$config['irc']);
-				break;
 			case 'smileys':
 				$json->add('smileys',$vars->get('smileys'));
 				break;
 			case 'networks':
 				$json->add('networks',$config['networks']);
 				break;
-			case 'gcn':
-				$json->add('gcn',$config['gcn']);
-				break;
 			case 'misc':
 				$json->add('hostname',$config['settings']['hostname']);
-				$json->add('checkLoginUrl',$config['settings']['checkLoginUrl']);
-				$json->add('cookie',$config['security']['cookie']);
 				$json->add('curidFilePath',$config['settings']['curidFilePath']);
-				$json->add('externalStyleSheet',$config['settings']['externalStyleSheet']);
 				break;
 			default:
 				$json->addError('Invalid page');
@@ -199,10 +195,6 @@ if($you->isGlobalOp() || !$config['info']['installed']){
 				$config['opGroups'] = $jsonData;
 				writeConfig();
 				break;
-			case 'irc':
-				$config['irc'] = $jsonData;
-				writeConfig();
-				break;
 			case 'smileys':
 				$vars->set('smileys',$jsonData);
 				//writeConfig();
@@ -211,16 +203,9 @@ if($you->isGlobalOp() || !$config['info']['installed']){
 				$config['networks'] = $jsonData;
 				writeConfig();
 				break;
-			case 'gcn':
-				$config['gcn'] = $jsonData;
-				writeConfig();
-				break;
 			case 'misc':
 				$config['settings']['hostname'] = $jsonData['hostname'];
-				$config['settings']['checkLoginUrl'] = $jsonData['checkLoginUrl'];
-				$config['security']['cookie'] = $jsonData['cookie'];
 				$config['settings']['curidFilePath'] = $jsonData['curidFilePath'];
-				$config['settings']['externalStyleSheet'] = $jsonData['externalStyleSheet'];
 				writeConfig();
 				break;
 			default:

@@ -266,12 +266,29 @@ class GlobalVars{
 }
 $vars = new GlobalVars();
 class Secure{
-	public function sign($s){
+	public function sign($s,$n){
 		global $config;
-		return mcrypt_encrypt(MCRYPT_RIJNDAEL_256,$config['security']['sigKey'],$s,MCRYPT_MODE_ECB);
+		return hash('sha512',$n.$config['security']['sigKey'].$s);
 	}
 }
 $security = new Secure();
+class Networks{
+	private $nets;
+	public function __construct(){
+		global $config;
+		$this->nets = Array();
+		foreach($config['networks'] as $n){
+			$this->nets[$n['id']] = $n;
+		}
+	}
+	public function get($i){
+		if(isset($this->nets[$i])){
+			return $this->nets[$i];
+		}
+		return NULL;
+	}
+}
+$networks = new Networks();
 class Users{
 	public function notifyJoin($nick,$channel){
 		global $sql;
@@ -303,9 +320,10 @@ class You{
 	private $globalOps;
 	private $ops;
 	private $infoStuff;
+	private $network;
 	public $chan;
 	public function __construct($n = false){
-		global $security,$defaultChan,$json,$ADMINPAGE;
+		global $security,$defaultChan,$json,$ADMINPAGE,$config,$networks;
 		if($n!==false){
 			$this->nick = $n;
 		}elseif(isset($_GET['nick'])){
@@ -338,10 +356,23 @@ class You{
 			}
 			$this->chan = $defaultChan;
 		}
+		if(isset($_GET['network'])){
+			if(($this->network = $networks->get((int)$_GET['network'])) != NULL){
+				if($this->network['type'] == 1){
+					$this->network = $this->network['id'];
+				}else{
+					$this->network = $config['settings']['defaultNetwork'];
+				}
+			}else{
+				$this->network = $config['settings']['defaultNetwork'];
+			}
+		}else{
+			$this->network = $config['settings']['defaultNetwork'];
+		}
 		$this->globalOps = NULL;
 		$this->ops = NULL;
 		$this->infoStuff = NULL;
-		$this->loggedIn = ($this->sig == base64_url_encode($security->sign($this->nick)) && $this->nick!=='');
+		$this->loggedIn = ($this->sig == $security->sign($this->nick,$this->network) && $this->nick!=='');
 		if(!$this->loggedIn){
 			$json->addWarning('Not logged in');
 		}
@@ -383,7 +414,7 @@ class You{
 		$this->chan = $channel;
 	}
 	public function getUrlParams(){
-		return 'nick='.base64_url_encode($this->nick).'&signature='.base64_url_encode($this->sig).'&id='.($this->id).'&channel='.base64_encode($this->chan);
+		return 'nick='.base64_url_encode($this->nick).'&signature='.base64_url_encode($this->sig).'&id='.($this->id).'&channel='.base64_encode($this->chan).'&network='.$this->getNetwork();
 	}
 	public function update(){
 		global $sql,$users;
@@ -418,7 +449,7 @@ class You{
 		return $userSql;
 	}
 	public function isGlobalOp(){
-		global $config;
+		global $config,$networks;
 		if(!$config['info']['installed']){
 			return true;
 		}
@@ -434,7 +465,9 @@ class You{
 			$this->globalOps = true;
 			return true;
 		}
-		$returnPosition = json_decode(trim(file_get_contents($config['settings']['checkLoginUrl'].'?op&u='.$this->id.'&nick='.base64_url_encode($this->nick))));
+		$cl = $networks->get($this->getNetwork());
+		$cl = $cl['config']['checkLogin'];
+		$returnPosition = json_decode(trim(file_get_contents($cl.'?op&u='.$this->id.'&nick='.base64_url_encode($this->nick))));
 		if(in_array($returnPosition->group,$config['opGroups'])){
 			$this->globalOps = true;
 			return true;
@@ -465,6 +498,9 @@ class You{
 			return true;
 		}
 		return false;
+	}
+	public function getNetwork(){
+		return $this->network;
 	}
 }
 $you = new You();
@@ -516,11 +552,12 @@ class OmnomIRC{
 								LOWER(`name1`) = LOWER('%s')
 							)
 						)
+						AND `online` = %d
 						ORDER BY `line_number` DESC
 						LIMIT %d
 					) AS x
 					ORDER BY `line_number` ASC
-					",$table,substr($you->chan,1),$you->nick,$you->nick,substr($you->chan,1),(int)$count);
+					",$table,substr($you->chan,1),$you->nick,$you->nick,substr($you->chan,1),$you->getNetwork(),(int)$count);
 			}else{
 				$res = $sql->query("
 					SELECT x.* FROM (
