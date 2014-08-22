@@ -36,7 +36,7 @@ if(!isset($_GET['op'])){
 			$uid = 0;
 		}else{
 			$nick = $user->data['username'];
-			$signature = base64_url_encode(mcrypt_encrypt ( MCRYPT_RIJNDAEL_256 , $encriptKeyToUse , $nick , MCRYPT_MODE_ECB));
+			$signature = hash('sha512',$network.$encriptKeyToUse.$nick);
 			$uid = (int)$user->data['user_id'];
 		}
 	}else{
