@@ -73,7 +73,7 @@ header('Last-Modified: Thu, 01-Jan-1970 00:00:01 GMT');
 header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Cache-Control: post-check=0, pre-check=0',false);
 header('Pragma: no-cache');
-date_default_timezone_set('UTC'); 
+date_default_timezone_set('UTC');
 include_once(realpath(dirname(__FILE__)).'/config.php');
 function base64_url_encode($input){
 	return strtr(base64_encode($input),'+/=','-_,');

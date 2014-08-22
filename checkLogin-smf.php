@@ -3,6 +3,7 @@ $encriptKeyToUse = 'key from Config.php (created while installation)';
 $oircUrl = 'http://omnomirc.www.omnimaga.org';
 $network = 1;
 
+date_default_timezone_set('UTC');
 function base64_url_encode($input) {
 	return strtr(base64_encode($input),'+/=','-_,');
 }
