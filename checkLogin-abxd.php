@@ -1,6 +1,5 @@
 <?php
 $encriptKeyToUse = 'key from Config.php (created while installation)';
-$checkCookie = '__cfduid';
 $oircUrl = 'http://omnomirc.www.omnimaga.org';
 $network = 1;
 
@@ -58,7 +57,7 @@ if(isset($_GET['op'])){
 	if(isset($_GET['txt'])){
 		echo $signature."\n".$nick."\n".$uid;
 	}elseif(isset($_GET['textmode'])){
-		header('Location: '.$oircUrl.'/textmode.php?login&nick='.urlencode($nick).'&signature='.urlencode($signature).'&id='.$uid);
+		header('Location: '.$oircUrl.'/textmode.php?login&nick='.urlencode($nick).'&signature='.urlencode($signature).'&id='.$uid.(isset($_GET['network'])?'&network='.(int)$_GET['network']:''));
 	}else{
 		header('Content-type: text/json');
 		$json = json_encode(Array(
