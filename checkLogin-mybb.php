@@ -39,7 +39,7 @@ if(!isset($_GET['op'])){
 }
 
 ob_end_clean();
-if(isset($_GET['op'])){
+if(isset($_GET['op']) && !isset($_GET['time'])){
 	header('Content-Type: text/json');
 	$id = $_GET['u'];
 	$user = get_user((int) $id);
