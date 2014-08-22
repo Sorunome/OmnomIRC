@@ -37,7 +37,7 @@
 						checkLoginUrl = data.checkLoginUrl;
 						net = data.network;
 						options.setDefaults(data.defaults);
-						network.getJSON(checkLoginUrl+'&jsoncallback=?',function(data){
+						network.getJSON(checkLoginUrl+'&network='+net.toString()+'&jsoncallback=?',function(data){
 							nick = data.nick;
 							signature = data.signature;
 							uid = data.uid;
@@ -55,6 +55,9 @@
 				},
 				nick:function(){
 					return nick;
+				},
+				net:function(){
+					return net;
 				}
 			};
 		})(),
@@ -345,6 +348,7 @@
 						loadPage($(this).attr('page'));
 					});
 					settings.fetch(function(){
+						page.changeLinks();
 						loadPage('index');
 					});
 					$(window).resize(function(){
@@ -473,17 +477,17 @@
 					if(optionsNum < 1 || optionsNum > 40){
 						return;
 					}
-					var optionsString = ls.get('OmnomIRCSettings');
+					var optionsString = ls.get('OmnomIRCSettings'+settings.net());
 					if(optionsString===null){
-						ls.set('OmnomIRCSettings','----------------------------------------');
-						optionsString = ls.get('OmnomIRCSettings');
+						ls.set('OmnomIRCSettings'+settings.net(),'----------------------------------------');
+						optionsString = ls.get('OmnomIRCSettings'+settings.net());
 					}
 					optionsString = optionsString.substring(0,optionsNum-1)+value+optionsString.substring(optionsNum);
-					ls.set('OmnomIRCSettings',optionsString);
+					ls.set('OmnomIRCSettings'+settings.net(),optionsString);
 					refreshCache = true;
 				},
 				get:function(optionsNum,defaultOption){
-					var optionsString = (refreshCache?(cache=ls.get('OmnomIRCSettings')):cache),
+					var optionsString = (refreshCache?(cache=ls.get('OmnomIRCSettings'+settings.net())):cache),
 						result;
 					refreshCache = false;
 					if(optionsString===null){
@@ -537,8 +541,8 @@
 							.text('Reset Defaults')
 							.click(function(e){
 								e.preventDefault();
-								ls.set('OmnomIRCSettings','----------------------------------------');
-								ls.set('OmnomIRCChannels','');
+								ls.set('OmnomIRCSettings'+settings.net(),'----------------------------------------');
+								ls.set('OmnomIRCChannels'+settings.net(),'');
 								document.location.reload();
 							})
 					));
@@ -765,11 +769,11 @@
 				currentb64 = '',
 				currentName = '',
 				save = function(){
-					ls.set('OmnomIRCChannels',JSON.stringify(chans));
+					ls.set('OmnomIRCChannels'+settings.net(),JSON.stringify(chans));
 				},
 				load = function(){
 					try{
-						var chanList = JSON.parse(ls.get('OmnomIRCChannels'));
+						var chanList = JSON.parse(ls.get('OmnomIRCChannels'+settings.net()));
 						if(chanList!==null && chanList!=[]){
 							chans = $.map(chanList,function(v){
 									if(v.id != -1){
@@ -1603,6 +1607,7 @@
 				},
 				isBlurred = false,
 				init = function(){
+					page.changeLinks();
 					$('#windowbg2').css('height',parseInt($('html').height(),10) - parseInt($('#message').height() + 14,10));
 					$('#mBoxCont').css('height',parseInt($('#windowbg2').height(),10) - 42);
 					$(window).resize(function(){
@@ -1675,6 +1680,16 @@
 				},
 				isBlurred:function(){
 					return isBlurred;
+				},
+				changeLinks:function(){
+					// change links to add network
+					$('#adminLink a,a[href="."],a[href="?options"],a[href="index.php"]').each(function(){
+						if($(this).attr('href').split('?')[1] !== undefined){
+							$(this).attr('href',$(this).attr('href')+'&network='+settings.net());
+						}else{
+							$(this).attr('href',$(this).attr('href')+'?network='+settings.net());
+						}
+					});
 				}
 			};
 		})(),
@@ -2322,6 +2337,7 @@
 		switch($('body').attr('page')){
 			case 'options':
 				settings.fetch(function(){
+					page.changeLinks();
 					$('#options').append(options.getHTML());
 				});
 				break;

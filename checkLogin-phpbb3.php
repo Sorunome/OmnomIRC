@@ -23,33 +23,29 @@ $auth->acl($user->data);
 ob_start();
 if(!isset($_GET['op'])){
 	if(isset($_GET['txt'])){
-		header('Content-type: text/plain');
+		header('Content-Type: text/plain');
 	}elseif(!isset($_GET['textmode'])){
-		header('Content-type: text/javascript');
+		header('Content-Type: text/javascript');
 	}
-	$ts = time();
-	$key = htmlspecialchars(str_replace(';','%^%',$_GET['sid']));
-	$keyParts = explode('|',$key);
-	if(isset($keyParts[1]) && (int)$keyParts[1] < ($ts + 60) && (int)$keyParts[1] > ($ts - 60) && hash('sha512',$_SERVER['REMOTE_ADDR'].$encriptKeyToUse.$keyParts[1]) == $keyParts[0]){
-		if($user->data['is_registered'] != 1){
-			$nick = '';
-			$signature = '';
-			$uid = 0;
-		}else{
+	$nick = '';
+	$signature = '';
+	$uid = 0;
+	if(isset($_GET['sid']) && isset($_GET['network']) && $_GET['network'] == $network){
+		$ts = time();
+		$key = htmlspecialchars(str_replace(';','%^%',$_GET['sid']));
+		$keyParts = explode('|',$key);
+		if(isset($keyParts[1]) && (int)$keyParts[1] < ($ts + 60) && (int)$keyParts[1] > ($ts - 60) && hash('sha512',$_SERVER['REMOTE_ADDR'].$encriptKeyToUse.$keyParts[1]) == $keyParts[0]
+					&& $user->data['is_registered']){ // TODO: not banned etc
 			$nick = $user->data['username'];
 			$signature = hash('sha512',$network.$encriptKeyToUse.$nick);
 			$uid = (int)$user->data['user_id'];
 		}
-	}else{
-		$nick = '';
-		$signature = '';
-		$uid = 0;
 	}
 }
 
 ob_end_clean();
 if(isset($_GET['op'])) {
-	header('Content-type: text/json');
+	header('Content-Type: text/json');
 	$group = '';
 	$id = $_GET['u'];
 	if(base64_decode(strtr($_GET['nick'],'-_,','+/='))==$row['username']){
@@ -59,13 +55,18 @@ if(isset($_GET['op'])) {
 	echo json_encode(Array(
 		'group' => $group
 	));
+}elseif(isset($_GET['time'])){
+	header('Content-Type: text/json');
+	echo json_encode(Array(
+		'time' => time()
+	));
 }else{
 	if(isset($_GET['txt'])){
 		echo $signature."\n".$nick."\n".$uid;
 	}elseif (isset($_GET['textmode'])){
 		header('Location: '.$oircUrl.'/textmode.php?login&nick='.urlencode($nick).'&signature='.urlencode($signature).'&id='.$uid.(isset($_GET['network'])?'&network='.(int)$_GET['network']:''));
 	}else{
-		header('Content-type: text/json');
+		header('Content-Type: text/json');
 		$json = json_encode(Array(
 			'nick' => $nick,
 			'signature' => $signature,

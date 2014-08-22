@@ -16,33 +16,30 @@ include('lib/common.php');
 ob_start();
 if(!isset($_GET['op'])){
 	if(isset($_GET['txt'])){
-		header('Content-type: text/plain');
+		header('Content-Type: text/plain');
 	}elseif(!isset($_GET['textmode'])){
-		header('Content-type: text/javascript');
+		header('Content-Type: text/javascript');
 	}
-	$ts = time();
-	$key = htmlspecialchars(str_replace(';','%^%',$_GET['sid']));
-	$keyParts = explode('|',$key);
-	if(isset($keyParts[1]) && (int)$keyParts[1] < ($ts + 60) && (int)$keyParts[1] > ($ts - 60) && hash('sha512',$_SERVER['REMOTE_ADDR'].$encriptKeyToUse.$keyParts[1]) == $keyParts[0]){
-		if($loguser['name']=='' || $loguser['powerlevel']<0 || isIPBanned($_SERVER['REMOTE_ADDR'])){
-			$nick = '';
-			$signature = '';
-			$uid = 0;
-		}else{
+	$nick = '';
+	$signature = '';
+	$uid = 0;
+	if(isset($_GET['sid']) && isset($_GET['network']) && $_GET['network'] == $network){
+		$ts = time();
+		$key = htmlspecialchars(str_replace(';','%^%',$_GET['sid']));
+		$keyParts = explode('|',$key);
+		if(isset($keyParts[1]) && (int)$keyParts[1] < ($ts + 60) && (int)$keyParts[1] > ($ts - 60) && hash('sha512',$_SERVER['REMOTE_ADDR'].$encriptKeyToUse.$keyParts[1]) == $keyParts[0]
+					&& $loguser['name']!='' && $loguser['powerlevel']>=0 && !isIPBanned($_SERVER['REMOTE_ADDR'])){
+			
 			$nick = ($loguser['displayname']==''?$loguser['name']:$loguser['displayname']);
 			$signature = hash('sha512',$network.$encriptKeyToUse.$nick);
 			$uid = $loguser['id'];
 		}
-	}else{
-		$nick = '';
-		$signature = '';
-		$uid = 0;
 	}
 }
 
 ob_end_clean();
 if(isset($_GET['op'])){
-	header('Content-type: text/json');
+	header('Content-Type: text/json');
 	$id = $_GET['u'];
 	$user = Fetch(Query("select * from {users} where id={0}", $id));
 	$group = 'false';
@@ -50,9 +47,14 @@ if(isset($_GET['op'])){
 	if(base64_url_decode($_GET['nick'])==$n && $user['powerlevel']>=1){
 		$group = 'true';
 	}
-	header('Content-type: text/json');
+	header('Content-Type: text/json');
 	echo json_encode(Array(
 		'group' => $group
+	));
+}elseif(isset($_GET['time'])){
+	header('Content-Type: text/json');
+	echo json_encode(Array(
+		'time' => time()
 	));
 }else{
 	if(isset($_GET['txt'])){
