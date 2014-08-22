@@ -22,7 +22,7 @@ if(!isset($_GET['op'])){
 		header('Content-type: text/javascript');
 	}
 	$ts = time();
-	$key = htmlspecialchars(str_replace(";","%^%",$_GET['sid']));
+	$key = htmlspecialchars(str_replace(';','%^%',$_GET['sid']));
 	$keyParts = explode('|',$key);
 	if(isset($keyParts[1]) && (int)$keyParts[1] < ($ts + 10) && (int)$keyParts[1] > ($ts - 10) && hash('sha512',$_SERVER['REMOTE_ADDR'].$encriptKeyToUse.$ts) == $keyParts[0]){
 		if($mybb->user['username']=='' || $mybb->user['isbannedgroup']){
