@@ -278,6 +278,158 @@
 							})
 					);
 				},
+				makeNetworksPage = function(nets){
+					$('#adminContent').append(
+						$('<div>').append(
+								$.map(nets,function(net,i){
+									var $netSpecific = $('<b>').text('Unkown network type');
+									switch(net.type){
+										case 0:
+											$netSpecific.text('Server Network');
+											break;
+										case 1:
+											$netSpecific = $('<span>').append(
+													$('<b>').text('OmnomIRC network'),
+													'<br>checkLogin:',
+													$('<input>').attr('type','text').val(net.config.checkLogin).css('width',160).change(function(){nets[i].config.checkLogin = $(this).val();}),
+													'<br>externalStyleSheet:',
+													$('<input>').attr('type','text').val(net.config.externalStyleSheet).css('width',120).change(function(){nets[i].config.externalStyleSheet = $(this).val();}),
+													'<br>',
+													$('<button>').text('Use Current settings as defaults').click(function(){
+															nets[i].config.defaults = options.getFullOptionsString();
+														})
+												);
+											break;
+										case 2:
+											$netSpecific = $('<span>').append(
+													$('<b>').text('CalcNet network'),
+													'<br>Server:',
+													$('<input>').attr('type','text').val(net.config.server).change(function(){nets[i].config.server = $(this).val();}),
+													'<br>Port:',
+													$('<input>').attr('type','number').val(net.config.port).change(function(){nets[i].config.port = $(this).val();})
+												);
+											break;
+										case 3:
+											$netSpecific = $('<span>').append(
+													$('<b>').text('IRC network'),
+													'<br>',
+													$.map(['main','topic'],function(v){
+														return $('<span>').append(
+																v,
+																':<br>Nick:',
+																$('<input>').attr('type','text').val(net.config[v].nick).change(function(){nets[i].config[v].nick = $(this).val();}),
+																'<br>Server:',
+																$('<input>').attr('type','text').val(net.config[v].server).change(function(){nets[i].config[v].server = $(this).val();}),
+																'<br>Port',
+																$('<input>').attr('type','number').val(net.config[v].port).change(function(){nets[i].config[v].port = $(this).val();}),
+																'<br>NickServ:',
+																$('<input>').attr('type','text').val(net.config[v].nickserv).change(function(){nets[i].config[v].nickserv = $(this).val();})
+															);
+													})
+												);
+											break;
+									}
+									return $('<div>').css({
+											'display':'inline-block',
+											'border':'1px solid black'
+										})
+										.append(
+												$('<span>').css('font-weight','bold').text(net.name),
+												'<br>Enabled:',
+												$('<input>').attr('type','checkbox').attr((net.enabled?'checked':'false'),'checked').change(function(){nets[i].enabled = this.checked;}),
+												'<br>Normal:',
+												$('<input>').attr('type','text').val(net.normal).change(function(){nets[i].normal = $(this).val();}),
+												'<br>Userlist:',
+												$('<input>').attr('type','text').val(net.userlist).change(function(){nets[i].userlist = $(this).val();}),
+												'<br>IRC:',
+												$('<input>').attr('type','number').val(net.irc.color).css('width',50).change(function(){nets[i].irc.color = $(this).val();}),
+												$('<input>').attr('type','text').val(net.irc.prefix).css('width',50).change(function(){nets[i].irc.prefix = $(this).val();}),
+												'<br>',
+												$netSpecific
+											);
+								}),
+								$('<select>').append(
+										$('<option>').val(-1).text('New Network...'),
+										$('<option>').val(1).text('OmnomIRC'),
+										$('<option>').val(2).text('CalcNet'),
+										$('<option>').val(3).text('IRC')
+									)
+									.change(function(){
+										var name = prompt('New Network Name'),
+											newNet = null,
+											specificConfig,
+											maxId;
+										if(name!=='' && name!==null){
+											switch(parseInt($(this).val(),10)){
+												case 1: // omnomirc
+													specificConfig = {
+														'checkLogin':'link to checkLogin file',
+														'externalStyleSheet':'',
+														'defaults':''
+													};
+													break;
+												case 2:
+													specificConfig = {
+														'server':'mydomain.com',
+														'port':4295
+													}
+													break;
+												case 3:
+													specificConfig = {
+														'main':{
+															'nick':'OmnomIRC',
+															'server':'irc server',
+															'port':6667,
+															'nickserv':'nickserv password'
+														},
+														'topic':{
+															'nick':'',
+															'server':'irc server',
+															'port':6667,
+															'nickserv':'nickserv password'
+														}
+													}
+													break;
+												default:
+													specificConfig = null;
+											}
+											if(specificConfig !== null){
+												maxId = 0;
+												$.each(nets,function(i,v){
+													if(v.id > maxId){
+														maxId = v.id;
+													}
+												});
+												newNet = {
+													'enabled':true,
+													'id':maxId+1,
+													'type':parseInt($(this).val(),10),
+													'normal':'NICK',
+													'userlist':'('+name[0].toUpperCase()+')NICK',
+													'irc':{
+														'color':-1,
+														'prefix':'('+name[0].toUpperCase()+')'
+													},
+													'name':name,
+													'config':specificConfig
+												}
+												nets.push(newNet);
+												console.log(nets);
+												$('#adminContent').empty();
+												makeNetworksPage(nets);
+											}
+										}else{
+											$(this).val(-1);
+										}
+									})
+							),
+						$('<button>')
+							.text('submit')
+							.click(function(){
+								sendEdit('networks',nets);
+							})
+					);
+				},
 				loadPage = function(p){
 					indicator.start();
 					$('#adminContent').text('Loading...');
@@ -317,7 +469,7 @@
 								getJSONEditSettings(p,'Smiley',data.smileys);
 								break;
 							case 'networks':
-								getJSONEditSettings(p,'Network',data.networks);
+								makeNetworksPage(data.networks);
 								break;
 							case 'sql':
 								$.extend(data,{
@@ -327,12 +479,6 @@
 								break;
 							case 'op':
 								getJSONEditSettings(p,'OP',data.opGroups);
-								break;
-							case 'irc':
-								getJSONEditSettings(p,'IRC',data.irc);
-								break;
-							case 'gcn':
-								getJSONEditSettings(p,'gCn',data.gcn);
 								break;
 							case 'misc':
 								getInputBoxSettings(p,'Misc',data);
@@ -495,9 +641,17 @@
 					}
 					result = optionsString.charAt(optionsNum-1);
 					if(result=='-'){
-						return (defaults.charAt(optionsNum-1)!==''?defaults.charAt(optionsNum-1):defaultOption);
+						return (defaults.charAt(optionsNum-1)!=='' && defaults.charAt(optionsNum-1)!='-'?defaults.charAt(optionsNum-1):defaultOption);
 					}
 					return result;
+				},
+				getFullOptionsString:function(){
+					var optionsString = (refreshCache?(cache=ls.get('OmnomIRCSettings'+settings.net())):cache),
+						res = '';
+					for(var i = 0;defaults.charAt(i)!='' && optionsString.charAt(i)!='';i++){
+						res += (optionsString.charAt(i)!='-' && optionsString.charAt(i)!=''?optionsString.charAt(i):(defaults.charAt(i)!=''?defaults.charAt(i):'-'));
+					}
+					return res;
 				},
 				getHTML:function(){
 					return $.merge($.map([false,true],function(alternator){

@@ -284,7 +284,7 @@ if(substr($parts[0],0,1)=='/'){
 			}else{
 				$sendNormal = false;
 				$sendPm = true;
-				$returnmessage = "\x02ERROR:\x02 Invalid command.";
+				$returnmessage = "\x02ERROR:\x02 Invalid command: ".$parts[0].' or did you mean /'.$parts[0].' ?';
 			}
 			break;
 	}
