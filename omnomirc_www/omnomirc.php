@@ -321,9 +321,10 @@ class You{
 	private $ops;
 	private $infoStuff;
 	private $network;
+	private $chanName;
 	public $chan;
 	public function __construct($n = false){
-		global $security,$defaultChan,$json,$ADMINPAGE,$config,$networks;
+		global $security,$json,$ADMINPAGE,$config,$networks;
 		if($n!==false){
 			$this->nick = $n;
 		}elseif(isset($_GET['nick'])){
@@ -344,18 +345,6 @@ class You{
 			$json->addWarning('ID not set, some features may be unavailable');
 			$this->id = 0;
 		}
-		if(isset($_GET['channel'])){
-			if(preg_match('/^[0-9]+$/',$_GET['channel'])){
-				$this->setChan($_GET['channel']);
-			}else{
-				$this->setChan(base64_url_decode($_GET['channel']));
-			}
-		}else{
-			if($ADMINPAGE!==true){
-				$json->addWarning('Didn\'t set a channel, defaulting to '.$defaultChan);
-			}
-			$this->chan = $defaultChan;
-		}
 		if(isset($_GET['network'])){
 			if(($this->network = $networks->get((int)$_GET['network'])) != NULL){
 				if($this->network['type'] == 1){
@@ -368,6 +357,30 @@ class You{
 			}
 		}else{
 			$this->network = $config['settings']['defaultNetwork'];
+		}
+		if(isset($_GET['channel'])){
+			if(preg_match('/^[0-9]+$/',$_GET['channel'])){
+				$this->setChan($_GET['channel']);
+			}else{
+				$this->setChan(base64_url_decode($_GET['channel']));
+			}
+		}else{
+			if($ADMINPAGE!==true){
+				$order = -1;
+				$defaultChan = '';
+				foreach($config['channels'] as $chan){
+					if($chan['enabled']){
+						foreach($chan['networks'] as $cn){
+							if($cn['id'] == $this->network && ($order == -1 || $cn['order']<$order)){
+								$order = $cn['order'];
+								$defaultChan = $chan['id'];
+							}
+						}
+					}
+				}
+				$json->addWarning('Didn\'t set a channel, defaulting to '.$defaultChan);
+			}
+			$this->chan = $defaultChan;
 		}
 		$this->globalOps = NULL;
 		$this->ops = NULL;
@@ -389,13 +402,15 @@ class You{
 			echo $json->get();
 			die();
 		}
+		$this->chanName = $channel;
 		if($channel[0]=='#' || $channel[0]=='&' || preg_match('/^[0-9]+$/',$channel)){
 			$foundChan = false;
 			foreach($config['channels'] as $chan){
 				if($chan['enabled']){
 					foreach($chan['networks'] as $cn){
-						if($cn['id'] == 1 && (strtolower($cn['name'])==strtolower($channel) || $chan['id']==$channel)){
+						if($cn['id'] == $this->network && (strtolower($cn['name'])==strtolower($channel) || $chan['id']==$channel)){
 							$channel = $chan['id'];
+							$this->chanName = $cn['name'];
 							$foundChan = true;
 							break;
 						}
@@ -413,8 +428,11 @@ class You{
 		}
 		$this->chan = $channel;
 	}
+	public function channelName(){
+		return $this->chanName;
+	}
 	public function getUrlParams(){
-		return 'nick='.base64_url_encode($this->nick).'&signature='.base64_url_encode($this->sig).'&id='.($this->id).'&channel='.base64_encode($this->chan).'&network='.$this->getNetwork();
+		return 'nick='.base64_url_encode($this->nick).'&signature='.base64_url_encode($this->sig).'&id='.($this->id).'&channel='.(preg_match('/^[0-9]+$/',$this->chan)?$this->chan:base64_encode($this->chan)).'&network='.$this->getNetwork();
 	}
 	public function update(){
 		global $sql,$users;

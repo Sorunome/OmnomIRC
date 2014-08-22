@@ -61,6 +61,7 @@ if(substr($parts[0],0,1)=='/'){
 			$type = 'action';
 			$message = substr($message,4);
 			break;
+		case 'j':
 		case 'join':
 			$channel = substr($message,6);
 			if($channel[0]!='#' && $channel[0]!='&' && !preg_match('/^[0-9]+$/',$channel)){
@@ -70,6 +71,7 @@ if(substr($parts[0],0,1)=='/'){
 			$_SESSION['content'] = '';
 			$sendNormal = false;
 			break;
+		case 'q':
 		case 'query':
 			$channel = '*'.substr($message,7);
 			$you->setChan($channel);
