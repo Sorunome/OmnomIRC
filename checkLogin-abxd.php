@@ -22,7 +22,7 @@ if(!isset($_GET['op'])){
 	$ts = time();
 	$key = htmlspecialchars(str_replace(';','%^%',$_GET['sid']));
 	$keyParts = explode('|',$key);
-	if(isset($keyParts[1]) && (int)$keyParts[1] < ($ts + 10) && (int)$keyParts[1] > ($ts - 10) && hash('sha512',$_SERVER['REMOTE_ADDR'].$encriptKeyToUse.$ts) == $keyParts[0]){
+	if(isset($keyParts[1]) && (int)$keyParts[1] < ($ts + 10) && (int)$keyParts[1] > ($ts - 10) && hash('sha512',$_SERVER['REMOTE_ADDR'].$encriptKeyToUse.$keyParts[0]) == $keyParts[0]){
 		if($loguser['name']=='' || $loguser['powerlevel']<0 || isIPBanned($_SERVER['REMOTE_ADDR'])){
 			$nick = '';
 			$signature = '';
