@@ -34,6 +34,7 @@ if(!isset($_GET['op'])){
 			$nick = $user_info['name'];
 			$signature = hash('sha512',$network.$encriptKeyToUse.$nick);
 			$uid = $context['user']['id'];
+		}
 	}
 }
 
