@@ -25,7 +25,7 @@ if(!isset($_GET['op'])){
 	$ts = time();
 	$key = htmlspecialchars(str_replace(';','%^%',$_GET['sid']));
 	$keyParts = explode('|',$key);
-	if(isset($keyParts[1]) && (int)$keyParts[1] < ($ts + 10) && (int)$keyParts[1] > ($ts - 10) && hash('sha512',$_SERVER['REMOTE_ADDR'].$encriptKeyToUse.$keyParts[1]) == $keyParts[0]){
+	if(isset($keyParts[1]) && (int)$keyParts[1] < ($ts + 60) && (int)$keyParts[1] > ($ts - 60) && hash('sha512',$_SERVER['REMOTE_ADDR'].$encriptKeyToUse.$keyParts[1]) == $keyParts[0]){
 		if($user_info['name']=='' || $user_info['is_guest'] || is_not_banned()){
 			$nick = '';
 			$signature = '';
