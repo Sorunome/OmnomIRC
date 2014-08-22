@@ -379,6 +379,8 @@ class You{
 					}
 				}
 				$json->addWarning('Didn\'t set a channel, defaulting to '.$defaultChan);
+			}else{
+				$defaultChan = 'false';
 			}
 			$this->chan = $defaultChan;
 		}
