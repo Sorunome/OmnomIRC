@@ -306,7 +306,7 @@
 													'<br>Server:',
 													$('<input>').attr('type','text').val(net.config.server).change(function(){nets[i].config.server = $(this).val();}),
 													'<br>Port:',
-													$('<input>').attr('type','number').val(net.config.port).change(function(){nets[i].config.port = $(this).val();})
+													$('<input>').attr('type','number').val(net.config.port).change(function(){nets[i].config.port = parseInt($(this).val(),10);})
 												);
 											break;
 										case 3:
@@ -321,7 +321,7 @@
 																'<br>Server:',
 																$('<input>').attr('type','text').val(net.config[v].server).change(function(){nets[i].config[v].server = $(this).val();}),
 																'<br>Port',
-																$('<input>').attr('type','number').val(net.config[v].port).change(function(){nets[i].config[v].port = $(this).val();}),
+																$('<input>').attr('type','number').val(net.config[v].port).change(function(){nets[i].config[v].port = parseInt($(this).val(),10)}),
 																'<br>NickServ:',
 																$('<input>').attr('type','text').val(net.config[v].nickserv).change(function(){nets[i].config[v].nickserv = $(this).val();})
 															);
@@ -331,7 +331,8 @@
 									}
 									return $('<div>').css({
 											'display':'inline-block',
-											'border':'1px solid black'
+											'border':'1px solid black',
+											'vertical-align':'top'
 										})
 										.append(
 												$('<span>').css('font-weight','bold').text(net.name),
@@ -342,14 +343,14 @@
 												'<br>Userlist:',
 												$('<input>').attr('type','text').val(net.userlist).change(function(){nets[i].userlist = $(this).val();}),
 												'<br>IRC:',
-												$('<input>').attr('type','number').val(net.irc.color).css('width',50).change(function(){nets[i].irc.color = $(this).val();}),
+												$('<input>').attr('type','number').val(net.irc.color).css('width',50).change(function(){nets[i].irc.color = parseInt($(this).val(),10);}),
 												$('<input>').attr('type','text').val(net.irc.prefix).css('width',50).change(function(){nets[i].irc.prefix = $(this).val();}),
 												'<br>',
 												$netSpecific
 											);
 								}),
 								$('<select>').append(
-										$('<option>').val(-1).text('New Network...'),
+										$('<option>').val(-1).text('Add Network...'),
 										$('<option>').val(1).text('OmnomIRC'),
 										$('<option>').val(2).text('CalcNet'),
 										$('<option>').val(3).text('IRC')
@@ -430,6 +431,153 @@
 							})
 					);
 				},
+				makeChannelsPage = function(chans,nets){
+					var makeAdvancedChanEditingForm = function(chan,i,elem){
+							$(elem).empty().append(
+								$.map(chan.networks,function(net,ni){
+									return [$('<div>').css({
+											'display':'inline-block',
+											'border':'1px solid black',
+											'margin':5
+										})
+										.append(
+											$('<b>').text(nets[net.id].name),
+											' ',
+											$('<a>').text('remove').click(function(e){
+												e.preventDefault();
+												chans[i].networks.splice(ni,1);
+												chan = chans[i];
+												makeAdvancedChanEditingForm(chan,i,$(this).parent().parent());
+											}),
+											'<br>Name:',
+											$('<input>').attr('type','text').val(net.name).change(function(){chans[i].networks[ni].name = $(this).val();}),
+											(nets[net.id].type==1?[
+												'<br>Hidden:',
+												$('<input>').attr('type','checkbox').attr((net.hidden?'checked':'false'),'checked').change(function(){chans[i].networks[ni].hidden = this.checked;}),
+												'<br>Order:',
+												$('<input>').attr('type','number').val(net.order).change(function(){chans[i].networks[ni].order = parseInt($(this).val(),10);})
+											]:'')
+										),
+										'<br>'
+										];
+								}),
+								$('<select>').append(
+										$('<option>').text('Add to network...').val(-1),
+										$.map(nets,function(n){
+											return $('<option>').text(n.name).val(n.id);
+										})
+									)
+									.change(function(){
+										var netId = parseInt($(this).val(),10),
+											maxOrder = 0;
+										$.each(chans,function(chani,ch){
+											$.each(ch.networks,function(neti,nt){
+												if(nt.id==netId &&  nt.order>maxOrder && maxOrder!=-1){
+													maxOrder = nt.order;
+												}
+												if(nt.id==netId && chani==i){
+													maxOrder = -1;
+												}
+											})
+										});
+										if(maxOrder==-1){
+											alert('Network already exists!');
+											$(this).val(-1);
+											return;
+										}
+										chans[i].networks.push({
+											'id':netId,
+											'name':'',
+											'hidden':false,
+											'order':maxOrder+1
+										})
+										chan = chans[i];
+										makeAdvancedChanEditingForm(chan,i,$(this).parent());
+									})
+							);
+						};
+					$('#adminContent').append(
+							$('<div>').append(
+									$.map(chans,function(chan,i){
+										return $('<div>').css({
+												'display':'inline-block',
+												'border':'1px solid black',
+												'vertical-align':'top'
+											})
+											.append(
+												$('<b>').text(chan.alias),
+												'<br>Enabled:',
+												$('<input>').attr('type','checkbox').attr((chan.enabled?'checked':'false'),'checked').change(function(){chans[i].enabled = this.checked;}),
+												'<br>',
+												$('<div>').css({
+														'display':'inline-block',
+														'border':'1px solid black'
+													})
+													.append(
+														$('<input>').attr('type','text').val(chan.networks[0].name).change(function(){
+																var _this = this;
+																$.each(chan.networks,function(netI){
+																	chans[i].networks[netI].name = $(_this).val();
+																});
+															}),
+														'<br>',
+														$('<a>').text('Show advanced settings').click(function(e){
+															e.preventDefault();
+															makeAdvancedChanEditingForm(chan,i,$(this).parent());
+														})
+													)
+											)
+									}),
+									$('<button>').text('New Channel').click(function(e){
+											e.preventDefault();
+											var alias = prompt('New Channel alias'),
+												netsToAdd = [],
+												maxId = 0;
+											if(alias!=='' && alias!==null){
+												netsToAdd = $.map(nets,function(n){
+														var maxOrder = 0;
+														if(n.type==1){
+															$.each(chans,function(chani,ch){
+																$.each(ch.networks,function(neti,nt){
+																	if(nt.id==n.id &&  nt.order>maxOrder && maxOrder!=-1){
+																		maxOrder = nt.order;
+																	}
+																});
+															});
+														}
+														if(n.type==0){
+															return undefined;
+														}
+														return {
+																'id':n.id,
+																'name':'',
+																'hidden':false,
+																'order':maxOrder+1
+															};
+													});
+												$.each(chans,function(c){
+													if(c.id>maxId){
+														maxId = c.id;
+													}
+												});
+												chans.push({
+														'id':maxId+1,
+														'alias':alias,
+														'enabled':true,
+														'networks':netsToAdd
+													});
+												$('#adminContent').empty();
+												makeChannelsPage(chans,nets);
+											}
+										})
+								),
+						$('<button>')
+							.text('submit')
+							.click(function(){
+								sendEdit('channels',chans);
+							})
+						);
+				},
 				loadPage = function(p){
 					indicator.start();
 					$('#adminContent').text('Loading...');
@@ -460,7 +608,7 @@
 								);
 								break;
 							case 'channels':
-								getJSONEditSettings(p,'Channel',data.channels);
+								makeChannelsPage(data.channels,data.nets);
 								break;
 							case 'hotlinks':
 								getJSONEditSettings(p,'Hotlink',data.hotlinks);
@@ -497,9 +645,12 @@
 						page.changeLinks();
 						loadPage('index');
 					});
+					$('#adminContent').height($(window).height() - 50);
 					$(window).resize(function(){
-						$('#adminContent').height($(window).height() - 50);
-					}).trigger('resize');
+						if(!(navigator.userAgent.match(/(iPod|iPhone|iPad)/i) && navigator.userAgent.match(/AppleWebKit/i))){
+							$('#adminContent').height($(window).height() - 50);
+						}
+					});
 				}
 			};
 		})(),
@@ -929,22 +1080,37 @@
 					try{
 						var chanList = JSON.parse(ls.get('OmnomIRCChannels'+settings.net()));
 						if(chanList!==null && chanList!=[]){
-							chans = $.map(chanList,function(v){
-									if(v.id != -1){
-										var valid = false;
-										$.each(chans,function(i,vc){
-											if(vc.id == v.id){
-												valid = true;
-												v = vc;
+							chans = $.merge(
+									$.map(chanList,function(v){
+										if(v.id != -1){
+											var valid = false;
+											$.each(chans,function(i,vc){
+												if(vc.id == v.id){
+													valid = true;
+													v = vc;
+													return false;
+												}
+											});
+											if(!valid){
+												return undefined;
+											}
+										}
+										return v;
+									}),
+									$.map(chans,function(ch){
+										var isNew = true;
+										$.each(chanList,function(i,c){
+											if(c.id == ch.id && !(ch.ex && options.get(9,'F'))){
+												isNew = false;
 												return false;
 											}
 										});
-										if(!valid){
-											return undefined;
+										if(isNew){
+											return ch;
 										}
-									}
-									return v;
-								});
+										return undefined;
+									})
+								);
 						}
 					}catch(e){}
 				},
@@ -1002,7 +1168,6 @@
 													$pe = $pe.prev();
 												}
 												if($pe.length > 0 && $pe.position().left > newX){
-													console.log('yay');
 													$pe.before($('#topicDragPlaceHolder').remove());
 												}
 											}
@@ -1020,7 +1185,6 @@
 												}
 												return $(chan).data('json');
 											});
-											console.log(chans);
 											save();
 											draw();
 										}
@@ -2492,6 +2656,12 @@
 			case 'options':
 				settings.fetch(function(){
 					page.changeLinks();
+					$('#options').height($(window).height() - 75);
+					$(window).resize(function(){
+						if(!(navigator.userAgent.match(/(iPod|iPhone|iPad)/i) && navigator.userAgent.match(/AppleWebKit/i))){
+							$('#options').height($(window).height() - 75);
+						}
+					});
 					$('#options').append(options.getHTML());
 				});
 				break;

@@ -122,7 +122,7 @@ if($you->isGlobalOp() || !$config['info']['installed']){
 				break;
 			case 'channels':
 				$json->add('channels',$config['channels']);
-				$json->add('exChans',$config['exChans']);
+				$json->add('nets',$networks->getNetsArray());
 				break;
 			case 'hotlinks':
 				$json->add('hotlinks',$vars->get('hotlinks'));

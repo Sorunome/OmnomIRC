@@ -287,6 +287,9 @@ class Networks{
 		}
 		return NULL;
 	}
+	public function getNetsArray(){
+		return $this->nets;
+	}
 }
 $networks = new Networks();
 class Users{

@@ -98,6 +98,9 @@ tr td:nth-child(2) {
 tr td:nth-child(5) {
 	border-right:1px solid;
 }
+#options {
+	overflow-y:auto;
+}
 </style>
 ','
 <div style="font-size:20px;font-weight:bold;margin-top:5px;">OmnomIRC Options</div>
@@ -113,7 +116,7 @@ tr td:nth-child(5) {
 </div>
 ','options');
 }elseif(isset($_GET['admin']) || !$config['info']['installed']){
-echo getPage('OmnomIRC options','
+echo getPage('OmnomIRC admin pannel','
 <link rel="stylesheet" type="text/css" href="FlexiJsonEditor/jsoneditor.css" />
 <script src="FlexiJsonEditor/jquery.jsoneditor.min.js"></script>
 ','
