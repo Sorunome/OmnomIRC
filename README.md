@@ -2,11 +2,11 @@ OmnomIRC
 ========
 Installation
 ------------
-Just poke me. Or try to figure it out yourself :P
-By default you'll be in the admin pannel until you hit 'install'. Make sure the script can write to the curid file and to the config file.
+Currently impossible except if you ask me, installation setup is in the making.
 
-
-If you can't follow write me an email, the installation prozess is still pretty complicated, I can set it up for you, I am working on something to make it easier :) (mail [at] sorunome [dot] de)
+Plugins
+-------
+* [OIRC Plugin for ABXD-Forums](https://github.com/juju2143/ABXD-plugin-OmnomIRC)
 
 Regex
 -----
