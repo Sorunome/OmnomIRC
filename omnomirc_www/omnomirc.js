@@ -586,6 +586,8 @@
 							case 'index':
 								$('#adminContent').append(
 									'OmnomIRC Version: '+data.version+'<br>',
+									$('<span>').text('checking for updates...'),
+									'<br>',
 									$('<button>')
 										.text('Back up config')
 										.click(function(){
