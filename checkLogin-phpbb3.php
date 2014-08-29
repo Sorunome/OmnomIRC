@@ -2,6 +2,7 @@
 $encriptKeyToUse = 'key from Config.php (created while installation)';
 $oircUrl = 'http://omnomirc.www.omnimaga.org';
 $network = 1;
+$admingroups = array(5);
 
 date_default_timezone_set('UTC');
 function base64_url_encode($input) {
@@ -9,7 +10,7 @@ function base64_url_encode($input) {
 }
 
 function base64_url_decode($input){
-	return base64_decode(strtr($input,'-_,','+/=')); 
+	return base64_decode(strtr($input,'-_,','+/='));
 }
 
 define('IN_PHPBB', true);
@@ -48,9 +49,12 @@ if(isset($_GET['op']) && !isset($_GET['time'])){
 	header('Content-Type: text/json');
 	$group = '';
 	$id = $_GET['u'];
-	if(base64_decode(strtr($_GET['nick'],'-_,','+/='))==$row['username']){
-		//$group = $row['group_id']==5;
-		$group = 'false'; // lol
+	$sql = 'SELECT * FROM '.USERS_TABLE.' WHERE user_id='.(int)$id;
+	$result = $db->sql_query($sql);
+	if(base64_decode(strtr($_GET['nick'],'-_,','+/='))==$db->sql_fetchfield('username')){
+		$sql = 'SELECT COUNT(group_id) as groups_id FROM '.USER_GROUP_TABLE.' WHERE user_id='.(int)$id.' AND '.$db->sql_in_set('group_id', $admingroups);
+		$result = $db->sql_query($sql);
+		$group = (int)$db->sql_fetchfield('groups_id')>0;
 	}
 	echo json_encode(Array(
 		'group' => $group
