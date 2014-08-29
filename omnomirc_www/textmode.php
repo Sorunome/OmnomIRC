@@ -27,9 +27,9 @@ include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 
 
 if(isset($_GET['message'])){
-	echo "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" /></head><body><form action='textmode.php?sendMessage&curline=".((int)$_GET['curline'])."&".$you->getUrlParams()."' method='post'><input type='text' name='message' autofocus autocomplete=\"off\" style='width:100%'><input type='Submit' value='Send'></form><a href=\"textmode.php?curline=".((int)$_GET['curline'])."&".$you->getUrlParams()."\">Cancle</a><table>".$_SESSION['content']."</table></body></html>";
+	echo "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" /></head><body><form action='textmode.php?sendMessage&curline=".((int)$_GET['curline'])."&".$you->getUrlParams()."' method='post'><input type='text' name='message' autofocus autocomplete=\"off\" style='width:100%'><input type='Submit' value='Send'></form><a href=\"textmode.php?curline=".((int)$_GET['curline'])."&".$you->getUrlParams()."\">Cancel</a><table>".$_SESSION['content']."</table></body></html>";
 }elseif (isset($_GET['sendMessage'])){
-	header("Location: message.php?textmode&curline=".((int)$_GET['curline'])."&".$you->getUrlParams()."&message=".base64_url_encode($_POST['message']).'&network='.$you->getNetwork());
+	header("Location: message.php?textmode&curline=".((int)$_GET['curline'])."&".$you->getUrlParams()."&message=".base64_url_encode($_POST['message']));
 }else{
 	$banned = false;
 	if(isset($_GET['update']) && isset($_GET['curline']) && !(isset($_SESSION['content']) && $_SESSION['content']==='')){

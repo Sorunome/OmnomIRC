@@ -415,7 +415,6 @@
 													'config':specificConfig
 												}
 												nets.push(newNet);
-												console.log(nets);
 												$('#adminContent').empty();
 												makeNetworksPage(nets);
 											}
@@ -555,7 +554,7 @@
 																'order':maxOrder+1
 															};
 													});
-												$.each(chans,function(c){
+												$.each(chans,function(chani,c){
 													if(c.id>maxId){
 														maxId = c.id;
 													}

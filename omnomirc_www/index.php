@@ -22,6 +22,10 @@ error_reporting(E_ALL);
 ini_set('display_errors','1');
 
 $textmode = true; // else omnomirc.php will set json headers
+include_once(realpath(dirname(__FILE__)).'/config.php');
+if(!$config['info']['installed']){
+	die('OmnomIRC not installed');
+}
 include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 
 

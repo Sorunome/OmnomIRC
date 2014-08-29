@@ -61,7 +61,7 @@ if(isset($_GET['op']) && !isset($_GET['time'])){
 	if(isset($_GET['txt'])){
 		echo $signature."\n".$nick."\n".$uid;
 	}elseif (isset($_GET['textmode'])){
-		header('Location: '.$oircUrl.'/textmode.php?login&nick='.urlencode($nick).'&signature='.urlencode($signature).'&id='.$uid.(isset($_GET['network'])?'&network='.(int)$_GET['network']:''));
+		header('Location: '.$oircUrl.'/textmode.php?login&nick='.base64_url_encode($nick).'&signature='.base64_url_encode($signature).'&id='.$uid.(isset($_GET['network'])?'&network='.(int)$_GET['network']:''));
 	}else{
 		header('Content-Type: text/json');
 		$json = json_encode(Array(

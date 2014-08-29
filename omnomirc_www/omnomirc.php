@@ -437,7 +437,7 @@ class You{
 		return $this->chanName;
 	}
 	public function getUrlParams(){
-		return 'nick='.base64_url_encode($this->nick).'&signature='.base64_url_encode($this->sig).'&id='.($this->id).'&channel='.(preg_match('/^[0-9]+$/',$this->chan)?$this->chan:base64_encode($this->chan)).'&network='.$this->getNetwork();
+		return 'nick='.base64_url_encode($this->nick).'&signature='.base64_url_encode($this->sig).'&id='.($this->id).'&channel='.(preg_match('/^[0-9]+$/',$this->chan)?$this->chan:base64_url_encode($this->chan)).'&network='.$this->getNetwork();
 	}
 	public function update(){
 		global $sql,$users;
