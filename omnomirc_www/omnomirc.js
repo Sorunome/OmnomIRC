@@ -17,8 +17,9 @@
     You should have received a copy of the GNU General Public License
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
-(function($){
-	var settings = (function(){
+(function(){
+	var OMNOMIRCSERVER = 'http://omnomirc.omnimaga.org',
+		settings = (function(){
 			var hostname = '',
 				nick = '',
 				signature = '',
@@ -220,10 +221,10 @@
 			};
 		})(),
 		admin = (function(){
-			var sendEdit = function(page,json){
+			var sendEdit = function(page,json,fn){
 					$.post('admin.php?set='+page+'&'+settings.getUrlParams(),{data:JSON.stringify(json)},function(data){
 						var alertStr = '';
-						if(data.errors!==undefined){
+						if(data.errors.length>0){
 							$.map(data.errors,function(error){
 								alertStr += 'ERROR: '+error+"\n";
 							});
@@ -231,6 +232,9 @@
 							alertStr = data.message;
 						}
 						alert(alertStr);
+						if(fn!==undefined){
+							fn();
+						}
 					});
 				},
 				getInputBoxSettings = function(p,name,data){
@@ -577,6 +581,54 @@
 							})
 						);
 				},
+				makeIndexPage = function(info){
+					$('#adminContent').append(
+						'OmnomIRC Version: '+info.version+'<br>',
+						$('<span>').attr('id','fetchingUpdates').text('checking for updates...'),
+						'<br>',
+						$('<button>')
+							.text('Back up config')
+							.click(function(){
+								sendEdit('backupConfig',{});
+							}),
+						$('<div>').attr('id','fetchingNews').text('fetching news...')
+					);
+					$.getJSON(OMNOMIRCSERVER+'/getNewestVersion.php?version='+info.version+'&jsoncallback=?').done(function(data){
+						if(data.latest){
+							$('#fetchingUpdates').empty().text('No new updates available');
+						}else{
+							$('#fetchingUpdates').empty().append(
+								'New updates available! ('+data.version+') ',
+								(!info.updaterReady?
+									$('<a>').text('Click here to download the updater script').click(function(e){
+										e.preventDefault();
+										sendEdit('getUpdater',{path:OMNOMIRCSERVER+data.updater},function(){
+											loadPage('index');
+										});
+									})
+								:
+									$('<a>').text('Click here to apply the update').attr('href','updater.php?params='+encodeURIComponent(settings.getUrlParams()))
+								)
+							);
+						}
+					});
+					$.getJSON(OMNOMIRCSERVER+'/getNews.php?jsoncallback=?').done(function(data){
+						$('#fetchingNews').empty().css({'height':300,'border':'1px solid black','overflow':'auto','width':'70%'}).append(
+							$('<table>').css('width','100%').append(
+								$('<tr>').append(
+									$('<th>').css('width',150).text('date'),
+									$('<th>').text('news')
+								),
+								$.map(data.news,function(n){
+									return $('<tr>').append(
+											$('<td>').css({'width':'auto','border':'1px solid black'}).text((new Date(n.time*1000)).toLocaleString()),
+											$('<td>').css({'width':'auto','border':'1px solid black'}).html(n.message)
+										)
+								})
+							)
+						);
+					});
+				},
 				loadPage = function(p){
 					indicator.start();
 					$('#adminContent').text('Loading...');
@@ -584,16 +636,7 @@
 						$('#adminContent').empty();
 						switch(p){
 							case 'index':
-								$('#adminContent').append(
-									'OmnomIRC Version: '+data.version+'<br>',
-									$('<span>').text('checking for updates...'),
-									'<br>',
-									$('<button>')
-										.text('Back up config')
-										.click(function(){
-											sendEdit('backupConfig',{});
-										})
-								);
+								makeIndexPage(data);
 								break;
 							case 'channels':
 								makeChannelsPage(data.channels,data.nets);
@@ -619,6 +662,15 @@
 							case 'misc':
 								getInputBoxSettings(p,'Misc',data);
 								break;
+							case 'releaseNotes':
+								$('#adminContent').append(
+									$('<h2>').text('Release notes version '+data.version),
+									$('<span>').attr('id','releaseNotes').text('Loading...')
+								);
+								$.getJSON(OMNOMIRCSERVER+'/getReleaseNotes.php?version='+data.version+'&jsoncallback=?').done(function(notes){
+									$('#releaseNotes').html(notes.notes);
+								});
+								break;
 						}
 						indicator.stop();
 					});
@@ -631,7 +683,11 @@
 					});
 					settings.fetch(function(){
 						page.changeLinks();
-						loadPage('index');
+						if(document.URL.split('#')[1] !== undefined){
+							loadPage(document.URL.split('#')[1]);
+						}else{
+							loadPage('index');
+						}
 					});
 					$('#adminContent').height($(window).height() - 50);
 					$(window).resize(function(){
@@ -2661,4 +2717,4 @@
 				page.load();
 		}
 	});
-})(jQuery);
+})();

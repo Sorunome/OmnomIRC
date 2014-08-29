@@ -111,7 +111,7 @@ if(isset($_GET['finishUpdate']) && ($you->isGlobalOp() || !$config['info']['inst
 		file_put_contents(realpath(dirname(__FILE__)).'/config.backup.php',file_get_contents(realpath(dirname(__FILE__)).'/config.php'));
 		header('Location: index.php');
 	}else{
-		// normal update stuff
+		header('Location: index.php?admin&network='.$you->getNetwork().'#releaseNotes');
 	}
 }
 if($you->isGlobalOp()){
@@ -130,6 +130,11 @@ if($you->isGlobalOp()){
 			case 'index':
 				$json->add('installed',$config['info']['installed']);
 				$json->add('version',$config['info']['version']);
+				if(strpos(file_get_contents(realpath(dirname(__FILE__)).'/updater.php'),'//UPDATER FROMVERSION='.$config['info']['version'])!==false){
+					$json->add('updaterReady',true);
+				}else{
+					$json->add('updaterReady',false);
+				}
 				break;
 			case 'channels':
 				$json->add('channels',$config['channels']);
@@ -156,12 +161,30 @@ if($you->isGlobalOp()){
 				$json->add('hostname',$config['settings']['hostname']);
 				$json->add('curidFilePath',$config['settings']['curidFilePath']);
 				break;
+			case 'releaseNotes':
+				$json->add('version',$config['info']['version']);
+				break;
 			default:
 				$json->addError('Invalid page');
 		}
 	}elseif(isset($_GET['set'])){
 		$jsonData = json_decode($_POST['data'],true);
 		switch($_GET['set']){
+			case 'getUpdater':
+				if(isset($jsonData['path'])){
+					if($file = file_get_contents($jsonData['path'])){
+						if(file_put_contents(realpath(dirname(__FILE__)).'/updater.php',$file)){
+							$json->add('message','Downloaded updater');
+						}else{
+							$json->addError('couldn\'t write to updater');
+						}
+					}else{
+						$json->addError('File not found');
+					}
+				}else{
+					$json->addError('Path not specified');
+				}
+				break;
 			case 'backupConfig':
 				if(file_put_contents(realpath(dirname(__FILE__)).'/config.backup.php',file_get_contents(realpath(dirname(__FILE__)).'/config.php'))){
 					$json->add('message','Backed up config!');
