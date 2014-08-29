@@ -50,8 +50,11 @@ if(isset($_GET['op']) && !isset($_GET['time'])){
 	$id = $_GET['u'];
 	$sql = 'SELECT * FROM '.USERS_TABLE.' WHERE user_id='.(int)$id;
 	$result = $db->sql_query($sql);
-	if(base64_decode(strtr($_GET['nick'],'-_,','+/='))==$db->sql_fetchfield('username')){
-		$group = (string)(int)$db->sql_fetchfield('group_id');
+	$row = $db->sql_fetchrow($result);
+	$db->sql_freeresult($result);
+
+	if(base64_decode(strtr($_GET['nick'],'-_,','+/='))==$row['username']){
+		$group = $row['group_id'];
 	}
 	echo json_encode(Array(
 		'group' => $group
