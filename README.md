@@ -2,7 +2,7 @@ OmnomIRC
 ========
 Installation
 ------------
-Currently impossible except if you ask me, installation setup is in the making.
+Just dump all the files in omnomirc_www into a public directory, visit it via your web-browser and follow the instructions there.
 
 Plugins
 -------

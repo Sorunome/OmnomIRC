@@ -103,7 +103,18 @@ if(isset($_GET["js"])){
 		$json->addError('Couldn\'t write config');
 	}
 }
-if($you->isGlobalOp() || !$config['info']['installed']){
+if(isset($_GET['finishUpdate']) && ($you->isGlobalOp() || !$config['info']['installed'])){
+	file_put_contents(realpath(dirname(__FILE__)).'/updater.php',"<?php\nheader('Location: index.php');\n?>");
+	if(!$config['info']['installed']){
+		$config['info']['installed'] = true;
+		writeConfig();
+		file_put_contents(realpath(dirname(__FILE__)).'/config.backup.php',file_get_contents(realpath(dirname(__FILE__)).'/config.php'));
+		header('Location: index.php');
+	}else{
+		// normal update stuff
+	}
+}
+if($you->isGlobalOp()){
 	if($config['security']['sigKey']==''){
 		$config['security']['sigKey'] = getRandKey();
 		$json->addWarning('SigKey wasn\'t set, storing random value');
@@ -151,19 +162,6 @@ if($you->isGlobalOp() || !$config['info']['installed']){
 	}elseif(isset($_GET['set'])){
 		$jsonData = json_decode($_POST['data'],true);
 		switch($_GET['set']){
-			case 'install':
-				if($config['info']['installed']){
-					$json->addError('Already installed');
-				}else{
-					$queries = explode(";",str_replace("\n","",file_get_contents("omnomirc.sql")));
-					foreach($queries as $query){
-						$sql->query($query);
-					}
-					$config['info']['installed'] = true;
-					writeConfig();
-					$json->add('message','Installed OmnomIRC!');
-				}
-				break;
 			case 'backupConfig':
 				if(file_put_contents(realpath(dirname(__FILE__)).'/config.backup.php',file_get_contents(realpath(dirname(__FILE__)).'/config.php'))){
 					$json->add('message','Backed up config!');

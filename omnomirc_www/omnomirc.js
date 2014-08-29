@@ -584,19 +584,6 @@
 						$('#adminContent').empty();
 						switch(p){
 							case 'index':
-								if(!data.installed){
-									$('#adminContent').append(
-										$('<span>')
-											.addClass('highlight')
-											.text('Warning: You are currently in instalation mode!'),
-										'<br>',
-										$('<button>')
-											.text('Install')
-											.click(function(){
-												sendEdit('install',{});
-											}),
-										'<br>');
-								}
 								$('#adminContent').append(
 									'OmnomIRC Version: '+data.version+'<br>',
 									$('<button>')
