@@ -369,7 +369,7 @@ if(!isset($_GET['server'])){
 			}
 			
 			$config['settings']['hostname'] = $_SERVER['SERVER_NAME'];
-			$config['settings']['curidFilePath'] = realpath(dirname(__FILE__)).'omnomirc_curid';
+			$config['settings']['curidFilePath'] = realpath(dirname(__FILE__)).'/omnomirc_curid';
 			$config['security']['sigKey'] = md5(base64_encode(md5(rand(100,9999).'-'.rand(10000,999999))));
 			$config['security']['ircPwd'] = md5(base64_encode(md5(rand(100,9999).'-'.rand(10000,999999))));
 			writeConfig();
