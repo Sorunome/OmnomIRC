@@ -9,7 +9,7 @@ function base64_url_encode($input) {
 }
 
 function base64_url_decode($input){
-	return base64_decode(strtr($input,'-_,','+/=')); 
+	return base64_decode(strtr($input,'-_,','+/='));
 }
 
 define('IN_PHPBB', true);
@@ -48,9 +48,13 @@ if(isset($_GET['op']) && !isset($_GET['time'])){
 	header('Content-Type: text/json');
 	$group = '';
 	$id = $_GET['u'];
+	$sql = 'SELECT * FROM '.USERS_TABLE.' WHERE user_id='.(int)$id;
+	$result = $db->sql_query($sql);
+	$row = $db->sql_fetchrow($result);
+	$db->sql_freeresult($result);
+
 	if(base64_decode(strtr($_GET['nick'],'-_,','+/='))==$row['username']){
-		//$group = $row['group_id']==5;
-		$group = 'false'; // lol
+		$group = $row['group_id'];
 	}
 	echo json_encode(Array(
 		'group' => $group
