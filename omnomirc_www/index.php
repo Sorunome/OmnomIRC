@@ -124,7 +124,7 @@ tr td:nth-child(5) {
 	</span>
 </div>
 ','options');
-}elseif(isset($_GET['admin']) || !$config['info']['installed']){
+}elseif(isset($_GET['admin'])){
 echo getPage('OmnomIRC admin pannel','
 <link rel="stylesheet" type="text/css" href="FlexiJsonEditor/jsoneditor.css" />
 <script src="FlexiJsonEditor/jquery.jsoneditor.min.js"></script>
