@@ -30,7 +30,7 @@
 				networks = [];
 			return {
 				fetch:function(fn){
-					network.getJSON('config.php?js'+(document.URL.split('network=')[1]!==undefined?'&network='+document.URL.split('network=')[1].split('&')[0]:''),function(data){
+					network.getJSON('config.php?js'+(document.URL.split('network=')[1]!==undefined?'&network='+document.URL.split('network=')[1].split('&')[0].split('#')[0]:''),function(data){
 						hostname = data.hostname;
 						channels.setChans(data.channels);
 						parser.setSmileys(data.smileys);

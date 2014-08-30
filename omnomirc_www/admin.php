@@ -61,7 +61,7 @@ if(isset($_GET["js"])){
 	foreach($config["channels"] as $chan){
 		if($chan["enabled"]){
 			foreach($chan["networks"] as $cn){
-				if($cn["id"] == $_GET["network"]){
+				if($cn["id"] == $you->getNetwork()){
 					$channels[] = Array(
 						"chan" => $cn["name"],
 						"high" => false,
