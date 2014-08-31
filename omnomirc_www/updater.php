@@ -355,7 +355,7 @@ if(!isset($_GET['server'])){
 			}
 			$sql->query($sqlFile);
 			if(unlink(realpath(dirname(__FILE__)).'/irc_vars.sql')){
-				echo '{"step":5}';
+				echo '{"step":7}';
 			}else{
 				echo '{"errors":["Couldn\'t delete file irc_vars.sql, please do so manually"],"step":7}';
 			}
