@@ -1316,8 +1316,10 @@
 					$.each(chans,function(i,ci){
 						if(ci.chan==c){
 							$('#chan'+i.toString()).addClass('highlightChan');
+							chans[i].high = true;
 						}
 					});
+					save();
 				},
 				openChan:function(s){
 					var addChan = true;
@@ -1459,6 +1461,9 @@
 								requestHandler = false;
 							}
 							$('#chan'+i.toString()).removeClass('highlightChan').find('.chan').addClass('curchan');
+							chans[i].high = false;
+							save();
+							
 							if(fn!==undefined){
 								fn();
 							}

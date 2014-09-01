@@ -268,7 +268,7 @@ $vars = new GlobalVars();
 class Secure{
 	public function sign($s,$n){
 		global $config;
-		return hash('sha512',$n.$config['security']['sigKey'].$s);
+		return hash_hmac('sha512',$s,$n.$config['security']['sigKey']);
 	}
 }
 $security = new Secure();

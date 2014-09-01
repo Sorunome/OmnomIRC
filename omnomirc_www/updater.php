@@ -1,5 +1,5 @@
 <?php
-$installScriptVersion = '2.8.0';
+$installScriptVersion = '2.8.0.2';
 include_once(realpath(dirname(__FILE__)).'/config.php');
 // IMPORTANT!!!! sqli object ONLY FOR INSTALLATION SCRIPT
 class Sqli{
@@ -130,7 +130,7 @@ if(isset($_GET["js"])){
 	$defaults = $net["config"]["defaults"];
 	$cl = $net["config"]["checkLogin"];
 	$ts = time();
-	$cl .= "?sid=".urlencode(htmlspecialchars(str_replace(";","%^%",hash("sha512",$_SERVER["REMOTE_ADDR"].$config["security"]["sigKey"].$ts)."|".$ts)));
+	$cl .= "?sid=".urlencode(htmlspecialchars(str_replace(";","%^%",hash_hmac("sha512",$_SERVER["REMOTE_ADDR"],$config["security"]["sigKey"].$ts.$you->getNetwork())."|".$ts)));
 	echo json_encode(Array(
 		"hostname" => $config["settings"]["hostname"],
 		"channels" => $channels,
