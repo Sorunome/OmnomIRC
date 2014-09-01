@@ -83,7 +83,7 @@ if(isset($_GET["js"])){
 	$defaults = $net["config"]["defaults"];
 	$cl = $net["config"]["checkLogin"];
 	$ts = time();
-	$cl .= "?sid=".urlencode(htmlspecialchars(str_replace(";","%^%",hash("sha512",$_SERVER["REMOTE_ADDR"].$config["security"]["sigKey"].$ts)."|".$ts)));
+	$cl .= "?sid=".urlencode(htmlspecialchars(str_replace(";","%^%",hash_hmac("sha512",$_SERVER["REMOTE_ADDR"],$config["security"]["sigKey"].$ts.$you->getNetwork())."|".$ts)));
 	echo json_encode(Array(
 		"hostname" => $config["settings"]["hostname"],
 		"channels" => $channels,
@@ -103,7 +103,7 @@ if(isset($_GET["js"])){
 		$json->addError('Couldn\'t write config');
 	}
 }
-if(isset($_GET['finishUpdate']) && ($you->isGlobalOp() || !$config['info']['installed'])){
+if(isset($_GET['finishUpdate'])){
 	file_put_contents(realpath(dirname(__FILE__)).'/updater.php',"<?php\nheader('Location: index.php');\n?>");
 	if(!$config['info']['installed']){
 		$config['info']['installed'] = true;
