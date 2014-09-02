@@ -286,6 +286,9 @@
 					$('#adminContent').append(
 						$('<div>').append(
 								$.map(nets,function(net,i){
+									if(net.type===0){ // no server networks displaying
+										return undefined;
+									}
 									var $netSpecific = $('<b>').text('Unkown network type');
 									switch(net.type){
 										case 0:
@@ -316,19 +319,31 @@
 										case 3:
 											$netSpecific = $('<span>').append(
 													$('<b>').text('IRC network'),
+													'<br>Nick:',
+													$('<input>').attr('type','text').val(net.config.main.nick).change(function(){nets[i].config.main.nick = $(this).val();}),
+													'<br>Server:',
+													$('<input>').attr('type','text').val(net.config.main.server).change(function(){nets[i].config.main.server = $(this).val();}),
+													'<br>Port',
+													$('<input>').attr('type','number').val(net.config.main.port).change(function(){nets[i].config.main.port = parseInt($(this).val(),10)}),
+													'<br>NickServ:',
+													$('<input>').attr('type','text').val(net.config.main.nickserv).change(function(){nets[i].config.main.nickserv = $(this).val();}),
 													'<br>',
-													$.map(['main','topic'],function(v){
-														return $('<span>').append(
-																v,
-																':<br>Nick:',
-																$('<input>').attr('type','text').val(net.config[v].nick).change(function(){nets[i].config[v].nick = $(this).val();}),
+													$('<a>').text('Show advanced settings').click(function(e){
+														e.preventDefault();
+														$(this).replaceWith(
+															$('<span>').append(
+																'<br>',
+																$('<b>').text('TopicBot'),
+																'<br>Nick:',
+																$('<input>').attr('type','text').val(net.config.topic.nick).change(function(){nets[i].config.topic.nick = $(this).val();}),
 																'<br>Server:',
-																$('<input>').attr('type','text').val(net.config[v].server).change(function(){nets[i].config[v].server = $(this).val();}),
+																$('<input>').attr('type','text').val(net.config.topic.server).change(function(){nets[i].config.topic.server = $(this).val();}),
 																'<br>Port',
-																$('<input>').attr('type','number').val(net.config[v].port).change(function(){nets[i].config[v].port = parseInt($(this).val(),10)}),
+																$('<input>').attr('type','number').val(net.config.topic.port).change(function(){nets[i].config.topic.port = parseInt($(this).val(),10)}),
 																'<br>NickServ:',
-																$('<input>').attr('type','text').val(net.config[v].nickserv).change(function(){nets[i].config[v].nickserv = $(this).val();})
-															);
+																$('<input>').attr('type','text').val(net.config.topic.nickserv).change(function(){nets[i].config.topic.nickserv = $(this).val();})
+															)
+														);
 													})
 												);
 											break;
@@ -467,6 +482,9 @@
 								$('<select>').append(
 										$('<option>').text('Add to network...').val(-1),
 										$.map(nets,function(n){
+											if(n.type===0){
+												return undefined;
+											}
 											return $('<option>').text(n.name).val(n.id);
 										})
 									)
@@ -548,7 +566,7 @@
 																});
 															});
 														}
-														if(n.type==0){
+														if(n.type===0){
 															return undefined;
 														}
 														return {
@@ -1369,6 +1387,7 @@
 					}else{
 						channels.join(addChan);
 					}
+					tab.load();
 				},
 				openPm:function(s,join){
 					var addChan = true;
@@ -1408,6 +1427,7 @@
 							channels.join(addChan);
 						}
 					}
+					tab.load();
 				},
 				part:function(i){
 					var select = false;
@@ -1481,7 +1501,7 @@
 							$('#chan'+i.toString()).removeClass('highlightChan').find('.chan').addClass('curchan');
 							chans[i].high = false;
 							save();
-							
+							tab.load();
 							if(fn!==undefined){
 								fn();
 							}
@@ -1503,6 +1523,11 @@
 						return currentName;
 					}
 					return '';
+				},
+				getNames:function(){
+					return $.map(chans,function(c){
+						return c.chan;
+					});
 				},
 				init:function(){
 					load();
@@ -1526,6 +1551,7 @@
 				endChar = '',
 				endPos0 = 0,
 				tabAppendStr = ' ',
+				searchArray = [],
 				getCurrentWord = function(){
 					var message = $('#message')[0];
 					if(isInTab){
@@ -1571,13 +1597,28 @@
 							endChar-=2;
 						}
 					}
-					name = users.search(getCurrentWord(),tabCount);
+					name = search(getCurrentWord(),tabCount);
 					if(name == getCurrentWord()){
 						tabCount = 0;
-						name = users.search(getCurrentWord(),tabCount);
+						name = search(getCurrentWord(),tabCount);
 					}
 					message.value = message.value.substr(0,startPos)+name+tabAppendStr+message.value.substr(endPos+1);
 					endPos = endPos0+name.length;
+				},
+				search = function(start,startAt){
+					var res = false;
+					if(!startAt){
+						startAt = 0;
+					}
+					$.each(searchArray,function(i,u){
+						if(u.toLowerCase().indexOf(start.toLowerCase()) === 0 && startAt-- <= 0 && res === false){
+							res = u;
+						}
+					});
+					if(res!==false){
+						return res;
+					}
+					return start;
 				};
 			return {
 				init:function(){
@@ -1599,6 +1640,9 @@
 								isInTab = false;
 							}
 						});
+				},
+				load:function(){
+					searchArray = $.merge(users.getNames(),channels.getNames());
 				}
 			};
 		})(),
@@ -1615,21 +1659,6 @@
 					return result;
 				};
 			return {
-				search:function(start,startAt){
-					var res = false;
-					if(!startAt){
-						startAt = 0;
-					}
-					$.each(usrs,function(i,u){
-						if(u.nick.toLowerCase().indexOf(start.toLowerCase()) === 0 && startAt-- <= 0 && res === false){
-							res = u.nick;
-						}
-					});
-					if(res!==false){
-						return res;
-					}
-					return start;
-				},
 				add:function(u){
 					if(channels.getCurrent()!==''){
 						usrs.push(u);
@@ -1685,6 +1714,11 @@
 				},
 				setUsers:function(u){
 					usrs = u;
+				},
+				getNames:function(){
+					return $.map(usrs,function(u){
+						return u.nick;
+					});
 				}
 			};
 		})(),
