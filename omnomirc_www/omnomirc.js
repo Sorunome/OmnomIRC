@@ -1030,9 +1030,13 @@
 						if(options.get(8,'F')=='T'){
 							$('#ding')[0].play();
 						}
-					}
-					if(c!=channels.getCurrentName()){
-						channels.highlight(c);
+						if(c!=channels.getCurrentName()){
+							channels.highlight(c,true);
+						}
+					}else{
+						if(c!=channels.getCurrentName()){
+							channels.highlight(c);
+						}
 					}
 				}
 			};
@@ -1122,7 +1126,14 @@
 				},
 				load = function(){
 					try{
-						var chanList = JSON.parse(ls.get('OmnomIRCChannels'+settings.net()));
+						var chanList = JSON.parse(ls.get('OmnomIRCChannels'+settings.net())),
+							exChans = $.map(chans,function(ch){
+								if(ch.ex && options.get(9,'F')=='T'){
+									return ch;
+								}
+								return undefined;
+							}),
+							exChansInUse = [];
 						if(chanList!==null && chanList!=[]){
 							chans = $.merge(
 									$.map(chanList,function(v){
@@ -1130,8 +1141,11 @@
 											var valid = false;
 											$.each(chans,function(i,vc){
 												if(vc.id == v.id){
+													if(v.ex){
+														exChansInUse.push(v);
+													}
 													valid = true;
-													v = vc;
+													v.chan = vc.chan;
 													return false;
 												}
 											});
@@ -1141,20 +1155,22 @@
 										}
 										return v;
 									}),
-									$.map(chans,function(ch){
-										var isNew = true;
-										$.each(chanList,function(i,c){
-											if(c.id == ch.id && !(ch.ex && options.get(9,'F'))){
-												isNew = false;
-												return false;
+									$.map(exChans,function(v){
+										var oldChan = false;
+										$.each(exChansInUse,function(i,vc){
+											if(vc.id == v.id){
+												oldChan = true;
+												v.chan = vc.chan;
+												return false
 											}
 										});
-										if(isNew){
-											return ch;
+										if(oldChan){
+											return undefined;
 										}
-										return undefined;
+										return v;
 									})
 								);
+							save();
 						}
 					}catch(e){}
 				},
@@ -1312,14 +1328,16 @@
 					return chans[i].chan;
 				};
 			return {
-				highlight:function(c){
+				highlight:function(c,doSave){
 					$.each(chans,function(i,ci){
-						if(ci.chan==c){
+						if(ci.chan.toLowerCase()==c.toLowerCase() || c == ci.id){
 							$('#chan'+i.toString()).addClass('highlightChan');
 							chans[i].high = true;
 						}
 					});
-					save();
+					if(doSave!==undefined && doSave){
+						save();
+					}
 				},
 				openChan:function(s){
 					var addChan = true;
