@@ -607,7 +607,7 @@
 										});
 									})
 								:
-									$('<a>').text('Click here to apply the update').attr('href','updater.php?params='+encodeURIComponent(settings.getUrlParams()))
+									$('<a>').text('Click here to apply the update').attr('href','updater.php')
 								)
 							);
 						}
