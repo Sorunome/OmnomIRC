@@ -32,7 +32,7 @@ class Sqli{
 			return array();
 		}
 		if($mysqli->errno!=0){
-			die('{"errors":["ERROR: Insuffitiant permissions to execute SQL query, please grant your user all priviliges to the database"],"step":4}');
+			die('{"errors":["ERROR: Insufficient permissions to execute SQL query, please grant your user all priviliges to the database"],"step":4}');
 		}
 		if($result===true){ //nothing returned
 			return Array();

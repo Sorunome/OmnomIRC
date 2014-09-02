@@ -125,12 +125,12 @@ tr td:nth-child(5) {
 </div>
 ','options');
 }elseif(isset($_GET['admin'])){
-echo getPage('OmnomIRC admin pannel','
+echo getPage('OmnomIRC admin panel','
 <link rel="stylesheet" type="text/css" href="FlexiJsonEditor/jsoneditor.css" />
 <script src="FlexiJsonEditor/jquery.jsoneditor.min.js"></script>
 ','
 <div id="container">
-<div style="font-weight:bold;">OmnomIRC Admin Pannel</div>
+<div style="font-weight:bold;">OmnomIRC Admin Panel</div>
 <div id="adminNav"><a page="index">Index</a> | <a page="channels">Channels</a> | <a page="hotlinks">Hotlinks</a> | <a page="smileys">Smileys</a> | <a page="networks">Networks</a> | <a page="sql">SQL</a> | <a page="op">Ops</a> | <a page="misc">Misc</a></div>
 <div id="adminContent" style="overflow-y:auto;">Loading...</div>
 </div>

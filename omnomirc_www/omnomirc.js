@@ -2169,7 +2169,8 @@
 							send.internal('<span style="color:#2A8C2A;">For full help go here: <a href="http://ourl.ca/19926" target="_top">http://ourl.ca/19926</a></span>');
 							return true;
 						case 'ponies':
-							var fs=document.createElement("script");fs.onload=function(){
+							var fs=document.createElement("script");
+							fs.onload=function(){
 								Derpy();
 							};
 							fs.src="http://juju2143.ca/mousefly.js";
@@ -2657,7 +2658,7 @@
 							}
 							break;
 						case 'pm':
-							if(channels.getCurrent(true).toLowerCase() != '*'+line.name.toLowerCase() && line.name.toLowerCase() != settings.nick().toLowerCase()){
+							if(channels.getCurrentName().toLowerCase() != '*'+line.name.toLowerCase() && line.name.toLowerCase() != settings.nick().toLowerCase()){
 								if(channels.getCurrent()!=='' && logMode!==true){
 									tdName = ['(PM)',name];
 									channels.openPm(line.name);
@@ -2671,7 +2672,7 @@
 							}
 							break;
 						case 'pmaction':
-							if(channels.getCurrent(true).toLowerCase() != '*'+line.name.toLowerCase() && line.name.toLowerCase() != settings.nick().toLowerCase()){
+							if(channels.getCurrentName().toLowerCase() != '*'+line.name.toLowerCase() && line.name.toLowerCase() != settings.nick().toLowerCase()){
 								if(channels.getCurrent()!=='' && logMode!==true){
 									tdMessage = ['(PM)',name,' ',message];
 									channels.openPm(line.name);

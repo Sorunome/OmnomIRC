@@ -444,14 +444,14 @@ class You{
 		if($this->chan[0]=='*' || $this->chan=='0'){
 			return;
 		}
-		$result = $sql->query("SELECT usernum,time,isOnline FROM `irc_users` WHERE `username` = '%s' AND `channel` = '%s' AND `online` = 1",$this->nick,$this->chan);
+		$result = $sql->query("SELECT usernum,time,isOnline FROM `irc_users` WHERE `username` = '%s' AND `channel` = '%s' AND `online` = %d",$this->nick,$this->chan,$this->getNetwork());
 		if($result[0]['usernum']!==NULL){ //Update  
 			$sql->query("UPDATE `irc_users` SET `time`='%s',`isOnline`='1' WHERE `usernum` = %d",time(),(int)$result[0]['usernum']);
 			if((int)$result[0]['isOnline'] == 0){
 				$users->notifyJoin($this->nick,$this->chan);
 			}
 		}else{
-			$sql->query("INSERT INTO `irc_users` (`username`,`channel`,`time`,`online`) VALUES('%s','%s','%s',1)",$this->nick,$this->chan,time());
+			$sql->query("INSERT INTO `irc_users` (`username`,`channel`,`time`,`online`) VALUES('%s','%s','%s',%d)",$this->nick,$this->chan,time(),$this->getNetwork());
 			$users->notifyJoin($this->nick,$this->chan);
 		}
 		$users->clean();

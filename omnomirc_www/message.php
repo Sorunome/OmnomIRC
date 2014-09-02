@@ -301,7 +301,7 @@ if($channel[0] == '*'){
 }
 
 if($sendNormal){
-	$sql->query("UPDATE `irc_users` SET lastMsg='%s' WHERE username='%s' AND channel='%s' AND online=1",time(),$nick,$channel);
+	$sql->query("UPDATE `irc_users` SET lastMsg='%s' WHERE username='%s' AND channel='%s' AND online=%d",time(),$nick,$channel,$you->getNetwork());
 	$sql->query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES('%s','%s','%s',%d,%d,'%s')",$message,$nick,$channel,($type=="action")?1:0,$you->getNetwork(),$type);
 	$sql->query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s',%d)",$nick,$message,$type,$channel,time(),$you->getNetwork());
 }
