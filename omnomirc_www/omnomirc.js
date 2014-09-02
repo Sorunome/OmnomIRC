@@ -1060,7 +1060,7 @@
 			};
 		})(),
 		request = (function(){
-			var errorCount = 0,
+			var lastSuccess = (new Date).getTime(),
 				curLine = 0,
 				inRequest = false,
 				handler = false,
@@ -1080,7 +1080,7 @@
 								return;
 							}
 							handler = false;
-							errorCount = 0;
+							lastSuccess = (new Date).getTime();
 							if(data.lines!==undefined){
 								$.each(data.lines,function(i,line){
 									return newRequest = parser.addLine(line);
@@ -1092,11 +1092,10 @@
 						})
 						.fail(function(){
 							handler = false;
-							errorCount++;
-							if(errorCount>=10){
+							if((new Date).getTime() >= lastSuccess + 300000  ){
 								send.internal('<span style="color:#C73232;">OmnomIRC has lost connection to server. Please refresh to reconnect.</span>');
 							}else if(!inRequest){
-								errorCount = 0;
+								lastSuccess = (new Date).getTime();
 							}else{
 								setTimer();
 							}
