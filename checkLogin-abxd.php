@@ -27,7 +27,7 @@ if(!isset($_GET['op'])){
 		$ts = time();
 		$key = htmlspecialchars(str_replace(';','%^%',$_GET['sid']));
 		$keyParts = explode('|',$key);
-		if(isset($keyParts[1]) && (int)$keyParts[1] < ($ts + 60) && (int)$keyParts[1] > ($ts - 60) && hash_hmac('sha512',$_SERVER['REMOTE_ADDR'],$encriptKeyToUse.$keyParts[1].$network) == $keyParts[0]
+		if(isset($keyParts[1]) && (int)$keyParts[1] < ($ts + 60) && (int)$keyParts[1] > ($ts - 60) && hash_hmac('sha512',(isset($_SERVER['HTTP_X_FORWARDED_FOR'])?$_SERVER['HTTP_X_FORWARDED_FOR']:$_SERVER['REMOTE_ADDR']),$encriptKeyToUse.$keyParts[1].$network) == $keyParts[0]
 					&& $loguser['name']!='' && $loguser['powerlevel']>=0 && !isIPBanned($_SERVER['REMOTE_ADDR'])){
 			
 			$nick = ($loguser['displayname']==''?$loguser['name']:$loguser['displayname']);
