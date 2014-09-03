@@ -1517,8 +1517,8 @@
 					}
 					return '';
 				},
-				getCurrentName:function(){
-					if(requestHandler===false){
+				getCurrentName:function(override){
+					if(requestHandler===false || override){
 						return currentName;
 					}
 					return '';
@@ -2658,7 +2658,7 @@
 							}
 							break;
 						case 'pm':
-							if(channels.getCurrentName().toLowerCase() != '*'+line.name.toLowerCase() && line.name.toLowerCase() != settings.nick().toLowerCase()){
+							if(channels.getCurrentName(true).toLowerCase() != '*'+line.name.toLowerCase() && line.name.toLowerCase() != settings.nick().toLowerCase()){
 								if(channels.getCurrent()!=='' && logMode!==true){
 									tdName = ['(PM)',name];
 									channels.openPm(line.name);
@@ -2672,7 +2672,7 @@
 							}
 							break;
 						case 'pmaction':
-							if(channels.getCurrentName().toLowerCase() != '*'+line.name.toLowerCase() && line.name.toLowerCase() != settings.nick().toLowerCase()){
+							if(channels.getCurrentName(true).toLowerCase() != '*'+line.name.toLowerCase() && line.name.toLowerCase() != settings.nick().toLowerCase()){
 								if(channels.getCurrent()!=='' && logMode!==true){
 									tdMessage = ['(PM)',name,' ',message];
 									channels.openPm(line.name);

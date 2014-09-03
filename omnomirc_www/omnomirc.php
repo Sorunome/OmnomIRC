@@ -600,7 +600,7 @@ class OmnomIRC{
 							)
 							AND NOT
 							(
-								(`type` = 'join' OR `type` = 'part') AND `Online` = 1
+								(`type` = 'join' OR `type` = 'part') AND `Online` = %d
 							)
 						)
 						OR
@@ -615,7 +615,7 @@ class OmnomIRC{
 						LIMIT %d
 					) AS x
 					ORDER BY `line_number` ASC
-					",$table,$you->chan,$you->nick,$you->nick,$you->chan,(int)$count);
+					",$table,$you->chan,$you->nick,$you->getNetwork(),$you->nick,$you->chan,(int)$count);
 			}
 			
 			$lines = $this->getLines($res,$table);
