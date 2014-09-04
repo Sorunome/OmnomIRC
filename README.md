@@ -1,5 +1,27 @@
 OmnomIRC
 ========
+Supported Browsers
+------------------
+Full:
+* IE 9+
+* Firefox 3.6+
+* Safari 4+
+* Chrome 14+
+* Opera 10.6+
+
+Textmode:
+* Elinks
+
+Partial (touch events not working (yet)):
+* Mobile Safari
+* Android defualt browser
+* Mobile Firefox
+* Mobile Chrome
+
+Not Tested:
+* Opera Mini
+* Any browser here not listed
+
 Installation
 ------------
 Just dump all the files in omnomirc_www into a public directory, visit it via your web-browser and follow the instructions there.
