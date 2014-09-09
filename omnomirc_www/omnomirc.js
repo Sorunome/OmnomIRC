@@ -2426,97 +2426,76 @@
 				},
 				parseColors = function(colorStr){
 					var arrayResults = [],
-						isBool = false,
 						numSpan = 0,
-						isItalic = false,
-						isUnderline = false,
 						s,
-						colorStrTemp = '1,0';
+						colorStrTemp = '1,0',
+						textDecoration = {
+							fg:'1',
+							bg:'0',
+							underline:false,
+							bold:false,
+							italic:false
+						},
+						i,j,didChange;
 					if(!colorStr){
 						return '';
 					}
-					colorStr = colorStr.split("\x16\x16").join('')+"\x0f";
-					arrayResults = colorStr.split(RegExp("([\x02\x03\x0f\x16\x1d\x1f])"));
-					colorStr='';
-					var i,j;
+					//colorStr = colorStr.split('\x16\x16').join('');
+					arrayResults = colorStr.split(RegExp('([\x02\x03\x0f\x16\x1d\x1f])'));
+					console.log(arrayResults);
+					colorStr='<span>';
 					for(i=0;i<arrayResults.length;i++){
+						didChange = true;
 						switch(arrayResults[i]){
-							case "\x03":
-								for(j=0;j<numSpan;j++){
-									colorStr+="</span>";
-								}
-								numSpan=1;
-								i++;
-								colorStrTemp = arrayResults[i];
-								s=arrayResults[i].replace(/^([0-9]{1,2}),([0-9]{1,2})/g,"<span class=\"fg-$1\"><span class=\"bg-$2\">");
-								if(s==arrayResults[i]){
-									s=arrayResults[i].replace(/^([0-9]{1,2})/g,"<span class=\"fg-$1\">");
-								}else{
-									numSpan++;
-								}
-								colorStr+=s;
-								break;
-							case "\x02":
-								isBool = !isBool;
-								if (isBool){
-									colorStr+="<b>";
-								}else{
-									colorStr+="</b>";
+							case '\x03': // color
+								s = arrayResults[i+1].replace(/^([0-9]{1,2}),([0-9]{1,2}).*/,'$1:$2');
+								if(s == arrayResults[i+1]){ // we didn't change background
+									s = arrayResults[i+1].replace(/^([0-9]{1,2}).*/,'$1');
+									if(s != arrayResults[i+1]){
+										textDecoration.fg = s;
+										arrayResults[i+1] = arrayResults[i+1].substr(s.length);
+									}
+								}else{ // we also changed background
+									textDecoration.fg = s.split(':')[0];
+									textDecoration.bg = s.split(':')[1];
+									arrayResults[i+1] = arrayResults[i+1].substr(s.length);
 								}
 								break;
-							case "\x1d":
-								isItalic = !isItalic;
-								if(isItalic){
-									colorStr+="<i>";
-								}else{
-									colorStr+="</i>";
-								}
+							case '\x02': // bold
+								textDecoration.bold = !textDecoration.bold;
 								break;
-							case "\x16":
-								for(j=0;j<numSpan;j++)
-									colorStr+="</span>";
-								numSpan=2;
-								var stemp;
-								s=colorStrTemp.replace(/^([0-9]{1,2}),([0-9]{1,2}).+/g,"<span class=\"fg-$2\"><span class=\"bg-$1\">");
-								stemp=colorStrTemp.replace(/^([0-9]{1,2}),([0-9]{1,2}).+/g,"$2,$1");
-								if(s==colorStrTemp){
-									s=colorStrTemp.replace(/^([0-9]{1,2}).+/g,"<span class=\"fg-0\"><span class=\"bg-$1\">");
-									stemp=colorStrTemp.replace(/^([0-9]{1,2}).+/g,"0,$1");
-								}
-								colorStrTemp = stemp;
-								colorStr+=s;
+							case '\x1d': // italic
+								textDecoration.italic = !textDecoration.italic;
 								break;
-							case "\x1f":
-								isUnderline = !isUnderline;
-								if(isUnderline){
-									colorStr+="<u>";
-								}else{
-									colorStr+="</u>";
-								}
+							case '\x16': // swap fg and bg
+								s = textDecoration.fg;
+								textDecoration.fg = textDecoration.bg;
+								textDecoration.bg = s;
 								break;
-							case "\x0f":
-								if(isUnderline){
-									colorStr+="</u>";
-									isUnderline=false;
+							case '\x1f': // underline
+								textDecoration.underline = !textDecoration.underline;
+								break;
+							case '\x0f': // reset
+								textDecoration = {
+									fg:'1',
+									bg:'0',
+									underline:false,
+									bold:false,
+									italic:false
 								}
-								if(isItalic){
-									colorStr+="</i>";
-									isItalic=false;
-								}
-								if(isBool){
-									colorStr+="</b>";
-									isBool = false;
-								}
-								for(j=0;j<numSpan;j++)
-									colorStr+="</span>";
-								numSpan=0;
 								break;
 							default:
-								colorStr+=arrayResults[i];
+								didChange = false;
 						}
+						if(didChange){
+							colorStr += '</span>';
+							colorStr += '<span class="fg-'+textDecoration.fg+' bg-'+textDecoration.bg+'" style="'+(textDecoration.bold?'font-weight:bold;':'')+(textDecoration.underline?'text-decoration:underline;':'')+(textDecoration.italic?'font-style:italic;':'')+'">';
+						}
+						colorStr+=arrayResults[i];
 					}
+					colorStr += '</span>';
 					/*Strip codes*/
-					colorStr = colorStr.replace(/(\x03|\x02|\x1F|\x09|\x0F)/g,"");
+					colorStr = colorStr.replace(/(\x03|\x02|\x1F|\x09|\x0F)/g,'');
 					return colorStr;
 				},
 				parseHighlight = function(s){

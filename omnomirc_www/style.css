@@ -179,7 +179,7 @@ body {
 .fg-dkGray,		.fg-14 {color: #4C4C4C;}
 .fg-ltGray,		.fg-15 {color: #959595;}
 
-.bg-white,		.bg-0   ,.bg-00{background-color: #FFFFFF}/*Placeholder*/
+.bg-white,		.bg-0   ,.bg-00{background-color: transparent;}/*Placeholder*/
 .bg-black,		.bg-1   ,.bg-01{background-color: #000000;}
 .bg-dkBlue,		.bg-2   ,.bg-02{background-color: #0000FF;}
 .bg-dkgreen,	.bg-3   ,.bg-03{background-color: #00FF00;}

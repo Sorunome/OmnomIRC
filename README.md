@@ -20,7 +20,7 @@ Partial (touch events not working (yet)):
 
 Not Tested:
 * Opera Mini
-* Any browser here not listed
+* Any browser not listed here
 
 Installation
 ------------
