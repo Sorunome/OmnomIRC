@@ -26,7 +26,7 @@ function getRandKey(){
 	$randKey = base64_url_encode($randKey);
 	return md5($randKey);
 }
-function writeConfig($silent){
+function writeConfig($silent = false){
 	global $config,$json;
 	$file = '<?php
 /* This is a automatically generated config-file by OmnomIRC, please use the admin pannel to edit it! */

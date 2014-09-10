@@ -298,9 +298,9 @@
 											$netSpecific = $('<span>').append(
 													$('<b>').text('OmnomIRC network'),
 													'<br>checkLogin:',
-													$('<input>').attr('type','text').val(net.config.checkLogin).css('width',160).change(function(){nets[i].config.checkLogin = $(this).val();}),
+													$('<input>').attr('type','text').val(net.config.checkLogin).css('width',160).change(function(){nets[i].config.checkLogin = this.value;}),
 													'<br>externalStyleSheet:',
-													$('<input>').attr('type','text').val(net.config.externalStyleSheet).css('width',120).change(function(){nets[i].config.externalStyleSheet = $(this).val();}),
+													$('<input>').attr('type','text').val(net.config.externalStyleSheet).css('width',120).change(function(){nets[i].config.externalStyleSheet = this.value;}),
 													'<br>',
 													$('<button>').text('Use Current settings as defaults').click(function(){
 															nets[i].config.defaults = options.getFullOptionsString();
@@ -311,7 +311,7 @@
 											$netSpecific = $('<span>').append(
 													$('<b>').text('CalcNet network'),
 													'<br>Server:',
-													$('<input>').attr('type','text').val(net.config.server).change(function(){nets[i].config.server = $(this).val();}),
+													$('<input>').attr('type','text').val(net.config.server).change(function(){nets[i].config.server = this.value;}),
 													'<br>Port:',
 													$('<input>').attr('type','number').val(net.config.port).change(function(){nets[i].config.port = parseInt($(this).val(),10);})
 												);
@@ -320,13 +320,13 @@
 											$netSpecific = $('<span>').append(
 													$('<b>').text('IRC network'),
 													'<br>Nick:',
-													$('<input>').attr('type','text').val(net.config.main.nick).change(function(){nets[i].config.main.nick = $(this).val();}),
+													$('<input>').attr('type','text').val(net.config.main.nick).change(function(){nets[i].config.main.nick = this.value;}),
 													'<br>Server:',
-													$('<input>').attr('type','text').val(net.config.main.server).change(function(){nets[i].config.main.server = $(this).val();}),
+													$('<input>').attr('type','text').val(net.config.main.server).change(function(){nets[i].config.main.server = this.value;}),
 													'<br>Port',
 													$('<input>').attr('type','number').val(net.config.main.port).change(function(){nets[i].config.main.port = parseInt($(this).val(),10)}),
 													'<br>NickServ:',
-													$('<input>').attr('type','text').val(net.config.main.nickserv).change(function(){nets[i].config.main.nickserv = $(this).val();}),
+													$('<input>').attr('type','text').val(net.config.main.nickserv).change(function(){nets[i].config.main.nickserv = this.value;}),
 													'<br>',
 													$('<a>').text('Show advanced settings').click(function(e){
 														e.preventDefault();
@@ -335,13 +335,13 @@
 																'<br>',
 																$('<b>').text('TopicBot'),
 																'<br>Nick:',
-																$('<input>').attr('type','text').val(net.config.topic.nick).change(function(){nets[i].config.topic.nick = $(this).val();}),
+																$('<input>').attr('type','text').val(net.config.topic.nick).change(function(){nets[i].config.topic.nick = this.value;}),
 																'<br>Server:',
-																$('<input>').attr('type','text').val(net.config.topic.server).change(function(){nets[i].config.topic.server = $(this).val();}),
+																$('<input>').attr('type','text').val(net.config.topic.server).change(function(){nets[i].config.topic.server = this.value;}),
 																'<br>Port',
 																$('<input>').attr('type','number').val(net.config.topic.port).change(function(){nets[i].config.topic.port = parseInt($(this).val(),10)}),
 																'<br>NickServ:',
-																$('<input>').attr('type','text').val(net.config.topic.nickserv).change(function(){nets[i].config.topic.nickserv = $(this).val();})
+																$('<input>').attr('type','text').val(net.config.topic.nickserv).change(function(){nets[i].config.topic.nickserv = this.value;})
 															)
 														);
 													})
@@ -358,12 +358,12 @@
 												'<br>Enabled:',
 												$('<input>').attr('type','checkbox').attr((net.enabled?'checked':'false'),'checked').change(function(){nets[i].enabled = this.checked;}),
 												'<br>Normal:',
-												$('<input>').attr('type','text').val(net.normal).change(function(){nets[i].normal = $(this).val();}),
+												$('<input>').attr('type','text').val(net.normal).change(function(){nets[i].normal = this.value;}),
 												'<br>Userlist:',
-												$('<input>').attr('type','text').val(net.userlist).change(function(){nets[i].userlist = $(this).val();}),
+												$('<input>').attr('type','text').val(net.userlist).change(function(){nets[i].userlist = this.value;}),
 												'<br>IRC:',
 												$('<input>').attr('type','number').val(net.irc.color).css('width',50).change(function(){nets[i].irc.color = parseInt($(this).val(),10);}),
-												$('<input>').attr('type','text').val(net.irc.prefix).css('width',50).change(function(){nets[i].irc.prefix = $(this).val();}),
+												$('<input>').attr('type','text').val(net.irc.prefix).css('width',50).change(function(){nets[i].irc.prefix = this.value;}),
 												'<br>',
 												$netSpecific
 											);
@@ -468,7 +468,7 @@
 												makeAdvancedChanEditingForm(chan,i,$(this).parent().parent());
 											}),
 											'<br>Name:',
-											$('<input>').attr('type','text').val(net.name).change(function(){chans[i].networks[ni].name = $(this).val();}),
+											$('<input>').attr('type','text').val(net.name).change(function(){chans[i].networks[ni].name = this.value;}),
 											(nets[net.id].type==1?[
 												'<br>Hidden:',
 												$('<input>').attr('type','checkbox').attr((net.hidden?'checked':'false'),'checked').change(function(){chans[i].networks[ni].hidden = this.checked;}),
