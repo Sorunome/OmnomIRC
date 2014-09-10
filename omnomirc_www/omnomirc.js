@@ -1981,6 +1981,79 @@
 				reCalcBar:reCalcBar
 			};
 		})(),
+		wysiwyg = (function(){
+			var sel,start,end,$node,fullText,selText,
+				menuOpen = false,
+				hideMenu = function(){
+					$('#textDecoForm').css('display','none');
+					menuOpen = false;
+				 };
+			return {
+				init:function(){
+					$('#message').mouseup(function(e){
+						sel = window.getSelection();
+						$node = $(sel.anchorNode);
+						if($node.parent()[0].tagName.toLowerCase()!='span' || sel.isCollapsed){
+							return;
+						}
+						e.preventDefault();
+						$('#textDecoForm').css({
+							display:'block',
+							left:e.pageX-52
+						});
+						menuOpen = true;
+						
+						
+					});
+					$(document).mousedown(function(e){
+						if(!$(e.target).closest('#textDecoForm').length && menuOpen){
+							hideMenu();
+						}
+					})
+					$('#textDecoFormBold').click(function(){
+						sel.getRangeAt(0).surroundContents(
+							$('<span>').css('font-weight','bold')[0]
+						);
+					});
+					$('#textDecoFormItalic').click(function(){
+						sel.getRangeAt(0).surroundContents(
+							$('<span>').css('font-style','italic')[0]
+						);
+					});
+					$('#textDecoFormUnderline').click(function(){
+						sel.getRangeAt(0).surroundContents(
+							$('<span>').css('text-decoration','underline')[0]
+						);
+					});
+				},
+				getMsg:function(){
+					var msg = $('#message').html(),
+						msgParts = msg.split(/<span style="|<\/span>/g),
+						i,s;
+					msg = '';
+					for(i=0;i<msgParts.length;i++){
+						switch(msgParts[i].split(';">')[0]){
+							case 'font-weight: bold':
+								s = msgParts[i].substr('font-weight: bold;">'.length);
+								msg += '\x02'+s+'\x02';
+								break;
+							case 'font-style: italic':
+								s = msgParts[i].substr('font-style: italic;">'.length);
+								msg += '\x1d'+s+'\x1d';
+								break;
+							case 'text-decoration: underline':
+								s = msgParts[i].substr('text-decoration: underline;">'.length);
+								msg += '\x1f'+s+'\x1f';
+								break;
+							default:
+								msg += msgParts[i];
+						}
+					}
+					msg = $('<span>').html(msg).text();
+					return msg;
+				}
+			}
+		})(),
 		page = (function(){
 			var initSmileys = function(){
 					if(options.get(12,'T')=='T'){
@@ -2026,6 +2099,24 @@
 				isBlurred = false,
 				init = function(){
 					page.changeLinks();
+					if(!('contentEditable' in document.documentElement)){
+						$('#message').replaceWith(
+							$('<input>')
+								.attr({
+									'type':'text',
+									'id':'message',
+									'accesskey':'i'
+								})
+						);
+					}else{
+						$('#message').keydown(function(e){
+							if(e.keyCode==13){
+								e.preventDefault();
+								$('#sendMessage').trigger('submit');
+							}
+						});
+						wysiwyg.init();
+					}
 					$('#windowbg2').css('height',parseInt($('html').height(),10) - parseInt($('#message').height() + 14,10));
 					$('#mBoxCont').css('height',parseInt($('#windowbg2').height(),10) - 42);
 					$(window).resize(function(){
@@ -2049,7 +2140,7 @@
 							.append(
 								'#scrollBar{left:89%;left:calc(90% - 17px);}',
 								'#scrollBarLine{left:89%;left:calc(90% - 16px);}',
-								'#message{width:82%;width:calc(91% - 115px);width:-webkit-calc(91% - 115px);}',
+								'input#message,span#message{width:82%;width:calc(91% - 115px);width:-webkit-calc(91% - 115px);}',
 								'#mBoxCont{width:90%;}',
 								'.arrowButtonHoriz2,.arrowButtonHoriz3 > div:nth-child(2){left:89%;left:calc(90% - 5px);left:-webkit-calc(90% - 5px);}',
 								'#UserListContainer{left:90%;height:100%;transition:none;-webkit-transition:none;-o-transition-property:none;-o-transition-duration:none;-o-transition-delay:none;}',
@@ -2185,7 +2276,20 @@
 		oldMessages = (function(){
 			var messages = [],
 				counter = 0,
-				current = '';
+				current = '',
+				setMsg = function(s){
+					if(!('contentEditable' in document.documentElement)){
+						$('#message').val(s);
+					}else{
+						$('#message').html(s);
+					}
+				},
+				getMsg = function(){
+					if(!('contentEditable' in document.documentElement)){
+						return $('#message').val();
+					}
+					return $('#message').html();
+				};
 			return {
 				init:function(){
 					$('#message')
@@ -2193,22 +2297,22 @@
 							if(e.keyCode==38 || e.keyCode==40){
 								e.preventDefault();
 								if(counter==messages.length){
-									current = $(this).val();
+									current = getMsg();
 								}
 								if(messages.length!==0){
 									if(e.keyCode==38){ //up
 										if(counter!==0){
 											counter--;
 										}
-										$(this).val(messages[counter]);
+										setMsg(messages[counter]);
 									}else{ //down
 										if(counter!=messages.length){
 											counter++;
 										}
 										if(counter==messages.length){
-											$(this).val(current);
+											setMsg(current);
 										}else{
-											$(this).val(messages[counter]);
+											setMsg(messages[counter]);
 										}
 									}
 								}
@@ -2221,10 +2325,10 @@
 						messages.shift();
 					}
 					counter = messages.length;
-					ls.set('oldMessages-'+channels.getCurrent(false,true),messages.join("\n"));
+					ls.set('oldMessages-'+channels.getCurrent(true,true),messages.join('\n'));
 				},
 				read:function(){
-					var temp = ls.get('oldMessages-'+channels.getCurrent(false,true));
+					var temp = ls.get('oldMessages-'+channels.getCurrent(true,true));
 					if(temp!==null){
 						messages = temp.split("\n");
 					}else{
@@ -2239,13 +2343,21 @@
 				sendMessage = function(s){
 					oldMessages.add(s);
 					if(s[0] == '/' && commands.parse(s.substr(1))){
-						$('#message').val('');
+						if(!('contentEditable' in document.documentElement)){
+							val = $('#message').val('');
+						}else{
+							val = $('#message').html('');
+						}
 					}else{
 						if(!sending){
 							sending = true;
 							request.cancel();
 							network.getJSON('message.php?message='+base64.encode(s)+'&channel='+channels.getCurrent(false,true)+'&'+settings.getUrlParams(),function(){
-								$('#message').val('');
+								if(!('contentEditable' in document.documentElement)){
+									val = $('#message').val('');
+								}else{
+									val = $('#message').html('');
+								}
 								request.start();
 								sending = false;
 							});
@@ -2279,9 +2391,15 @@
 					if(settings.nick()!=''){
 						$('#sendMessage')
 							.submit(function(e){
+								var val = '';
+								if(!('contentEditable' in document.documentElement)){
+									val = $('#message').val();
+								}else{
+									val = wysiwyg.getMsg();
+								}
 								e.preventDefault();
-								if(!$('#message').attr('disabled') && $('#message').val()!==''){
-									sendMessage(this.message.value);
+								if(!$('#message').attr('disabled') && val!==''){
+									sendMessage(val);
 								}
 							});
 					}else{
@@ -2381,7 +2499,7 @@
 				maxLines = 200,
 				lastMessage = 0,
 				parseName = function(n,o){
-					n = (n=="\x00"?'':n); //fix 0-string bug
+					n = (n=='\x00'?'':n); //fix 0-string bug
 					var ne = encodeURIComponent(n);
 					n = $('<span>').text(n).html();
 					var rcolors = [19,20,22,24,25,26,27,28,29],
@@ -2426,9 +2544,7 @@
 				},
 				parseColors = function(colorStr){
 					var arrayResults = [],
-						numSpan = 0,
 						s,
-						colorStrTemp = '1,0',
 						textDecoration = {
 							fg:'1',
 							bg:'0',
@@ -2436,13 +2552,11 @@
 							bold:false,
 							italic:false
 						},
-						i,j,didChange;
+						i,didChange;
 					if(!colorStr){
 						return '';
 					}
-					//colorStr = colorStr.split('\x16\x16').join('');
 					arrayResults = colorStr.split(RegExp('([\x02\x03\x0f\x16\x1d\x1f])'));
-					console.log(arrayResults);
 					colorStr='<span>';
 					for(i=0;i<arrayResults.length;i++){
 						didChange = true;
@@ -2511,11 +2625,14 @@
 					}
 					return s;
 				},
-				parseMessage = function(s){
+				parseMessage = function(s,noSmileys){
+					if(noSmileys==undefined || !noSmileys){
+						noSmileys = false;
+					}
 					s = (s=="\x00"?'':s); //fix 0-string bug
 					s = $('<span>').text(s).html();
 					s = parseLinks(s);
-					if(options.get(12,'T')=='T'){
+					if(options.get(12,'T')=='T' && noSmileys===false){
 						s = parseSmileys(s);
 					}
 					s = parseColors(s);
@@ -2630,8 +2747,8 @@
 							}
 							break;
 						case 'topic':
-							topic.set(message);
-							tdMessage = [name,' has changed the topic to ',message];
+							topic.set(parseMessage(line.message,true));
+							tdMessage = [name,' has changed the topic to ',parseMessage(line.message,true)];
 							if(line.network==-1){
 								addLine = false;
 							}

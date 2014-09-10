@@ -213,7 +213,16 @@ document.domain="'.$config['settings']['hostname'].'"
 </div>
 </div>
 </div>
-<img id="smileyMenuButton" src="smileys/smiley.gif" style="margin-left:2px;margin-right:2px;"><form style="Display:inline;" name="irc" action="javascript:void(0)" id="sendMessage"><input autocomplete="off" accesskey="i" type="text" name="message" id="message" size="128" maxlength="256" alt="OmnomIRC" title="OmnomIRC"/><input type="submit" value="Send" id="send" /></form>
+	<img id="smileyMenuButton" src="smileys/smiley.gif" style="margin-left:2px;margin-right:2px;">
+	<span><div id="textDecoForm" style="display:none;">
+		<button id="textDecoFormBold" style="font-weight:bold;">B</button>
+		<button id="textDecoFormItalic" style="font-style:italic;">I</button>
+		<button id="textDecoFormUnderline" style="text-decoration:underline;">U</button>
+	</div></span>
+	<form style="Display:inline;" name="irc" action="javascript:void(0)" id="sendMessage">
+		<span contenteditable="true" accesskey="i" id="message"></span>
+		<input type="submit" value="Send" id="send" />
+	</form>
 <div id="icons">
 	<span id="warnings" style="display:none;">
 	<span class="count">0</span><span class="icon"></span>
