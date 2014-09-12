@@ -1982,7 +1982,7 @@
 			};
 		})(),
 		wysiwyg = (function(){
-			var sel,start,end,$node,fullText,selText,
+			var sel,
 				menuOpen = false,
 				hideMenu = function(){
 					$('#textDecoForm').css('display','none');
@@ -1992,14 +1992,13 @@
 				init:function(){
 					$('#message').mouseup(function(e){
 						sel = window.getSelection();
-						$node = $(sel.anchorNode);
-						if($node.parent()[0].tagName.toLowerCase()!='span' || sel.isCollapsed){
+						if(sel.isCollapsed){
 							return;
 						}
 						e.preventDefault();
 						$('#textDecoForm').css({
 							display:'block',
-							left:e.pageX-52
+							left:Math.max(e.pageX-52,0)
 						});
 						menuOpen = true;
 						
@@ -2011,44 +2010,20 @@
 						}
 					})
 					$('#textDecoFormBold').click(function(){
-						sel.getRangeAt(0).surroundContents(
-							$('<span>').css('font-weight','bold')[0]
-						);
+						sel.getRangeAt(0).surroundContents($('<b>')[0]);
 					});
 					$('#textDecoFormItalic').click(function(){
-						sel.getRangeAt(0).surroundContents(
-							$('<span>').css('font-style','italic')[0]
-						);
+						sel.getRangeAt(0).surroundContents($('<i>')[0]);
 					});
 					$('#textDecoFormUnderline').click(function(){
-						sel.getRangeAt(0).surroundContents(
-							$('<span>').css('text-decoration','underline')[0]
-						);
+						sel.getRangeAt(0).surroundContents($('<u>')[0]);
 					});
 				},
 				getMsg:function(){
-					var msg = $('#message').html(),
-						msgParts = msg.split(/<span style="|<\/span>/g),
-						i,s;
-					msg = '';
-					for(i=0;i<msgParts.length;i++){
-						switch(msgParts[i].split(';">')[0]){
-							case 'font-weight: bold':
-								s = msgParts[i].substr('font-weight: bold;">'.length);
-								msg += '\x02'+s+'\x02';
-								break;
-							case 'font-style: italic':
-								s = msgParts[i].substr('font-style: italic;">'.length);
-								msg += '\x1d'+s+'\x1d';
-								break;
-							case 'text-decoration: underline':
-								s = msgParts[i].substr('text-decoration: underline;">'.length);
-								msg += '\x1f'+s+'\x1f';
-								break;
-							default:
-								msg += msgParts[i];
-						}
-					}
+					var msg = $('#message').html();
+					msg = msg.split('<b>').join('\x02').split('</b>').join('\x02');
+					msg = msg.split('<i>').join('\x1d').split('</i>').join('\x1d');
+					msg = msg.split('<u>').join('\x1f').split('</u>').join('\x1f');
 					msg = $('<span>').html(msg).text();
 					return msg;
 				}
@@ -2341,7 +2316,6 @@
 		send = (function(){
 			var sending = false,
 				sendMessage = function(s){
-					oldMessages.add(s);
 					if(s[0] == '/' && commands.parse(s.substr(1))){
 						if(!('contentEditable' in document.documentElement)){
 							val = $('#message').val('');
@@ -2394,7 +2368,10 @@
 								var val = '';
 								if(!('contentEditable' in document.documentElement)){
 									val = $('#message').val();
+									
+									oldMessages.add(val);
 								}else{
+									oldMessages.add($('#message').html());
 									val = wysiwyg.getMsg();
 								}
 								e.preventDefault();
@@ -2546,8 +2523,8 @@
 					var arrayResults = [],
 						s,
 						textDecoration = {
-							fg:'1',
-							bg:'0',
+							fg:'-1',
+							bg:'-1',
 							underline:false,
 							bold:false,
 							italic:false
@@ -2585,14 +2562,20 @@
 								s = textDecoration.fg;
 								textDecoration.fg = textDecoration.bg;
 								textDecoration.bg = s;
+								if(textDecoration.fg=='-1'){
+									textDecoration.fg = '0';
+								}
+								if(textDecoration.bg=='-1'){
+									textDecoration.bg = '1';
+								}
 								break;
 							case '\x1f': // underline
 								textDecoration.underline = !textDecoration.underline;
 								break;
 							case '\x0f': // reset
 								textDecoration = {
-									fg:'1',
-									bg:'0',
+									fg:'-1',
+									bg:'-1',
 									underline:false,
 									bold:false,
 									italic:false

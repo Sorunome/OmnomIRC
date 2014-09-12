@@ -8,6 +8,7 @@ td.curchan,
 #scrollBarLine,
 #UserListInnerCont,
 #logsHeader,
+#textDecoForm,
 .lineHigh {
 	background:#262626;
 	border-color:#4d4d4d;
@@ -63,10 +64,17 @@ a,a:link,a:visited,a:hover,a:active{
 a:hover{
 	text-shadow:0 0 4px rgba(129,191,41,0.8);
 }
-input[type=text]{
+span#message,input#message{
 	background-color:#202020;
 	color:#a2a2a2;
 	border:1px solid #000000;
+}
+button,input[type="submit"]{
+	cursor:pointer;
+	background-color:#202020;
+	color:#a2a2a2;
+	border:1px solid #000000;
+	border-radius:3px;
 }
 .optionsTable .option{
 	color:#81bf29;
