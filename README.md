@@ -38,3 +38,8 @@ On IRC:
 Matches a normal line:  
 /^(?:\x03[0-9]{1,2}\([OC]\)\x0F|\(#\))<([^>]+)> (.*)/  
 The first result is the nick, the second one the message.
+
+Protocol
+--------
+You want to write a bot for OmnomIRC or just want to know how it works, because you enjoy learning things?
+You can check out the protocol information [here](http://ourl.ca/20700)
