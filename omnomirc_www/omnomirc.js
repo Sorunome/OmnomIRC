@@ -1145,7 +1145,7 @@
 					try{
 						var chanList = JSON.parse(ls.get('OmnomIRCChannels'+settings.net())),
 							exChans = $.map(chans,function(ch){
-								if(ch.ex && options.get(9,'F')=='T'){
+								if((ch.ex && options.get(9,'F')=='T') || !ch.ex){
 									return ch;
 								}
 								return undefined;
@@ -1158,9 +1158,7 @@
 											var valid = false;
 											$.each(chans,function(i,vc){
 												if(vc.id == v.id){
-													if(v.ex){
-														exChansInUse.push(v);
-													}
+													exChansInUse.push(v);
 													valid = true;
 													v.chan = vc.chan;
 													return false;
