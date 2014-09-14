@@ -47,7 +47,7 @@
 						checkLoginUrl = data.checkLoginUrl;
 						
 						set = ls.get('OmnomIRCCL'+settings.net());
-						if(set===null || !set || clOnly){
+						if(set===null || set=='' || !set || clOnly){
 							network.getJSON(checkLoginUrl+'&network='+net.toString()+'&jsoncallback=?',function(data){
 								nick = data.nick;
 								signature = data.signature;
@@ -941,6 +941,7 @@
 								e.preventDefault();
 								ls.set('OmnomIRCSettings'+settings.net(),'----------------------------------------');
 								ls.set('OmnomIRCChannels'+settings.net(),'');
+								ls.set('OmnomIRCCL'+settings.net(),'');
 								document.location.reload();
 							})
 					));
