@@ -63,6 +63,7 @@
 							},!clOnly);
 						}else{
 							set = JSON.parse(set);
+							console.log(set);
 							nick = set.nick;
 							signature = set.signature;
 							uid = set.uid;
@@ -2097,7 +2098,13 @@
 									title:s.title
 								})
 								.click(function(){
-									replaceText(' '+s.code,$('#message')[0]);
+									if(!('contentEditable' in document.documentElement)){
+										replaceText(' '+s.code,$('#message')[0]);
+									}else{
+										var range = window.getSelection().getRangeAt(0);
+										range.deleteContents();
+										range.insertNode(document.createTextNode(' '+s.code));
+									}
 								})):''),' '];
 								
 						})
