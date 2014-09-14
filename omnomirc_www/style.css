@@ -511,12 +511,12 @@ span#message {
 	width: -webkit-calc(100% - 115px);
 	margin-top: 3px;
 	display:inline-block;
-	height:17px;
-	padding:1px;
+	height:16px;
+	padding: 3px 2px 2px 2px;
 	background-color:#ffffff;
 	border:1px solid black;
 	border-radius:2px;
-	font-size:15px;
+	font-size:12px;
 	vertical-align:top;
 }
 #textDecoForm{

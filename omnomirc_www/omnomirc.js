@@ -63,7 +63,6 @@
 							},!clOnly);
 						}else{
 							set = JSON.parse(set);
-							console.log(set);
 							nick = set.nick;
 							signature = set.signature;
 							uid = set.uid;
