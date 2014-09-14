@@ -1,5 +1,5 @@
 <?php
-$installScriptVersion = '2.8.0.2';
+$installScriptVersion = '2.8.0.4';
 include_once(realpath(dirname(__FILE__)).'/config.php');
 // IMPORTANT!!!! sqli object ONLY FOR INSTALLATION SCRIPT
 class Sqli{
@@ -131,11 +131,20 @@ if(isset($_GET["js"])){
 	$cl = $net["config"]["checkLogin"];
 	$ts = time();
 	$cl .= "?sid=".urlencode(htmlspecialchars(str_replace(";","%^%",hash_hmac("sha512",(isset($_SERVER["HTTP_X_FORWARDED_FOR"])?$_SERVER["HTTP_X_FORWARDED_FOR"]:$_SERVER["REMOTE_ADDR"]),$config["security"]["sigKey"].$ts.$you->getNetwork())."|".$ts)));
+	$dispNetworks = Array();
+	foreach($config["networks"] as $n){
+		$dispNetworks[] = Array(
+			"id" => $n["id"],
+			"normal" => $n["normal"],
+			"userlist" => $n["userlist"],
+			"name" => $n["name"]
+		);
+	}
 	echo json_encode(Array(
 		"hostname" => $config["settings"]["hostname"],
 		"channels" => $channels,
 		"smileys" => $vars->get("smileys"),
-		"networks" => $config["networks"],
+		"networks" => $dispNetworks,
 		"network" => $you->getNetwork(),
 		"checkLoginUrl" => $cl,
 		"defaults" => $defaults
