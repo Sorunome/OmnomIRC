@@ -29,27 +29,51 @@
 				net = '',
 				networks = [];
 			return {
-				fetch:function(fn){
+				fetch:function(fn,clOnly){
+					if(clOnly===undefined){
+						clOnly = false;
+					}
 					network.getJSON('config.php?js'+(document.URL.split('network=')[1]!==undefined?'&network='+document.URL.split('network=')[1].split('&')[0].split('#')[0]:''),function(data){
-						hostname = data.hostname;
-						channels.setChans(data.channels);
-						parser.setSmileys(data.smileys);
-						networks = data.networks;
+						var set;
+						if(!clOnly){
+							hostname = data.hostname;
+							channels.setChans(data.channels);
+							parser.setSmileys(data.smileys);
+							networks = data.networks;
+							net = data.network;
+							options.setDefaults(data.defaults);
+						}
+						
 						checkLoginUrl = data.checkLoginUrl;
-						net = data.network;
-						options.setDefaults(data.defaults);
-						network.getJSON(checkLoginUrl+'&network='+net.toString()+'&jsoncallback=?',function(data){
-							nick = data.nick;
-							signature = data.signature;
-							uid = data.uid;
+						
+						set = ls.get('OmnomIRCCL'+settings.net());
+						if(set===null || !set || clOnly){
+							network.getJSON(checkLoginUrl+'&network='+net.toString()+'&jsoncallback=?',function(data){
+								nick = data.nick;
+								signature = data.signature;
+								uid = data.uid;
+								ls.set('OmnomIRCCL'+settings.net(),JSON.stringify({
+									nick:nick,
+									signature:signature,
+									uid:uid
+								}));
+								if(fn!==undefined){
+									fn();
+								}
+							},!clOnly);
+						}else{
+							set = JSON.parse(set);
+							nick = set.nick;
+							signature = set.signature;
+							uid = set.uid;
 							if(fn!==undefined){
 								fn();
 							}
-						});
-					});
+						}
+					},!clOnly);
 				},
 				getUrlParams:function(){
-					return 'nick='+base64.encode(nick)+'&signature='+base64.encode(signature)+'&time='+(+new Date()).toString()+'&id='+uid+'&network='+net;
+					return 'nick='+base64.encode(nick)+'&signature='+base64.encode(signature)+'&time='+(+new Date()).toString()+'&id='+uid+'&network='+net+(nick!=''?'&noLoginErrors':'');
 				},
 				networks:function(){
 					return networks;
@@ -146,8 +170,15 @@
 						.text(warnings.length);
 				};
 			return {
-				getJSON:function(s,fn){
-					return $.getJSON(s)
+				getJSON:function(s,fn,async){
+					if(async==undefined){
+						async = true;
+					}
+					return $.ajax({
+							url:s,
+							dataType:'json',
+							async:async
+						})
 						.done(function(data){
 							if(data.errors!==undefined){
 								$.each(data.errors,function(i,e){
@@ -2660,6 +2691,10 @@
 								channels.join(num);
 								return false;
 							}
+							break;
+						case 'relog':
+							settings.fetch(undefined,true);
+							return false;
 							break;
 						case 'join':
 							tdMessage = [name,' has joined '+channels.getCurrentName()];

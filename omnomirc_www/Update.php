@@ -45,7 +45,7 @@ if(isset($_GET['high'])){
 $channel = $you->chan;
 $pm = false;
 $nick = $you->nick;
-if($channel[0] == '*'){ //PM
+if($channel[0] == '*' && $nick){ //PM
 	$sender = substr($channel,1);
 	$channel = $nick;
 	$pm = true;
@@ -63,7 +63,7 @@ while(true){
 		continue;
 	}
 	$you->update();
-	if($nick!='0'){
+	if($nick){
 		$query = $sql->query("
 			SELECT * FROM `irc_lines`
 			WHERE
@@ -99,7 +99,7 @@ while(true){
 					AND
 					name2='%s'
 				)
-		)",$curline,$channel,$nick,$you->getNetwork(),$pm?$sender:"0",$nick,$you->getNetwork(),$nick,$channel);
+		)",$curline,$channel,$nick,$you->getNetwork(),$pm?$sender:'0',$nick,$you->getNetwork(),$nick,$channel);
 	}else{
 		$query = $sql->query("SELECT * FROM `irc_lines` WHERE `line_number` > %d AND (`channel` = '%s')",$curline,$channel);
 	}
@@ -110,6 +110,18 @@ while(true){
 		$ignorelist = $userSql['ignores'];
 	}
 	$lines = Array();
+	if($nick===false){
+		$lines[] = Array(
+			'curLine' => 0,
+			'type' => 'relog',
+			'network' => 0,
+			'time' => time(),
+			'name' => 'OmnomIRC',
+			'message' => 'Time to relog!',
+			'name2' => '',
+			'chan' => ''
+		);
+	}
 	if($result['line_number'] === NULL){
 		$temp = $sql->query("SELECT * FROM `irc_lines` WHERE `line_number` > %d AND locate('%s',`message`) != 0 AND NOT (((`type` = 'pm' OR `type` = 'pmaction') AND `name1` <> '%s' AND `online` = %d) OR (`type` = 'server'))",$curline,substr($nick,0,4),$nick,$you->getNetwork());
 		$result = $temp[0];

@@ -392,7 +392,12 @@ class You{
 		$this->infoStuff = NULL;
 		$this->loggedIn = ($this->sig == $security->sign($this->nick,$this->network) && $this->nick!=='');
 		if(!$this->loggedIn){
-			$json->addWarning('Not logged in');
+			if(!isset($_GET['noLoginErrors'])){
+				$json->addWarning('Not logged in');
+				$this->nick = '';
+			}else{
+				$this->nick = false;
+			}
 		}
 	}
 	public function setChan($channel){
@@ -557,7 +562,7 @@ class OmnomIRC{
 		$linesExtra = Array();
 		
 		while(true){
-			if($you->chan[0] == '*'){ // PM
+			if($you->chan[0] == '*' && $you->nick){ // PM
 				$res = $sql->query("
 					SELECT x.* FROM (
 						SELECT * FROM `%s` 
@@ -627,6 +632,18 @@ class OmnomIRC{
 				continue;
 			}
 			break;
+		}
+		if($you->nick===false){
+			$linesExtra[] = Array(
+				'curLine' => 0,
+				'type' => 'relog',
+				'network' => 0,
+				'time' => time(),
+				'name' => 'OmnomIRC',
+				'message' => 'Time to relog!',
+				'name2' => '',
+				'chan' => ''
+			);
 		}
 		return array_merge($lines,$linesExtra);
 	}
