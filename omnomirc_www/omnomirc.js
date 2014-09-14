@@ -1549,35 +1549,39 @@
 				endPos0 = 0,
 				tabAppendStr = ' ',
 				searchArray = [],
+				node;
 				getCurrentWord = function(){
-					var message = $('#message')[0];
+					var messageVal = (!('contentEditable' in document.documentElement)?$('#message')[0].value:(node = window.getSelection().anchorNode).nodeValue);
 					if(isInTab){
 						return tabWord;
 					}
-					startPos = endPos = message.selectionStart;
-					startChar = message.value.charAt(startPos);
+					startPos = (!('contentEditable' in document.documentElement)?$('#message')[0].selectionStart:window.getSelection().anchorOffset);
+					startChar = messageVal.charAt(startPos);
 					while(startChar != ' ' && --startPos > 0){
-						startChar = message.value.charAt(startPos);
+						startChar = messageVal.charAt(startPos);
 					}
 					if(startChar == ' '){
 						startPos++;
 					}
-					endChar = message.value.charAt(endPos);
-					while(endChar != ' ' && ++endPos <= message.value.length){
-						endChar = message.value.charAt(endPos);
+					endChar = messageVal.charAt(endPos);
+					while(endChar != ' ' && ++endPos <= messageVal.length){
+						endChar = messageVal.charAt(endPos);
 					}
 					endPos0 = endPos;
-					return message.value.substr(startPos,endPos - startPos).trim();
+					return messageVal.substr(startPos,endPos - startPos).trim();
 				},
 				getTabComplete = function(){
-					var message = $('#message')[0],
+					var messageVal = (!('contentEditable' in document.documentElement)?$('#message')[0].value:node.nodeValue),
 						name;
+					if(messageVal === null){
+						return;
+					}
 					if(!isInTab){
 						tabAppendStr = ' ';
-						startPos = message.selectionStart;
-						startChar = message.value.charAt(startPos);
+						startPos = (!('contentEditable' in document.documentElement)?$('#message')[0].selectionStart:window.getSelection().anchorOffset);
+						startChar = messageVal.charAt(startPos);
 						while(startChar != ' ' && --startPos > 0){
-							startChar = message.value.charAt(startPos);
+							startChar = messageVal.charAt(startPos);
 						}
 						if(startChar == ' '){
 							startChar+=2;
@@ -1585,10 +1589,10 @@
 						if(startPos===0){
 							tabAppendStr = ': ';
 						}
-						endPos = message.selectionStart;
-						endChar = message.value.charAt(endPos);
-						while(endChar != ' ' && ++endPos <= message.value.length){
-							endChar = message.value.charAt(endPos);
+						endPos = (!('contentEditable' in document.documentElement)?$('#message')[0].selectionStart:window.getSelection().anchorOffset);
+						endChar = messageVal.charAt(endPos);
+						while(endChar != ' ' && ++endPos <= messageVal.length){
+							endChar = messageVal.charAt(endPos);
 						}
 						if(endChar == ' '){
 							endChar-=2;
@@ -1599,8 +1603,15 @@
 						tabCount = 0;
 						name = search(getCurrentWord(),tabCount);
 					}
-					message.value = message.value.substr(0,startPos)+name+tabAppendStr+message.value.substr(endPos+1);
-					endPos = endPos0+name.length;
+					messageVal = messageVal.substr(0,startPos)+name+tabAppendStr+messageVal.substr(endPos+1);
+					if(!('contentEditable' in document.documentElement)){
+						$('#message')[0].value = messageVal;
+					}else{
+						window.getSelection().anchorNode.nodeValue = messageVal;
+						window.getSelection().getRangeAt(0).setEnd(node,startPos+name.length+tabAppendStr.length);
+						window.getSelection().getRangeAt(0).setStart(node,startPos+name.length+tabAppendStr.length);
+					}
+					endPos = endPos0+name.length+tabAppendStr.length;
 				},
 				search = function(start,startAt){
 					var res = false;
