@@ -2756,7 +2756,7 @@
 							break;
 						case 'mode':
 							if(typeof(message)=='string'){
-								message = message.split(' ');
+								message = line.message.split(' ');
 								$.each(message,function(i,v){
 									var n = $('<span>').html(v).text();
 									if(n.indexOf('+')==-1 && n.indexOf('-')==-1){
