@@ -2594,12 +2594,20 @@
 									s = arrayResults[i+1].replace(/^([0-9]{1,2}).*/,'$1');
 									if(s != arrayResults[i+1]){
 										textDecoration.fg = s;
-										arrayResults[i+1] = arrayResults[i+1].substr(s.length);
+										if(s == arrayResults[i+1]){
+											arrayResults[i+1] = '';
+										}else{
+											arrayResults[i+1] = arrayResults[i+1].substr(s.length);
+										}
 									}
 								}else{ // we also changed background
 									textDecoration.fg = s.split(':')[0];
 									textDecoration.bg = s.split(':')[1];
-									arrayResults[i+1] = arrayResults[i+1].substr(s.length);
+									if(s == arrayResults[i+1]){
+										arrayResults[i+1] = '';
+									}else{
+										arrayResults[i+1] = arrayResults[i+1].substr(s.length);
+									}
 								}
 								break;
 							case '\x02': // bold
