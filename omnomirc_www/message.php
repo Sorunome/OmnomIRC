@@ -24,7 +24,7 @@ if(isset($_GET['textmode'])){
 }
 include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 function removeLinebrakes($s){
-	return str_replace("\0",'',str_replace("\r",'',str_replace("\n",'',$s)));
+	return str_replace(Array('\0','\r','\n'),'',$s);
 }
 $message = (isset($_GET['message'])?$_GET['message']:'');
 if(strlen($message) < 4){
@@ -36,13 +36,20 @@ if($json->hasErrors() || $json->hasWarnings()){
 }
 $message = removeLinebrakes(base64_url_decode(str_replace(' ','+',$message)));
 $type = 'message';
-$message = str_replace(array("\r","\r\n","\n"),' ',$message);
-$parts = explode(" ",$message);
+$message = str_replace(Array("\r","\r\n","\n"),' ',$message);
+$parts = explode(' ',$message);
+
 if(strlen($message) <= 0){
 	$json->addError('Bad message');
+}
+if(strlen($message) > 256){
+	$json->addError('Message too long');
+}
+if($json->hasErrors() || $json->hasWarnings()){
 	echo $json->get();
 	die();
 }
+
 $nick = $you->nick;
 $channel = $you->chan;
 $pm = false;

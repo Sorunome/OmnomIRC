@@ -2065,7 +2065,9 @@
 					msg = msg.split('<b>').join('\x02').split('</b>').join('\x02');
 					msg = msg.split('<i>').join('\x1d').split('</i>').join('\x1d');
 					msg = msg.split('<u>').join('\x1f').split('</u>').join('\x1f');
+					msg = msg.split('&nbsp;').join(' ');
 					msg = $('<span>').html(msg).text();
+					console.log(msg);
 					return msg;
 				}
 			}
@@ -2127,7 +2129,8 @@
 								.attr({
 									'type':'text',
 									'id':'message',
-									'accesskey':'i'
+									'accesskey':'i',
+									'maxlen':'256'
 								})
 						);
 					}else{
