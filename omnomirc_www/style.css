@@ -27,6 +27,13 @@ body{
 	*height:100%
 }
 /*smiley select start*/
+#smileyselect, #smileyselect * {
+	-webkit-user-select:none;
+	-moz-user-select:none;
+	-ms-user-select:none;
+	-o-user-select:none;
+	user-select:none;
+}
 #smileyselect {
 	position:absolute;
 	width:200px;
