@@ -2589,16 +2589,14 @@
 						didChange = true;
 						switch(arrayResults[i]){
 							case '\x03': // color
-								s = arrayResults[i+1].replace(/^([0-9]{1,2}),([0-9]{1,2}).*/,'$1:$2');
+								s = arrayResults[i+1].replace(/^([0-9]{1,2}),([0-9]{1,2})(.*)/,'$1:$2$3');
 								if(s == arrayResults[i+1]){ // we didn't change background
 									s = arrayResults[i+1].replace(/^([0-9]{1,2}).*/,'$1');
-									if(s != arrayResults[i+1]){
-										textDecoration.fg = s;
-										if(s == arrayResults[i+1]){
-											arrayResults[i+1] = '';
-										}else{
-											arrayResults[i+1] = arrayResults[i+1].substr(s.length);
-										}
+									textDecoration.fg = s;
+									if(s == arrayResults[i+1]){
+										arrayResults[i+1] = '';
+									}else{
+										arrayResults[i+1] = arrayResults[i+1].substr(s.length);
 									}
 								}else{ // we also changed background
 									textDecoration.fg = s.split(':')[0];
@@ -2645,8 +2643,9 @@
 						if(didChange){
 							colorStr += '</span>';
 							colorStr += '<span class="fg-'+textDecoration.fg+' bg-'+textDecoration.bg+'" style="'+(textDecoration.bold?'font-weight:bold;':'')+(textDecoration.underline?'text-decoration:underline;':'')+(textDecoration.italic?'font-style:italic;':'')+'">';
+						}else{
+							colorStr+=arrayResults[i];
 						}
-						colorStr+=arrayResults[i];
 					}
 					colorStr += '</span>';
 					/*Strip codes*/
