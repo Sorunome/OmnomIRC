@@ -36,7 +36,7 @@ Because why not?
 
 On IRC:
 Matches a normal line:  
-/^(?:\x03[0-9]{1,2}\\([OC]\\)\x0F|\\(#\\))<([^>]+)> (.*)/  
+/^(?:\x03[0-9]{1,2}\\([OC]\\)\x0F|:\\(#\\))<([^>]+)> (.*)/  
 The first result is the nick, the second one the message.
 
 Protocol

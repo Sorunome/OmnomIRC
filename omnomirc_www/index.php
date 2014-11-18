@@ -81,6 +81,7 @@ Options:
 15 - show scrollbar
 16 - enable main-window scrolling
 17 - show omnomirc join/part messages
+18 - use wysiwyg edtior
 */
 echo getPage('OmnomIRC Options','
 <style type="text/css">

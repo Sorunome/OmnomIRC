@@ -857,6 +857,11 @@
 						disp:'Show OmnomIRC join/part messages',
 						id:17,
 						defaultOption:'F'
+					},
+					{
+						disp:'Use WYSIWYG editor (experimental)',
+						id:18,
+						defaultOption:'F'
 					}
 				];
 			return {
@@ -1583,11 +1588,11 @@
 				searchArray = [],
 				node;
 				getCurrentWord = function(){
-					var messageVal = (!('contentEditable' in document.documentElement)?$('#message')[0].value:(node = window.getSelection().anchorNode).nodeValue);
+					var messageVal = (!wysiwyg.support()?$('#message')[0].value:(node = window.getSelection().anchorNode).nodeValue);
 					if(isInTab){
 						return tabWord;
 					}
-					startPos = (!('contentEditable' in document.documentElement)?$('#message')[0].selectionStart:window.getSelection().anchorOffset);
+					startPos = (!wysiwyg.support()?$('#message')[0].selectionStart:window.getSelection().anchorOffset);
 					startChar = messageVal.charAt(startPos);
 					while(startChar != ' ' && --startPos > 0){
 						startChar = messageVal.charAt(startPos);
@@ -1603,14 +1608,14 @@
 					return messageVal.substr(startPos,endPos - startPos).trim();
 				},
 				getTabComplete = function(){
-					var messageVal = (!('contentEditable' in document.documentElement)?$('#message')[0].value:node.nodeValue),
+					var messageVal = (!wysiwyg.support()?$('#message')[0].value:node.nodeValue),
 						name;
 					if(messageVal === null){
 						return;
 					}
 					if(!isInTab){
 						tabAppendStr = ' ';
-						startPos = (!('contentEditable' in document.documentElement)?$('#message')[0].selectionStart:window.getSelection().anchorOffset);
+						startPos = (!wysiwyg.support()?$('#message')[0].selectionStart:window.getSelection().anchorOffset);
 						startChar = messageVal.charAt(startPos);
 						while(startChar != ' ' && --startPos > 0){
 							startChar = messageVal.charAt(startPos);
@@ -1621,7 +1626,7 @@
 						if(startPos===0){
 							tabAppendStr = ': ';
 						}
-						endPos = (!('contentEditable' in document.documentElement)?$('#message')[0].selectionStart:window.getSelection().anchorOffset);
+						endPos = (!wysiwyg.support()?$('#message')[0].selectionStart:window.getSelection().anchorOffset);
 						endChar = messageVal.charAt(endPos);
 						while(endChar != ' ' && ++endPos <= messageVal.length){
 							endChar = messageVal.charAt(endPos);
@@ -1636,7 +1641,7 @@
 						name = search(getCurrentWord(),tabCount);
 					}
 					messageVal = messageVal.substr(0,startPos)+name+tabAppendStr+messageVal.substr(endPos+1);
-					if(!('contentEditable' in document.documentElement)){
+					if(!wysiwyg.support()){
 						$('#message')[0].value = messageVal;
 					}else{
 						window.getSelection().anchorNode.nodeValue = messageVal;
@@ -2069,6 +2074,9 @@
 					msg = $('<span>').html(msg).text();
 					console.log(msg);
 					return msg;
+				},
+				support:function(){
+					return (('contentEditable' in document.documentElement) && options.get(18,'F')=='T');
 				}
 			}
 		})(),
@@ -2099,7 +2107,7 @@
 									title:s.title
 								})
 								.click(function(){
-									if(!('contentEditable' in document.documentElement)){
+									if(!wysiwyg.support()){
 										replaceText(' '+s.code,$('#message')[0]);
 									}else{
 										var range = window.getSelection().getRangeAt(0);
@@ -2123,7 +2131,7 @@
 				isBlurred = false,
 				init = function(){
 					page.changeLinks();
-					if(!('contentEditable' in document.documentElement)){
+					if(!wysiwyg.support()){
 						$('#message').replaceWith(
 							$('<input>')
 								.attr({
@@ -2303,14 +2311,14 @@
 				counter = 0,
 				current = '',
 				setMsg = function(s){
-					if(!('contentEditable' in document.documentElement)){
+					if(!wysiwyg.support()){
 						$('#message').val(s);
 					}else{
 						$('#message').html(s);
 					}
 				},
 				getMsg = function(){
-					if(!('contentEditable' in document.documentElement)){
+					if(!wysiwyg.support()){
 						return $('#message').val();
 					}
 					return $('#message').html();
@@ -2367,7 +2375,7 @@
 			var sending = false,
 				sendMessage = function(s){
 					if(s[0] == '/' && commands.parse(s.substr(1))){
-						if(!('contentEditable' in document.documentElement)){
+						if(!wysiwyg.support()){
 							val = $('#message').val('');
 						}else{
 							val = $('#message').html('');
@@ -2377,7 +2385,7 @@
 							sending = true;
 							request.cancel();
 							network.getJSON('message.php?message='+base64.encode(s)+'&channel='+channels.getCurrent(false,true)+'&'+settings.getUrlParams(),function(){
-								if(!('contentEditable' in document.documentElement)){
+								if(!wysiwyg.support()){
 									val = $('#message').val('');
 								}else{
 									val = $('#message').html('');
@@ -2416,7 +2424,7 @@
 						$('#sendMessage')
 							.submit(function(e){
 								var val = '';
-								if(!('contentEditable' in document.documentElement)){
+								if(!wysiwyg.support()){
 									val = $('#message').val();
 									
 									oldMessages.add(val);
