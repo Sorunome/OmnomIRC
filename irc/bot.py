@@ -307,6 +307,7 @@ class Bot(threading.Thread):
 						self.restart = True
 						quitMsg = 'Being stupid'
 						print('Restarting due to stupidness ('+str(self.i)+add)
+				time.sleep(0.1)
 				if lastLineTime+40 <= time.time(): # allow up to 10 seconds lag
 					self.stopnow = True
 					self.restart = True
@@ -315,6 +316,7 @@ class Bot(threading.Thread):
 			except Exception as inst:
 				print(inst)
 				traceback.print_exc()
+				time.sleep(0.1)
 				if lastLineTime+40 <= time.time(): # allow up to 10 seconds lag
 					self.stopnow = True
 					self.restart = True
