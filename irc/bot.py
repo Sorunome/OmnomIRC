@@ -307,9 +307,19 @@ class Bot(threading.Thread):
 						self.restart = True
 						quitMsg = 'Being stupid'
 						print('Restarting due to stupidness ('+str(self.i)+add)
+				if lastLineTime+40 <= time.time(): # allow up to 10 seconds lag
+					self.stopnow = True
+					self.restart = True
+					quitMsg = 'No pings'
+					print('Restarting due to no pings ('+str(self.i)+add)
 			except Exception as inst:
 				print(inst)
 				traceback.print_exc()
+				if lastLineTime+40 <= time.time(): # allow up to 10 seconds lag
+					self.stopnow = True
+					self.restart = True
+					quitMsg = 'No pings'
+					print('Restarting due to no pings ('+str(self.i)+add)
 			temp=string.split(self.readbuffer,'\n')
 			self.readbuffer=temp.pop()
 			if lastPingTime+30 <= time.time():
