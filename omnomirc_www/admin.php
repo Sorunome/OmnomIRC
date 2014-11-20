@@ -212,10 +212,6 @@ if($you->isGlobalOp()){
 					writeConfig();
 				}
 				break;
-			case 'op':
-				$config['opGroups'] = $jsonData;
-				writeConfig();
-				break;
 			case 'smileys':
 				$vars->set('smileys',$jsonData);
 				//writeConfig();

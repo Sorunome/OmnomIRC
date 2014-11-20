@@ -493,10 +493,10 @@ class You{
 			$this->globalOps = true;
 			return true;
 		}
-		$cl = $networks->get($this->getNetwork());
-		$cl = $cl['config']['checkLogin'];
+		$net = $networks->get($this->getNetwork());
+		$cl = $net['config']['checkLogin'];
 		$returnPosition = json_decode(trim(file_get_contents($cl.'?op&u='.$this->id.'&nick='.base64_url_encode($this->nick))));
-		if(in_array($returnPosition->group,$config['opGroups'])){
+		if(in_array($returnPosition->group,$net['config']['opGroups'])){
 			$this->globalOps = true;
 			return true;
 		}

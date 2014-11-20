@@ -1,6 +1,6 @@
 <?php
 error_reporting(0);
-$installScriptVersion = '2.8.0.6';
+$installScriptVersion = '2.8.0.7';
 include_once(realpath(dirname(__FILE__)).'/config.php');
 // IMPORTANT!!!! sqli object ONLY FOR INSTALLATION SCRIPT
 class Sqli{
@@ -373,7 +373,7 @@ if(!isset($_GET['server'])){
 		case 7:
 			$config['networks'][1]['config']['checkLogin'] = $_POST['checkLogin'];
 			$config['channels'][0]['networks'][0]['name'] = $_POST['chan'];
-			$config['opGroups'] = Array($_POST['group']);
+			$config['networks'][1]['config']['opGroups'] = Array($_POST['group']);
 			if($_POST['defaultOp'] !== ''){
 				$sql->query("INSERT INTO `irc_userstuff` (`name`,`globalOp`) VALUES ('%s',1)",strtolower($_POST['defaultOp']));
 			}

@@ -326,6 +326,29 @@
 											$netSpecific.text('Server Network');
 											break;
 										case 1:
+											var drawOpGroupsSettings = function(elem){
+													$(elem).replaceWith(
+														$('<span>').append(
+															$.map(net.config.opGroups,function(opg,j){
+																return ['<br>'+opg+' ',
+																	$('<a>').text('x').click(function(e){
+																		e.preventDefault();
+																		nets[i].config.opGroups.splice(j);
+																		drawOpGroupsSettings($(this).parent());
+																	})];
+															}),
+															'<br>',
+															$('<button>').text('add op group').click(function(e){
+																e.preventDefault();
+																var group = prompt('New Network Name');
+																if(group != ''  && group != null){
+																	nets[i].config.opGroups.push(group);
+																	drawOpGroupsSettings($(this).parent());
+																}
+															})
+														)
+													);
+												};
 											$netSpecific = $('<span>').append(
 													$('<b>').text('OmnomIRC network'),
 													'<br>checkLogin:',
@@ -335,7 +358,12 @@
 													'<br>',
 													$('<button>').text('Use Current settings as defaults').click(function(){
 															nets[i].config.defaults = options.getFullOptionsString();
-														})
+														}),
+													'<br>Op Groups: ',
+													$('<a>').text('show').click(function(e){
+														e.preventDefault();
+														drawOpGroupsSettings(this);
+													})
 												);
 											break;
 										case 2:
