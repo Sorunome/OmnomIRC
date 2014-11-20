@@ -31,6 +31,11 @@ if(isset($_GET['message'])){
 }elseif (isset($_GET['sendMessage'])){
 	header("Location: message.php?textmode&curline=".((int)$_GET['curline'])."&".$you->getUrlParams()."&message=".base64_url_encode($_POST['message']));
 }else{
+	$net = $networks->get($you->getNetwork());
+	if(!$you->isLoggedIn() && $net['config']['guests'] == 0){
+		echo 'You need to log in to be able to view chat!';
+		die();
+	}
 	$banned = false;
 	if(isset($_GET['update']) && isset($_GET['curline']) && !(isset($_SESSION['content']) && $_SESSION['content']==='')){
 		$curline = (int)$_GET['curline'];
