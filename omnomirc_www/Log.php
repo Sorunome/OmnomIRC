@@ -20,6 +20,18 @@
 */
 include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 
+$net = $networks->get($you->getNetwork());
+if(!$you->isLoggedIn() && $net['config']['guests'] == 0){
+	$msg = 'You need to log in to be able to view chat!';
+	if(isset($_GET['noLoginErrors'])){
+		$json->add('message',$msg);
+	}else{
+		$json->addError($msg);
+	}
+	echo $json->get();
+	die();
+}
+
 if(isset($_GET['offset'])){
 	$offset = (int)$_GET['offset'];
 }else{

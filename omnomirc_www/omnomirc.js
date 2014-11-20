@@ -83,6 +83,9 @@
 				},
 				net:function(){
 					return net;
+				},
+				loggedIn:function(){
+					return signature !== '';
 				}
 			};
 		})(),
@@ -359,6 +362,13 @@
 													$('<button>').text('Use Current settings as defaults').click(function(){
 															nets[i].config.defaults = options.getFullOptionsString();
 														}),
+													'<br>',
+													$('<select>').append(
+														$('<option>').val(0).text('Deny Guest Access'),
+														$('<option>').val(1).text('Guests are read-only')
+													).val(net.config.guests).change(function(e){
+														nets[i].config.guests = parseInt(this.value,10);
+													}),
 													'<br>Op Groups: ',
 													$('<a>').text('show').click(function(e){
 														e.preventDefault();
@@ -1537,6 +1547,15 @@
 							requestHandler.abort();
 						}
 						requestHandler = network.getJSON('Load.php?count=125&channel='+getHandler(i,true)+'&'+settings.getUrlParams(),function(data){
+							if(data.lines === undefined){
+								if(data.message){
+									send.internal(data.message);
+								}else{
+									send.internal('<span style="color:#C73232;"><b>ERROR:</b> couldn\'t join channel</span>');
+								}
+								indicator.stop();
+								return;
+							}
 							current = getHandler(i);
 							currentb64 = getHandler(i,true);
 							currentName = chans[i].chan;
@@ -1557,7 +1576,7 @@
 								requestHandler = false;
 								request.start();
 							}else{
-								send.internal('<span style="color:#C73232;"><b>ERROR:</b> banned</banned>');
+								send.internal('<span style="color:#C73232;"><b>ERROR:</b> banned</span>');
 								requestHandler = false;
 							}
 							$('#chan'+i.toString()).removeClass('highlightChan').find('.chan').addClass('curchan');
@@ -1567,7 +1586,7 @@
 							if(fn!==undefined){
 								fn();
 							}
-							if(settings.nick()!=''){
+							if(settings.loggedIn()){
 								$('#message').removeAttr('disabled');
 							}
 							indicator.stop();
@@ -2448,7 +2467,7 @@
 					});
 				},
 				init:function(){
-					if(settings.nick()!=''){
+					if(settings.loggedIn()){
 						$('#sendMessage')
 							.submit(function(e){
 								var val = '';

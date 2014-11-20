@@ -19,6 +19,19 @@
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
 include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
+
+$net = $networks->get($you->getNetwork());
+if(!$you->isLoggedIn() && $net['config']['guests'] == 0){
+	$msg = 'You need to log in to be able to view chat!';
+	if(isset($_GET['noLoginErrors'])){
+		$json->add('message',$msg);
+	}else{
+		$json->addError($msg);
+	}
+	echo $json->get();
+	exit;
+}
+
 if(isset($_GET['userinfo'])){
 	$json->clear();
 	if(isset($_GET['name']) && isset($_GET['chan']) && isset($_GET['online'])){

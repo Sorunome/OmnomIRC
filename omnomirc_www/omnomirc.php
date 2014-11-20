@@ -530,6 +530,9 @@ class You{
 	public function getNetwork(){
 		return $this->network;
 	}
+	public function isLoggedIn(){
+		return $this->loggedIn;
+	}
 }
 $you = new You();
 class OmnomIRC{

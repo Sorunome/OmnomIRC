@@ -34,6 +34,11 @@ if($json->hasErrors() || $json->hasWarnings()){
 	echo $json->get();
 	die();
 }
+if(!$you->isLoggedIn()){
+	$json->addError('Not Logged in!');
+	echo $json->get();
+	die();
+}
 $message = removeLinebrakes(base64_url_decode(str_replace(' ','+',$message)));
 $type = 'message';
 $message = str_replace(Array("\r","\r\n","\n"),' ',$message);
