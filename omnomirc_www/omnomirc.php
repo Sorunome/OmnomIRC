@@ -390,7 +390,7 @@ class You{
 		$this->globalOps = NULL;
 		$this->ops = NULL;
 		$this->infoStuff = NULL;
-		$this->loggedIn = ($this->sig == $security->sign($this->nick,$this->network) && $this->nick!=='');
+		$this->loggedIn = ($this->nick!=='' && $this->sig!=='' && $this->sig == $security->sign($this->nick,$this->network));
 		if(!$this->loggedIn){
 			if(!isset($_GET['noLoginErrors'])){
 				$json->addWarning('Not logged in');

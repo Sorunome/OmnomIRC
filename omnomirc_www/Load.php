@@ -19,6 +19,18 @@
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
 include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
+if(isset($_GET['userinfo'])){
+	$json->clear();
+	if(isset($_GET['name']) && isset($_GET['chan']) && isset($_GET['online'])){
+		$temp = $sql->query("SELECT `lastMsg` FROM `irc_users` WHERE username='%s' AND channel='%s' AND online=%d",base64_url_decode($_GET['name']),(preg_match('/^[0-9]+$/',$_GET['chan'])?$_GET['chan']:base64_url_decode($_GET['chan'])),(int)$_GET['online']);
+		$json->add('last',(int)$temp[0]['lastMsg']);
+		echo $json->get();
+	}else{
+		$json->addError('Bad parameters');
+		echo $json->get();
+	}
+	die();
+}
 
 $net = $networks->get($you->getNetwork());
 if(!$you->isLoggedIn() && $net['config']['guests'] == 0){
@@ -32,18 +44,7 @@ if(!$you->isLoggedIn() && $net['config']['guests'] == 0){
 	exit;
 }
 
-if(isset($_GET['userinfo'])){
-	$json->clear();
-	if(isset($_GET['name']) && isset($_GET['chan']) && isset($_GET['online'])){
-		$temp = $sql->query("SELECT `lastMsg` FROM `irc_users` WHERE username='%s' AND channel='%s' AND online=%d",base64_url_decode($_GET['name']),(preg_match('/^[0-9]+$/',$_GET['chan'])?$_GET['chan']:base64_url_decode($_GET['chan'])),(int)$_GET['online']);
-		$json->add('last',(int)$temp[0]['lastMsg']);
-		echo $json->get();
-	}else{
-		$json->addError('Bad parameters');
-		echo $json->get();
-	}
-	die();
-}
+
 if(isset($_GET['count'])){
 	$count = (int)$_GET['count'];
 	if($count > 200){
