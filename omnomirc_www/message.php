@@ -325,11 +325,11 @@ if($reload){
 }
 if(isset($_GET['textmode'])){
 	session_start();
-	echo "<html><head><meta http-equiv=\"refresh\" content=\"1;url=textmode.php?update=".time()."&curline=".((int)$_GET['curline'])."&".$you->getUrlParams()."\"></head><body>Sending message...</body></html>";
+	echo "<!DOCTYPE html><html><head><title>Sending...</title><meta http-equiv=\"refresh\" content=\"1;url=textmode.php?update=".time()."&curline=".((int)$_GET['curline'])."&".$you->getUrlParams()."\"></head><body>Sending message...</body></html>";
 }else{
 	$json->add('success',true);
 	echo $json->get();
 }
-$temp = $sql->query("SELECT MAX(line_number) FROM irc_lines");
-file_put_contents($config['settings']['curidFilePath'],$temp[0]['MAX(line_number)']);
+$temp = $sql->query("SELECT MAX(line_number) AS max FROM irc_lines");
+file_put_contents($config['settings']['curidFilePath'],$temp[0]['max']);
 ?>
