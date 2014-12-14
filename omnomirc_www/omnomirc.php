@@ -293,24 +293,28 @@ class Networks{
 }
 $networks = new Networks();
 class Users{
-	public function notifyJoin($nick,$channel){
+	public function notifyJoin($nick,$channel,$net){
 		global $sql;
 		if($nick){
-			$sql->query("INSERT INTO `irc_lines` (name1,type,channel,time,online) VALUES('%s','join','%s','%s',1)",$nick,$channel,time());
+			$sql->query("INSERT INTO `irc_lines` (name1,type,channel,time,online) VALUES('%s','join','%s','%s',%d)",$nick,$channel,time(),(int)$net);
 		}
 	}
-	public function notifyPart($nick,$channel){
+	public function notifyPart($nick,$channel,$net){
 		global $sql;
 		if($nick){
-			$sql->query("INSERT INTO `irc_lines` (name1,type,channel,time,online) VALUES('%s','part','%s','%s',1)",$nick,$channel,time());
+			$sql->query("INSERT INTO `irc_lines` (name1,type,channel,time,online) VALUES('%s','part','%s','%s',%d)",$nick,$channel,time(),(int)$net);
 		}
 	}
-	public function clean($network){
-		global $sql;
-		$result = $sql->query("SELECT `username`,`channel` FROM `irc_users` WHERE `time` < %s  AND `online`='1' AND `isOnline`='1'",strtotime('-1 minute'));
-		$sql->query("UPDATE `irc_users` SET `isOnline`='0' WHERE `time` < %s  AND `online`='%d' AND `isOnline`='1'",strtotime('-1 minute'),$network);
-		foreach($result as $row){
-			$this->notifyPart($row['username'],$row['channel']);
+	public function clean(){
+		global $sql,$config;
+		foreach($config['networks'] as $n){
+			if($n['type'] == 1){
+				$result = $sql->query("SELECT `username`,`channel` FROM `irc_users` WHERE `time` < %s  AND `online`=%d AND `isOnline`='1'",strtotime('-1 minute'),$n['id']);
+				$sql->query("UPDATE `irc_users` SET `isOnline`='0' WHERE `time` < %s  AND `online`='%d' AND `isOnline`='1'",strtotime('-1 minute'),$n['id']);
+				foreach($result as $row){
+					$this->notifyPart($row['username'],$row['channel'],$n['id']);
+				}
+			}
 		}
 	}
 }
@@ -453,13 +457,13 @@ class You{
 		if($result[0]['usernum']!==NULL){ //Update  
 			$sql->query("UPDATE `irc_users` SET `time`='%s',`isOnline`='1' WHERE `usernum` = %d",time(),(int)$result[0]['usernum']);
 			if((int)$result[0]['isOnline'] == 0){
-				$users->notifyJoin($this->nick,$this->chan);
+				$users->notifyJoin($this->nick,$this->chan,$this->getNetwork());
 			}
 		}else{
 			$sql->query("INSERT INTO `irc_users` (`username`,`channel`,`time`,`online`) VALUES('%s','%s','%s',%d)",$this->nick,$this->chan,time(),$this->getNetwork());
-			$users->notifyJoin($this->nick,$this->chan);
+			$users->notifyJoin($this->nick,$this->chan,$this->getNetwork());
 		}
-		$users->clean($this->getNetwork());
+		$users->clean();
 	}
 	public function info(){
 		global $sql;
