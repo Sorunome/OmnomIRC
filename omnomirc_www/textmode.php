@@ -45,7 +45,7 @@ if(isset($_GET['message'])){
 		$curline = 0;
 		if($you->isBanned()){
 			$banned = true;
-			$liens = Array(
+			$lines = Array(
 				Array(
 						'curLine' => (int)$curMax,
 						'type' => 'server',
@@ -65,7 +65,7 @@ if(isset($_GET['message'])){
 	foreach($lines as $result){
 		$line = "<tr>";
 		$starBeginning = '<td>* '.htmlspecialchars($result['name']).' ';
-		switch (strtolower($result['type'])){
+		switch(strtolower($result['type'])){
 			case 'pm':
 				$line .= '<td>(pm)&lt;'.htmlspecialchars($result['name']).'&gt; '.htmlspecialchars($result['message']).'</td>';
 				break;
@@ -77,19 +77,22 @@ if(isset($_GET['message'])){
 				$line .= $starBeginning.htmlspecialchars($result['message']).'</td>';
 				break;
 			case 'join':
-				if ($result['Online']=='0')
+				if($result['Online']=='0'){
 					$line .= $starBeginning."joined $channel</td>";
+				}
 				break;
 			case 'part':
-				if ($result['Online']=='0')
+				if($result['Online']=='0'){
 					$line .= $starBeginning."part $channel (" . htmlspecialchars($result['message']).')</td>';
+				}
 				break;
 			case 'kick':
 				$line .= $starBeginning.'kicked '.htmlspecialchars($result['name2']).' ('.htmlspecialchars($result['message']).')</td>';
 				break;
 			case 'quit':
-				if ($result['Online']=='0')
+				if($result['Online']=='0'){
 					$line .= $starBeginning.'quit ('.htmlspecialchars($result['message']).')</td>';
+				}
 				break;
 			case 'mode':
 				$line .= $starBeginning.'has set '.htmlspecialchars($result['message']).'</td>';

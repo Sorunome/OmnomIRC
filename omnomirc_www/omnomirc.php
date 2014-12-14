@@ -305,10 +305,10 @@ class Users{
 			$sql->query("INSERT INTO `irc_lines` (name1,type,channel,time,online) VALUES('%s','part','%s','%s',1)",$nick,$channel,time());
 		}
 	}
-	public function clean(){
+	public function clean($network){
 		global $sql;
 		$result = $sql->query("SELECT `username`,`channel` FROM `irc_users` WHERE `time` < %s  AND `online`='1' AND `isOnline`='1'",strtotime('-1 minute'));
-		$sql->query("UPDATE `irc_users` SET `isOnline`='0' WHERE `time` < %s  AND `online`='1' AND `isOnline`='1'",strtotime('-1 minute'));
+		$sql->query("UPDATE `irc_users` SET `isOnline`='0' WHERE `time` < %s  AND `online`='%d' AND `isOnline`='1'",strtotime('-1 minute'),$network);
 		foreach($result as $row){
 			$this->notifyPart($row['username'],$row['channel']);
 		}
@@ -459,7 +459,7 @@ class You{
 			$sql->query("INSERT INTO `irc_users` (`username`,`channel`,`time`,`online`) VALUES('%s','%s','%s',%d)",$this->nick,$this->chan,time(),$this->getNetwork());
 			$users->notifyJoin($this->nick,$this->chan);
 		}
-		$users->clean();
+		$users->clean($this->getNetwork());
 	}
 	public function info(){
 		global $sql;

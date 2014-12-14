@@ -308,46 +308,48 @@ class Bot(threading.Thread):
 						quitMsg = 'Being stupid'
 						print('Restarting due to stupidness ('+str(self.i)+add)
 				time.sleep(0.1)
-				if lastLineTime+40 <= time.time(): # allow up to 10 seconds lag
+				if lastLineTime+90 <= time.time(): # allow up to 60 seconds lag
 					self.stopnow = True
 					self.restart = True
-					quitMsg = 'No pings'
+					quitMsg = 'No pings (1)'
 					print('Restarting due to no pings ('+str(self.i)+add)
 			except Exception as inst:
 				print(inst)
 				traceback.print_exc()
 				time.sleep(0.1)
-				if lastLineTime+40 <= time.time(): # allow up to 10 seconds lag
+				if lastLineTime+90 <= time.time(): # allow up to 60 seconds lag
 					self.stopnow = True
 					self.restart = True
-					quitMsg = 'No pings'
+					quitMsg = 'No pings (2)'
 					print('Restarting due to no pings ('+str(self.i)+add)
 			temp=string.split(self.readbuffer,'\n')
 			self.readbuffer=temp.pop()
 			if lastPingTime+30 <= time.time():
 				self.send('PING %s' % time.time(),True)
 				lastPingTime = time.time()
-			for line in temp:
-				print('('+str(self.i)+')'+self.recieveStr+' '+line)
-				line=string.rstrip(line)
-				line=string.split(line)
-				try:
-					if lastLineTime+40 <= time.time(): # allow up to 10 seconds lag
-						self.stopnow = True
-						self.restart = True
-						quitMsg = 'No pings'
-						print('Restarting due to no pings ('+str(self.i)+add)
-					lastLineTime = time.time()
-					
-					if(line[0]=='PING'):
-						self.send('PONG %s' % line[1],True)
-						continue
-					if self.main:
-						self.doMain(line)
-				except Exception as inst:
-					print('('+str(self.i)+') parse Error')
-					print(inst)
-					traceback.print_exc()
+			if lastLineTime+90 <= time.time(): # allow up to 60 seconds lag
+				self.stopnow = True
+				self.restart = True
+				quitMsg = 'No pings (3)'
+				print('Restarting due to no pings ('+str(self.i)+add)
+			else:
+				for line in temp:
+					print('('+str(self.i)+')'+self.recieveStr+' '+line)
+					line=string.rstrip(line)
+					line=string.split(line)
+					try:
+						
+						lastLineTime = time.time()
+						
+						if(line[0]=='PING'):
+							self.send('PONG %s' % line[1],True)
+							continue
+						if self.main:
+							self.doMain(line)
+					except Exception as inst:
+						print('('+str(self.i)+') parse Error')
+						print(inst)
+						traceback.print_exc()
 		self.send('QUIT :%s' % quitMsg,True,False)
 		self.handleQuit(self.nick,quitMsg)
 		if self.main:
