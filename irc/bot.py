@@ -343,7 +343,7 @@ class Bot(threading.Thread):
 					if(line[0]=='PING'):
 						self.send('PONG %s' % line[1],True)
 						continue
-					if line[0]=='ERROR' and line[1]==':Closing Link:':
+					if line[0]=='ERROR' and 'Closing Link' in line[1]:
 						time.sleep(30)
 						self.stopnow = True
 						self.restart = True
@@ -357,13 +357,15 @@ class Bot(threading.Thread):
 					traceback.print_exc()
 		if self.stopnow:
 			if self.quitMsg!='':
-				self.send('QUIT :%s' % quitMsg,True,False)
-				self.handleQuit(self.nick,quitMsg)
+				self.send('QUIT :%s' % self.quitMsg,True,False)
+				self.handleQuit(self.nick,self.quitMsg)
 			if self.main:
 				sql.query('DELETE FROM `irc_users` WHERE online = %d',[int(self.i)])
 				handle.updateCurline() # others do this automatically
-			self.s.close()
-			
+			try:
+				self.s.close()
+			except:
+				pass
 	def serveFn(self,line):
 		if self.main:
 			self.doMain(line)
