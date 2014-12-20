@@ -287,17 +287,14 @@ class Bot(threading.Thread):
 		elif line[1]=='315':
 			self.addLine('OmnomIRC','','reload','THE GAME',line[3],False)
 			handle.updateCurline() # others do this automatically
-	def serve(self):
+	def ircloop(self,fn):
 		global sql
 		if self.main:
 			add = ')'
 		else:
 			add = 'T)'
-		print('Entering main loop ('+str(self.i)+add)
-		lastPingTime = time.time()
-		lastLineTime = time.time()
-		quitMsg = 'Bye!';
-		while not self.stopnow:
+		self.quitLoop = False
+		while not self.stopnow and not self.quitLoop:
 			try:
 				self.readbuffer += self.s.recv(1024)
 			except socket.error as e:
@@ -305,61 +302,71 @@ class Bot(threading.Thread):
 					if e == errno.EPIPE:
 						self.stopnow = True
 						self.restart = True
-						quitMsg = 'Being stupid'
+						self.quitMsg = 'Being stupid'
 						print('Restarting due to stupidness ('+str(self.i)+add)
+					elif e == errno.ECONNRESET:
+						self.stopnow = True
+						self.restart = True
+						self.quitMsg = 'Being very stupid'
+						print('Restarting because connection being reset by peer')
 				time.sleep(0.1)
-				if lastLineTime+90 <= time.time(): # allow up to 60 seconds lag
+				if self.lastLineTime+90 <= time.time(): # allow up to 60 seconds lag
 					self.stopnow = True
 					self.restart = True
-					quitMsg = 'No pings (1)'
+					self.quitMsg = 'No pings (1)'
 					print('Restarting due to no pings ('+str(self.i)+add)
 			except Exception as inst:
 				print(inst)
 				traceback.print_exc()
 				time.sleep(0.1)
-				if lastLineTime+90 <= time.time(): # allow up to 60 seconds lag
+				if self.lastLineTime+90 <= time.time(): # allow up to 60 seconds lag
 					self.stopnow = True
 					self.restart = True
-					quitMsg = 'No pings (2)'
+					self.quitMsg = 'No pings (2)'
 					print('Restarting due to no pings ('+str(self.i)+add)
 			temp=string.split(self.readbuffer,'\n')
-			self.readbuffer=temp.pop()
-			if lastPingTime+30 <= time.time():
-				self.send('PING %s' % time.time(),True)
-				lastPingTime = time.time()
-			if lastLineTime+90 <= time.time(): # allow up to 60 seconds lag
+			self.readbuffer = temp.pop()
+			if self.lastPingTime+90 <= time.time(): # allow up to 60 seconds lag
 				self.stopnow = True
 				self.restart = True
-				quitMsg = 'No pings (3)'
-				print('Restarting due to no pings ('+str(self.i)+add)
-			else:
-				for line in temp:
-					print('('+str(self.i)+')'+self.recieveStr+' '+line)
-					line=string.rstrip(line)
-					line=string.split(line)
-					try:
-						
-						lastLineTime = time.time()
-						
-						if(line[0]=='PING'):
-							self.send('PONG %s' % line[1],True)
-							continue
-						if self.main:
-							self.doMain(line)
-					except Exception as inst:
-						print('('+str(self.i)+') parse Error')
-						print(inst)
-						traceback.print_exc()
-		self.send('QUIT :%s' % quitMsg,True,False)
-		self.handleQuit(self.nick,quitMsg)
+				self.quitMsg = 'No pings(3)'
+				return
+			if self.lastPingTime+30 <= time.time():
+				self.send('PING %s' % time.time(),True)
+				self.lastPingTime = time.time()
+			for line in temp:
+				print('('+str(self.i)+')'+self.recieveStr+' '+line)
+				line=string.rstrip(line)
+				line=string.split(line)
+				try:
+					self.lastLineTime = time.time()
+					if(line[0]=='PING'):
+						self.send('PONG %s' % line[1],True)
+						continue
+					if line[0]=='ERROR' and line[1]==':Closing Link:':
+						time.sleep(30)
+						self.stopnow = True
+						self.restart = True
+						self.quitMsg = 'Closed link'
+						print('Error when connecting, restarting bot ('+str(self.i)+add)
+						return
+					fn(line)
+				except Exception as inst:
+					print('('+str(self.i)+') parse Error')
+					print(inst)
+					traceback.print_exc()
+		if self.stopnow:
+			if self.quitMsg!='':
+				self.send('QUIT :%s' % quitMsg,True,False)
+				self.handleQuit(self.nick,quitMsg)
+			if self.main:
+				sql.query('DELETE FROM `irc_users` WHERE online = %d',[int(self.i)])
+				handle.updateCurline() # others do this automatically
+			self.s.close()
+			
+	def serveFn(self,line):
 		if self.main:
-			sql.query('DELETE FROM `irc_users` WHERE online = %d',[int(self.i)])
-			handle.updateCurline() # others do this automatically
-		self.s.close()
-		if self.restart:
-			print('Restarting bot ('+str(self.i)+add)
-			time.sleep(15)
-			self.run()
+			self.doMain(line)
 	def delUsersInChan(self,c):
 		c = self.chanToId(c)
 		if c != -1:
@@ -368,55 +375,56 @@ class Bot(threading.Thread):
 		self.delUsersInChan(c)
 		self.send('WHO %s' % c)
 	def joinChans(self):
+		#ca = []
 		for i,c in self.chans.iteritems():
 			self.send('JOIN %s' % c,True)
+			#ca.append(c)
+		#self.send('JOIN %s' % (','.join(ca)),True)
+	def identServerFn(self,line):
+		if line[1]=='376':
+			self.motdEnd = True
+		if not self.identified and ((line[1] == 'NOTICE' and 'NickServ' in line[0])):
+			if self.identifiedStep==0:
+				self.send('PRIVMSG NickServ :IDENTIFY %s' % self.ns,True)
+				self.identifiedStep = 1
+			elif self.identifiedStep==1:
+				self.identified = True
+		if self.motdEnd and self.identified:
+			self.quitLoop = True
 	def run(self):
 		global sql
-		self.restart = False
-		self.stopnow = False
-		if self.main:
-			add = ')'
-		else:
-			add = 'T)'
-		print('Starting bot... ('+str(self.i)+add)
-		if self.main:
-			sql.query('DELETE FROM `irc_users` WHERE online = %d',[int(self.i)])
-		self.connectToIRC()
-		self.readbuffer = ''
-		motdEnd = False
-		identified = False
-		identifiedStep = 0
-		if self.ns=='':
-			identified = True
-		while not self.stopnow and not (motdEnd and identified):
-			try:
-				self.readbuffer += self.s.recv(1024)
-			except Exception as inst:
-				print(inst)
-				traceback.print_exc()
-			temp=string.split(self.readbuffer,'\n')
-			self.readbuffer=temp.pop()
-			for line in temp:
-				print('('+str(self.i)+')'+self.recieveStr+' '+line)
-				line=string.rstrip(line)
-				line=string.split(line)
-				try:
-					if line[0]=='PING':
-						self.send('PONG %s' % line[1],True)
-						continue
-					if line[1]=='376':
-						motdEnd = True
-					if not identified and ((line[1] == 'NOTICE' and 'NickServ' in line[0])):
-						if identifiedStep==0:
-							self.send('PRIVMSG NickServ :IDENTIFY %s' % self.ns,True)
-							identifiedStep = 1
-						elif identifiedStep==1:
-							identified = True
-				except Exception as inst:
-					print(inst)
-					traceback.print_exc()
-		self.joinChans()
-		self.serve()
+		self.restart = True
+		while self.restart:
+			self.restart = False
+			self.stopnow = False
+			self.identified = False
+			self.motdEnd = False
+			self.identifiedStep = 0
+			self.quitMsg = ''
+			self.lastPingTime = time.time()
+			self.lastLineTime = time.time()
+			if self.main:
+				add = ')'
+			else:
+				add = 'T)'
+			print('Starting bot... ('+str(self.i)+add)
+			if self.main:
+				sql.query('DELETE FROM `irc_users` WHERE online = %d',[int(self.i)])
+			self.connectToIRC()
+			self.readbuffer = ''
+			
+			if self.ns=='':
+				self.identified = True
+			self.ircloop(self.identServerFn)
+			
+			if not self.stopnow:
+				print('Starting main loop... ('+str(self.i)+add)
+				self.joinChans()
+				self.ircloop(self.serveFn)
+			if self.restart:
+				print('Restarting bot ('+str(self.i)+add)
+				time.sleep(15)
+		print('Good bye from bot ('+str(self.i)+add)
 
 #fetch lines off of OIRC
 class OIRCLink(threading.Thread):
