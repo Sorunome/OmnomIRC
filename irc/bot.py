@@ -2,7 +2,7 @@
 
 
 #    OmnomIRC COPYRIGHT 2010,2011 Netham45
-#                       2012-2014 Sorunome
+#                       2012-2015 Sorunome
 #
 #    This file is part of OmnomIRC.
 #
@@ -313,6 +313,7 @@ class Bot(threading.Thread):
 				if self.lastLineTime+90 <= time.time(): # allow up to 60 seconds lag
 					self.stopnow = True
 					self.restart = True
+					self.lastLineTime = time.time()
 					self.quitMsg = 'No pings (1)'
 					print('Restarting due to no pings ('+str(self.i)+add)
 			except Exception as inst:
@@ -322,6 +323,7 @@ class Bot(threading.Thread):
 				if self.lastLineTime+90 <= time.time(): # allow up to 60 seconds lag
 					self.stopnow = True
 					self.restart = True
+					self.lastLineTime = time.time()
 					self.quitMsg = 'No pings (2)'
 					print('Restarting due to no pings ('+str(self.i)+add)
 			temp=string.split(self.readbuffer,'\n')
@@ -329,6 +331,7 @@ class Bot(threading.Thread):
 			if self.lastPingTime+90 <= time.time(): # allow up to 60 seconds lag
 				self.stopnow = True
 				self.restart = True
+				self.lastLineTime = time.time()
 				self.quitMsg = 'No pings(3)'
 				return
 			if self.lastPingTime+30 <= time.time():
