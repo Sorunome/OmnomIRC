@@ -43,7 +43,6 @@ if(isset($_GET['op']) && !isset($_GET['time'])){
 	header('Content-Type: text/json');
 	$group = '';
 	$id = $_GET['u'];
-	loadMemberData($id, false, 'normal');
 	loadMemberData($id);
 	loadMemberContext($id);
 	if(base64_decode(strtr($_GET['nick'],'-_,','+/='))==$memberContext[$id]['name']){
@@ -55,8 +54,15 @@ if(isset($_GET['op']) && !isset($_GET['time'])){
 }elseif(isset($_GET['time'])){
 	header('Content-Type: text/json');
 	echo json_encode(Array(
-		'time' => time()
+		'time' => time(loadMemberData)
 	));
+}elseif(isset($_GET['u'])){
+	$uid = loadMemberData($_GET['u'],true);
+	if(!$uid){
+		header('Location: /index.php?action=profile;u=-1');
+	}else{
+		header('Location: /index.php?action=profile;u='.$uid[0]);
+	}
 }else{
 	if(isset($_GET['txt'])){
 		echo $signature."\n".$nick."\n".$uid;
