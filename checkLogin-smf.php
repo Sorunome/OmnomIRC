@@ -57,11 +57,14 @@ if(isset($_GET['op']) && !isset($_GET['time'])){
 		'time' => time(loadMemberData)
 	));
 }elseif(isset($_GET['u'])){
-	$uid = loadMemberData($_GET['u'],true);
-	if(!$uid){
+	$request = $smcFunc['db_query']('',"SELECT id_member FROM {db_prefix}members WHERE real_name = {string:real_name} LIMIT 1",array('real_name' => $_GET['u']) );
+	$res = $smcFunc['db_fetch_assoc']($request);
+	$smcFunc['db_free_result']($request);
+	
+	if(!$res){
 		header('Location: /index.php?action=profile;u=-1');
 	}else{
-		header('Location: /index.php?action=profile;u='.$uid[0]);
+		header('Location: /index.php?action=profile;u='.$res['id_member']);
 	}
 }else{
 	if(isset($_GET['txt'])){
