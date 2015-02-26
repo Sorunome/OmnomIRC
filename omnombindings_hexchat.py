@@ -82,7 +82,7 @@ def binding(word,word_eol,userdata):
 			return hexchat.EAT_ALL
 		
 		
-		print(__module_name__,': something unexpected happen, please report the following')
+		print(__module_name__,': something unexpected happend, please report the following')
 		print(word)
 		return hexchat.EAT_NONE
 	elif hexchat.strip(word[0]) in TOPICBOTNICK:
