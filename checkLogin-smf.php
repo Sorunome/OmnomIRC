@@ -56,8 +56,8 @@ if(isset($_GET['op']) && !isset($_GET['time'])){
 	echo json_encode(Array(
 		'time' => time(loadMemberData)
 	));
-}elseif(isset($_GET['u'])){
-	$request = $smcFunc['db_query']('',"SELECT id_member FROM {db_prefix}members WHERE real_name = {string:real_name} LIMIT 1",array('real_name' => $_GET['u']) );
+}elseif(isset($_GET['ul'])){
+	$request = $smcFunc['db_query']('',"SELECT id_member FROM {db_prefix}members WHERE real_name = {string:real_name} LIMIT 1",array('real_name' => $_GET['ul']) );
 	$res = $smcFunc['db_fetch_assoc']($request);
 	$smcFunc['db_free_result']($request);
 	
