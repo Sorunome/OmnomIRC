@@ -77,7 +77,8 @@ def binding(word,word_eol,userdata):
 			break
 		
 		if textEvent!='':
-			args.append(word[2])
+			if(len(word)>2):
+				args.append(word[2])
 			hexchat.emit_print(textEvent,res.group(1)+res.group(2),*args)
 			return hexchat.EAT_ALL
 		
