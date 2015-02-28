@@ -60,7 +60,8 @@ if(isset($_GET["js"])){
 			"id" => $n["id"],
 			"normal" => $n["normal"],
 			"userlist" => $n["userlist"],
-			"name" => $n["name"]
+			"name" => $n["name"],
+			"type" => $n["type"]
 		);
 	}
 	echo json_encode(Array(

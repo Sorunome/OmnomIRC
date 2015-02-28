@@ -2777,7 +2777,7 @@
 									network:line.network
 								});
 							}
-							if(line.network==1 && options.get(17,'F')=='F'){
+							if(settings.networks()[line.network].type==1 && options.get(17,'F')=='F'){
 								addLine = false;
 							}
 							break;
@@ -2789,7 +2789,7 @@
 									network:line.network
 								});
 							}
-							if(line.network==1 && options.get(17,'F')=='F'){
+							if(settings.networks()[line.network].type==1 && options.get(17,'F')=='F'){
 								addLine = false;
 							}
 							break;
