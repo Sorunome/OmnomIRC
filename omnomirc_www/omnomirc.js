@@ -2186,7 +2186,7 @@
 									'id':'message',
 									'accesskey':'i',
 									'maxlen':'256',
-									'autocomplete','off'
+									'autocomplete':'off'
 								})
 						);
 					}else{
