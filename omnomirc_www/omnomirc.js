@@ -18,7 +18,7 @@
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
 (function(){
-	var OMNOMIRCSERVER = 'http://omnomirc.omnimaga.org',
+	var OMNOMIRCSERVER = 'https://omnomirc.omnimaga.org',
 		settings = (function(){
 			var hostname = '',
 				nick = '',
