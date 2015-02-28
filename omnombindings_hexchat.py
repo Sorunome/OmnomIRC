@@ -13,7 +13,7 @@ def addColor(s):
 	i = 0
 	for c in s:
 		i += ord(c)
-	return '\x03'+rcolors[i % 9]+s
+	return '\x03'+rcolors[i % 9]+s+'\x0F'
 def getNick(prefix,nick):
 	if bool(hexchat.get_prefs('text_color_nicks')):
 		nick = addColor(nick)
