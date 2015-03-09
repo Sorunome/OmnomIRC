@@ -1,3 +1,4 @@
+#!/usr/bin/python2
 ## -*- coding: utf-8 -*-
 
 
@@ -141,9 +142,13 @@ class Bot(threading.Thread):
 	def send(self,s,override = False,overrideRestart = False):
 		try:
 			if self.main or override:
-				self.s.sendall('%s\r\n' % s)
+				try:
+					self.s.sendall('%s\r\n' % s)
+				except:
+					self.s.sendall('%s\r\n' % s.encode('utf-8'))
 				print('('+str(self.i)+')'+self.sendStr+' '+s)
 		except:
+			traceback.print_exc()
 			if not self.stopnow and not overrideRestart:
 				self.restart = True
 				self.stopThread()
@@ -449,21 +454,23 @@ class OIRCLink(threading.Thread):
 					curline = temp
 					res = sql.query('SELECT fromSource,channel,type,action,prikey,nick,message FROM irc_outgoing_messages')
 					if len(res) > 0:
-						print('(1)>> ',res)
+						print('(1)>> '+str(res))
 						lastline = 0
 						for row in res:
 							try:
 								for i in ['nick','type','message','channel']:
 									try:
-										row[i] = row[i].decode('utf-8').encode('utf-8')
+										row[i] = row[i].decode('utf-8')#.encode('utf-8')
 									except:
 										if row[i] != '':
-											row[i] = row[i].decode(chardet.detect(row[i])['encoding']).encode('utf-8')
+											try:
+												row[i] = row[i].decode(chardet.detect(row[i])['encoding'])#.encode('utf-8')
+											except:
+												row[i] = row[i]#.encode('utf-8')
 								try:
 									int(row['channel'])
 								except ValueError:
 									continue
-								print(row)
 								handle.sendToOther(row['nick'],'',row['type'],row['message'],int(row['channel']),row['fromSource'])
 								
 								if row['type']=='topic':
