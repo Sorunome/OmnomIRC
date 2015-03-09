@@ -211,9 +211,9 @@ class Bot(threading.Thread):
 		global sql,handle
 		c = self.chanToId(c)
 		if c != -1:
-			c = makeUnicode(str(c))
 			if sendToOther:
 				handle.sendToOther(n1,n2,t,m,c,self.i)
+			c = makeUnicode(str(c))
 			print '(1)<< ',{'name1':n1,'name2':n2,'type':t,'message':m,'channel':c}
 			sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`) VALUES ('%s','%s','%s','%s','%s','%s',%d)",[n1,n2,m,t,c,str(int(time.time())),int(self.i)])
 			if t=='topic':
