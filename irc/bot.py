@@ -75,13 +75,16 @@ class Sql():
 			db = MySQLdb.connect(config.json['sql']['server'],config.json['sql']['user'],config.json['sql']['passwd'],config.json['sql']['db'],charset='utf8')
 			cur = db.cursor()
 			for i in range(len(p)):
-				if isinstance(p[i],str):
+				try:
 					try:
 						p[i] = p[i].decode('utf-8').encode('utf-8')
 					except:
 						if p[i]!='':
 							p[i] = p[i].decode(chardet.detect(p[i])['encoding']).encode('utf-8')
 					p[i] = db.escape_string(p[i])
+				except:
+					if isinstance(p[i],str):
+						p[i] = db.escape_string(p[i])
 			cur.execute(q % tuple(p))
 			rows = []
 			while True:
@@ -208,6 +211,7 @@ class Bot(threading.Thread):
 		global sql,handle
 		c = self.chanToId(c)
 		if c != -1:
+			c = makeUnicode(str(c))
 			if sendToOther:
 				handle.sendToOther(n1,n2,t,m,c,self.i)
 			print '(1)<< ',{'name1':n1,'name2':n2,'type':t,'message':m,'channel':c}
