@@ -24,6 +24,18 @@ print('Starting OmnomIRC bot...')
 DOCUMENTROOT = '/usr/share/nginx/html/oirc'
 
 
+def makeUnicode(s):
+	try:
+			return s.decode('utf-8')
+	except:
+		if s!='':
+			try:
+				return s.decode(chardet.detect(s)['encoding'])
+			except:
+				return s
+		return ''
+
+
 #config handler
 class Config:
 	def __init__(self):
@@ -144,9 +156,10 @@ class Bot(threading.Thread):
 			if self.main or override:
 				try:
 					self.s.sendall('%s\r\n' % s)
+					print('('+str(self.i)+')'+self.sendStr+' '+s)
 				except:
 					self.s.sendall('%s\r\n' % s.encode('utf-8'))
-				print('('+str(self.i)+')'+self.sendStr+' '+s)
+					print('('+str(self.i)+')'+self.sendStr+' '+s.encode('utf-8'))
 		except:
 			traceback.print_exc()
 			if not self.stopnow and not overrideRestart:
@@ -198,15 +211,15 @@ class Bot(threading.Thread):
 			if sendToOther:
 				handle.sendToOther(n1,n2,t,m,c,self.i)
 			print '(1)<< ',{'name1':n1,'name2':n2,'type':t,'message':m,'channel':c}
-			sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`) VALUES ('%s','%s','%s','%s','%s','%s',%d)",[str(n1),str(n2),str(m),str(t),str(c),str(int(time.time())),int(self.i)])
+			sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`) VALUES ('%s','%s','%s','%s','%s','%s',%d)",[n1,n2,m,t,c,str(int(time.time())),int(self.i)])
 			if t=='topic':
-				temp = sql.query("SELECT channum FROM `irc_topics` WHERE chan='%s'",[str(c).lower()])
+				temp = sql.query("SELECT channum FROM `irc_topics` WHERE chan='%s'",[c.lower()])
 				if len(temp)==0:
-					sql.query("INSERT INTO `irc_topics` (chan,topic) VALUES('%s','%s')",[str(c).lower(),str(m)])
+					sql.query("INSERT INTO `irc_topics` (chan,topic) VALUES('%s','%s')",[c.lower(),m])
 				else:
-					sql.query("UPDATE `irc_topics` SET topic='%s' WHERE chan='%s'",[str(m),str(c).lower()])
+					sql.query("UPDATE `irc_topics` SET topic='%s' WHERE chan='%s'",[m,c.lower()])
 			if t=='action' or t=='message':
-				sql.query("UPDATE `irc_users` SET lastMsg='%s' WHERE username='%s' AND channel='%s' AND online=%d",[str(int(time.time())),str(n1),str(c),int(self.i)])
+				sql.query("UPDATE `irc_users` SET lastMsg='%s' WHERE username='%s' AND channel='%s' AND online=%d",[str(int(time.time())),n1,c,int(self.i)])
 			handle.updateCurline()
 	def addUser(self,u,c):
 		c = self.chanToId(c)
@@ -251,7 +264,12 @@ class Bot(threading.Thread):
 		return False
 	def doMain(self,line):
 		global handle,config
+		
+		for i in range(len(line)):
+			line[i] = makeUnicode(line[i])
+			
 		message = ' '.join(line[3:])[1:]
+		
 		nick = line[0].split('!')[0][1:]
 		chan = line[2]
 		if chan[0]!='#':
@@ -459,14 +477,7 @@ class OIRCLink(threading.Thread):
 						for row in res:
 							try:
 								for i in ['nick','type','message','channel']:
-									try:
-										row[i] = row[i].decode('utf-8')#.encode('utf-8')
-									except:
-										if row[i] != '':
-											try:
-												row[i] = row[i].decode(chardet.detect(row[i])['encoding'])#.encode('utf-8')
-											except:
-												row[i] = row[i]#.encode('utf-8')
+									row[i] = makeUnicode(row[i])
 								try:
 									int(row['channel'])
 								except ValueError:
@@ -516,7 +527,7 @@ class CalculatorThread(SocketServer.BaseRequestHandler):
 		c = self.chanToId(self.chan)
 		if c!=-1:
 			handle.sendToOther(self.calcName,'',t,m,c,self.i)
-			sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`) VALUES ('%s','%s','%s','%s','%s','%s',%d)",[str(self.calcName),str(''),str(m),str(t),str(c),str(int(time.time())),int(self.i)])
+			sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`) VALUES ('%s','%s','%s','%s','%s','%s',%d)",[self.calcName,'',m,t,c,str(int(time.time())),int(self.i)])
 			handle.updateCurline()
 	def sendLine(self,n1,n2,t,m,c,s): #name 1, name 2, type, message, channel, source
 		c = self.idToChan(c)
@@ -675,13 +686,13 @@ class Main():
 			print(inst)
 			traceback.print_exc()
 	def addUser(self,u,c,i):
-		temp = sql.query("SELECT usernum FROM irc_users WHERE username='%s' AND channel='%s' AND online=%d",[str(u),str(c),int(i)])
+		temp = sql.query("SELECT usernum FROM irc_users WHERE username='%s' AND channel='%s' AND online=%d",[u,c,int(i)])
 		if(len(temp)==0):
-			sql.query("INSERT INTO `irc_users` (`username`,`channel`,`online`) VALUES ('%s','%s',%d)",[str(u),str(c),int(i)])
+			sql.query("INSERT INTO `irc_users` (`username`,`channel`,`online`) VALUES ('%s','%s',%d)",[u,c,int(i)])
 		else:
 			sql.query("UPDATE `irc_users` SET `isOnline`=1 WHERE `usernum`=%d",[int(temp[0]['usernum'])])
 	def removeUser(self,u,c,i):
-		sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE `username` = '%s' AND `channel` = '%s' AND online=%d",[str(u),str(c),int(i)])
+		sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE `username` = '%s' AND `channel` = '%s' AND online=%d",[u,c,int(i)])
 	def getCurline(self):
 		global config
 		f = open(config.json['settings']['curidFilePath'])
