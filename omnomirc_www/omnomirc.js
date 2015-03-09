@@ -1134,6 +1134,47 @@
 				}
 			};
 		})(),
+		websocket = (function(){
+			var socket = false,
+				connected = false,
+				use = true,
+				sendBuffer = [];
+			return {
+				init:function(){
+					if(!("WebSocket" in window)){
+						use = false;
+						return;
+					}
+					socket = new WebSocket('ws://localhost:61839');
+					socket.onopen = function(e){
+						connected = true;
+						for(var i = 0;i < sendBuffer.length;i++){
+							websocket.send(sendBuffer[i]);
+						}
+					};
+					socket.onmessage = function(e){
+						var data = JSON.parse(e.data);
+						if(data.line!==undefined){
+							parser.addLine(data.line);
+						}
+					};
+					socket.onerror = function(e){
+						socket.close();
+						use = false;
+					};
+				},
+				send:function(msg){
+					if(connected){
+						socket.send(JSON.stringify(s));
+					}else{
+						sendBuffer.push(msg);
+					}
+				},
+				use:function(){
+					return use;
+				}
+			};
+		})(),
 		request = (function(){
 			var lastSuccess = (new Date).getTime(),
 				curLine = 0,
@@ -2345,8 +2386,13 @@
 							fs.onload=function(){
 								Derpy();
 							};
-							fs.src="http://juju2143.ca/mousefly.js";
+							fs.src="https://juju2143.ca/mousefly.js";
 							document.head.appendChild(fs);
+							return true;
+						case 'minty':
+							$.getJSON(OMNOMIRCSERVER+'/minty.php').done(function(data){
+								send.internal('<span style="font-size:5px;line-height:0;font-family:monospace;">'+data.minty+'</span>');
+							});
 							return true;
 						default:
 							return false;

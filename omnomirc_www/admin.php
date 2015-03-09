@@ -83,7 +83,7 @@ if(isset($_GET["js"])){
 	$defaults = $net["config"]["defaults"];
 	$cl = $net["config"]["checkLogin"];
 	$ts = time();
-	$cl .= "?sid=".urlencode(htmlspecialchars(str_replace(";","%^%",hash_hmac("sha512",(isset($_SERVER["HTTP_X_FORWARDED_FOR"])?$_SERVER["HTTP_X_FORWARDED_FOR"]:$_SERVER["REMOTE_ADDR"]),$config["security"]["sigKey"].$ts.$you->getNetwork())."|".$ts)));
+	$cl .= "?sid=".urlencode(htmlspecialchars(str_replace(";","%^%",hash_hmac("sha512",(isset($_SERVER["HTTP_REFERER"])?$_SERVER["HTTP_REFERER"]:"THE GAME"),$config["security"]["sigKey"].$ts.$you->getNetwork())."|".$ts)));
 	$dispNetworks = Array();
 	foreach($config["networks"] as $n){
 		$dispNetworks[] = Array(

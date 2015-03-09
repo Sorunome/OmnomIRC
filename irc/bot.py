@@ -485,10 +485,7 @@ class OIRCLink(threading.Thread):
 								handle.sendToOther(row['nick'],'',row['type'],row['message'],int(row['channel']),row['fromSource'])
 								
 								if row['type']=='topic':
-									if config.json['irc']['topic']['nick']=='':
-										handle.sendToOtherRaw('TOPIC %s :%s' % (int(row['channel']),row['message']),1)
-									else:
-										handle.sendTopicToOther(row['message'],int(row['channel']),1)
+									handle.sendTopicToOther(row['message'],int(row['channel']),row['fromSource'])
 							except Exception as inst:
 								print(inst)
 								traceback.print_exc()
@@ -706,7 +703,8 @@ class Main():
 	def sendTopicToOther(self,s,c,i):
 		for b in self.bots:
 			if i != b.i:
-				b.sendTopic(s,c)
+				if b.topicbotExists ^ b.main:
+					b.sendTopic(s,c)
 	def sendToOtherRaw(self,s,ib):
 		for b in self.bots:
 			if ib != b.i and b.main:
