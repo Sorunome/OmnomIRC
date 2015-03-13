@@ -1157,14 +1157,12 @@
 					}
 					socket = new WebSocket('ws://localhost:61839');
 					socket.onopen = function(e){
-						console.log(e);
 						connected = true;
 						for(var i = 0;i < sendBuffer.length;i++){
 							ws.send(sendBuffer[i]);
 						}
 					};
 					socket.onmessage = function(e){
-						console.log(e);
 						try{
 							var data = JSON.parse(e.data);
 							console.log(data);
@@ -1172,17 +1170,16 @@
 							if(allowLines && data.line!==undefined){
 								parser.addLine(data.line);
 							}
-						}catch(e){
-							console.log(e);
-						};
+						}catch(e){};
 					};
 					socket.onclose = function(e){
 						use = false;
+						request.start();
 					};
 					socket.onerror = function(e){
-						console.log(e);
 						socket.close();
 						use = false;
+						request.start();
 					};
 					ws.send($.extend({action:'ident'},settings.getIdentParams()));
 					
@@ -2514,23 +2511,35 @@
 				sendMessage = function(s){
 					if(s[0] == '/' && commands.parse(s.substr(1))){
 						if(!wysiwyg.support()){
-							val = $('#message').val('');
+							$('#message').val('');
 						}else{
-							val = $('#message').html('');
+							$('#message').html('');
 						}
 					}else{
 						if(!sending){
-							sending = true;
-							request.cancel();
-							network.getJSON('message.php?message='+base64.encode(s)+'&channel='+channels.getCurrent(false,true)+'&'+settings.getUrlParams(),function(){
+							if(ws.use()){
+								ws.send({
+									action:'message',
+									message:s
+								})
 								if(!wysiwyg.support()){
-									val = $('#message').val('');
+									$('#message').val('');
 								}else{
-									val = $('#message').html('');
+									$('#message').html('');
 								}
-								request.start();
-								sending = false;
-							});
+							}else{
+								sending = true;
+								request.cancel();
+								network.getJSON('message.php?message='+base64.encode(s)+'&channel='+channels.getCurrent(false,true)+'&'+settings.getUrlParams(),function(){
+									if(!wysiwyg.support()){
+										$('#message').val('');
+									}else{
+										$('#message').html('');
+									}
+									request.start();
+									sending = false;
+								});
+							}
 							if(s.search('goo.gl/QMET')!=-1 || s.search('oHg5SJYRHA0')!=-1 || s.search('dQw4w9WgXcQ')!=-1){
 								$('<div>')
 									.css({

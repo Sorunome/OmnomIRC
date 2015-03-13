@@ -318,7 +318,7 @@ class Users{
 		global $sql,$config;
 		foreach($config['networks'] as $n){
 			if($n['type'] == 1){
-				$result = $sql->query("SELECT `username`,`channel` FROM `irc_users` WHERE `time` < %s  AND `online`=%d AND `isOnline`='1'",strtotime('-1 minute'),$n['id']);
+				$result = $sql->query("SELECT `username`,`channel` FROM `irc_users` WHERE (`time` < %s AND `time`!=0)  AND `online`=%d AND `isOnline`='1'",strtotime('-1 minute'),$n['id']);
 				$sql->query("UPDATE `irc_users` SET `isOnline`='0' WHERE `time` < %s  AND `online`='%d' AND `isOnline`='1'",strtotime('-1 minute'),$n['id']);
 				foreach($result as $row){
 					$this->notifyPart($row['username'],$row['channel'],$n['id']);
@@ -672,5 +672,12 @@ if(isset($_GET['ident'])){
 	$json->add('isglobalop',$you->isGlobalOp());
 	$json->add('isbanned',$you->isBanned());
 	echo $json->get();
+	exit;
+}
+if(isset($_GET['getcurline'])){
+	header('Content-Type:text/json');
+	$json->add('curline',(int)file_get_contents($config['settings']['curidFilePath']));
+	echo $json->get();
+	exit;
 }
 ?>
