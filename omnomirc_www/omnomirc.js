@@ -42,6 +42,7 @@
 							networks = data.networks;
 							net = data.network;
 							options.setDefaults(data.defaults);
+							ws.set(data.websockets.use,data.websockets.host,data.websockets.port);
 						}
 						
 						checkLoginUrl = data.checkLoginUrl;
@@ -755,6 +756,9 @@
 							case 'op':
 								getJSONEditSettings(p,'OP',data.opGroups);
 								break;
+							case 'ws':
+								getJSONEditSettings(p,'WebSockets',data.websockets);
+								break;
 							case 'misc':
 								getInputBoxSettings(p,'Misc',data);
 								break;
@@ -1148,14 +1152,23 @@
 				connected = false,
 				use = true,
 				sendBuffer = [],
-				allowLines = false;
+				allowLines = false,
+				enabled = false,
+				host = '',
+				port = 0,
+				fallback = function(){
+					network.getJSON('omnomirc.php?getcurline&noLoginErrors',function(data){
+						request.setCurLine(data.curline);
+						request.start();
+					});
+				};
 			return {
 				init:function(){
-					if(!("WebSocket" in window)){
+					if(!("WebSocket" in window) || !enabled){
 						use = false;
 						return false;
 					}
-					socket = new WebSocket('ws://localhost:61839');
+					socket = new WebSocket('ws://'+host+':'+port.toString(10));
 					socket.onopen = function(e){
 						connected = true;
 						for(var i = 0;i < sendBuffer.length;i++){
@@ -1174,12 +1187,12 @@
 					};
 					socket.onclose = function(e){
 						use = false;
-						request.start();
+						fallback();
 					};
 					socket.onerror = function(e){
 						socket.close();
 						use = false;
-						request.start();
+						fallback();
 					};
 					ws.send($.extend({action:'ident'},settings.getIdentParams()));
 					
@@ -1187,6 +1200,11 @@
 						socket.close();
 					});
 					return true;
+				},
+				set:function(enabledd,hostt,portt){
+					enabled = enabledd;
+					host = hostt;
+					port = portt;
 				},
 				send:function(msg){
 					if(connected){

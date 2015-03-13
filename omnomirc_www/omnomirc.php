@@ -676,6 +676,7 @@ if(isset($_GET['ident'])){
 }
 if(isset($_GET['getcurline'])){
 	header('Content-Type:text/json');
+	$json->clear();
 	$json->add('curline',(int)file_get_contents($config['settings']['curidFilePath']));
 	echo $json->get();
 	exit;

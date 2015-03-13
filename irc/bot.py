@@ -819,6 +819,10 @@ class Main():
 		self.oircLink.start()
 		
 		try:
+			if config.json['websockets']['use']:
+				self.websocketserver = ThreadedTCPServer((config.json['websockets']['host'],config.json['websockets']['port']),WebSocketsHandler)
+				websocket_thread = threading.Thread(target=self.websocketserver.serve_forever)
+				websocket_thread.start()
 			if self.calcNetwork!=-1:
 				sql.query('DELETE FROM `irc_users` WHERE online = %d',[self.calcNetwork['id']])
 				self.gCn_server = ThreadedTCPServer((self.calcNetwork['config']['server'],self.calcNetwork['config']['port']),CalculatorThread)
@@ -827,18 +831,15 @@ class Main():
 				gCn_thread.start()
 				self.gCn_server.serve_forever()
 			else:
-				self.websocketserver = ThreadedTCPServer(('localhost',61839),WebSocketsHandler)
-				websocket_thread = threading.Thread(target=self.websocketserver.serve_forever)
-				websocket_thread.daemon = True
-				websocket_thread.start()
-				self.websocketserver.serve_forever()
+				while True:
+					time.sleep(30)
 		except KeyboardInterrupt:
 			print('KeyboardInterrupt, exiting...')
 			self.quit()
 		except:
 			traceback.print_exc()
 	def quit(self,code=1):
-		global connectedCalcs
+		global connectedCalcs,connectedClients,config
 		for b in self.bots:
 			b.stopThread()
 		self.oircLink.stopThread()
@@ -847,10 +848,10 @@ class Main():
 			for i in connectedCalcs:
 				i.stopThread()
 		
-		
-		self.websocketserver.shutdown()
-		for i in connectedClients:
-			i.stopThread()
+		if config.json['websockets']['use']:
+			self.websocketserver.shutdown()
+			for i in connectedClients:
+				i.stopThread()
 		
 		sys.exit(code)
 

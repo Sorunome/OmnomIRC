@@ -1,6 +1,6 @@
 <?php
 error_reporting(0);
-$installScriptVersion = '2.8.0.8';
+$installScriptVersion = '2.9';
 include_once(realpath(dirname(__FILE__)).'/config.php');
 // IMPORTANT!!!! sqli object ONLY FOR INSTALLATION SCRIPT
 class Sqli{
@@ -149,7 +149,12 @@ if(isset($_GET["js"])){
 		"networks" => $dispNetworks,
 		"network" => $you->getNetwork(),
 		"checkLoginUrl" => $cl,
-		"defaults" => $defaults
+		"defaults" => $defaults,
+		"websockets" => Array(
+			"use" => $config["websockets"]["use"],
+			"host" => $config["websockets"]["host"],
+			"port" => $config["websockets"]["port"]
+		)
 	));
 }
 ?>';

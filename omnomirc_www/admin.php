@@ -101,7 +101,12 @@ if(isset($_GET["js"])){
 		"networks" => $dispNetworks,
 		"network" => $you->getNetwork(),
 		"checkLoginUrl" => $cl,
-		"defaults" => $defaults
+		"defaults" => $defaults,
+		"websockets" => Array(
+			"use" => $config["websockets"]["use"],
+			"host" => $config["websockets"]["host"],
+			"port" => $config["websockets"]["port"]
+		)
 	));
 }
 ?>';
@@ -167,6 +172,9 @@ if($you->isGlobalOp()){
 			case 'networks':
 				$json->add('networks',$config['networks']);
 				break;
+			case 'ws':
+				$json->add('websockets',$config['websockets']);
+				break;
 			case 'misc':
 				$json->add('hostname',$config['settings']['hostname']);
 				$json->add('curidFilePath',$config['settings']['curidFilePath']);
@@ -228,6 +236,10 @@ if($you->isGlobalOp()){
 				break;
 			case 'networks':
 				$config['networks'] = $jsonData;
+				writeConfig();
+				break;
+			case 'ws':
+				$config['websockets'] = $jsonData;
 				writeConfig();
 				break;
 			case 'misc':
