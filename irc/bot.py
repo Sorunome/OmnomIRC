@@ -685,8 +685,26 @@ class CalculatorThread(SocketServer.BaseRequestHandler):
 		print(threading.current_thread())
 		connectedCalcs.remove(self)
 		print('Thread done\n')
+
 class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 	allow_reuse_address = True
+	pass
+
+
+class ThreadedTCPServerSSL(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
+	allow_reuse_address = True
+	def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True):
+		"""Constructor. May be extended, do not override."""
+		import os
+		SocketServer.TCPServer.__init__(self, server_address, RequestHandlerClass, False)
+		dir = os.path.dirname(__file__)
+		key_file = os.path.join(dir,'server.key')
+		cert_file = os.path.join(dir,'server.crt')
+		import ssl
+		self.socket = ssl.wrap_socket(self.socket, keyfile=key_file, certfile=cert_file, cert_reqs=ssl.CERT_NONE)
+		if bind_and_activate:
+			self.server_bind()
+			self.server_activate()
 	pass
 
 #main handler
@@ -820,7 +838,10 @@ class Main():
 		
 		try:
 			if config.json['websockets']['use']:
-				self.websocketserver = ThreadedTCPServer((config.json['websockets']['host'],config.json['websockets']['port']),WebSocketsHandler)
+				if config.json['websockets']['ssl']:
+					self.websocketserver = ThreadedTCPServerSSL((config.json['websockets']['host'],config.json['websockets']['port']),WebSocketsHandler)
+				else:
+					self.websocketserver = ThreadedTCPServer((config.json['websockets']['host'],config.json['websockets']['port']),WebSocketsHandler)
 				websocket_thread = threading.Thread(target=self.websocketserver.serve_forever)
 				websocket_thread.start()
 			if self.calcNetwork!=-1:

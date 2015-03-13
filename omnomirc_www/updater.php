@@ -153,7 +153,8 @@ if(isset($_GET["js"])){
 		"websockets" => Array(
 			"use" => $config["websockets"]["use"],
 			"host" => $config["websockets"]["host"],
-			"port" => $config["websockets"]["port"]
+			"port" => $config["websockets"]["port"],
+			"ssl" => $config["websockets"]["ssl"]
 		)
 	));
 }

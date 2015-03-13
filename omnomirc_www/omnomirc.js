@@ -42,7 +42,7 @@
 							networks = data.networks;
 							net = data.network;
 							options.setDefaults(data.defaults);
-							ws.set(data.websockets.use,data.websockets.host,data.websockets.port);
+							ws.set(data.websockets.use,data.websockets.host,data.websockets.port,data.websockets.ssl);
 						}
 						
 						checkLoginUrl = data.checkLoginUrl;
@@ -1156,6 +1156,7 @@
 				enabled = false,
 				host = '',
 				port = 0,
+				ssl = true,
 				fallback = function(){
 					network.getJSON('omnomirc.php?getcurline&noLoginErrors',function(data){
 						request.setCurLine(data.curline);
@@ -1168,7 +1169,15 @@
 						use = false;
 						return false;
 					}
-					socket = new WebSocket('ws://'+host+':'+port.toString(10));
+					try{
+						if(ssl){
+							socket = new WebSocket('wss://'+host+':'+port.toString(10));
+						}else{
+							socket = new WebSocket('ws://'+host+':'+port.toString(10));
+						}
+					}catch(e){
+						fallback();
+					}
 					socket.onopen = function(e){
 						connected = true;
 						for(var i = 0;i < sendBuffer.length;i++){
@@ -1201,10 +1210,11 @@
 					});
 					return true;
 				},
-				set:function(enabledd,hostt,portt){
+				set:function(enabledd,hostt,portt,ssll){
 					enabled = enabledd;
 					host = hostt;
 					port = portt;
+					ssl = ssll;
 				},
 				send:function(msg){
 					if(connected){
