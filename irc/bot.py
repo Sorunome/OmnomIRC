@@ -948,18 +948,21 @@ class WebSocketsHandler(SocketServer.StreamRequestHandler):
 		except:
 			pass
 	def send_message(self, message):
-		self.request.send(chr(129))
-		length = len(message)
-		if length <= 125:
-			self.request.send(chr(length))
-		elif length >= 126 and length <= 65535:
-			self.request.send(chr(126))
-			self.request.send(struct.pack(">H", length))
-		else:
-			self.request.send(chr(127))
-			self.request.send(struct.pack(">Q", length))
-		self.request.send(message)
-		
+		try:
+			self.request.send(chr(129))
+			length = len(message)
+			if length <= 125:
+				self.request.send(chr(length))
+			elif length >= 126 and length <= 65535:
+				self.request.send(chr(126))
+				self.request.send(struct.pack(">H", length))
+			else:
+				self.request.send(chr(127))
+				self.request.send(struct.pack(">Q", length))
+			self.request.send(message)
+		except IOError, e:
+			if e.errno == errno.EPIPE:
+				self.stopThread()
 	def addLine(self,t,m):
 		global handle,sql
 		c = self.chan
