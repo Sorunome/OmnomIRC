@@ -2,24 +2,29 @@
 ## -*- coding: utf-8 -*-
 
 
-#    OmnomIRC COPYRIGHT 2010,2011 Netham45
-#                       2012-2015 Sorunome
+#	OmnomIRC COPYRIGHT 2010,2011 Netham45
+#					   2012-2015 Sorunome
 #
-#    This file is part of OmnomIRC.
+#	This file is part of OmnomIRC.
 #
-#    OmnomIRC is free software: you can redistribute it and/or modify
-#    it under the terms of the GNU General Public License as published by
-#    the Free Software Foundation, either version 3 of the License, or
-#    (at your option) any later version.
+#	OmnomIRC is free software: you can redistribute it and/or modify
+#	it under the terms of the GNU General Public License as published by
+#	the Free Software Foundation, either version 3 of the License, or
+#	(at your option) any later version.
 #
-#    OmnomIRC is distributed in the hope that it will be useful,
-#    but WITHOUT ANY WARRANTY; without even the implied warranty of
-#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#    GNU General Public License for more details.
+#	OmnomIRC is distributed in the hope that it will be useful,
+#	but WITHOUT ANY WARRANTY; without even the implied warranty of
+#	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#	GNU General Public License for more details.
 #
-#    You should have received a copy of the GNU General Public License
-#    along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
-import threading,socket,string,time,sys,json,MySQLdb,traceback,errno,chardet,SocketServer,struct,signal
+#	You should have received a copy of the GNU General Public License
+#	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
+import threading,socket,string,time,sys,json,MySQLdb,traceback,errno,chardet,SocketServer,struct,signal,subprocess
+from base64 import b64encode
+from hashlib import sha1
+from mimetools import Message
+from StringIO import StringIO
+
 print('Starting OmnomIRC bot...')
 DOCUMENTROOT = '/usr/share/nginx/html/oirc'
 
@@ -35,6 +40,19 @@ def makeUnicode(s):
 				return s
 		return ''
 
+
+def execPhp(f,d):
+	s = []
+	for key,value in d.iteritems():
+		s.append(str(key)+'='+str(value))
+	res = subprocess.Popen(['php',DOCUMENTROOT+'/'+f] + s,stdout=subprocess.PIPE).communicate()
+	try:
+		return json.loads(res[0])
+	except:
+		try:
+			return res[0]
+		except:
+			return res
 
 #config handler
 class Config:
@@ -729,6 +747,15 @@ class Main():
 				except Exception as inst:
 					print(inst)
 					traceback.print_exc()
+		
+		for client in connectedClients:
+			try:
+				if c == client.chan:
+					client.sendLine(n1,n2,t,m,c,s)
+			except Exception as inst:
+				print(inst)
+				traceback.print_exc()
+		
 	def sigquit(self):
 		print('sigquit')
 	def serve(self):
@@ -747,6 +774,7 @@ class Main():
 					self.calcNetwork = n
 		self.oircLink = OIRCLink()
 		self.oircLink.start()
+		
 		try:
 			if self.calcNetwork!=-1:
 				sql.query('DELETE FROM `irc_users` WHERE online = %d',[self.calcNetwork['id']])
@@ -756,8 +784,11 @@ class Main():
 				gCn_thread.start()
 				self.gCn_server.serve_forever()
 			else:
-				while True:
-					time.sleep(60)
+				self.websocketserver = ThreadedTCPServer(('localhost',61839),WebSocketsHandler)
+				websocket_thread = threading.Thread(target=self.websocketserver.serve_forever)
+				websocket_thread.daemon = True
+				websocket_thread.start()
+				self.websocketserver.serve_forever()
 		except KeyboardInterrupt:
 			print('KeyboardInterrupt, exiting...')
 			self.quit()
@@ -772,7 +803,151 @@ class Main():
 			self.gCn_server.shutdown()
 			for i in connectedCalcs:
 				i.stopThread()
+		
+		
+		self.websocketserver.shutdown()
+		for i in connectedClients:
+			i.stopThread()
+		
 		sys.exit(code)
+
+
+
+connectedClients = []
+
+# websockethandler sceleton from https://gist.github.com/jkp/3136208
+class WebSocketsHandler(SocketServer.StreamRequestHandler):
+	magic = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
+	stopnow = False
+	sig = ''
+	network = -1
+	uid = -1
+	nick = ''
+	identified = False
+	globalop = False
+	chan = ''
+	
+	def stopThread(self):
+		print('Giving signal to quit web-client...')
+		self.stopnow = True
+		self.request.close()
+		
+	def setup(self):
+		SocketServer.StreamRequestHandler.setup(self)
+		print("connection established"+str(self.client_address))
+		self.handshake_done = False
+		
+	def handle(self):
+		print(threading.current_thread())
+		print('New Web-Client\n')
+		
+		try:
+			self.request.settimeout(10)
+			connectedClients.append(self)
+			while not self.stopnow:
+				time.sleep(0.1)
+				try:
+					if not self.handshake_done:
+						self.handshake()
+					else:
+						self.read_next_message()
+				except socket.timeout:
+					continue
+				except Exception as err:
+					print('ERROR:'+str(err))
+					traceback.print_exc()
+					break
+		except:
+			traceback.print_exc()
+		print(threading.current_thread())
+		connectedClients.remove(self)
+		print('Thread done\n')
+	def read_next_message(self):
+		try:
+			length = ord(self.rfile.read(2)[1]) & 127
+		except:
+			return
+		if length == 126:
+			length = struct.unpack(">H", self.rfile.read(2))[0]
+		elif length == 127:
+			length = struct.unpack(">Q", self.rfile.read(8))[0]
+		masks = [ord(byte) for byte in self.rfile.read(4)]
+		decoded = ""
+		for char in self.rfile.read(length):
+			decoded += chr(ord(char) ^ masks[len(decoded) % 4])
+		
+		try:
+			self.on_message(json.loads(decoded))
+		except:
+			pass
+	def send_message(self, message):
+		self.request.send(chr(129))
+		length = len(message)
+		if length <= 125:
+			self.request.send(chr(length))
+		elif length >= 126 and length <= 65535:
+			self.request.send(chr(126))
+			self.request.send(struct.pack(">H", length))
+		else:
+			self.request.send(chr(127))
+			self.request.send(struct.pack(">Q", length))
+		self.request.send(message)
+		
+	def sendLine(self,n1,n2,t,m,c,s): #name 1, name 2, type, message, channel, source
+		s = json.dumps({'line':{
+			'curline':0,
+			'type':t,
+			'network':s,
+			'time':int(time.time()),
+			'name':n1.encode('utf-8'),
+			'message':m.encode('utf-8'),
+			'name2':n2.encode('utf-8'),
+			'chan':c
+		}})
+		self.send_message(s)
+	def handshake(self):
+		data = self.request.recv(1024).strip()
+		headers = Message(StringIO(data.split('\r\n', 1)[1]))
+		if headers.get("Upgrade", None) != "websocket":
+			return
+		print 'Handshaking...'
+		key = headers['Sec-WebSocket-Key']
+		digest = b64encode(sha1(key + self.magic).hexdigest().decode('hex'))
+		response = 'HTTP/1.1 101 Switching Protocols\r\n'
+		response += 'Upgrade: websocket\r\n'
+		response += 'Connection: Upgrade\r\n'
+		response += 'Sec-WebSocket-Accept: %s\r\n\r\n' % digest
+		self.handshake_done = self.request.send(response)
+		
+	def on_message(self,m):
+		try:
+			if m.has_key('action'):
+				if m['action'] == 'ident':
+					try:
+						r = execPhp('omnomirc.php',{
+							'ident':'',
+							'nick':b64encode(m['nick']),
+							'signature':b64encode(m['signature']),
+							'time':m['time'],
+							'id':m['id'],
+							'network':m['network']
+						})
+						if r['loggedin']:
+							self.identified = True
+							self.nick = m['nick']
+							self.sig = m['signature']
+							self.uid = m['id']
+							self.network = m['network']
+					except:
+						self.identified = False
+				elif self.identified:
+					print(m)
+					if m['action'] == 'chan':
+						self.chan = m['chan']
+		except:
+			print(threading.current_thread())
+			traceback.print_exc()
+
 config = Config()
 sql = Sql()
 sql.query('DELETE FROM `irc_outgoing_messages`')

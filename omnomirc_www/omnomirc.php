@@ -18,6 +18,15 @@
     You should have received a copy of the GNU General Public License
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+if(isset($argv)){
+	// parse command line args into $_GET
+	foreach($argv as $a){
+		if(($p = strpos($a,'='))!==false){
+			$_GET[substr($a,0,$p)] = substr($a,$p+1) or true;
+		}
+	}
+}
 class Json{
 	private $json;
 	private $warnings;
@@ -656,4 +665,12 @@ class OmnomIRC{
 	}
 }
 $omnomirc = new OmnomIRC();
+
+if(isset($_GET['ident'])){
+	header('Content-Type:text/json');
+	$json->add('loggedin',$you->isLoggedIn());
+	$json->add('isglobalop',$you->isGlobalOp());
+	$json->add('isbanned',$you->isBanned());
+	echo $json->get();
+}
 ?>

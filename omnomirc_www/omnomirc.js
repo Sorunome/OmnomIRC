@@ -75,6 +75,15 @@
 				getUrlParams:function(){
 					return 'nick='+base64.encode(nick)+'&signature='+base64.encode(signature)+'&time='+(+new Date()).toString()+'&id='+uid+'&network='+net+(nick!=''?'&noLoginErrors':'');
 				},
+				getIdentParams:function(){
+					return {
+						nick:nick,
+						signature:signature,
+						time:(+new Date()).toString(),
+						id:uid,
+						network:net
+					};
+				},
 				networks:function(){
 					return networks;
 				},
@@ -1134,44 +1143,75 @@
 				}
 			};
 		})(),
-		websocket = (function(){
+		ws = (function(){
 			var socket = false,
 				connected = false,
 				use = true,
-				sendBuffer = [];
+				sendBuffer = [],
+				allowLines = false;
 			return {
 				init:function(){
 					if(!("WebSocket" in window)){
 						use = false;
-						return;
+						return false;
 					}
 					socket = new WebSocket('ws://localhost:61839');
 					socket.onopen = function(e){
+						console.log(e);
 						connected = true;
 						for(var i = 0;i < sendBuffer.length;i++){
-							websocket.send(sendBuffer[i]);
+							ws.send(sendBuffer[i]);
 						}
 					};
 					socket.onmessage = function(e){
-						var data = JSON.parse(e.data);
-						if(data.line!==undefined){
-							parser.addLine(data.line);
-						}
+						console.log(e);
+						try{
+							var data = JSON.parse(e.data);
+							console.log(data);
+							console.log(allowLines);
+							if(allowLines && data.line!==undefined){
+								parser.addLine(data.line);
+							}
+						}catch(e){
+							console.log(e);
+						};
+					};
+					socket.onclose = function(e){
+						use = false;
 					};
 					socket.onerror = function(e){
+						console.log(e);
 						socket.close();
 						use = false;
 					};
+					ws.send($.extend({action:'ident'},settings.getIdentParams()));
+					
+					$(window).on('beforeunload',function(){
+						socket.close();
+					});
+					return true;
 				},
 				send:function(msg){
 					if(connected){
-						socket.send(JSON.stringify(s));
+						socket.send(JSON.stringify(msg));
 					}else{
 						sendBuffer.push(msg);
 					}
 				},
+				setChan:function(c){
+					ws.send({
+						action:'chan',
+						chan:c
+					});
+				},
 				use:function(){
 					return use;
+				},
+				allowRecLines:function(){
+					allowLines = true;
+				},
+				dissallowRecLines:function(){
+					allowLines = false;
 				}
 			};
 		})(),
@@ -1181,7 +1221,7 @@
 				inRequest = false,
 				handler = false,
 				send = function(){
-					if(channels.getCurrent()===''){
+					if(channels.getCurrent()==='' || ws.use()){
 						return;
 					}
 					handler = network.getJSON(
@@ -1218,7 +1258,7 @@
 						});
 				},
 				setTimer = function(){
-					if(channels.getCurrent()!=='' && handler===false){
+					if(channels.getCurrent()!=='' && handler===false && !ws.use()){
 						setTimeout(function(){
 							send();
 						},(page.isBlurred()?2500:200));
@@ -1236,7 +1276,7 @@
 					}
 				},
 				start:function(){
-					if(!inRequest){
+					if(!(inRequest || ws.use())){
 						inRequest = true;
 						setTimer();
 					}
@@ -1581,6 +1621,7 @@
 					if(chans[i]!==undefined){
 						indicator.start();
 						request.cancel();
+						ws.dissallowRecLines();
 						$('#message').attr('disabled','true');
 						$('#MessageBox').empty();
 						$('.chan').removeClass('curchan');
@@ -1615,6 +1656,8 @@
 								});
 								scroll.down();
 								requestHandler = false;
+								ws.setChan(getHandler(i));
+								ws.allowRecLines();
 								request.start();
 							}else{
 								send.internal('<span style="color:#C73232;"><b>ERROR:</b> banned</span>');
@@ -2290,6 +2333,7 @@
 							send.init();
 							oldMessages.init();
 							channels.init();
+							ws.init()
 							channels.join(options.get(4,String.fromCharCode(45)).charCodeAt(0) - 45);
 						}else{
 							registerToggle();
