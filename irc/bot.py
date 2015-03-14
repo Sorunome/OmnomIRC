@@ -938,6 +938,7 @@ class WebSocketsHandler(SocketServer.StreamRequestHandler):
 		try:
 			length = ord(self.rfile.read(2)[1]) & 127
 		except:
+			raise
 			return
 		if length == 126:
 			length = struct.unpack(">H", self.rfile.read(2))[0]
