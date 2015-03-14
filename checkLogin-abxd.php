@@ -31,7 +31,8 @@ if(!isset($_GET['op'])){
 					&& $loguser['name']!='' && $loguser['powerlevel']>=0 && !isIPBanned($_SERVER['REMOTE_ADDR'])){
 			
 			$nick = ($loguser['displayname']==''?$loguser['name']:$loguser['displayname']);
-			$signature = hash_hmac('sha512',$nick,$network.$encriptKeyToUse);
+			$time = (string)time();
+			$signature = $time.'|'.hash_hmac('sha512',$nick,$network.$encriptKeyToUse.$time);
 			$uid = $loguser['id'];
 		}
 	}
