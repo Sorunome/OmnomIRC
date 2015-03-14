@@ -31,6 +31,7 @@ class Json{
 	private $json;
 	private $warnings;
 	private $errors;
+	private $relog;
 	public function clear(){
 		$this->warnings = Array();
 		$this->errors = Array();
@@ -38,6 +39,7 @@ class Json{
 	}
 	public function __construct(){
 		$this->clear();
+		$this->relog = 0;
 	}
 	public function addWarning($s){
 		$this->warnings[] = $s;
@@ -51,6 +53,9 @@ class Json{
 	public function get(){
 		$this->json['warnings'] = $this->warnings;
 		$this->json['errors'] = $this->errors;
+		if($this->relog!=0){
+			$this->json['relog'] = $this->relog;
+		}
 		return json_encode($this->json);
 	}
 	public function hasErrors(){
@@ -58,6 +63,9 @@ class Json{
 	}
 	public function hasWarnings(){
 		return sizeof($this->warnings) > 0;
+	}
+	public function doRelog($i){
+		$this->relog = $i;
 	}
 }
 $json = new Json();
@@ -275,9 +283,38 @@ class GlobalVars{
 }
 $vars = new GlobalVars();
 class Secure{
-	public function sign($s,$n){
+	private function sign($s,$n,$t){
 		global $config;
-		return hash_hmac('sha512',$s,$n.$config['security']['sigKey']);
+		return $t.'|'.hash_hmac('sha512',$s,$n.$config['security']['sigKey'].$t);
+	}
+	public function checkSig($sig,$nick,$network){
+		global $json;
+		$sigParts = explode('|',$sig);
+		$ts = time();
+		$hard = 60*60*24;
+		$soft = 60*5;
+		if(isset($sigParts[1]) && ((int)$sigParts[0])==$sigParts[0]){
+			$sts = (int)$sigParts[0];
+			$sigs = $sigParts[1];
+			if($sts > ($ts - $hard - $soft) && $sts < ($ts + $hard + $soft)){
+				if($this->sign($nick,$network,(string)$sts) == $sig){
+					if(!($sts > ($ts - $hard) && $sts < ($ts + $hard))){
+						$json->doRelog(1);
+					}
+					return true;
+				}
+				return false;
+			}else{
+				if($this->sign($nick,$network,(string)$sts) == $sig){
+					$json->doRelog(2);
+				}else{
+					$json->doRelog(3);
+				}
+				return false;
+			}
+		}
+		$json->doRelog(3);
+		return false;
 	}
 }
 $security = new Secure();
@@ -403,7 +440,7 @@ class You{
 		$this->globalOps = NULL;
 		$this->ops = NULL;
 		$this->infoStuff = NULL;
-		$this->loggedIn = ($this->nick!=='' && $this->sig!=='' && $this->sig == $security->sign($this->nick,$this->network));
+		$this->loggedIn = ($this->nick!=='' && $this->sig!=='' && $security->checkSig($this->sig,$this->nick,$this->network));
 		if(!$this->loggedIn){
 			if(!isset($_GET['noLoginErrors'])){
 				$json->addWarning('Not logged in');

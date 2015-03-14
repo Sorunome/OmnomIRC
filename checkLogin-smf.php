@@ -32,7 +32,8 @@ if(!isset($_GET['op'])){
 		if(isset($keyParts[1]) && (int)$keyParts[1] < ($ts + 60) && (int)$keyParts[1] > ($ts - 60) && hash_hmac('sha512',(isset($_SERVER['HTTP_REFERER'])?$_SERVER['HTTP_REFERER']:'THE GAME'),$encriptKeyToUse.$keyParts[1].$network) == $keyParts[0]
 					&& $user_info['name']!='' && !$user_info['is_guest'] && !is_not_banned()){
 			$nick = $user_info['name'];
-			$signature = hash_hmac('sha512',$nick,$network.$encriptKeyToUse);
+			$time = (string)time();
+			$signature = $time.'|'.hash_hmac('sha512',$nick,$network.$encriptKeyToUse.$time);
 			$uid = $context['user']['id'];
 		}
 	}

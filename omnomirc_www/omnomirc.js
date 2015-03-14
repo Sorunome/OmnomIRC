@@ -61,7 +61,7 @@
 								if(fn!==undefined){
 									fn();
 								}
-							},!clOnly);
+							},!clOnly,false);
 						}else{
 							set = JSON.parse(set);
 							nick = set.nick;
@@ -71,7 +71,7 @@
 								fn();
 							}
 						}
-					},!clOnly);
+					},!clOnly,false);
 				},
 				getUrlParams:function(){
 					return 'nick='+base64.encode(nick)+'&signature='+base64.encode(signature)+'&time='+(+new Date()).toString()+'&id='+uid+'&network='+net+(nick!=''?'&noLoginErrors':'');
@@ -144,6 +144,7 @@
 		network = (function(){
 			var errors = [],
 				warnings = [],
+				didRelog = false,
 				removeSig = function(s){
 					try{
 						var parts = s.split('signature='),
@@ -183,41 +184,66 @@
 						.text(warnings.length);
 				};
 			return {
-				getJSON:function(s,fn,async){
+				getJSON:function(s,fn,async,urlparams){
 					if(async==undefined){
 						async = true;
 					}
+					if(urlparams==undefined){
+						urlparams = true;
+					}
 					return $.ajax({
-							url:s,
+							url:s+(urlparams?'&'+settings.getUrlParams():''),
 							dataType:'json',
 							async:async
 						})
 						.done(function(data){
-							if(data.errors!==undefined){
-								$.each(data.errors,function(i,e){
-									if(e.type!==undefined){
-										addError(s,e);
-									}else{
-										addError(s,{
-											type:'misc',
-											message:e
-										});
-									}
-								});
+							if(data.relog!==undefined && data.relog!=2){
+								if(data.errors!==undefined){
+									$.each(data.errors,function(i,e){
+										if(e.type!==undefined){
+											addError(s,e);
+										}else{
+											addError(s,{
+												type:'misc',
+												message:e
+											});
+										}
+									});
+								}
+								if(data.warnings!==undefined){
+									$.each(data.warnings,function(i,w){
+										if(w.type!==undefined){
+											addWarning(s,w);
+										}else{
+											addWarning(s,{
+												type:'misc',
+												message:w
+											});
+										}
+									});
+								}
 							}
-							if(data.warnings!==undefined){
-								$.each(data.warnings,function(i,w){
-									if(w.type!==undefined){
-										addWarning(s,w);
+							if(data.relog!==undefined && data.relog!=0){
+								if(data.relog==1){
+									settings.fetch(undefined,true);
+									fn(data);
+								}else if(data.relog==2){
+									settings.fetch(function(){
+										network.getJSON(s,fn,async,urlparams);
+									},true);
+								}else if(data.relog==3){
+									if(didRelog){
+										fn(data);
 									}else{
-										addWarning(s,{
-											type:'misc',
-											message:w
-										});
+										settings.fetch(function(){
+											network.getJSON(s,fn,async,urlparams);
+										},true);
 									}
-								});
+								}
+								didRelog = true;
+							}else{
+								fn(data);
 							}
-							fn(data);
 						});
 				},
 				init:function(){
@@ -729,7 +755,7 @@
 				loadPage = function(p){
 					indicator.start();
 					$('#adminContent').text('Loading...');
-					network.getJSON('admin.php?get='+encodeURIComponent(p)+'&'+settings.getUrlParams(),function(data){
+					network.getJSON('admin.php?get='+encodeURIComponent(p),function(data){
 						$('#adminContent').empty();
 						switch(p){
 							case 'index':
@@ -1161,7 +1187,10 @@
 					network.getJSON('omnomirc.php?getcurline&noLoginErrors',function(data){
 						request.setCurLine(data.curline);
 						request.start();
-					});
+					},undefined,false);
+				},
+				identify = function(){
+					ws.send($.extend({action:'ident'},settings.getIdentParams()));
 				};
 			return {
 				init:function(){
@@ -1192,6 +1221,11 @@
 							if(allowLines && data.line!==undefined){
 								parser.addLine(data.line);
 							}
+							if(data.relog!==undefined && data.relog!=0){
+								settings.fetch(function(){
+									identify();
+								},true);
+							}
 						}catch(e){};
 					};
 					socket.onclose = function(e){
@@ -1203,7 +1237,8 @@
 						use = false;
 						fallback();
 					};
-					ws.send($.extend({action:'ident'},settings.getIdentParams()));
+					
+					identify();
 					
 					$(window).on('beforeunload',function(){
 						socket.close();
@@ -1253,8 +1288,7 @@
 							'Update.php?high='+
 							(parseInt(options.get(13,'3'),10)+1).toString()+
 							'&channel='+channels.getCurrent(false,true)+
-							'&lineNum='+curLine.toString()+'&'+
-							settings.getUrlParams(),
+							'&lineNum='+curLine.toString(),
 						function(data){
 							var newRequest = true;
 							if(channels.getCurrent()===''){
@@ -1653,7 +1687,7 @@
 						if(requestHandler!==false){
 							requestHandler.abort();
 						}
-						requestHandler = network.getJSON('Load.php?count=125&channel='+getHandler(i,true)+'&'+settings.getUrlParams(),function(data){
+						requestHandler = network.getJSON('Load.php?count=125&channel='+getHandler(i,true),function(data){
 							if(data.lines === undefined){
 								if(data.message){
 									send.internal(data.message);
@@ -1901,7 +1935,7 @@
 											$('#lastSeenCont').text('Last Seen: never');
 										}
 										$('#lastSeenCont').css('display','block');
-									});
+									},undefined,false);
 								})
 								.mouseout(function(){
 									try{
@@ -2558,7 +2592,7 @@
 							}else{
 								sending = true;
 								request.cancel();
-								network.getJSON('message.php?message='+base64.encode(s)+'&channel='+channels.getCurrent(false,true)+'&'+settings.getUrlParams(),function(){
+								network.getJSON('message.php?message='+base64.encode(s)+'&channel='+channels.getCurrent(false,true),function(){
 									if(!wysiwyg.support()){
 										$('#message').val('');
 									}else{
@@ -2653,7 +2687,7 @@
 					isOpen = false;
 				},
 				fetchPart = function(n){
-					network.getJSON('Log.php?day='+base64.encode($('#logDate').val())+'&offset='+parseInt(n,10)+'&channel='+channels.getCurrent(false,true)+'&'+settings.getUrlParams(),function(data){
+					network.getJSON('Log.php?day='+base64.encode($('#logDate').val())+'&offset='+parseInt(n,10)+'&channel='+channels.getCurrent(false,true),function(data){
 						if(!data.banned){
 							if(data.lines.length>=1000){
 								fetchPart(n+1000);

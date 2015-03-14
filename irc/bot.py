@@ -61,7 +61,7 @@ class Config:
 	def readFile(self):
 		jsons = ''
 		searchingJson = True
-		f = open(DOCUMENTROOT+'/config.php')
+		f = open(DOCUMENTROOT+'/config.json.php')
 		lines = f.readlines()
 		f.close()
 		for l in lines:
@@ -504,10 +504,13 @@ class OIRCLink(threading.Thread):
 								for i in ['nick','type','message','channel']:
 									row[i] = makeUnicode(row[i])
 								
-								handle.sendToOther(row['nick'],'',row['type'],row['message'],int(row['channel']),row['fromSource'])
+								if row['type']=='server':
+									handle.sendToOther('OmnomIRC',row['nick'],row['type'],row['message'],row['channel'],row['fromSource'])
+								else:
+									handle.sendToOther(row['nick'],'',row['type'],row['message'],row['channel'],row['fromSource'])
 								
 								if row['type']=='topic':
-									handle.sendTopicToOther(row['message'],int(row['channel']),row['fromSource'])
+									handle.sendTopicToOther(row['message'],row['channel'],row['fromSource'])
 							except Exception as inst:
 								print(inst)
 								traceback.print_exc()
@@ -758,7 +761,7 @@ class Main():
 	def sendToOther(self,n1,n2,t,m,c,s):
 		oircOnly = False
 		try:
-			int(c)
+			c = int(c)
 		except:
 			oircOnly = True
 		if not oircOnly:
@@ -777,45 +780,46 @@ class Main():
 					except Exception as inst:
 						print(inst)
 						traceback.print_exc()
-		for client in connectedClients:
-			try:
-				if ((not client.banned) and client.identified and
-					(
+		if config.json['websockets']['use']:
+			for client in connectedClients:
+				try:
+					if ((not client.banned) and client.identified and
 						(
 							(
 								(
 									(
-										(not oircOnly) or c[0]=='@'
+										(
+											(not oircOnly) or c[0]=='@'
+										)
+										and
+										c == client.chan
 									)
-									and
-									c == client.chan
-								)
-								or
-								(
-									client.network == s
-									and
+									or
 									(
-										c==client.nick
-										or
-										n1==client.nick
+										client.network == s
+										and
+										(
+											c==client.nick
+											or
+											n1==client.nick
+										)
 									)
 								)
+								and t!='server'
 							)
-							and t!='server'
-						)
-						or
-						(
-							t=='server'
-							and
-							c==client.nick
-							and
-							n2==client.chan
-						)
-					)):
-					client.sendLine(n1,n2,t,m,c,s)
-			except Exception as inst:
-				print(inst)
-				traceback.print_exc()
+							or
+							(
+								t=='server'
+								and
+								c==client.nick
+								and
+								n2==str(client.chan)
+							)
+						)):
+						client.sendLine(n1,n2,t,m,c,s)
+				except Exception as inst:
+					print(inst)
+					traceback.print_exc()
 		
 	def sigquit(self):
 		print('sigquit')
@@ -892,6 +896,7 @@ class WebSocketsHandler(SocketServer.StreamRequestHandler):
 	globalop = False
 	banned = True
 	chan = ''
+	msgStack = []
 	
 	def stopThread(self):
 		print('Giving signal to quit web-client...')
@@ -979,7 +984,7 @@ class WebSocketsHandler(SocketServer.StreamRequestHandler):
 			handle.sendToOther(self.nick,'',t,m,c,self.network)
 			sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`) VALUES ('%s','%s','%s','%s','%s','%s',%d)",[self.nick,'',m,t,c,str(int(time.time())),int(self.network)])
 			sql.query("UPDATE `irc_users` SET lastMsg='%s' WHERE username='%s' AND channel='%s' AND online=%d",[str(int(time.time())),self.nick,self.chan,int(self.network)])
-
+			handle.updateCurline()
 	def join(self): # updates nick in userlist
 		global sql
 		if isinstance(self.chan,basestring) and len(self.chan) > 0 and self.chan[0]=='*': # no userlist on PMs
@@ -1024,7 +1029,11 @@ class WebSocketsHandler(SocketServer.StreamRequestHandler):
 		response += 'Connection: Upgrade\r\n'
 		response += 'Sec-WebSocket-Accept: %s\r\n\r\n' % digest
 		self.handshake_done = self.request.send(response)
-		
+	def checkRelog(self,r,m):
+		if r.has_key('relog'):
+			self.send_message(json.dumps({'relog':r['relog']}))
+			if r['relog']==2:
+				self.msgStack.append(m)
 	def on_message(self,m):
 		try:
 			if m.has_key('action'):
@@ -1045,6 +1054,11 @@ class WebSocketsHandler(SocketServer.StreamRequestHandler):
 							self.uid = m['id']
 							self.network = m['network']
 							self.banned = r['isbanned']
+							for a in self.msgStack: # let's pop the whole stack!
+								self.on_message(a)
+							self.msgStack = []
+						if r.has_key('relog'):
+							self.send_message(json.dumps({'relog':r['relog']}))
 					except:
 						self.identified = False
 				elif self.identified:
@@ -1064,6 +1078,7 @@ class WebSocketsHandler(SocketServer.StreamRequestHandler):
 							'network':self.network,
 							'channel':c
 						})
+						self.checkRelog(r,m)
 						self.banned = r['isbanned']
 						if not self.banned:
 							self.join()
@@ -1092,6 +1107,7 @@ class WebSocketsHandler(SocketServer.StreamRequestHandler):
 											'id':self.uid,
 											'network':self.network
 										})
+										self.checkRelog(r,m)
 							else: # normal message
 								self.addLine('message',msg)
 		except:

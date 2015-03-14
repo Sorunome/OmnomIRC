@@ -78,89 +78,13 @@ function writeConfig(){
 	global $config;
 	$file = '<?php
 /* This is a automatically generated config-file by OmnomIRC, please use the admin pannel to edit it! */
-
-function getConfig(){
-	$cfg = explode("\\n",file_get_contents(realpath(dirname(__FILE__))."/config.php"));
-	$searchingJson = true;
-	$json = "";
-	foreach($cfg as $line){
-		if($searchingJson){
-			if(trim($line)=="//JSONSTART"){
-				$searchingJson = false;
-			}
-		}else{
-			if(trim($line)=="//JSONEND"){
-				break;
-			}
-			$json .= "\\n".$line;
-		}
-	}
-	$json = implode("\\n",explode("\\n//",$json));
-	return json_decode($json,true);
-}
-$config = getConfig();
+header("Location:index.php");
 //JSONSTART
 //'.json_encode($config).'
 //JSONEND
-if(isset($_GET["js"])){
-	include_once(realpath(dirname(__FILE__))."/omnomirc.php");
-	header("Content-type: text/json");
-	$channels = Array();
-	foreach($config["channels"] as $chan){
-		if($chan["enabled"]){
-			foreach($chan["networks"] as $cn){
-				if($cn["id"] == $you->getNetwork()){
-					$channels[] = Array(
-						"chan" => $cn["name"],
-						"high" => false,
-						"ex" => $cn["hidden"],
-						"id" => $chan["id"],
-						"order" => $cn["order"]
-					);
-				}
-			}
-		}
-	}
-	usort($channels,function($a,$b){
-		if($a["order"] == $b["order"]){
-			return 0;
-		}
-		return (($a["order"] < $b["order"])?-1:1);
-	});
-	$net = $networks->get($you->getNetwork());
-	$defaults = $net["config"]["defaults"];
-	$cl = $net["config"]["checkLogin"];
-	$ts = time();
-	$cl .= "?sid=".urlencode(htmlspecialchars(str_replace(";","%^%",hash_hmac("sha512",(isset($_SERVER["HTTP_REFERER"])?$_SERVER["HTTP_REFERER"]:"THE GAME"),$config["security"]["sigKey"].$ts.$you->getNetwork())."|".$ts)));
-	$dispNetworks = Array();
-	foreach($config["networks"] as $n){
-		$dispNetworks[] = Array(
-			"id" => $n["id"],
-			"normal" => $n["normal"],
-			"userlist" => $n["userlist"],
-			"name" => $n["name"],
-			"type" => $n["type"]
-		);
-	}
-	echo json_encode(Array(
-		"hostname" => $config["settings"]["hostname"],
-		"channels" => $channels,
-		"smileys" => $vars->get("smileys"),
-		"networks" => $dispNetworks,
-		"network" => $you->getNetwork(),
-		"checkLoginUrl" => $cl,
-		"defaults" => $defaults,
-		"websockets" => Array(
-			"use" => $config["websockets"]["use"],
-			"host" => $config["websockets"]["host"],
-			"port" => $config["websockets"]["port"],
-			"ssl" => $config["websockets"]["ssl"]
-		)
-	));
-}
 ?>';
-	if(!file_put_contents(realpath(dirname(__FILE__)).'/config.php',$file)){
-		die('{"errors":["ERROR: Coulnd\'t write config, please make file config.php writeable for PHP"],"step":1}');
+	if(!file_put_contents(realpath(dirname(__FILE__)).'/config.json.php',$file)){
+		die('{"errors":["ERROR: Coulnd\'t write config, please make file config.json.php writeable for PHP"],"step":1}');
 	}
 }
 if(!isset($_GET['server'])){
@@ -303,7 +227,7 @@ if(!isset($_GET['server'])){
 								$("<b>").text(data.sigKey),
 								" (You\'ll have to set it in the checkLogin file)<br>Please make sure that PHP can <u>write</u> to the following files:",
 								$("<ul>").append(
-									$.map(["config.php","config.backup.php","omnomirc_curid","updater.php"],function(file){
+									$.map(["config.json.php","config.backup.php","omnomirc_curid","updater.php"],function(file){
 										return $("<li>").text(file);
 									})
 								),
