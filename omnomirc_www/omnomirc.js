@@ -1199,11 +1199,7 @@
 						return false;
 					}
 					try{
-						if(ssl){
-							socket = new WebSocket('wss://'+host+':'+port.toString(10));
-						}else{
-							socket = new WebSocket('ws://'+host+':'+port.toString(10));
-						}
+						socket = new WebSocket((ssl?'wss://':'ws://')+host+':'+port.toString(10));
 					}catch(e){
 						fallback();
 					}
@@ -1216,8 +1212,6 @@
 					socket.onmessage = function(e){
 						try{
 							var data = JSON.parse(e.data);
-							console.log(data);
-							console.log(allowLines);
 							if(allowLines && data.line!==undefined){
 								parser.addLine(data.line);
 							}
@@ -2312,7 +2306,7 @@
 						})
 					);
 				},
-				mBoxContWidthOffset = 99,
+				mBoxContWidthOffset = 90,
 				registerToggle = function(){
 					$('#toggleButton')
 						.click(function(e){
@@ -2361,17 +2355,17 @@
 					}).focus(function(){
 						isBlurred = false;
 					});
-					if(options.get(14,'F')!='T'){ // hide userlist is off
-						mBoxContWidthOffset = 90;
+					if(options.get(14,'F')=='T'){ // hide userlist is on
+						mBoxContWidthOffset = 99;
 						$('<style>')
 							.append(
-								'#scrollBar{left:89%;left:calc(90% - 17px);}',
-								'#scrollBarLine{left:89%;left:calc(90% - 16px);}',
-								'input#message,span#message{width:82%;width:calc(91% - 115px);width:-webkit-calc(91% - 115px);}',
-								'#mBoxCont{width:90%;}',
-								'.arrowButtonHoriz2,.arrowButtonHoriz3 > div:nth-child(2){left:89%;left:calc(90% - 5px);left:-webkit-calc(90% - 5px);}',
-								'#UserListContainer{left:90%;height:100%;transition:none;-webkit-transition:none;-o-transition-property:none;-o-transition-duration:none;-o-transition-delay:none;}',
-								'#icons{right:270px;}'
+								'#scrollBar{left:98%;left:calc(99% - 17px);left:-webkit-calc(99% - 17px);}',
+								'#scrollBarLine{left:98%;left:calc(99% - 16px);left:-webkit-calc(99% - 16px);}',
+								'input#message,span#message{width:93%;width:calc(100% - 121px);width:-webkit-calc(100% - 121px);}',
+								'#mBoxCont{width:99%;}',
+								'.arrowButtonHoriz2,.arrowButtonHoriz3 > div:nth-child(2){left:98%;left:calc(99% - 5px);left:-webkit-calc(99% - 5px);}',
+								'#UserListContainer{left:99%;transition: left 0.5s 1s;-webkit-transition: left 0.5s 1s;-o-transition-property: left;-o-transition-duration: 0.5d;-o-transition-delay: ls;}',
+								'#icons{right:95px;}'
 							)
 							.appendTo('head');
 					}
