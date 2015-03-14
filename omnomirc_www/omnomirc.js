@@ -1708,6 +1708,9 @@
 								}else{
 									$('#adminLink').css('display','none');
 								}
+								if(data.ignores!==undefined){
+									parser.setIgnoreList(data.ignores);
+								}
 								users.setUsers(data.users);
 								users.draw();
 								$.each(data.lines,function(i,line){
@@ -2742,6 +2745,7 @@
 			var smileys = [],
 				maxLines = 200,
 				lastMessage = 0,
+				ignores = [],
 				parseName = function(n,o){
 					n = (n=='\x00'?'':n); //fix 0-string bug
 					var ne = encodeURIComponent(n);
@@ -2898,6 +2902,9 @@
 				lineHigh = false;
 			return {
 				addLine:function(line,logMode){
+					if(ignores.indexOf(line.name.toLowerCase()) > -1){
+						return;
+					}
 					var $mBox = $('#MessageBox'),
 						name = parseName(line.name,line.network),
 						message = parseMessage(line.message),
@@ -3105,6 +3112,9 @@
 				},
 				getSmileys:function(){
 					return smileys;
+				},
+				setIgnoreList:function(a){
+					ignores = a;
 				}
 			};
 		})();

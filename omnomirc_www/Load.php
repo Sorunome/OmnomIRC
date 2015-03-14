@@ -108,5 +108,15 @@ foreach($users as $user){
 	);
 }
 $json->add('users',$realUsers);
+if($you->isLoggedIn()){
+	$userSql = $you->info();
+	$ignorelist = '';
+	if($userSql['name']!=NULL) {
+		$i = explode("\n",$userSql['ignores']);
+		array_pop($i); // last element is always garbage
+		$json->add('ignores',$i);
+		
+	}
+}
 echo $json->get();
 ?>
