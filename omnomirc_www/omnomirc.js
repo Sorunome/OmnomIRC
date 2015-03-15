@@ -2903,7 +2903,7 @@
 			return {
 				addLine:function(line,logMode){
 					if(line.network == -1 || line.name === null || line.name === undefined || line.type === null || ignores.indexOf(line.name.toLowerCase()) > -1){
-						return;
+						return false;
 					}
 					var $mBox = $('#MessageBox'),
 						name = parseName(line.name,line.network),
@@ -2935,6 +2935,10 @@
 							break;
 						case 'relog':
 							settings.fetch(undefined,true);
+							return false;
+							break;
+						case 'refresh':
+							location.reload();
 							return false;
 							break;
 						case 'join':
@@ -3022,32 +3026,42 @@
 							}
 							break;
 						case 'pm':
-							if(channels.getCurrentName(true).toLowerCase() != '*'+line.name.toLowerCase() && line.name.toLowerCase() != settings.nick().toLowerCase()){
+							if(channels.getCurrentName(true).toLowerCase() == '*'+line.name.toLowerCase() || channels.getCurrentName(true).toLowerCase() == '*'+line.chan.toLowerCase()){
+								tdName = name;
+								line.type = 'message';
+							}else{
 								if(channels.getCurrent()!=='' && logMode!==true){
-									tdName = ['(PM)',name];
-									channels.openPm(line.name);
-									notification.make('(PM) <'+line.name+'> '+line.message,line.chan);
+									if(line.name.toLowerCase() == settings.nick().toLowerCase()){
+										addLine = false;
+										channels.openPm(line.chan);
+									}else{
+										tdName = ['(PM)',name];
+										channels.openPm(line.name);
+										notification.make('(PM) <'+line.name+'> '+line.message,line.chan);
+									}
 								}else{
 									addLine = false;
 								}
-							}else{
-								tdName = name;
-								line.type = 'message';
 							}
 							break;
 						case 'pmaction':
-							if(channels.getCurrentName(true).toLowerCase() != '*'+line.name.toLowerCase() && line.name.toLowerCase() != settings.nick().toLowerCase()){
+							if(channels.getCurrentName(true).toLowerCase() == '*'+line.name.toLowerCase() || channels.getCurrentName(true).toLowerCase() == '*'+line.chan.toLowerCase()){
+								tdMessage = [name,' ',message];
+								line.type = 'action';
+							}else{
 								if(channels.getCurrent()!=='' && logMode!==true){
-									tdMessage = ['(PM)',name,' ',message];
-									channels.openPm(line.name);
-									notification.make('* (PM)'+line.name+' '+line.message,line.chan);
-									line.type = 'pm';
+									if(line.name.toLowerCase() == settings.nick().toLowerCase()){
+										addLine = false;
+										channels.openPm(line.chan);
+									}else{
+										tdMessage = ['(PM)',name,' ',message];
+										channels.openPm(line.name);
+										notification.make('* (PM)'+line.name+' '+line.message,line.chan);
+										line.type = 'pm';
+									}
 								}else{
 									addLine = false;
 								}
-							}else{
-								tdMessage = [name,' ',message];
-								line.type = 'action';
 							}
 							break;
 						case 'highlight':

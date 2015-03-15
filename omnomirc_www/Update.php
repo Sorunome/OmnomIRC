@@ -94,8 +94,7 @@ while(true){
 						)
 						OR
 						(
-							`channel` = '%s'
-							AND
+							
 							`name1` = '%s'
 							AND
 							`online` = %d
@@ -112,7 +111,7 @@ while(true){
 					AND
 					name2='%s'
 				)
-		)",$curline,$channel,$nick,$you->getNetwork(),$pm?$sender:'0',$nick,$you->getNetwork(),$nick,$channel);
+		)",$curline,$channel,$nick,$you->getNetwork(),$nick,$you->getNetwork(),$nick,$channel);
 	}else{
 		$query = $sql->query("SELECT * FROM `irc_lines` WHERE `line_number` > %d AND (`channel` = '%s')",$curline,$channel);
 	}
