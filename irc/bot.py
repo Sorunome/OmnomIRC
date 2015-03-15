@@ -125,7 +125,7 @@ class Sql():
 
 #irc bot
 class Bot(threading.Thread):
-	def __init__(self,server,port,nick,ns,main,passwd,i,tbe,mn,tn):
+	def __init__(self,server,port,nick,ns,main,passwd,i,tbe,mn,tn,dssl):
 		threading.Thread.__init__(self)
 		self.stopnow = False
 		self.restart = False
@@ -141,6 +141,7 @@ class Bot(threading.Thread):
 		self.chans = {}
 		self.mainNick = mn
 		self.topicNick = tn
+		self.ssl = dssl
 		for ch in config.json['channels']:
 			if ch['enabled']:
 				for c in ch['networks']:
@@ -192,6 +193,9 @@ class Bot(threading.Thread):
 	def connectToIRC(self):
 		self.s = socket.socket()
 		self.s.settimeout(5)
+		if self.ssl:
+			import ssl
+			self.s = ssl.wrap_socket(self.s)
 		self.s.connect((self.server,self.port))
 		self.send('USER %s %s %s :%s' % ('OmnomIRC','host','server',self.nick),True)
 		self.send('NICK %s' % (self.nick),True)
@@ -834,10 +838,10 @@ class Main():
 			if n['enabled']:
 				if n['type']==3: # irc
 					haveTopicBot = n['config']['topic']['nick'] != ''
-					self.bots.append(Bot(n['config']['main']['server'],n['config']['main']['port'],n['config']['main']['nick'],n['config']['main']['nickserv'],True,config.json['security']['ircPwd'],int(n['id']),haveTopicBot,n['config']['main']['nick'],n['config']['topic']['nick']))
+					self.bots.append(Bot(n['config']['main']['server'],n['config']['main']['port'],n['config']['main']['nick'],n['config']['main']['nickserv'],True,config.json['security']['ircPwd'],int(n['id']),haveTopicBot,n['config']['main']['nick'],n['config']['topic']['nick'],n['config']['main']['ssl']))
 					self.bots[len(self.bots)-1].start()
 					if haveTopicBot:
-						self.bots.append(Bot(n['config']['topic']['server'],n['config']['topic']['port'],n['config']['topic']['nick'],n['config']['topic']['nickserv'],False,config.json['security']['ircPwd'],int(n['id']),haveTopicBot,n['config']['main']['nick'],n['config']['topic']['nick']))
+						self.bots.append(Bot(n['config']['topic']['server'],n['config']['topic']['port'],n['config']['topic']['nick'],n['config']['topic']['nickserv'],False,config.json['security']['ircPwd'],int(n['id']),haveTopicBot,n['config']['main']['nick'],n['config']['topic']['nick'],n['config']['topic']['ssl']))
 						self.bots[len(self.bots)-1].start()
 				elif n['type']==2: # calc
 					self.calcNetwork = n

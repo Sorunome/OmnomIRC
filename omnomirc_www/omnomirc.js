@@ -430,6 +430,8 @@
 													$('<input>').attr('type','text').val(net.config.main.server).change(function(){nets[i].config.main.server = this.value;}),
 													'<br>Port',
 													$('<input>').attr('type','number').val(net.config.main.port).change(function(){nets[i].config.main.port = parseInt($(this).val(),10)}),
+													'<br>SSL:',
+													$('<input>').attr('type','checkbox').attr((net.config.main.ssl?'checked':'false'),'checked').change(function(){nets[i].config.main.ssl = this.checked;}),
 													'<br>NickServ:',
 													$('<input>').attr('type','text').val(net.config.main.nickserv).change(function(){nets[i].config.main.nickserv = this.value;}),
 													'<br>',
@@ -445,6 +447,8 @@
 																$('<input>').attr('type','text').val(net.config.topic.server).change(function(){nets[i].config.topic.server = this.value;}),
 																'<br>Port',
 																$('<input>').attr('type','number').val(net.config.topic.port).change(function(){nets[i].config.topic.port = parseInt($(this).val(),10)}),
+																'<br>SSL:',
+																$('<input>').attr('type','checkbox').attr((net.config.topic.ssl?'checked':'false'),'checked').change(function(){nets[i].config.topic.ssl = this.checked;}),
 																'<br>NickServ:',
 																$('<input>').attr('type','text').val(net.config.topic.nickserv).change(function(){nets[i].config.topic.nickserv = this.value;})
 															)
@@ -505,13 +509,15 @@
 															'nick':'OmnomIRC',
 															'server':'irc server',
 															'port':6667,
-															'nickserv':'nickserv password'
+															'nickserv':'nickserv password',
+															'ssl':false
 														},
 														'topic':{
 															'nick':'',
 															'server':'irc server',
 															'port':6667,
-															'nickserv':'nickserv password'
+															'nickserv':'nickserv password',
+															'ssl':false
 														}
 													}
 													break;
