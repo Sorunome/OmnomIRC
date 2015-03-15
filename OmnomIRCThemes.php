@@ -1,6 +1,6 @@
 <?php
 $ssi_guest_access = true;
-@require(dirname(__FILE__) . '/SSI.php');
+@require(dirname(__FILE__) . '/../SSI.php');
 header('Content-type: text/css');
 /* convert function source: http://mekshq.com/how-to-convert-hexadecimal-color-code-to-rgb-or-rgba-using-php/ */
 function hex2rgba($color, $opacity = false) {
@@ -33,7 +33,7 @@ function hex2rgba($color, $opacity = false) {
 	//Return rgb(a) color string
 	return $output;
 }
-function echoNewStyle($c1,$c2,$c3){
+function echoNewStyle($c1,$c2,$c3,$color,$tablink,$link){
 	echo "#UserListContainer,
 	#smileyselect,
 	#lastSeenCont,
@@ -43,9 +43,13 @@ function echoNewStyle($c1,$c2,$c3){
 	td.curchan,
 	#scrollBarLine,
 	#UserListInnerCont,
-	.linehigh {
+	#logsHeader,
+	#textDecoForm,
+	.lineHigh,
+	#send {
 		background: $c2;
 		border-color: $c1;
+		color: $color;
 	}
 	#topicbox {
 		border-top: none;
@@ -55,16 +59,20 @@ function echoNewStyle($c1,$c2,$c3){
 		box-shadow: inset 0 -1px $c1;
 	}
 
-	td.chan {
+	.chan {
 		border: 1px solid ".hex2rgba($c1,0.4).";
 		border-top-color: ".hex2rgba($c1,0.8).";
+		color: $tablink;
 	}
 
-	td.curchan {
+	.chan.curchan {
+		background-color: $c1;
+		border-color: ".hex2rgba($c1,0.8).";
 		border-bottom-color: $c1;
+		color: $tablink;
 	}
 
-	td.chan:hover {
+	.chan:hover {
 		background: ".hex2rgba($c2,0.8).";
 	}
 
@@ -79,21 +87,53 @@ function echoNewStyle($c1,$c2,$c3){
 	#scrollbar:active,
 	#UserListInnerCont:hover{
 		background-color: $c3;
-	}";
+	}
+	body,
+	#UserListInnerCont,
+	.irc-date,
+	td.curchan,
+	.highlight,
+	.optionsTable .option.selected{
+		color:$color;
+	}
+	a,a:link,a:visited,a:hover,a:active{
+		border-color:$link;
+		color:$link;
+	}
+	a:hover{
+		text-shadow:0 0 4px ".hex2rgba($link,0.8).";
+	}
+	span#message,input#message{
+		background-color:$c3;
+		color:$color;
+		border:1px solid $c1;
+	}
+	button{
+		cursor:pointer;
+		background-color:$c3;
+		color:$color;
+		border:1px solid $c1;
+		border-radius:3px;
+	}
+	.optionsTable .option{
+		color:$link;
+		border-right-color:$color;
+	}
+	.optionsTable .option:hover{
+		text-shadow:0 0 4px ".hex2rgba($link,0.8).";
+	}
+	";
 }
 switch($user_info["theme"]) {
 case 0: //default
-	echo "";
-	break;
 case 1:
-	echo "";
-	break;
 case 2:
-	echo "";
+case 3:
+	echoNewStyle("#A3BFD6","#D9D9D9","#E7E7E7","#000000","#2222CC","#334466");
 	break;
-case 3: //v4
-	echoNewStyle("#DDDDFF","#EBF1F9","#FFFFFF");
-	break;
+//case 3: //v4
+//	echoNewStyle("#DDDDFF","#EBF1F9","#FFFFFF");
+//	break;
 case 4: //v3
 	echoNewStyle("#B0B0B0","#A8A8A8","#BABABA");
 	break;
