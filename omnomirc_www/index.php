@@ -234,7 +234,8 @@ document.domain="'.$config['settings']['hostname'].'"
 </div>
 <div id="about" style="display:none;"><div style="position: relative; left: -50%;"><span style="position:absolute;z-index:9002;top:1px;right:2px"><a onclick="document.getElementById(\'about\').style.display=\'none\';">Close</a></span>
 	<div style="text-align:center;"><a href="http://omnomirc.omnimaga.org/" target="_blank"><img src="omnomirc.png" alt="OmnomIRC"></a></div>
-	<p><a href="http://omnomirc.omnimaga.org/" target="_blank">OmnomIRC</a> is developed by <a href="http://www.omnimaga.org" alt="Omnimaga" target="_blank">Omnimaga</a></p>
+	<p><a href="https://omnomirc.omnimaga.org/" target="_blank">OmnomIRC</a> is developed by <a href="https://www.omnimaga.org" alt="Omnimaga" target="_blank">Omnimaga</a></p>
+	<p>Found an issue/bug? <a href="https://github.com/Sorunome/OmnomIRC2/issues" target="_blank">Report it!</a></p>
 	<h1>Programmers</h1>
 	<ul><li><a href="http://netham45.org/" target="_blank">Netham45</a></li><li><a href="http://www.sorunome.de" target="_blank">Sorunome</a></li><li><a href="http://eeems.ca/" target="_blank">Eeems</a></li></ul>
 	<h1>Style</h1>

@@ -368,7 +368,7 @@
 											var drawOpGroupsSettings = function(elem){
 													$(elem).replaceWith(
 														$('<span>').append(
-															$.map(net.config.opGroups,function(opg,j){
+															$.map(nets[i].config.opGroups,function(opg,j){
 																return ['<br>'+opg+' ',
 																	$('<a>').text('x').click(function(e){
 																		e.preventDefault();
