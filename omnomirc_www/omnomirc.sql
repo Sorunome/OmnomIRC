@@ -94,6 +94,31 @@ CREATE TABLE IF NOT EXISTS `irc_vars` (
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 ;
 
 
+ALTER TABLE `irc_lines`
+ ADD PRIMARY KEY (`line_number`), ADD KEY `name1` (`name1`), ADD KEY `name2` (`name2`), ADD KEY `channel` (`channel`), ADD KEY `time` (`time`), ADD KEY `type` (`type`);
+
+ALTER TABLE `irc_lines_old`
+ ADD PRIMARY KEY (`line_number`), ADD KEY `name1` (`name1`), ADD KEY `name2` (`name2`), ADD KEY `channel` (`channel`);
+
+ALTER TABLE `irc_outgoing_messages`
+ ADD PRIMARY KEY (`prikey`);
+
+ALTER TABLE `irc_permissions`
+ ADD PRIMARY KEY (`generic_autoincrementing_prikey`);
+
+ALTER TABLE `irc_topics`
+ ADD PRIMARY KEY (`channum`);
+
+ALTER TABLE `irc_users`
+ ADD PRIMARY KEY (`usernum`), ADD KEY `channel` (`channel`), ADD KEY `isOnline` (`isOnline`), ADD KEY `username` (`username`), ADD KEY `online` (`online`);
+
+ALTER TABLE `irc_userstuff`
+ ADD PRIMARY KEY (`usernum`);
+
+ALTER TABLE `irc_vars`
+ ADD PRIMARY KEY (`id`);
+
+
 
 DROP EVENT IF EXISTS `Clean up Userstuff`;
 CREATE EVENT `Clean up Userstuff` ON SCHEDULE EVERY 1 DAY STARTS '2013-10-31 00:00:00' ON COMPLETION NOT PRESERVE ENABLE COMMENT 'Clean up the db' DO DELETE FROM irc_userstuff
