@@ -783,7 +783,7 @@ class Main():
 		if config.json['websockets']['use']:
 			for client in connectedClients:
 				try:
-					if ((not client.banned) and client.identified and
+					if ((not client.banned) and
 						(
 							(
 								(
@@ -803,6 +803,8 @@ class Main():
 											or
 											n1==client.nick
 										)
+										and
+										client.identified
 									)
 								)
 								and t!='server'
@@ -814,6 +816,8 @@ class Main():
 								c==client.nick
 								and
 								n2==str(client.chan)
+								and
+								client.identified
 							)
 						)):
 						client.sendLine(n1,n2,t,m,c,s)
@@ -935,11 +939,7 @@ class WebSocketsHandler(SocketServer.StreamRequestHandler):
 		connectedClients.remove(self)
 		print('Thread done\n')
 	def read_next_message(self):
-		try:
-			length = ord(self.rfile.read(2)[1]) & 127
-		except:
-			raise
-			return
+		length = ord(self.rfile.read(2)[1]) & 127
 		if length == 126:
 			length = struct.unpack(">H", self.rfile.read(2))[0]
 		elif length == 127:
@@ -1004,7 +1004,7 @@ class WebSocketsHandler(SocketServer.StreamRequestHandler):
 			sql.query("INSERT INTO `irc_lines` (name1,type,channel,time,online) VALUES('%s','part','%s','%s',%d)",[self.nick,self.chan,str(int(time.time())),int(self.network)])
 
 	def sendLine(self,n1,n2,t,m,c,s): #name 1, name 2, type, message, channel, source
-		if not self.identified:
+		if self.banned:
 			return False
 		s = json.dumps({'line':{
 			'curline':0,
@@ -1048,42 +1048,46 @@ class WebSocketsHandler(SocketServer.StreamRequestHandler):
 							'id':m['id'],
 							'network':m['network']
 						})
+						self.banned = r['isbanned']
 						if r['loggedin']:
 							self.identified = True
 							self.nick = m['nick']
 							self.sig = m['signature']
 							self.uid = m['id']
 							self.network = m['network']
-							self.banned = r['isbanned']
 							for a in self.msgStack: # let's pop the whole stack!
 								self.on_message(a)
 							self.msgStack = []
+						else:
+							self.identified = False
+							self.nick = ''
 						if r.has_key('relog'):
 							self.send_message(json.dumps({'relog':r['relog']}))
 					except:
 						self.identified = False
-				elif self.identified:
-					if m['action'] == 'chan':
+				elif m['action'] == 'chan':
+					if self.identified:
 						self.part()
-						self.chan = m['chan']
-						try:
-							c = str(int(self.chan))
-						except:
-							c = b64encode(self.chan)
-						r = execPhp('omnomirc.php',{
-							'ident':'',
-							'nick':b64encode(self.nick),
-							'signature':b64encode(self.sig),
-							'time':str(int(time.time())),
-							'id':self.uid,
-							'network':self.network,
-							'channel':c
-						})
-						self.checkRelog(r,m)
-						self.banned = r['isbanned']
-						if not self.banned:
-							self.join()
-					elif m['action'] == 'message' and self.chan!='' and not self.banned:
+					self.chan = m['chan']
+					try:
+						c = str(int(self.chan))
+					except:
+						c = b64encode(self.chan)
+					r = execPhp('omnomirc.php',{
+						'ident':'',
+						'nick':b64encode(self.nick),
+						'signature':b64encode(self.sig),
+						'time':str(int(time.time())),
+						'id':self.uid,
+						'network':self.network,
+						'channel':c
+					})
+					self.checkRelog(r,m)
+					self.banned = r['isbanned']
+					if not self.banned and self.identified:
+						self.join()
+				elif self.identified:
+					if m['action'] == 'message' and self.chan!='' and not self.banned:
 						msg = m['message']
 						if len(msg) <= 256 and len(msg) > 0:
 							if msg[0] == '/':

@@ -571,9 +571,16 @@ class You{
 		return false;
 	}
 	public function isBanned(){
+		global $networks;
 		$userSql = $this->info();
-		if(strpos($userSql['bans'],$this->chan."\n")!==false || $userSql['globalBan']=='1'){
+		if($userSql['bans']!==NULL && (strpos($userSql['bans'],$this->chan."\n")!==false || $userSql['globalBan']=='1')){
 			return true;
+		}
+		if(!$this->isLoggedIn()){
+			$n = $networks->get($this->network);
+			if($n!==NULL && $n['config']['guests'] == 0){
+				return true;
+			}
 		}
 		return false;
 	}
