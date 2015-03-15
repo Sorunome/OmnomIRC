@@ -2902,7 +2902,7 @@
 				lineHigh = false;
 			return {
 				addLine:function(line,logMode){
-					if(ignores.indexOf(line.name.toLowerCase()) > -1 || line.network == -1 || line.name === null || line.name === undefined){
+					if(line.network == -1 || line.name === null || line.name === undefined || line.type === null || ignores.indexOf(line.name.toLowerCase()) > -1){
 						return;
 					}
 					var $mBox = $('#MessageBox'),
