@@ -103,6 +103,8 @@ if($you->isGlobalOp()){
 			case 'misc':
 				$json->add('hostname',$config['settings']['hostname']);
 				$json->add('curidFilePath',$config['settings']['curidFilePath']);
+				$json->add('signatureKey',$config['security']['sigKey']);
+				$json->add('ircPasswd',$config['security']['ircPwd']);
 				break;
 			case 'releaseNotes':
 				$json->add('version',$config['info']['version']);
@@ -170,6 +172,8 @@ if($you->isGlobalOp()){
 			case 'misc':
 				$config['settings']['hostname'] = $jsonData['hostname'];
 				$config['settings']['curidFilePath'] = $jsonData['curidFilePath'];
+				$config['security']['sigKey'] = $jsonData['signatureKey'];
+				$config['security']['ircPwd'] = $jsonData['ircPasswd'];
 				writeConfig();
 				break;
 			default:

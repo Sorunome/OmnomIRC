@@ -312,16 +312,27 @@
 						'<div style="font-weight:bold">'+name+' Settings</div>',
 						$.map(data,function(d,i){
 							if(i!=='warnings' && i!=='errors'){
+								var $input = $('<input>').attr('name',i);
+								if(d === null){ // typeof bug
+									d = undefined;
+								}
+								switch((typeof d).toLowerCase()){
+									case 'string':
+										$input.attr('type','text').val(d);
+										break;
+									case 'number':
+										$input.attr('type','number').val(d);
+										break;
+									case 'boolean':
+										$input.attr('type','checkbox').attr((d?'checked':'false'),'checked');
+										break;
+									default:
+										$input.attr('type','hidden').data('data',d);
+								}
 								return $('<div>')
 									.append(
 										i,
-										': ',
-										$('<input>')
-											.attr({
-												type:'text',
-												name:i
-											})
-											.val(d)
+										': ',$input
 									);
 							}
 						}),
@@ -330,7 +341,24 @@
 							.click(function(){
 								var json = {};
 								$('input').each(function(i,v){
-									json[$(v).attr('name')] = $(v).val();
+									var val = undefined;
+									switch($(v).attr('type')){
+										case 'text':
+											val = $(v).val();
+											break;
+										case 'number':
+											val = parseInt($(v).val(),10);
+											break;
+										case 'checkbox':
+											val = $(v)[0].checked;
+											break;
+										case 'hidden':
+											val = $(v).data('data');
+											break;
+									}
+									if(val!==undefined){
+										json[$(v).attr('name')] = val;
+									}
 								});
 								sendEdit(p,json);
 							})
@@ -793,7 +821,7 @@
 								getJSONEditSettings(p,'OP',data.opGroups);
 								break;
 							case 'ws':
-								getJSONEditSettings(p,'WebSockets',data.websockets);
+								getInputBoxSettings(p,'WebSockets',data.websockets);
 								break;
 							case 'misc':
 								getInputBoxSettings(p,'Misc',data);
