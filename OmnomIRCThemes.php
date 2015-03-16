@@ -33,7 +33,19 @@ function hex2rgba($color, $opacity = false) {
 	//Return rgb(a) color string
 	return $output;
 }
-function echoNewStyle($c1,$c2,$c3,$color,$tablink,$link){
+function echoNewStyle($c1,$c2,$c3,$color,$link,$tablink = "",$btncolor = "",$formcolor = "",$btnhovercolor = ""){
+	if($btnhovercolor == ""){
+		$btnhovercolor = $btncolor;
+	}
+	if($formcolor == ""){
+		$formcolor = $c3;
+	}
+	if($btncolor == ""){
+		$btncolor = $c2;
+	}
+	if($tablink == ""){
+		$tablink = $color;
+	}
 	echo "#UserListContainer,
 	#smileyselect,
 	#lastSeenCont,
@@ -45,8 +57,7 @@ function echoNewStyle($c1,$c2,$c3,$color,$tablink,$link){
 	#UserListInnerCont,
 	#logsHeader,
 	#textDecoForm,
-	.lineHigh,
-	#send {
+	.lineHigh {
 		background: $c2;
 		border-color: $c1;
 		color: $color;
@@ -66,14 +77,14 @@ function echoNewStyle($c1,$c2,$c3,$color,$tablink,$link){
 	}
 
 	.chan.curchan {
-		background-color: $c1;
+		background-color: $c2;
 		border-color: ".hex2rgba($c1,0.8).";
-		border-bottom-color: $c1;
+		border-bottom-color: $c2;
 		color: $tablink;
 	}
 
 	.chan:hover {
-		background: ".hex2rgba($c2,0.8).";
+		background: ".hex2rgba($c2,0.5).";
 	}
 
 	.linehigh {
@@ -83,8 +94,8 @@ function echoNewStyle($c1,$c2,$c3,$color,$tablink,$link){
 		box-shadow: 0 0 4px $c1;
 	}
 	body,
-	#scrollbar:hover,
-	#scrollbar:active,
+	#scrollBar:hover,
+	#scrollBar:active,
 	#UserListInnerCont:hover{
 		background-color: $c3;
 	}
@@ -103,17 +114,20 @@ function echoNewStyle($c1,$c2,$c3,$color,$tablink,$link){
 	a:hover{
 		text-shadow:0 0 4px ".hex2rgba($link,0.8).";
 	}
-	span#message,input#message{
-		background-color:$c3;
+	span#message,input#message,input,select{
+		background-color:$formcolor;
 		color:$color;
 		border:1px solid $c1;
 	}
-	button{
+	button,#send{
 		cursor:pointer;
-		background-color:$c3;
+		background-color:$btncolor;
 		color:$color;
 		border:1px solid $c1;
 		border-radius:3px;
+	}
+	button:hover,#send:hover{
+		background-color:$btnhovercolor;
 	}
 	.optionsTable .option{
 		color:$link;
@@ -122,6 +136,7 @@ function echoNewStyle($c1,$c2,$c3,$color,$tablink,$link){
 	.optionsTable .option:hover{
 		text-shadow:0 0 4px ".hex2rgba($link,0.8).";
 	}
+
 	";
 }
 switch($user_info["theme"]) {
@@ -129,7 +144,7 @@ case 0: //default
 case 1:
 case 2:
 case 3:
-	echoNewStyle("#A3BFD6","#D9D9D9","#E7E7E7","#000000","#2222CC","#334466");
+	echoNewStyle("#A3BFD6","#D9D9D9","#E7E7E7","#000000","#334466","#2222CC","#9FCA96","#FFFFFF","#CDE7FF");
 	break;
 //case 3: //v4
 //	echoNewStyle("#DDDDFF","#EBF1F9","#FFFFFF");
