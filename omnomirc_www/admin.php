@@ -180,6 +180,7 @@ if($you->isGlobalOp()){
 	}
 }else{
 	$json->addError('Permission denied');
+	$json->add('denied',true);
 }
 echo $json->get();
 ?>

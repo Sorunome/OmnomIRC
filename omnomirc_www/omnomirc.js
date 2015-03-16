@@ -763,6 +763,10 @@
 					$('#adminContent').text('Loading...');
 					network.getJSON('admin.php?get='+encodeURIComponent(p),function(data){
 						$('#adminContent').empty();
+						if(data.denied !== undefined && data.denied){
+							$('#adminContent').append($('<b>').text('ERROR: Permission denied'));
+							return;
+						}
 						switch(p){
 							case 'index':
 								makeIndexPage(data);
@@ -1704,7 +1708,7 @@
 							options.set(4,String.fromCharCode(i+45));
 							if(!data.banned){
 								if(data.admin){
-									$('#adminLink').css('display','block');
+									$('#adminLink').css('display','');
 								}else{
 									$('#adminLink').css('display','none');
 								}
