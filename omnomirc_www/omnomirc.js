@@ -2032,29 +2032,31 @@
 				},
 				showBar = function(){
 					var mouseMoveFn = function(e){
-							var y = e.clientY;
-							if($('#scrollBar').data('isClicked')){
-								$('#scrollBar').css('top',parseInt($('#scrollBar').css('top'),10)+(y-$('#scrollBar').data('prevY')));
-								document.getElementById('mBoxCont').scrollTop = ((parseInt($('#scrollBar').css('top'),10)-38)/($('body')[0].offsetHeight-$('#scrollBar')[0].offsetHeight-38))*(document.getElementById('mBoxCont').scrollHeight-document.getElementById('mBoxCont').clientHeight);
+							var y = e.clientY,
+								newscrollbartop = 0;
+							if($bar.data('isClicked')){
+								newscrollbartop = parseInt($bar.css('top'),10)+(y-$bar.data('prevY'));
+								document.getElementById('mBoxCont').scrollTop = ((newscrollbartop-38)/($('body')[0].offsetHeight-$bar[0].offsetHeight-38))*(document.getElementById('mBoxCont').scrollHeight-document.getElementById('mBoxCont').clientHeight);
 								isDown = false;
-								if(parseInt($('#scrollBar').css('top'),10)<38){
-									$('#scrollBar').css('top',38);
+								if(newscrollbartop<38){
+									newscrollbartop = 38;
 									document.getElementById('mBoxCont').scrollTop = 0;
 								}
-								if(parseInt($('#scrollBar').css('top'),10)>($('body')[0].offsetHeight-$('#scrollBar')[0].offsetHeight)){
-									$('#scrollBar').css('top',$('body')[0].offsetHeight-$('#scrollBar')[0].offsetHeight);
+								if(newscrollbartop>($('body')[0].offsetHeight-$bar[0].offsetHeight)){
+									newscrollbartop = $('body')[0].offsetHeight-$bar[0].offsetHeight;
 									document.getElementById('mBoxCont').scrollTop =  $('#mBoxCont').prop('scrollHeight')-$('#mBoxCont')[0].clientHeight;
 									isDown = true;
 								}
+								$bar.css('top',newscrollbartop);
 							}
-							$('#scrollBar').data('prevY',y);
+							$bar.data('prevY',y);
 						},
 						mouseDownFn = function(){
-							$('#scrollBar').data('isClicked',true);
+							$bar.data('isClicked',true);
 							$('#scrollArea').css('display','block');
 						},
 						mouseUpFn = function(){
-							$('#scrollBar').data('isClicked',false);
+							$bar.data('isClicked',false);
 							$('#scrollArea').css('display','none');
 						},
 						$bar = $('<div>').attr('id','scrollBar').data({prevY:0,isClicked:false}).appendTo('body')
@@ -2075,6 +2077,7 @@
 							width:'100%',
 							height:'100%',
 							position:'absolute',
+							cursor:'move',
 							left:0,
 							top:0,
 							zIndex:100
@@ -2211,7 +2214,9 @@
 					}
 					enableUserlist();
 					$('#mBoxCont').scroll(function(e){
-						reCalcBar();
+						if($('#scrollBar').length !==0 && !$('#scrollBar').data('isClicked')){
+							reCalcBar();
+						}
 					});
 					$(document).add(window).add('body').add('html').scroll(function(e){
 						e.preventDefault();
@@ -2265,7 +2270,6 @@
 					msg = msg.split('<u>').join('\x1f').split('</u>').join('\x1f');
 					msg = msg.split('&nbsp;').join(' ');
 					msg = $('<span>').html(msg).text();
-					console.log(msg);
 					return msg;
 				},
 				support:function(){
@@ -2659,24 +2663,115 @@
 		})(),
 		logs = (function(){
 			var isOpen = false,
+				year = 0,
+				month = 0,
+				day = 0,
+				months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+				getLogUrlParam = function(){
+					return base64.encode(year.toString(10)+'-'+month.toString(10)+'-'+day.toString(10));
+				},
+				updateInputVal = function(){
+					$('#logDate').val(months[month-1]+' '+day.toString(10)+' '+year.toString(10));
+				},
+				displayDatePicker = function(){
+					var d = new Date(year,month,day),
+						week = ['Sun','Mon','Tue','Wen','Thu','Fri','Sat'],
+						days = (new Date(year,month,0)).getDate(),
+						firstDayOfWeek = (new Date(year,month-1,1)).getDay(),
+						i = 0;
+					if(day > days){
+						day = days;
+					}
+					updateInputVal();
+					$('#logDatePicker').empty().append(
+						$('<a>').text('<').click(function(e){
+							e.preventDefault();
+							e.stopPropagation();
+							year--;
+							displayDatePicker();
+						}),' ',year.toString(10),' ',
+						$('<a>').text('>').click(function(e){
+							e.preventDefault();
+							e.stopPropagation();
+							year++;
+							displayDatePicker();
+						}),'<br>',
+						$('<a>').text('<').click(function(e){
+							e.preventDefault();
+							e.stopPropagation();
+							month--;
+							if(month < 1){
+								month = 12;
+								year--;
+							}
+							displayDatePicker();
+						}),' ',months[month-1],' ',
+						$('<a>').text('>').click(function(e){
+							e.preventDefault();
+							e.stopPropagation();
+							month++;
+							if(month > 12){
+								month = 1;
+								year++;
+							}
+							displayDatePicker();
+						}),'<br>',
+						$('<table>').append(
+							$('<tr>').append(
+								$.map(week,function(v){
+									return $('<th>').text(v);
+								})
+							),
+							$.map([0,1,2,3,4,5],function(){
+								if(i >= days){
+									return;
+								}
+								return $('<tr>').append(
+									$.map([0,1,2,3,4,5,6],function(v){
+										if((i == 0 && v!=firstDayOfWeek) || i >= days){
+											return $('<td>').text(' ');
+										}
+										i++;
+										return $('<td>').text(i).addClass('logDatePickerDay').addClass(i==day?'current':'').data('day',i).click(function(){
+											$('.logDatePickerDay.current').removeClass('current');
+											day = $(this).addClass('current').data('day');
+											updateInputVal();
+										});
+									})
+								);
+							})
+						)
+					);
+					$('#logDatePicker').css('display','block');
+				},
 				open = function(){
 					var d = new Date();
+					
 					indicator.start();
 					request.cancel();
+					ws.dissallowRecLines();
+					
 					$('#message').attr('disabled','true');
 					users.setUsers([]); //empty userlist
 					users.draw();
 					$('#chattingHeader').css('display','none');
+					$('#logDatePicker').css('display','none');
 					$('#logsHeader').css('display','block');
 					
 					$('#logChanIndicator').text(channels.getCurrentName());
 					
-					$('#logDate').val(parseInt(d.getDate(),10)+'-'+parseInt(d.getMonth()+1,10)+'-'+parseInt(d.getFullYear(),10));
+					year = parseInt(d.getFullYear(),10);
+					month = parseInt(d.getMonth()+1,10);
+					day = parseInt(d.getDate(),10);
+					updateInputVal();
+					
 					isOpen = true;
 					fetch();
 				},
 				close = function(){
 					var num;
+					
+					ws.allowRecLines()
 					
 					$('#chattingHeader').css('display','block');
 					$('#logsHeader').css('display','none');
@@ -2690,7 +2785,7 @@
 					isOpen = false;
 				},
 				fetchPart = function(n){
-					network.getJSON('Log.php?day='+base64.encode($('#logDate').val())+'&offset='+parseInt(n,10)+'&channel='+channels.getCurrent(false,true),function(data){
+					network.getJSON('Log.php?day='+getLogUrlParam()+'&offset='+parseInt(n,10)+'&channel='+channels.getCurrent(false,true),function(data){
 						if(!data.banned){
 							if(data.lines.length>=1000){
 								fetchPart(n+1000);
@@ -2737,7 +2832,22 @@
 						e.preventDefault();
 						toggle();
 					});
-					//$('#logDate').datepicker();
+					$('#logDate').click(function(e){
+						e.preventDefault();
+						$(this).focusout();
+						if($('#logDatePicker').css('display')!='block'){
+							displayDatePicker();
+							e.stopPropagation();
+						}
+					});
+					$(document).click(function(e){
+						if(isOpen){
+							var $cont = $('#logDatePicker');
+							if(!$cont.is(e.target) && $cont.has(e.target).length === 0){
+								$cont.css('display','none');
+							}
+						}
+					});
 				}
 			};
 		})();
@@ -2902,8 +3012,8 @@
 				lineHigh = false;
 			return {
 				addLine:function(line,logMode){
-					if(line.network == -1 || line.name === null || line.name === undefined || line.type === null || ignores.indexOf(line.name.toLowerCase()) > -1){
-						return;
+					if(line.name === null || line.name === undefined || line.type === null || ignores.indexOf(line.name.toLowerCase()) > -1){
+						return false;
 					}
 					var $mBox = $('#MessageBox'),
 						name = parseName(line.name,line.network),
@@ -2912,6 +3022,9 @@
 						tdMessage = message,
 						addLine = true,
 						statusTxt = '';
+					if(line.network == -1){
+						addLine = false;
+					}
 					if((line.type == 'message' || line.type == 'action') && line.name.toLowerCase() != 'new'){
 						tdMessage = message = parseHighlight(message);
 					}
@@ -2937,6 +3050,10 @@
 							settings.fetch(undefined,true);
 							return false;
 							break;
+						case 'refresh':
+							location.reload();
+							return false;
+							break;
 						case 'join':
 							tdMessage = [name,' has joined '+channels.getCurrentName()];
 							if(logMode!==true){
@@ -2945,7 +3062,7 @@
 									network:line.network
 								});
 							}
-							if(settings.networks()[line.network].type==1 && options.get(17,'F')=='F'){
+							if(addLine && settings.networks()[line.network].type==1 && options.get(17,'F')=='F'){
 								addLine = false;
 							}
 							break;
@@ -2957,7 +3074,7 @@
 									network:line.network
 								});
 							}
-							if(settings.networks()[line.network].type==1 && options.get(17,'F')=='F'){
+							if(addLine && settings.networks()[line.network].type==1 && options.get(17,'F')=='F'){
 								addLine = false;
 							}
 							break;
@@ -3017,37 +3134,44 @@
 						case 'topic':
 							topic.set(parseMessage(line.message,true));
 							tdMessage = [name,' has changed the topic to ',parseMessage(line.message,true)];
-							if(line.network==-1){
-								addLine = false;
-							}
 							break;
 						case 'pm':
-							if(channels.getCurrentName(true).toLowerCase() != '*'+line.name.toLowerCase() && line.name.toLowerCase() != settings.nick().toLowerCase()){
+							if(channels.getCurrentName(true).toLowerCase() == '*'+line.name.toLowerCase() || channels.getCurrentName(true).toLowerCase() == '*'+line.chan.toLowerCase()){
+								tdName = name;
+								line.type = 'message';
+							}else{
 								if(channels.getCurrent()!=='' && logMode!==true){
-									tdName = ['(PM)',name];
-									channels.openPm(line.name);
-									notification.make('(PM) <'+line.name+'> '+line.message,line.chan);
+									if(line.name.toLowerCase() == settings.nick().toLowerCase()){
+										addLine = false;
+										channels.openPm(line.chan);
+									}else{
+										tdName = ['(PM)',name];
+										channels.openPm(line.name);
+										notification.make('(PM) <'+line.name+'> '+line.message,line.chan);
+									}
 								}else{
 									addLine = false;
 								}
-							}else{
-								tdName = name;
-								line.type = 'message';
 							}
 							break;
 						case 'pmaction':
-							if(channels.getCurrentName(true).toLowerCase() != '*'+line.name.toLowerCase() && line.name.toLowerCase() != settings.nick().toLowerCase()){
+							if(channels.getCurrentName(true).toLowerCase() == '*'+line.name.toLowerCase() || channels.getCurrentName(true).toLowerCase() == '*'+line.chan.toLowerCase()){
+								tdMessage = [name,' ',message];
+								line.type = 'action';
+							}else{
 								if(channels.getCurrent()!=='' && logMode!==true){
-									tdMessage = ['(PM)',name,' ',message];
-									channels.openPm(line.name);
-									notification.make('* (PM)'+line.name+' '+line.message,line.chan);
-									line.type = 'pm';
+									if(line.name.toLowerCase() == settings.nick().toLowerCase()){
+										addLine = false;
+										channels.openPm(line.chan);
+									}else{
+										tdMessage = ['(PM)',name,' ',message];
+										channels.openPm(line.name);
+										notification.make('* (PM)'+line.name+' '+line.message,line.chan);
+										line.type = 'pm';
+									}
 								}else{
 									addLine = false;
 								}
-							}else{
-								tdMessage = [name,' ',message];
-								line.type = 'action';
 							}
 							break;
 						case 'highlight':

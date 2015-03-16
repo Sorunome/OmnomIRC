@@ -508,6 +508,11 @@ input#message,span#message{
 	width: calc(91% - 121px);
 	width: -webkit-calc(91% - 121px);
 }
+input#message,span#message,input,select{
+	background-color:#FFF;
+	color:#000;
+	border:1px solid #6699FF;
+}
 input#message {
 	margin-top: 3px;
 }
@@ -533,10 +538,19 @@ span#message {
 	width:45px;
 	padding:0 6px;
 	margin:0 3px;
+}
+#send,button{
 	background-color:#A1C2FF;
 	border:1px solid #69F;
 	border-radius:3px;
 	cursor:pointer;
+	transition: background-color 1s 0s;
+	-webkit-transition: background-color 1s 0s;
+}
+#send:hover,button:hover {
+	background-color:#DFEFFF;
+	transition: background-color 1s 0s;
+	-webkit-transition: background-color 1s 0s;
 }
 #UserListInnerCont {
 	position:relative;
@@ -688,4 +702,30 @@ span#message {
 	border-right: 1px solid #6699ff;
 	border-left: none;
 	border-bottom: 1px solid #6699ff;
+}
+#logDate{
+	cursor:pointer;
+}
+#logDateCont{
+	margin:0;
+	padding:0;
+}
+#logDatePicker{
+	position:absolute;
+	padding:2px;
+	background: #a1c2ff;
+	border:1px solid #6699ff;
+	border-radius: 5px;
+	left:160px;
+	top:35px;
+	z-index:10;
+}
+.logDatePickerDay{
+	cursor:pointer;
+}
+.logDatePickerDay.current{
+	background: #cae4ff;
+}
+.logDatePickerDay:hover{
+	background: #DFEFFF;
 }

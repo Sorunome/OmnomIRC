@@ -10,9 +10,13 @@ td.curchan,
 #logsHeader,
 #textDecoForm,
 .lineHigh,
+#logDatePicker,
+button:hover,
+#send:hover,
 #send {
 	background:#262626;
 	border-color:#4d4d4d;
+	color:#a2a2a2;
 }
 
 #topicbox {
@@ -44,6 +48,8 @@ td.curchan,
 body,
 #scrollBar:hover,
 #scrollBar:active,
+.logDatePickerDay.current,
+.logDatePickerDay:hover,
 #UserListInnerCont:hover{
 	background-color:#121212;
 }
@@ -55,9 +61,7 @@ td.curchan,
 .optionsTable .option.selected{
 	color:#a2a2a2;
 }
-td.chan{
-	color:#81bf29;
-}
+
 a,a:link,a:visited,a:hover,a:active{
 	border-color:#81bf29;
 	color:#81bf29;
@@ -65,12 +69,12 @@ a,a:link,a:visited,a:hover,a:active{
 a:hover{
 	text-shadow:0 0 4px rgba(129,191,41,0.8);
 }
-span#message,input#message{
+span#message,input#message,input,select{
 	background-color:#202020;
 	color:#a2a2a2;
 	border:1px solid #000000;
 }
-button,input[type="submit"]{
+button{
 	cursor:pointer;
 	background-color:#202020;
 	color:#a2a2a2;
