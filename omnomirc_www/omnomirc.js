@@ -2902,7 +2902,7 @@
 				lineHigh = false;
 			return {
 				addLine:function(line,logMode){
-					if(line.network == -1 || line.name === null || line.name === undefined || line.type === null || ignores.indexOf(line.name.toLowerCase()) > -1){
+					if(line.name === null || line.name === undefined || line.type === null || ignores.indexOf(line.name.toLowerCase()) > -1){
 						return false;
 					}
 					var $mBox = $('#MessageBox'),
@@ -2912,6 +2912,9 @@
 						tdMessage = message,
 						addLine = true,
 						statusTxt = '';
+					if(line.network == -1){
+						addLine = false;
+					}
 					if((line.type == 'message' || line.type == 'action') && line.name.toLowerCase() != 'new'){
 						tdMessage = message = parseHighlight(message);
 					}
@@ -3021,9 +3024,6 @@
 						case 'topic':
 							topic.set(parseMessage(line.message,true));
 							tdMessage = [name,' has changed the topic to ',parseMessage(line.message,true)];
-							if(line.network==-1){
-								addLine = false;
-							}
 							break;
 						case 'pm':
 							if(channels.getCurrentName(true).toLowerCase() == '*'+line.name.toLowerCase() || channels.getCurrentName(true).toLowerCase() == '*'+line.chan.toLowerCase()){

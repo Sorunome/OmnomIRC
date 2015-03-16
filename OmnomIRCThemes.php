@@ -144,7 +144,7 @@ case 0: //default
 case 1:
 case 2:
 case 3:
-	echoNewStyle("#A3BFD6","#D9D9D9","#E7E7E7","#000000","#334466","#2222CC","#9FCA96","#FFFFFF","#CDE7FF");
+	echoNewStyle("#81A5C3","#D9D9D9","#E7E7E7","#000000","#334466","#2222CC","#9FCA96","#FFFFFF","#CDE7FF");
 	break;
 //case 3: //v4
 //	echoNewStyle("#DDDDFF","#EBF1F9","#FFFFFF");
