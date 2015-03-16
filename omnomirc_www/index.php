@@ -199,7 +199,10 @@ document.domain="'.$config['settings']['hostname'].'"
 </div>
 <div id="logsHeader" style="margin:0;padding:0;height:39px;display:none;">
 	<b>Log viewer</b> (<a id="logCloseButton">Close</a>)<br>
-	Channel: <span id="logChanIndicator"></span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Day: <input type="text" id="logDate"><a id="logGoButton">Go</a>
+	Channel: <span id="logChanIndicator"></span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Day: <span id="logDateCont">
+		<input type="text" id="logDate" readonly="readonly">
+		<div id="logDatePicker" style="display:none;"></div>
+	</span> <a id="logGoButton">Go</a>
 </div>
 
 <div id="mBoxCont">

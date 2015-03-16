@@ -703,3 +703,29 @@ span#message {
 	border-left: none;
 	border-bottom: 1px solid #6699ff;
 }
+#logDate{
+	cursor:pointer;
+}
+#logDateCont{
+	margin:0;
+	padding:0;
+}
+#logDatePicker{
+	position:absolute;
+	padding:2px;
+	background: #a1c2ff;
+	border:1px solid #6699ff;
+	border-radius: 5px;
+	left:160px;
+	top:35px;
+	z-index:10;
+}
+.logDatePickerDay{
+	cursor:pointer;
+}
+.logDatePickerDay.current{
+	background: #cae4ff;
+}
+.logDatePickerDay:hover{
+	background: #DFEFFF;
+}

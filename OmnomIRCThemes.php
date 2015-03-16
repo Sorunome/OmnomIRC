@@ -57,6 +57,7 @@ function echoNewStyle($c1,$c2,$c3,$color,$link,$tablink = "",$btncolor = "",$for
 	#UserListInnerCont,
 	#logsHeader,
 	#textDecoForm,
+	#logDatePicker,
 	.lineHigh {
 		background: $c2;
 		border-color: $c1;

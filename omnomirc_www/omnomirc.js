@@ -2659,24 +2659,114 @@
 		})(),
 		logs = (function(){
 			var isOpen = false,
+				year = 0,
+				month = 0,
+				day = 0,
+				months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+				getLogUrlParam = function(){
+					return base64.encode(year.toString(10)+'-'+month.toString(10)+'-'+day.toString(10));
+				},
+				updateInputVal = function(){
+					console.log(month);
+					$('#logDate').val(months[month-1]+' '+day.toString(10)+' '+year.toString(10));
+				},
+				displayDatePicker = function(){
+					var d = new Date(year,month,day),
+						week = ['sun','mon','tue','wen','thu','fri','sat'],
+						days = (new Date(year,month,0)).getDate(),
+						firstDayOfWeek = (new Date(year,month-1,1)).getDay(),
+						i = 0;
+					if(day > days){
+						day = days;
+					}
+					updateInputVal();
+					$('#logDatePicker').empty().append(
+						$('<a>').text('<').click(function(e){
+							e.preventDefault();
+							e.stopPropagation();
+							year--;
+							displayDatePicker();
+						}),' ',year.toString(10),' ',
+						$('<a>').text('>').click(function(e){
+							e.preventDefault();
+							e.stopPropagation();
+							year++;
+							displayDatePicker();
+						}),'<br>',
+						$('<a>').text('<').click(function(e){
+							e.preventDefault();
+							e.stopPropagation();
+							month--;
+							if(month < 1){
+								month = 12;
+								year--;
+							}
+							displayDatePicker();
+						}),' ',months[month-1],' ',
+						$('<a>').text('>').click(function(e){
+							e.preventDefault();
+							e.stopPropagation();
+							month++;
+							if(month > 12){
+								month = 1;
+								year++;
+							}
+							displayDatePicker();
+						}),'<br>',
+						$('<table>').append(
+							$('<tr>').append(
+								$.map(week,function(v){
+									return $('<th>').text(v);
+								})
+							),
+							$.map([0,1,2,3,4,5],function(){
+								return $('<tr>').append(
+									$.map([0,1,2,3,4,5,6],function(v){
+										if((i == 0 && v!=firstDayOfWeek) || i >= days){
+											return $('<td>').text(' ');
+										}
+										i++;
+										console.log('weeeeeeeee');
+										return $('<td>').text(i).addClass('logDatePickerDay').addClass(i==day?'current':'').data('day',i).click(function(){
+											$('.logDatePickerDay.current').removeClass('current');
+											day = $(this).addClass('current').data('day');
+											updateInputVal();
+										});
+									})
+								);
+							})
+						)
+					);
+					$('#logDatePicker').css('display','block');
+				},
 				open = function(){
 					var d = new Date();
+					
 					indicator.start();
 					request.cancel();
+					ws.dissallowRecLines();
+					
 					$('#message').attr('disabled','true');
 					users.setUsers([]); //empty userlist
 					users.draw();
 					$('#chattingHeader').css('display','none');
+					$('#logDatePicker').css('display','none');
 					$('#logsHeader').css('display','block');
 					
 					$('#logChanIndicator').text(channels.getCurrentName());
 					
-					$('#logDate').val(parseInt(d.getDate(),10)+'-'+parseInt(d.getMonth()+1,10)+'-'+parseInt(d.getFullYear(),10));
+					year = parseInt(d.getFullYear(),10);
+					month = parseInt(d.getMonth()+1,10);
+					day = parseInt(d.getDate(),10);
+					updateInputVal();
+					
 					isOpen = true;
 					fetch();
 				},
 				close = function(){
 					var num;
+					
+					ws.allowRecLines()
 					
 					$('#chattingHeader').css('display','block');
 					$('#logsHeader').css('display','none');
@@ -2690,7 +2780,7 @@
 					isOpen = false;
 				},
 				fetchPart = function(n){
-					network.getJSON('Log.php?day='+base64.encode($('#logDate').val())+'&offset='+parseInt(n,10)+'&channel='+channels.getCurrent(false,true),function(data){
+					network.getJSON('Log.php?day='+getLogUrlParam()+'&offset='+parseInt(n,10)+'&channel='+channels.getCurrent(false,true),function(data){
 						if(!data.banned){
 							if(data.lines.length>=1000){
 								fetchPart(n+1000);
@@ -2737,7 +2827,22 @@
 						e.preventDefault();
 						toggle();
 					});
-					//$('#logDate').datepicker();
+					$('#logDate').click(function(e){
+						e.preventDefault();
+						$(this).focusout();
+						if($('#logDatePicker').css('display')!='block'){
+							displayDatePicker();
+							e.stopPropagation();
+						}
+					});
+					$(document).click(function(e){
+						if(isOpen){
+							var $cont = $('#logDatePicker');
+							if(!$cont.is(e.target) && $cont.has(e.target).length === 0){
+								$cont.css('display','none');
+							}
+						}
+					});
 				}
 			};
 		})();
@@ -2952,7 +3057,7 @@
 									network:line.network
 								});
 							}
-							if(settings.networks()[line.network].type==1 && options.get(17,'F')=='F'){
+							if(addLine && settings.networks()[line.network].type==1 && options.get(17,'F')=='F'){
 								addLine = false;
 							}
 							break;
@@ -2964,7 +3069,7 @@
 									network:line.network
 								});
 							}
-							if(settings.networks()[line.network].type==1 && options.get(17,'F')=='F'){
+							if(addLine && settings.networks()[line.network].type==1 && options.get(17,'F')=='F'){
 								addLine = false;
 							}
 							break;
