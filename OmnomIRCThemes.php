@@ -127,7 +127,10 @@ function echoNewStyle($c1,$c2,$c3,$color,$link,$tablink = "",$btncolor = "",$for
 		border:1px solid $c1;
 		border-radius:3px;
 	}
-	button:hover,#send:hover{
+	.logDatePickerDay.current{
+		background-color:$btncolor;
+	}
+	button:hover,#send:hover,.logDatePickerDay:hover{
 		background-color:$btnhovercolor;
 	}
 	.optionsTable .option{

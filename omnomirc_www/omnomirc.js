@@ -2265,7 +2265,6 @@
 					msg = msg.split('<u>').join('\x1f').split('</u>').join('\x1f');
 					msg = msg.split('&nbsp;').join(' ');
 					msg = $('<span>').html(msg).text();
-					console.log(msg);
 					return msg;
 				},
 				support:function(){
@@ -2667,12 +2666,11 @@
 					return base64.encode(year.toString(10)+'-'+month.toString(10)+'-'+day.toString(10));
 				},
 				updateInputVal = function(){
-					console.log(month);
 					$('#logDate').val(months[month-1]+' '+day.toString(10)+' '+year.toString(10));
 				},
 				displayDatePicker = function(){
 					var d = new Date(year,month,day),
-						week = ['sun','mon','tue','wen','thu','fri','sat'],
+						week = ['Sun','Mon','Tue','Wen','Thu','Fri','Sat'],
 						days = (new Date(year,month,0)).getDate(),
 						firstDayOfWeek = (new Date(year,month-1,1)).getDay(),
 						i = 0;
@@ -2720,13 +2718,15 @@
 								})
 							),
 							$.map([0,1,2,3,4,5],function(){
+								if(i >= days){
+									return;
+								}
 								return $('<tr>').append(
 									$.map([0,1,2,3,4,5,6],function(v){
 										if((i == 0 && v!=firstDayOfWeek) || i >= days){
 											return $('<td>').text(' ');
 										}
 										i++;
-										console.log('weeeeeeeee');
 										return $('<td>').text(i).addClass('logDatePickerDay').addClass(i==day?'current':'').data('day',i).click(function(){
 											$('.logDatePickerDay.current').removeClass('current');
 											day = $(this).addClass('current').data('day');
