@@ -2032,29 +2032,31 @@
 				},
 				showBar = function(){
 					var mouseMoveFn = function(e){
-							var y = e.clientY;
-							if($('#scrollBar').data('isClicked')){
-								$('#scrollBar').css('top',parseInt($('#scrollBar').css('top'),10)+(y-$('#scrollBar').data('prevY')));
-								document.getElementById('mBoxCont').scrollTop = ((parseInt($('#scrollBar').css('top'),10)-38)/($('body')[0].offsetHeight-$('#scrollBar')[0].offsetHeight-38))*(document.getElementById('mBoxCont').scrollHeight-document.getElementById('mBoxCont').clientHeight);
+							var y = e.clientY,
+								newscrollbartop = 0;
+							if($bar.data('isClicked')){
+								newscrollbartop = parseInt($bar.css('top'),10)+(y-$bar.data('prevY'));
+								document.getElementById('mBoxCont').scrollTop = ((newscrollbartop-38)/($('body')[0].offsetHeight-$bar[0].offsetHeight-38))*(document.getElementById('mBoxCont').scrollHeight-document.getElementById('mBoxCont').clientHeight);
 								isDown = false;
-								if(parseInt($('#scrollBar').css('top'),10)<38){
-									$('#scrollBar').css('top',38);
+								if(newscrollbartop<38){
+									newscrollbartop = 38;
 									document.getElementById('mBoxCont').scrollTop = 0;
 								}
-								if(parseInt($('#scrollBar').css('top'),10)>($('body')[0].offsetHeight-$('#scrollBar')[0].offsetHeight)){
-									$('#scrollBar').css('top',$('body')[0].offsetHeight-$('#scrollBar')[0].offsetHeight);
+								if(newscrollbartop>($('body')[0].offsetHeight-$bar[0].offsetHeight)){
+									newscrollbartop = $('body')[0].offsetHeight-$bar[0].offsetHeight;
 									document.getElementById('mBoxCont').scrollTop =  $('#mBoxCont').prop('scrollHeight')-$('#mBoxCont')[0].clientHeight;
 									isDown = true;
 								}
+								$bar.css('top',newscrollbartop);
 							}
-							$('#scrollBar').data('prevY',y);
+							$bar.data('prevY',y);
 						},
 						mouseDownFn = function(){
-							$('#scrollBar').data('isClicked',true);
+							$bar.data('isClicked',true);
 							$('#scrollArea').css('display','block');
 						},
 						mouseUpFn = function(){
-							$('#scrollBar').data('isClicked',false);
+							$bar.data('isClicked',false);
 							$('#scrollArea').css('display','none');
 						},
 						$bar = $('<div>').attr('id','scrollBar').data({prevY:0,isClicked:false}).appendTo('body')
@@ -2075,6 +2077,7 @@
 							width:'100%',
 							height:'100%',
 							position:'absolute',
+							cursor:'move',
 							left:0,
 							top:0,
 							zIndex:100
@@ -2211,7 +2214,9 @@
 					}
 					enableUserlist();
 					$('#mBoxCont').scroll(function(e){
-						reCalcBar();
+						if($('#scrollBar').length !==0 && !$('#scrollBar').data('isClicked')){
+							reCalcBar();
+						}
 					});
 					$(document).add(window).add('body').add('html').scroll(function(e){
 						e.preventDefault();

@@ -63,6 +63,9 @@ function echoNewStyle($c1,$c2,$c3,$color,$link,$tablink = "",$btncolor = "",$for
 		border-color: $c1;
 		color: $color;
 	}
+	#scrollBar:active{
+		box-shadow: 0 0 4px $c1;
+	}
 	#topicbox {
 		border-top: none;
 	}
