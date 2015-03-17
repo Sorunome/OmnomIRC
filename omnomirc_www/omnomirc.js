@@ -1464,6 +1464,33 @@ oirc = (function(){
 		scroll = (function(){
 			var isDown = false,
 				is_touch = (('ontouchstart' in window) || (navigator.MaxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0)),
+				touchScroll = function($elem,fn){
+					var lastY = -1;
+					$elem.bind('touchstart',function(e){
+						if($(e.target).is('a')){
+							return;
+						}
+						e.preventDefault();
+						lastY = e.originalEvent.touches[0].clientY;
+					}).bind('touchmove',function(e){
+						if($(e.target).is('a')){
+							return;
+						}
+						e.preventDefault();
+						if(lastY == -1){
+							return;
+						}
+						var y = e.originalEvent.changedTouches[0].clientY;
+						fn(y - lastY);
+						lastY = y;
+					}).bind('touchend touchcancel touchleave',function(e){
+						if($(e.target).is('a')){
+							return;
+						}
+						e.preventDefault();
+						lastY = -1;
+					});
+				},
 				enableButtons = function(){
 					var addHook = function(elem,effect,inc){
 							var interval;
@@ -1502,19 +1529,27 @@ oirc = (function(){
 					addHook('#arrowRightTopic','topicCont',9);
 				},
 				enableWheel = function(){
+					var moveWindow = function(delta){
+							isDown = false;
+							document.getElementById('mBoxCont').scrollTop = Math.min(document.getElementById('mBoxCont').scrollHeight-document.getElementById('mBoxCont').clientHeight,Math.max(0,document.getElementById('mBoxCont').scrollTop-delta));
+							if(document.getElementById('mBoxCont').scrollTop==(document.getElementById('mBoxCont').scrollHeight-document.getElementById('mBoxCont').clientHeight)){
+								isDown = true;
+							}
+							if(options.get(15,'T')=='T'){
+								reCalcBar();
+							}
+						};
 					$('#mBoxCont').bind('DOMMouseScroll mousewheel',function(e){
 						e.preventDefault();
 						e.stopPropagation();
 						e.cancelBubble = true;
-						isDown = false;
-						document.getElementById('mBoxCont').scrollTop = Math.min(document.getElementById('mBoxCont').scrollHeight-document.getElementById('mBoxCont').clientHeight,Math.max(0,document.getElementById('mBoxCont').scrollTop-(/Firefox/i.test(navigator.userAgent)?(e.originalEvent.detail*(-20)):(e.originalEvent.wheelDelta/2))));
-						if(document.getElementById('mBoxCont').scrollTop==(document.getElementById('mBoxCont').scrollHeight-document.getElementById('mBoxCont').clientHeight)){
-							isDown = true;
-						}
-						if(options.get(15,'T')=='T'){
-							reCalcBar();
-						}
+						moveWindow((/Firefox/i.test(navigator.userAgent)?(e.originalEvent.detail*(-20)):(e.originalEvent.wheelDelta/2)));
 					});
+					if(is_touch){
+						touchScroll($('#mBoxCont'),function(d){
+							moveWindow(d);
+						});
+					}
 				},
 				reCalcBar = function(){
 					if($('#scrollBar').length!==0){
@@ -1522,6 +1557,9 @@ oirc = (function(){
 					}
 				},
 				enableUserlist = function(){
+					var moveUserList = function(delta){
+							$(this).css('top',Math.min(0,Math.max(((/Opera/i.test(navigator.userAgent))?-30:0)+document.getElementById('UserListInnerCont').clientHeight-this.scrollHeight,parseInt(this.style.top,10)+delta)));
+						};
 					$('#UserList')
 						.css('top',0)
 						.bind('DOMMouseScroll mousewheel',function(e){
@@ -1529,9 +1567,13 @@ oirc = (function(){
 								e.preventDefault();
 							}
 							e = e.originalEvent;
-							$(this).css('top',Math.min(0,Math.max(((/Opera/i.test(navigator.userAgent))?-30:0)+document.getElementById('UserListInnerCont').clientHeight-this.scrollHeight,parseInt(this.style.top,10)+(/Firefox/i.test(navigator.userAgent)?(e.detail*(-20)):(e.wheelDelta/2)))));
+							moveUserList((/Firefox/i.test(navigator.userAgent)?(e.detail*(-20)):(e.wheelDelta/2)));
 						});
-						
+					if(is_touch){
+						touchScroll($('#UserList'),function(d){
+							moveUserList(d);
+						});
+					}
 				},
 				showBar = function(){
 					var mouseMoveFn = function(y){
@@ -2852,6 +2894,11 @@ oirc = (function(){
 			},
 			post:function(s,data,fn,async,urlparams){
 				network.post(s,data,fn,async,urlparams);
+			}
+		},
+		options:{
+			getFullOptionsString:function(){
+				return options.getFullOptionsString();
 			}
 		}
 	}

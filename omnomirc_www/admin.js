@@ -461,7 +461,7 @@
 											$('<input>').attr('type','text').val(net.config.externalStyleSheet).css('width',120).change(function(){nets[i].config.externalStyleSheet = this.value;}),
 											'<br>',
 											$('<button>').text('Use Current settings as defaults').click(function(){
-													nets[i].config.defaults = options.getFullOptionsString();
+													nets[i].config.defaults = oirc.options.getFullOptionsString();
 												}),
 											'<br>',
 											$('<select>').append(
