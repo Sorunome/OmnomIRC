@@ -1628,7 +1628,7 @@ oirc = (function(){
 							zIndex:100
 						})
 						.mousemove(function(e){
-							mouseMoveFn(e);
+							mouseMoveFn(e.clientY);
 						})
 						.mouseup(function(){
 							mouseUpFn();
@@ -1924,6 +1924,7 @@ oirc = (function(){
 					var nua = navigator.userAgent,
 						is_android = ((nua.indexOf('Mozilla/5.0') > -1 && nua.indexOf('Android ') > -1 && nua.indexOf('AppleWebKit') > -1) && !(nua.indexOf('Chrome') > -1)),
 						is_ios = (nua.match(/(iPod|iPhone|iPad)/i) && nua.match(/AppleWebKit/i)),
+						is_mobile_webkit = (nua.match(/AppleWebKit/i) && nua.match(/Android/i)),
 						hide_userlist = options.get(14,'F')=='T';
 					page.changeLinks();
 					if(!wysiwyg.support()){
@@ -1960,7 +1961,12 @@ oirc = (function(){
 							$('input#message,span#message').css('width',htmlWidth*(hide_userlist?1:0.91) - 121);
 						}
 						if(options.get(15,'T')=='T'){
-							$('#mBoxCont').css('width',((document.body.offsetWidth/100)*mBoxContWidthOffset)-22);
+							$('#mBoxCont').css('width',((htmlWidth/100)*mBoxContWidthOffset)-22);
+							if(is_mobile_webkit){
+								$('#scrollBarLine').css('left',((htmlWidth/100)*mBoxContWidthOffset) - 16);
+								$('#scrollBar').css('left',((htmlWidth/100)*mBoxContWidthOffset) - 17);
+								$('#UserListContainer').css('left',(htmlWidth/100)*mBoxContWidthOffset);
+							}
 							scroll.reCalcBar();
 						}
 						scroll.down();
