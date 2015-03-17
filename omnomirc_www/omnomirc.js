@@ -17,7 +17,7 @@
     You should have received a copy of the GNU General Public License
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
-(function(){
+oirc = (function(){
 	var OMNOMIRCSERVER = 'https://omnomirc.omnimaga.org',
 		settings = (function(){
 			var hostname = '',
@@ -182,6 +182,55 @@
 						.css('display','')
 						.find('.count')
 						.text(warnings.length);
+				},
+				checkCallback = function(data,fn,recall){
+					if(data.relog!==undefined && data.relog!=2){
+						if(data.errors!==undefined){
+							$.each(data.errors,function(i,e){
+								if(e.type!==undefined){
+									addError(s,e);
+								}else{
+									addError(s,{
+										type:'misc',
+										message:e
+									});
+								}
+							});
+						}
+						if(data.warnings!==undefined){
+							$.each(data.warnings,function(i,w){
+								if(w.type!==undefined){
+									addWarning(s,w);
+								}else{
+									addWarning(s,{
+										type:'misc',
+										message:w
+									});
+								}
+							});
+						}
+					}
+					if(data.relog!==undefined && data.relog!=0){
+						if(data.relog==1){
+							settings.fetch(undefined,true);
+							fn(data);
+						}else if(data.relog==2){
+							settings.fetch(function(){
+								recall();
+							},true);
+						}else if(data.relog==3){
+							if(didRelog){
+								fn(data);
+							}else{
+								settings.fetch(function(){
+									recall();
+								},true);
+							}
+						}
+						didRelog = true;
+					}else{
+						fn(data);
+					}
 				};
 			return {
 				getJSON:function(s,fn,async,urlparams){
@@ -197,53 +246,29 @@
 							async:async
 						})
 						.done(function(data){
-							if(data.relog!==undefined && data.relog!=2){
-								if(data.errors!==undefined){
-									$.each(data.errors,function(i,e){
-										if(e.type!==undefined){
-											addError(s,e);
-										}else{
-											addError(s,{
-												type:'misc',
-												message:e
-											});
-										}
-									});
-								}
-								if(data.warnings!==undefined){
-									$.each(data.warnings,function(i,w){
-										if(w.type!==undefined){
-											addWarning(s,w);
-										}else{
-											addWarning(s,{
-												type:'misc',
-												message:w
-											});
-										}
-									});
-								}
-							}
-							if(data.relog!==undefined && data.relog!=0){
-								if(data.relog==1){
-									settings.fetch(undefined,true);
-									fn(data);
-								}else if(data.relog==2){
-									settings.fetch(function(){
-										network.getJSON(s,fn,async,urlparams);
-									},true);
-								}else if(data.relog==3){
-									if(didRelog){
-										fn(data);
-									}else{
-										settings.fetch(function(){
-											network.getJSON(s,fn,async,urlparams);
-										},true);
-									}
-								}
-								didRelog = true;
-							}else{
-								fn(data);
-							}
+							checkCallback(data,fn,function(){
+								network.getJSON(s,fn,async,urlparams);
+							});
+							
+						});
+				},
+				post:function(s,pdata,fn,async,urlparams){
+					if(async==undefined){
+						async = true;
+					}
+					if(urlparams==undefined){
+						urlparams = true;
+					}
+					return $.ajax({
+							type:'POST',
+							url:s+(urlparams?'&'+settings.getUrlParams():''),
+							async:async,
+							data:pdata
+						})
+						.done(function(data){
+							checkCallback(data,fn,function(){
+								network.post(s,pdata,fn,async,urlparams);
+							});
 						});
 				},
 				init:function(){
@@ -291,544 +316,11 @@
 			};
 		})(),
 		admin = (function(){
-			var sendEdit = function(page,json,fn){
-					$.post('admin.php?set='+page+'&'+settings.getUrlParams(),{data:JSON.stringify(json)},function(data){
-						var alertStr = '';
-						if(data.errors.length>0){
-							$.map(data.errors,function(error){
-								alertStr += 'ERROR: '+error+"\n";
-							});
-						}else{
-							alertStr = data.message;
-						}
-						alert(alertStr);
-						if(fn!==undefined){
-							fn();
-						}
-					});
-				},
-				getInputBoxSettings = function(p,name,data){
-					$('#adminContent').append(
-						'<div style="font-weight:bold">'+name+' Settings</div>',
-						$.map(data,function(d,i){
-							if(i!=='warnings' && i!=='errors'){
-								return $('<div>')
-									.append(
-										i,
-										': ',
-										$('<input>')
-											.attr({
-												type:'text',
-												name:i
-											})
-											.val(d)
-									);
-							}
-						}),
-						$('<button>')
-							.text('submit')
-							.click(function(){
-								var json = {};
-								$('input').each(function(i,v){
-									json[$(v).attr('name')] = $(v).val();
-								});
-								sendEdit(p,json);
-							})
-					);
-				},
-				getJSONEditSettings = function(p,name,data){
-					var json = data;
-					$('#adminContent').append(
-						'<div style="font-weight:bold">'+name+' Settings</div>',
-						$('<div>').addClass('json-editor').jsonEditor(json,{
-							change:function(data){
-								json = data;
-							}
-						}),
-						$('<button>')
-							.text('submit')
-							.click(function(){
-								sendEdit(p,json);
-							})
-					);
-				},
-				makeNetworksPage = function(nets){
-					$('#adminContent').append(
-						$('<div>').append(
-								$.map(nets,function(net,i){
-									if(net.type===0){ // no server networks displaying
-										return undefined;
-									}
-									var $netSpecific = $('<b>').text('Unkown network type');
-									switch(net.type){
-										case 0:
-											$netSpecific.text('Server Network');
-											break;
-										case 1:
-											var drawOpGroupsSettings = function(elem){
-													$(elem).replaceWith(
-														$('<span>').append(
-															$.map(nets[i].config.opGroups,function(opg,j){
-																return ['<br>'+opg+' ',
-																	$('<a>').text('x').click(function(e){
-																		e.preventDefault();
-																		nets[i].config.opGroups.splice(j);
-																		drawOpGroupsSettings($(this).parent());
-																	})];
-															}),
-															'<br>',
-															$('<button>').text('add op group').click(function(e){
-																e.preventDefault();
-																var group = prompt('New Network Name');
-																if(group != ''  && group != null){
-																	nets[i].config.opGroups.push(group);
-																	drawOpGroupsSettings($(this).parent());
-																}
-															})
-														)
-													);
-												};
-											$netSpecific = $('<span>').append(
-													$('<b>').text('OmnomIRC network'),
-													'<br>checkLogin:',
-													$('<input>').attr('type','text').val(net.config.checkLogin).css('width',160).change(function(){nets[i].config.checkLogin = this.value;}),
-													'<br>externalStyleSheet:',
-													$('<input>').attr('type','text').val(net.config.externalStyleSheet).css('width',120).change(function(){nets[i].config.externalStyleSheet = this.value;}),
-													'<br>',
-													$('<button>').text('Use Current settings as defaults').click(function(){
-															nets[i].config.defaults = options.getFullOptionsString();
-														}),
-													'<br>',
-													$('<select>').append(
-														$('<option>').val(0).text('Deny Guest Access'),
-														$('<option>').val(1).text('Guests are read-only')
-													).val(net.config.guests).change(function(e){
-														nets[i].config.guests = parseInt(this.value,10);
-													}),
-													'<br>Op Groups: ',
-													$('<a>').text('show').click(function(e){
-														e.preventDefault();
-														drawOpGroupsSettings(this);
-													})
-												);
-											break;
-										case 2:
-											$netSpecific = $('<span>').append(
-													$('<b>').text('CalcNet network'),
-													'<br>Server:',
-													$('<input>').attr('type','text').val(net.config.server).change(function(){nets[i].config.server = this.value;}),
-													'<br>Port:',
-													$('<input>').attr('type','number').val(net.config.port).change(function(){nets[i].config.port = parseInt($(this).val(),10);})
-												);
-											break;
-										case 3:
-											$netSpecific = $('<span>').append(
-													$('<b>').text('IRC network'),
-													'<br>Nick:',
-													$('<input>').attr('type','text').val(net.config.main.nick).change(function(){nets[i].config.main.nick = this.value;}),
-													'<br>Server:',
-													$('<input>').attr('type','text').val(net.config.main.server).change(function(){nets[i].config.main.server = this.value;}),
-													'<br>Port',
-													$('<input>').attr('type','number').val(net.config.main.port).change(function(){nets[i].config.main.port = parseInt($(this).val(),10)}),
-													'<br>SSL:',
-													$('<input>').attr('type','checkbox').attr((net.config.main.ssl?'checked':'false'),'checked').change(function(){nets[i].config.main.ssl = this.checked;}),
-													'<br>NickServ:',
-													$('<input>').attr('type','text').val(net.config.main.nickserv).change(function(){nets[i].config.main.nickserv = this.value;}),
-													'<br>',
-													$('<a>').text('Show advanced settings').click(function(e){
-														e.preventDefault();
-														$(this).replaceWith(
-															$('<span>').append(
-																'<br>',
-																$('<b>').text('TopicBot'),
-																'<br>Nick:',
-																$('<input>').attr('type','text').val(net.config.topic.nick).change(function(){nets[i].config.topic.nick = this.value;}),
-																'<br>Server:',
-																$('<input>').attr('type','text').val(net.config.topic.server).change(function(){nets[i].config.topic.server = this.value;}),
-																'<br>Port',
-																$('<input>').attr('type','number').val(net.config.topic.port).change(function(){nets[i].config.topic.port = parseInt($(this).val(),10)}),
-																'<br>SSL:',
-																$('<input>').attr('type','checkbox').attr((net.config.topic.ssl?'checked':'false'),'checked').change(function(){nets[i].config.topic.ssl = this.checked;}),
-																'<br>NickServ:',
-																$('<input>').attr('type','text').val(net.config.topic.nickserv).change(function(){nets[i].config.topic.nickserv = this.value;})
-															)
-														);
-													})
-												);
-											break;
-									}
-									return $('<div>').css({
-											'display':'inline-block',
-											'border':'1px solid black',
-											'vertical-align':'top'
-										})
-										.append(
-												$('<span>').css('font-weight','bold').text(net.name),
-												'<br>Enabled:',
-												$('<input>').attr('type','checkbox').attr((net.enabled?'checked':'false'),'checked').change(function(){nets[i].enabled = this.checked;}),
-												'<br>Normal:',
-												$('<input>').attr('type','text').val(net.normal).change(function(){nets[i].normal = this.value;}),
-												'<br>Userlist:',
-												$('<input>').attr('type','text').val(net.userlist).change(function(){nets[i].userlist = this.value;}),
-												'<br>IRC:',
-												$('<input>').attr('type','number').val(net.irc.color).css('width',50).change(function(){nets[i].irc.color = parseInt($(this).val(),10);}),
-												$('<input>').attr('type','text').val(net.irc.prefix).css('width',50).change(function(){nets[i].irc.prefix = this.value;}),
-												'<br>',
-												$netSpecific
-											);
-								}),
-								$('<select>').append(
-										$('<option>').val(-1).text('Add Network...'),
-										$('<option>').val(1).text('OmnomIRC'),
-										$('<option>').val(2).text('CalcNet'),
-										$('<option>').val(3).text('IRC')
-									)
-									.change(function(){
-										var name = prompt('New Network Name'),
-											newNet = null,
-											specificConfig,
-											maxId;
-										if(name!=='' && name!==null){
-											switch(parseInt($(this).val(),10)){
-												case 1: // omnomirc
-													specificConfig = {
-														'checkLogin':'link to checkLogin file',
-														'externalStyleSheet':'',
-														'defaults':''
-													};
-													break;
-												case 2:
-													specificConfig = {
-														'server':'mydomain.com',
-														'port':4295
-													}
-													break;
-												case 3:
-													specificConfig = {
-														'main':{
-															'nick':'OmnomIRC',
-															'server':'irc server',
-															'port':6667,
-															'nickserv':'nickserv password',
-															'ssl':false
-														},
-														'topic':{
-															'nick':'',
-															'server':'irc server',
-															'port':6667,
-															'nickserv':'nickserv password',
-															'ssl':false
-														}
-													}
-													break;
-												default:
-													specificConfig = null;
-											}
-											if(specificConfig !== null){
-												maxId = 0;
-												$.each(nets,function(i,v){
-													if(v.id > maxId){
-														maxId = v.id;
-													}
-												});
-												newNet = {
-													'enabled':true,
-													'id':maxId+1,
-													'type':parseInt($(this).val(),10),
-													'normal':'NICK',
-													'userlist':'('+name[0].toUpperCase()+')NICK',
-													'irc':{
-														'color':-1,
-														'prefix':'('+name[0].toUpperCase()+')'
-													},
-													'name':name,
-													'config':specificConfig
-												}
-												nets.push(newNet);
-												$('#adminContent').empty();
-												makeNetworksPage(nets);
-											}
-										}else{
-											$(this).val(-1);
-										}
-									})
-							),
-						$('<button>')
-							.text('submit')
-							.click(function(){
-								sendEdit('networks',nets);
-							})
-					);
-				},
-				makeChannelsPage = function(chans,nets){
-					var makeAdvancedChanEditingForm = function(chan,i,elem){
-							$(elem).empty().append(
-								$.map(chan.networks,function(net,ni){
-									return [$('<div>').css({
-											'display':'inline-block',
-											'border':'1px solid black',
-											'margin':5
-										})
-										.append(
-											$('<b>').text(nets[net.id].name),
-											' ',
-											$('<a>').text('remove').click(function(e){
-												e.preventDefault();
-												chans[i].networks.splice(ni,1);
-												chan = chans[i];
-												makeAdvancedChanEditingForm(chan,i,$(this).parent().parent());
-											}),
-											'<br>Name:',
-											$('<input>').attr('type','text').val(net.name).change(function(){chans[i].networks[ni].name = this.value;}),
-											(nets[net.id].type==1?[
-												'<br>Hidden:',
-												$('<input>').attr('type','checkbox').attr((net.hidden?'checked':'false'),'checked').change(function(){chans[i].networks[ni].hidden = this.checked;}),
-												'<br>Order:',
-												$('<input>').attr('type','number').val(net.order).change(function(){chans[i].networks[ni].order = parseInt($(this).val(),10);})
-											]:'')
-										),
-										'<br>'
-										];
-								}),
-								$('<select>').append(
-										$('<option>').text('Add to network...').val(-1),
-										$.map(nets,function(n){
-											if(n.type===0){
-												return undefined;
-											}
-											return $('<option>').text(n.name).val(n.id);
-										})
-									)
-									.change(function(){
-										var netId = parseInt($(this).val(),10),
-											maxOrder = 0;
-										$.each(chans,function(chani,ch){
-											$.each(ch.networks,function(neti,nt){
-												if(nt.id==netId &&  nt.order>maxOrder && maxOrder!=-1){
-													maxOrder = nt.order;
-												}
-												if(nt.id==netId && chani==i){
-													maxOrder = -1;
-												}
-											})
-										});
-										if(maxOrder==-1){
-											alert('Network already exists!');
-											$(this).val(-1);
-											return;
-										}
-										chans[i].networks.push({
-											'id':netId,
-											'name':'',
-											'hidden':false,
-											'order':maxOrder+1
-										})
-										chan = chans[i];
-										makeAdvancedChanEditingForm(chan,i,$(this).parent());
-									})
-							);
-						};
-					$('#adminContent').append(
-							$('<div>').append(
-									$.map(chans,function(chan,i){
-										return $('<div>').css({
-												'display':'inline-block',
-												'border':'1px solid black',
-												'vertical-align':'top'
-											})
-											.append(
-												$('<b>').text(chan.alias),
-												'<br>Enabled:',
-												$('<input>').attr('type','checkbox').attr((chan.enabled?'checked':'false'),'checked').change(function(){chans[i].enabled = this.checked;}),
-												'<br>',
-												$('<div>').css({
-														'display':'inline-block',
-														'border':'1px solid black'
-													})
-													.append(
-														$('<input>').attr('type','text').val(chan.networks[0].name).change(function(){
-																var _this = this;
-																$.each(chan.networks,function(netI){
-																	chans[i].networks[netI].name = $(_this).val();
-																});
-															}),
-														'<br>',
-														$('<a>').text('Show advanced settings').click(function(e){
-															e.preventDefault();
-															makeAdvancedChanEditingForm(chan,i,$(this).parent());
-														})
-													)
-											)
-									}),
-									$('<button>').text('New Channel').click(function(e){
-											e.preventDefault();
-											var alias = prompt('New Channel alias'),
-												netsToAdd = [],
-												maxId = 0;
-											if(alias!=='' && alias!==null){
-												netsToAdd = $.map(nets,function(n){
-														var maxOrder = 0;
-														if(n.type==1){
-															$.each(chans,function(chani,ch){
-																$.each(ch.networks,function(neti,nt){
-																	if(nt.id==n.id &&  nt.order>maxOrder && maxOrder!=-1){
-																		maxOrder = nt.order;
-																	}
-																});
-															});
-														}
-														if(n.type===0){
-															return undefined;
-														}
-														return {
-																'id':n.id,
-																'name':'',
-																'hidden':false,
-																'order':maxOrder+1
-															};
-													});
-												$.each(chans,function(chani,c){
-													if(c.id>maxId){
-														maxId = c.id;
-													}
-												});
-												chans.push({
-														'id':maxId+1,
-														'alias':alias,
-														'enabled':true,
-														'networks':netsToAdd
-													});
-												$('#adminContent').empty();
-												makeChannelsPage(chans,nets);
-											}
-										})
-								),
-						$('<button>')
-							.text('submit')
-							.click(function(){
-								sendEdit('channels',chans);
-							})
-						);
-				},
-				makeIndexPage = function(info){
-					$('#adminContent').append(
-						'OmnomIRC Version: '+info.version+'<br>',
-						$('<span>').attr('id','fetchingUpdates').text('checking for updates...'),
-						'<br>',
-						$('<button>')
-							.text('Back up config')
-							.click(function(){
-								sendEdit('backupConfig',{});
-							}),
-						$('<div>').attr('id','fetchingNews').text('fetching news...')
-					);
-					$.getJSON(OMNOMIRCSERVER+'/getNewestVersion.php?version='+info.version+'&jsoncallback=?').done(function(data){
-						if(data.latest){
-							$('#fetchingUpdates').empty().text('No new updates available');
-						}else{
-							$('#fetchingUpdates').empty().append(
-								'New updates available! ('+data.version+') ',
-								(!info.updaterReady?
-									$('<a>').text('Click here to download the updater script').click(function(e){
-										e.preventDefault();
-										sendEdit('getUpdater',{path:OMNOMIRCSERVER+data.updater},function(){
-											loadPage('index');
-										});
-									})
-								:
-									$('<a>').text('Click here to apply the update').attr('href','updater.php')
-								)
-							);
-						}
-					});
-					$.getJSON(OMNOMIRCSERVER+'/getNews.php?jsoncallback=?').done(function(data){
-						$('#fetchingNews').empty().css({'height':300,'border':'1px solid black','overflow':'auto','width':'70%'}).append(
-							$('<table>').css('width','100%').append(
-								$('<tr>').append(
-									$('<th>').css('width',150).text('date'),
-									$('<th>').text('news')
-								),
-								$.map(data.news,function(n){
-									return $('<tr>').append(
-											$('<td>').css({'width':'auto','border':'1px solid black'}).text((new Date(n.time*1000)).toLocaleString()),
-											$('<td>').css({'width':'auto','border':'1px solid black'}).html(n.message)
-										)
-								})
-							)
-						);
-					});
-				},
-				loadPage = function(p){
-					indicator.start();
-					$('#adminContent').text('Loading...');
-					network.getJSON('admin.php?get='+encodeURIComponent(p),function(data){
-						$('#adminContent').empty();
-						switch(p){
-							case 'index':
-								makeIndexPage(data);
-								break;
-							case 'channels':
-								makeChannelsPage(data.channels,data.nets);
-								break;
-							case 'hotlinks':
-								getJSONEditSettings(p,'Hotlink',data.hotlinks);
-								break;
-							case 'smileys':
-								getJSONEditSettings(p,'Smiley',data.smileys);
-								break;
-							case 'networks':
-								makeNetworksPage(data.networks);
-								break;
-							case 'sql':
-								$.extend(data,{
-									passwd:''
-								});
-								getInputBoxSettings(p,'SQL',data);
-								break;
-							case 'op':
-								getJSONEditSettings(p,'OP',data.opGroups);
-								break;
-							case 'ws':
-								getJSONEditSettings(p,'WebSockets',data.websockets);
-								break;
-							case 'misc':
-								getInputBoxSettings(p,'Misc',data);
-								break;
-							case 'releaseNotes':
-								$('#adminContent').append(
-									$('<h2>').text('Release notes version '+data.version),
-									$('<span>').attr('id','releaseNotes').text('Loading...')
-								);
-								$.getJSON(OMNOMIRCSERVER+'/getReleaseNotes.php?version='+data.version+'&jsoncallback=?').done(function(notes){
-									$('#releaseNotes').html(notes.notes);
-								});
-								break;
-						}
-						indicator.stop();
-					});
-				};
 			return {
 				init:function(){
-					$('#adminNav a').click(function(e){
-						e.preventDefault();
-						loadPage($(this).attr('page'));
-					});
-					settings.fetch(function(){
-						page.changeLinks();
-						if(document.URL.split('#')[1] !== undefined){
-							loadPage(document.URL.split('#')[1]);
-						}else{
-							loadPage('index');
-						}
-					});
-					$('#adminContent').height($(window).height() - 50);
-					$(window).resize(function(){
-						if(!(navigator.userAgent.match(/(iPod|iPhone|iPad)/i) && navigator.userAgent.match(/AppleWebKit/i))){
-							$('#adminContent').height($(window).height() - 50);
-						}
-					});
+					$.getScript('admin.js');
 				}
-			};
+			}
 		})(),
 		options = (function(){
 			var defaults = '',
@@ -1704,7 +1196,7 @@
 							options.set(4,String.fromCharCode(i+45));
 							if(!data.banned){
 								if(data.admin){
-									$('#adminLink').css('display','block');
+									$('#adminLink').css('display','');
 								}else{
 									$('#adminLink').css('display','none');
 								}
@@ -2888,17 +2380,16 @@
 					return s;
 				},
 				parseLinks = function(text){
-					text = text.replace(/(\x01)/g,"");
 					if (!text || text === null || text === undefined){
-						return;
+						return '';
 					}
 					//text = text.replace(/http:\/\/www\.omnimaga\.org\//g,"\x01www.omnimaga.org/");
-					text = text.replace(/http:\/\/ourl\.ca\//g,"\x01ourl.ca/");
-					text = text.replace(/((h111:\/\/(www\.omnimaga\.org\/|ourl\.ca))[-a-zA-Z0-9@:;%_+.~#?&//=]+)/, '<a target="_top" href="$1">$1</a>');
-					text = text.replace(RegExp("(^|.)(((f|ht)(tp|tps):\/\/)[^\\s\x02\x03\x0f\x16\x1d\x1f]*)","g"),'$1<a target="_blank" href="$2">$2</a>');
-					text = text.replace(RegExp("(^|\\s)(www\\.[^\\s\x02\x03\x0f\x16\x1d\x1f]*)","g"),'$1<a target="_blank" href="http://$2">$2</a>');
-					text = text.replace(RegExp("(^|.)\x01([^\\s\x02\x03\x0f\x16\x1d\x1f]*)","g"),'$1<a target="_top" href="http://$2">http://$2</a>');
-					return text;
+					return text.replace(/(\x01)/g,"")
+							.replace(/http:\/\/ourl\.ca\//g,"\x01ourl.ca/")
+							.replace(/((h111:\/\/(www\.omnimaga\.org\/|ourl\.ca))[-a-zA-Z0-9@:;%_+.~#?&//=]+)/, '<a target="_top" href="$1">$1</a>')
+							.replace(RegExp("(^|.)(((f|ht)(tp|tps):\/\/)[^\\s\x02\x03\x0f\x16\x1d\x1f]*)","g"),'$1<a target="_blank" href="$2">$2</a>')
+							.replace(RegExp("(^|\\s)(www\\.[^\\s\x02\x03\x0f\x16\x1d\x1f]*)","g"),'$1<a target="_blank" href="http://$2">$2</a>')
+							.replace(RegExp("(^|.)\x01([^\\s\x02\x03\x0f\x16\x1d\x1f]*)","g"),'$1<a target="_top" href="http://$2">http://$2</a>');
 				},
 				parseColors = function(colorStr){
 					var arrayResults = [],
@@ -2972,8 +2463,8 @@
 								didChange = false;
 						}
 						if(didChange){
-							colorStr += '</span>';
-							colorStr += '<span class="fg-'+textDecoration.fg+' bg-'+textDecoration.bg+'" style="'+(textDecoration.bold?'font-weight:bold;':'')+(textDecoration.underline?'text-decoration:underline;':'')+(textDecoration.italic?'font-style:italic;':'')+'">';
+							colorStr += '</span>'+
+									'<span class="fg-'+textDecoration.fg+' bg-'+textDecoration.bg+'" style="'+(textDecoration.bold?'font-weight:bold;':'')+(textDecoration.underline?'text-decoration:underline;':'')+(textDecoration.italic?'font-style:italic;':'')+'">';
 						}else{
 							colorStr+=arrayResults[i];
 						}
@@ -3265,4 +2756,33 @@
 				page.load();
 		}
 	});
+	return {
+		OMNOMIRCSERVER:OMNOMIRCSERVER,
+		page:{
+			changeLinks:function(){
+				page.changeLinks();
+			}
+		},
+		settings:{
+			fetch:function(fn){
+				settings.fetch(fn);
+			}
+		},
+		indicator:{
+			start:function(){
+				indicator.start();
+			},
+			stop:function(){
+				indicator.stop();
+			}
+		},
+		network:{
+			getJSON:function(s,fn,async,urlparams){
+				network.getJSON(s,fn,async,urlparams);
+			},
+			post:function(s,data,fn,async,urlparams){
+				network.post(s,data,fn,async,urlparams);
+			}
+		}
+	}
 })();

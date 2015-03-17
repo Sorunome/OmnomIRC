@@ -1,5 +1,5 @@
 <?php
-$encriptKeyToUse = 'key from Config.php (created while installation)';
+$encryptKeyToUse = 'key from Config.php (created while installation)';
 $oircUrl = 'http://omnomirc.www.omnimaga.org';
 $network = 1;
 
@@ -27,12 +27,12 @@ if(!isset($_GET['op'])){
 		$ts = time();
 		$key = htmlspecialchars(str_replace(';','%^%',$_GET['sid']));
 		$keyParts = explode('|',$key);
-		if(isset($keyParts[1]) && (int)$keyParts[1] < ($ts + 60) && (int)$keyParts[1] > ($ts - 60) && hash_hmac('sha512',(isset($_SERVER['HTTP_REFERER'])?$_SERVER['HTTP_REFERER']:'THE GAME'),$encriptKeyToUse.$keyParts[1].$network) == $keyParts[0]
+		if(isset($keyParts[1]) && (int)$keyParts[1] < ($ts + 60) && (int)$keyParts[1] > ($ts - 60) && hash_hmac('sha512',(isset($_SERVER['HTTP_REFERER'])?$_SERVER['HTTP_REFERER']:'THE GAME'),$encryptKeyToUse.$keyParts[1].$network) == $keyParts[0]
 					&& $loguser['name']!='' && $loguser['powerlevel']>=0 && !isIPBanned($_SERVER['REMOTE_ADDR'])){
 			
 			$nick = ($loguser['displayname']==''?$loguser['name']:$loguser['displayname']);
 			$time = (string)time();
-			$signature = $time.'|'.hash_hmac('sha512',$nick,$network.$encriptKeyToUse.$time);
+			$signature = $time.'|'.hash_hmac('sha512',$nick,$network.$encryptKeyToUse.$time);
 			$uid = $loguser['id'];
 		}
 	}

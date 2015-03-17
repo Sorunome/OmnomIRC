@@ -88,9 +88,6 @@ if($you->isGlobalOp()){
 				$json->add('db',$config['sql']['db']);
 				$json->add('user',$config['sql']['user']);
 				break;
-			case 'op':
-				$json->add('opGroups',$config['opGroups']);
-				break;
 			case 'smileys':
 				$json->add('smileys',$vars->get('smileys'));
 				break;
@@ -103,6 +100,8 @@ if($you->isGlobalOp()){
 			case 'misc':
 				$json->add('hostname',$config['settings']['hostname']);
 				$json->add('curidFilePath',$config['settings']['curidFilePath']);
+				$json->add('signatureKey',$config['security']['sigKey']);
+				$json->add('ircPasswd',$config['security']['ircPwd']);
 				break;
 			case 'releaseNotes':
 				$json->add('version',$config['info']['version']);
@@ -141,7 +140,7 @@ if($you->isGlobalOp()){
 				break;
 			case 'hotlinks':
 				$vars->set('hotlinks',$jsonData);
-				//writeConfig();
+				$json->add('message','Config saved!');
 				break;
 			case 'sql':
 				$config['sql']['server'] = $jsonData['server'];
@@ -157,7 +156,7 @@ if($you->isGlobalOp()){
 				break;
 			case 'smileys':
 				$vars->set('smileys',$jsonData);
-				//writeConfig();
+				$json->add('message','Config saved!');
 				break;
 			case 'networks':
 				$config['networks'] = $jsonData;
@@ -170,6 +169,8 @@ if($you->isGlobalOp()){
 			case 'misc':
 				$config['settings']['hostname'] = $jsonData['hostname'];
 				$config['settings']['curidFilePath'] = $jsonData['curidFilePath'];
+				$config['security']['sigKey'] = $jsonData['signatureKey'];
+				$config['security']['ircPwd'] = $jsonData['ircPasswd'];
 				writeConfig();
 				break;
 			default:
@@ -180,6 +181,7 @@ if($you->isGlobalOp()){
 	}
 }else{
 	$json->addError('Permission denied');
+	$json->add('denied',true);
 }
 echo $json->get();
 ?>
