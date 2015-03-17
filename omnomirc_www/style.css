@@ -507,17 +507,14 @@ input#message,span#message{
 	width: 84%;
 	width: calc(91% - 121px);
 	width: -webkit-calc(91% - 121px);
+	margin-top: 3px;
 }
 input#message,span#message,input,select{
 	background-color:#FFF;
 	color:#000;
 	border:1px solid #6699FF;
 }
-input#message {
-	margin-top: 3px;
-}
 span#message {
-	margin-top: 3px;
 	display:inline-block;
 	height:16px;
 	padding: 3px 2px 2px 2px;

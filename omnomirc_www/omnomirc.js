@@ -1463,6 +1463,7 @@ oirc = (function(){
 		})(),
 		scroll = (function(){
 			var isDown = false,
+				is_touch = (('ontouchstart' in window) || (navigator.MaxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0)),
 				enableButtons = function(){
 					var addHook = function(elem,effect,inc){
 							var interval;
@@ -1482,13 +1483,23 @@ oirc = (function(){
 										clearInterval(interval);
 									}catch(e){}
 								});
+							if(is_touch){
+								$(elem).bind('touchstart',function(){
+									interval = setInterval(function(){
+										document.getElementById(effect).scrollLeft += inc;
+									},50);
+								}).bind('touchend touchcancel touchleave',function(e){
+									try{
+										clearInterval(interval);
+									}catch(e){}
+								});
+							}
 						};
 					addHook('#arrowLeftChan','ChanListCont',-9);
 					addHook('#arrowRightChan','ChanListCont',9);
 					
 					addHook('#arrowLeftTopic','topicCont',-9);
 					addHook('#arrowRightTopic','topicCont',9);
-					
 				},
 				enableWheel = function(){
 					$('#mBoxCont').bind('DOMMouseScroll mousewheel',function(e){
@@ -1523,9 +1534,8 @@ oirc = (function(){
 						
 				},
 				showBar = function(){
-					var mouseMoveFn = function(e){
-							var y = e.clientY,
-								newscrollbartop = 0;
+					var mouseMoveFn = function(y){
+							var newscrollbartop = 0;
 							if($bar.data('isClicked')){
 								newscrollbartop = parseInt($bar.css('top'),10)+(y-$bar.data('prevY'));
 								document.getElementById('mBoxCont').scrollTop = ((newscrollbartop-38)/($('body')[0].offsetHeight-$bar[0].offsetHeight-38))*(document.getElementById('mBoxCont').scrollHeight-document.getElementById('mBoxCont').clientHeight);
@@ -1553,16 +1563,17 @@ oirc = (function(){
 						},
 						$bar = $('<div>').attr('id','scrollBar').data({prevY:0,isClicked:false}).appendTo('body')
 							.mousemove(function(e){
-								mouseMoveFn(e);
+								mouseMoveFn(e.clientY);
 							})
 							.mousedown(function(){
 								mouseDownFn();
 							})
 							.mouseup(function(){
 								mouseUpFn();
-							});
+							}),
+						$tmp;
 					$bar.css('top',$('body')[0].offsetHeight-$bar[0].offsetHeight);
-					$('<div>')
+					$tmp = $('<div>')
 						.attr('id','scrollArea')
 						.css({
 							display:'none',
@@ -1582,16 +1593,50 @@ oirc = (function(){
 						})
 						.mouseout(function(){
 							mouseUpFn();
-						})
-						.appendTo('body');
+						});
+					if(is_touch){
+						$tmp.bind('touchend touchcancel touchleave',function(e){
+							mouseUpFn();
+						}).bind('touchmove',function(e){
+							e.preventDefault();
+							mouseMoveFn(e.originalEvent.changedTouches[0].clientY);
+						});
+						$bar.bind('touchstart',function(e){
+							e.preventDefault();
+							mouseDownFn();
+						}).bind('touchmove',function(e){
+							e.preventDefault();
+							mouseMoveFn(e.originalEvent.changedTouches[0].clientY);
+						}).bind('touchend touchcancel touchleave',function(e){
+							e.preventDefault();
+							mouseUpFn(e);
+						});
+					}
+					$tmp.appendTo('body');
 					$('<div>')
 						.attr('id','scrollBarLine')
 						.appendTo('body');
 					$(window).trigger('resize');
 				},
 				showButtons = function(){
-					var downIntM,upIntM;
-					$('<span>')
+					var downIntM,
+						upIntM,
+						downIntMfn = function(){
+							downIntM = setInterval(function(){
+								document.getElementById('mBoxCont').scrollTop -= 9;
+								isDown = false;
+							},50);
+						},
+						upIntMfn = function(){
+							upIntM = setInterval(function(){
+								document.getElementById('mBoxCont').scrollTop += 9;
+								if(document.getElementById('mBoxCont').scrollTop+document.getElementById('mBoxCont').clientHeight==document.getElementById('mBoxCont').scrollHeight){
+									isDown = true;
+								}
+							},50);
+						},
+						$tmp;
+					$tmp = $('<span>')
 						.addClass('arrowButtonHoriz3')
 						.append(
 							$('<div>')
@@ -1618,10 +1663,7 @@ oirc = (function(){
 									marginLeft:'-10pt'
 								})
 								.mousedown(function(){
-									downIntM = setInterval(function(){
-										document.getElementById('mBoxCont').scrollTop -= 9;
-										isDown = false;
-									},50);
+									downIntMfn();
 								})
 								.mouseout(function(){
 									try{
@@ -1633,8 +1675,19 @@ oirc = (function(){
 										clearInterval(downIntM);
 									}catch(e){}
 								})
-						).appendTo('body');
-					$('<span>')
+						);
+					if(is_touch){
+						$tmp.bind('touchstart',function(){
+							downIntMfn();
+						}).bind('touchend touchcancel touchleave',function(e){
+							try{
+								clearInterval(downIntM);
+							}catch(e){}
+						});
+					}
+					$tmp.appendTo('body');
+					
+					$tmp = $('<span>')
 						.addClass('arrowButtonHoriz3')
 						.append(
 							$('<div>')
@@ -1661,12 +1714,7 @@ oirc = (function(){
 									marginLeft:'-10pt'
 								})
 								.mousedown(function(){
-									upIntM = setInterval(function(){
-										document.getElementById('mBoxCont').scrollTop += 9;
-										if(document.getElementById('mBoxCont').scrollTop+document.getElementById('mBoxCont').clientHeight==document.getElementById('mBoxCont').scrollHeight){
-											isDown = true;
-										}
-									},50);
+									upIntMfn();
 								})
 								.mouseout(function(){
 									try{
@@ -1678,15 +1726,27 @@ oirc = (function(){
 										clearInterval(upIntM);
 									}catch(e){}
 								})
-						).appendTo('body');
+						);
+					if(is_touch){
+						$tmp.bind('touchstart',function(){
+							upIntMfn();
+						}).bind('touchend touchcancel touchleave',function(e){
+							try{
+								clearInterval(upIntM);
+							}catch(e){}
+						});
+					}
+					$tmp.appendTo('body');
 				};
 			return {
 				down:function(){
 					document.getElementById('mBoxCont').scrollTop = $('#mBoxCont').prop('scrollHeight');
+					reCalcBar();
 					isDown = true;
 				},
 				up:function(){
 					document.getElementById('mBoxCont').scrollTop = 0;
+					reCalcBar();
 					isDown = false;
 				},
 				slide:function(){
@@ -1819,6 +1879,10 @@ oirc = (function(){
 				},
 				isBlurred = false,
 				init = function(){
+					var nua = navigator.userAgent,
+						is_android = ((nua.indexOf('Mozilla/5.0') > -1 && nua.indexOf('Android ') > -1 && nua.indexOf('AppleWebKit') > -1) && !(nua.indexOf('Chrome') > -1)),
+						is_ios = (nua.match(/(iPod|iPhone|iPad)/i) && nua.match(/AppleWebKit/i)),
+						hide_userlist = options.get(14,'F')=='T';
 					page.changeLinks();
 					if(!wysiwyg.support()){
 						$('#message').replaceWith(
@@ -1843,9 +1907,15 @@ oirc = (function(){
 					$('#windowbg2').css('height',parseInt($('html').height(),10) - parseInt($('#message').height() + 14,10));
 					$('#mBoxCont').css('height',parseInt($('#windowbg2').height(),10) - 42);
 					$(window).resize(function(){
-						if(!(navigator.userAgent.match(/(iPod|iPhone|iPad)/i) && navigator.userAgent.match(/AppleWebKit/i))){
-							$('#windowbg2').css('height',parseInt($('html').height(),10) - parseInt($('#message').height() + 14,10));
-							$('#mBoxCont').css('height',parseInt($('#windowbg2').height(),10) - 42);
+						if(!is_ios){
+							var htmlHeight = window.innerHeight,
+								htmlWidth = window.innerWidth,
+								windowsbg2Height = htmlHeight - parseInt($('#message').height() + 14,10);
+							$('#windowbg2').css('height',windowsbg2Height);
+							$('#mBoxCont').css('height',windowsbg2Height - 42);
+							$('html,body').height(htmlHeight);
+							
+							$('input#message,span#message').css('width',htmlWidth*(hide_userlist?1:0.91) - 121);
 						}
 						if(options.get(15,'T')=='T'){
 							$('#mBoxCont').css('width',((document.body.offsetWidth/100)*mBoxContWidthOffset)-22);
@@ -1857,7 +1927,7 @@ oirc = (function(){
 					}).focus(function(){
 						isBlurred = false;
 					});
-					if(options.get(14,'F')=='T'){ // hide userlist is on
+					if(hide_userlist){ // hide userlist is on
 						mBoxContWidthOffset = 99;
 						$('<style>')
 							.append(
