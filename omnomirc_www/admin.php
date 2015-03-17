@@ -88,9 +88,6 @@ if($you->isGlobalOp()){
 				$json->add('db',$config['sql']['db']);
 				$json->add('user',$config['sql']['user']);
 				break;
-			case 'op':
-				$json->add('opGroups',$config['opGroups']);
-				break;
 			case 'smileys':
 				$json->add('smileys',$vars->get('smileys'));
 				break;
@@ -143,7 +140,7 @@ if($you->isGlobalOp()){
 				break;
 			case 'hotlinks':
 				$vars->set('hotlinks',$jsonData);
-				//writeConfig();
+				$json->add('message','Config saved!');
 				break;
 			case 'sql':
 				$config['sql']['server'] = $jsonData['server'];
@@ -159,6 +156,7 @@ if($you->isGlobalOp()){
 				break;
 			case 'smileys':
 				$vars->set('smileys',$jsonData);
+				$json->add('message','Config saved!');
 				break;
 			case 'networks':
 				$config['networks'] = $jsonData;

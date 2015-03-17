@@ -62,7 +62,7 @@
 								': ',$input
 							);
 					}
-				}),
+				}),'<br>',
 				$('<button>')
 					.text('submit')
 					.click(function(){
@@ -91,20 +91,245 @@
 					})
 			);
 		},
-		getJSONEditSettings = function(p,name,data){
-			var json = data;
+		makeChannelsPage = function(chans,nets){
+			var makeAdvancedChanEditingForm = function(chan,i,elem){
+					$(elem).empty().append(
+						$.map(chan.networks,function(net,ni){
+							return [$('<div>').css({
+									'display':'inline-block',
+									'border':'1px solid black',
+									'margin':5
+								})
+								.append(
+									$('<b>').text(nets[net.id].name),
+									' ',
+									$('<a>').text('remove').click(function(e){
+										e.preventDefault();
+										chans[i].networks.splice(ni,1);
+										chan = chans[i];
+										makeAdvancedChanEditingForm(chan,i,$(this).parent().parent());
+									}),
+									'<br>Name:',
+									$('<input>').attr('type','text').val(net.name).change(function(){chans[i].networks[ni].name = this.value;}),
+									(nets[net.id].type==1?[
+										'<br>Hidden:',
+										$('<input>').attr('type','checkbox').attr((net.hidden?'checked':'false'),'checked').change(function(){chans[i].networks[ni].hidden = this.checked;}),
+										'<br>Order:',
+										$('<input>').attr('type','number').val(net.order).change(function(){chans[i].networks[ni].order = parseInt($(this).val(),10);})
+									]:'')
+								),
+								'<br>'
+								];
+						}),
+						$('<select>').append(
+								$('<option>').text('Add to network...').val(-1),
+								$.map(nets,function(n){
+									if(n.type===0){
+										return undefined;
+									}
+									return $('<option>').text(n.name).val(n.id);
+								})
+							)
+							.change(function(){
+								var netId = parseInt($(this).val(),10),
+									maxOrder = 0;
+								$.each(chans,function(chani,ch){
+									$.each(ch.networks,function(neti,nt){
+										if(nt.id==netId &&  nt.order>maxOrder && maxOrder!=-1){
+											maxOrder = nt.order;
+										}
+										if(nt.id==netId && chani==i){
+											maxOrder = -1;
+										}
+									})
+								});
+								if(maxOrder==-1){
+									alert('Network already exists!');
+									$(this).val(-1);
+									return;
+								}
+								chans[i].networks.push({
+									'id':netId,
+									'name':'',
+									'hidden':false,
+									'order':maxOrder+1
+								})
+								chan = chans[i];
+								makeAdvancedChanEditingForm(chan,i,$(this).parent());
+							})
+					);
+				};
 			$('#adminContent').append(
-				'<div style="font-weight:bold">'+name+' Settings</div>',
-				$('<div>').addClass('json-editor').jsonEditor(json,{
-					change:function(data){
-						json = data;
-					}
-				}),
+					'<div style="font-weight:bold">Channel Settings</div>',
+					$('<div>').append(
+							$.map(chans,function(chan,i){
+								return $('<div>').css({
+										'display':'inline-block',
+										'border':'1px solid black',
+										'vertical-align':'top'
+									})
+									.append(
+										$('<b>').text(chan.alias),
+										'<br>Enabled:',
+										$('<input>').attr('type','checkbox').attr((chan.enabled?'checked':'false'),'checked').change(function(){chans[i].enabled = this.checked;}),
+										'<br>',
+										$('<div>').css({
+												'display':'inline-block',
+												'border':'1px solid black'
+											})
+											.append(
+												$('<input>').attr('type','text').val(chan.networks[0].name).change(function(){
+														var _this = this;
+														$.each(chan.networks,function(netI){
+															chans[i].networks[netI].name = $(_this).val();
+														});
+													}),
+												'<br>',
+												$('<a>').text('Show advanced settings').click(function(e){
+													e.preventDefault();
+													makeAdvancedChanEditingForm(chan,i,$(this).parent());
+												})
+											)
+									)
+							}),
+							$('<button>').text('New Channel').click(function(e){
+									e.preventDefault();
+									var alias = prompt('New Channel alias'),
+										netsToAdd = [],
+										maxId = 0;
+									if(alias!=='' && alias!==null){
+										netsToAdd = $.map(nets,function(n){
+												var maxOrder = 0;
+												if(n.type==1){
+													$.each(chans,function(chani,ch){
+														$.each(ch.networks,function(neti,nt){
+															if(nt.id==n.id &&  nt.order>maxOrder && maxOrder!=-1){
+																maxOrder = nt.order;
+															}
+														});
+													});
+												}
+												if(n.type===0){
+													return undefined;
+												}
+												return {
+														'id':n.id,
+														'name':'',
+														'hidden':false,
+														'order':maxOrder+1
+													};
+											});
+										$.each(chans,function(chani,c){
+											if(c.id>maxId){
+												maxId = c.id;
+											}
+										});
+										chans.push({
+												'id':maxId+1,
+												'alias':alias,
+												'enabled':true,
+												'networks':netsToAdd
+											});
+										$('#adminContent').empty();
+										makeChannelsPage(chans,nets);
+									}
+								})
+						),'<br>',
 				$('<button>')
 					.text('submit')
 					.click(function(){
-						sendEdit(p,json);
+						sendEdit('channels',chans);
 					})
+				);
+		},
+		makeHotlinksPage = function(hotlinks){
+			var drawAttrSettings = function($elem,i){
+					$elem.empty().append(
+						$.map(hotlinks[i],function(a,j){
+							if(j=='inner'){
+								return;
+							}
+							return ['<br>',
+								$('<span>').text(j).html(),':',$('<input>').attr('type','text').css('width',120).val(hotlinks[i][j]).change(function(){hotlinks[i][j] = this.value;}),
+								$('<a>').text('x').click(function(e){
+									e.preventDefault();
+									if(j == 'inner'){
+										return;
+									}
+									delete hotlinks[i][j];
+									drawAttrSettings($elem,i);
+								})];
+						}),'<br>',
+						$('<button>').text('New Attribute').click(function(e){
+							e.preventDefault();
+							var name = prompt('new attribute name');
+							if(name!=='' && name!==null){
+								hotlinks[i][name] = '';
+								drawAttrSettings($elem,i);
+							}
+						})
+					);
+				};
+			$('#adminContent').append(
+				'<div style="font-weight:bold">Hotlinks Settings</div>',
+				$.map(hotlinks,function(h,i){
+					$attrSettings = $('<div>');
+					drawAttrSettings($attrSettings,i);
+					return $('<div>').css({
+							'display':'inline-block',
+							'border':'1px solid black',
+							'vertical-align':'top'
+						}).append(
+							$('<input>').attr('type','text').css('width',160).val(hotlinks[i].inner).change(function(){hotlinks[i].inner = this.value;}),
+							'<br>',
+							$('<a>').text('<').click(function(e){
+								e.preventDefault();
+								if(i == 0){
+									return;
+								}
+								var tmp = hotlinks[i-1];
+								hotlinks[i-1] = hotlinks[i];
+								hotlinks[i] = tmp;
+								$('#adminContent').empty();
+								makeHotlinksPage(hotlinks);
+							}),'&nbsp;&nbsp;',
+							$('<a>').text('x').click(function(e){
+								e.preventDefault();
+								if(confirm('Are you sure you want to remove this hotlink?')){
+									hotlinks.splice(i,1);
+									$('#adminContent').empty();
+									makeHotlinksPage(hotlinks);
+								}
+							}),'&nbsp;&nbsp;',
+							$('<a>').text('>').click(function(e){
+								e.preventDefault();
+								if(i == hotlinks.length-1){
+									return;
+								}
+								var tmp = hotlinks[i+1];
+								hotlinks[i+1] = hotlinks[i];
+								hotlinks[i] = tmp;
+								$('#adminContent').empty();
+								makeHotlinksPage(hotlinks);
+							}),
+							'<br>',
+							$attrSettings
+						);
+				}),
+				$('<button>').text('New Hotlink').click(function(e){
+					e.preventDefault();
+					var name = prompt('new hotlink name');
+					if(name!=='' && name!==null){
+						hotlinks.push({
+							inner:name
+						});
+						$('#adminContent').empty();
+						makeHotlinksPage(hotlinks);
+					}
+				}),'<br><br>',
+				$('<button>').text('submit').click(function(){
+					sendEdit('hotlinks',hotlinks);
+				})
 			);
 		},
 		makeSmileysPage = function(smileys){
@@ -187,7 +412,6 @@
 				}),
 				'<br><br>',
 				$('<button>').text('submit').click(function(){
-					console.log(smileys);
 					sendEdit('smileys',smileys);
 				})
 			);
@@ -210,10 +434,10 @@
 											$(elem).replaceWith(
 												$('<span>').append(
 													$.map(nets[i].config.opGroups,function(opg,j){
-														return ['<br>'+opg+' ',
+														return ['<br>'+$('<span>').text(opg).html()+' ',
 															$('<a>').text('x').click(function(e){
 																e.preventDefault();
-																nets[i].config.opGroups.splice(j);
+																nets[i].config.opGroups.splice(j,1);
 																drawOpGroupsSettings($(this).parent());
 															})];
 													}),
@@ -393,164 +617,13 @@
 									$(this).val(-1);
 								}
 							})
-					),
+					),'<br>',
 				$('<button>')
 					.text('submit')
 					.click(function(){
 						sendEdit('networks',nets);
 					})
 			);
-		},
-		makeChannelsPage = function(chans,nets){
-			var makeAdvancedChanEditingForm = function(chan,i,elem){
-					$(elem).empty().append(
-						$.map(chan.networks,function(net,ni){
-							return [$('<div>').css({
-									'display':'inline-block',
-									'border':'1px solid black',
-									'margin':5
-								})
-								.append(
-									$('<b>').text(nets[net.id].name),
-									' ',
-									$('<a>').text('remove').click(function(e){
-										e.preventDefault();
-										chans[i].networks.splice(ni,1);
-										chan = chans[i];
-										makeAdvancedChanEditingForm(chan,i,$(this).parent().parent());
-									}),
-									'<br>Name:',
-									$('<input>').attr('type','text').val(net.name).change(function(){chans[i].networks[ni].name = this.value;}),
-									(nets[net.id].type==1?[
-										'<br>Hidden:',
-										$('<input>').attr('type','checkbox').attr((net.hidden?'checked':'false'),'checked').change(function(){chans[i].networks[ni].hidden = this.checked;}),
-										'<br>Order:',
-										$('<input>').attr('type','number').val(net.order).change(function(){chans[i].networks[ni].order = parseInt($(this).val(),10);})
-									]:'')
-								),
-								'<br>'
-								];
-						}),
-						$('<select>').append(
-								$('<option>').text('Add to network...').val(-1),
-								$.map(nets,function(n){
-									if(n.type===0){
-										return undefined;
-									}
-									return $('<option>').text(n.name).val(n.id);
-								})
-							)
-							.change(function(){
-								var netId = parseInt($(this).val(),10),
-									maxOrder = 0;
-								$.each(chans,function(chani,ch){
-									$.each(ch.networks,function(neti,nt){
-										if(nt.id==netId &&  nt.order>maxOrder && maxOrder!=-1){
-											maxOrder = nt.order;
-										}
-										if(nt.id==netId && chani==i){
-											maxOrder = -1;
-										}
-									})
-								});
-								if(maxOrder==-1){
-									alert('Network already exists!');
-									$(this).val(-1);
-									return;
-								}
-								chans[i].networks.push({
-									'id':netId,
-									'name':'',
-									'hidden':false,
-									'order':maxOrder+1
-								})
-								chan = chans[i];
-								makeAdvancedChanEditingForm(chan,i,$(this).parent());
-							})
-					);
-				};
-			$('#adminContent').append(
-					'<div style="font-weight:bold">Channel Settings</div>',
-					$('<div>').append(
-							$.map(chans,function(chan,i){
-								return $('<div>').css({
-										'display':'inline-block',
-										'border':'1px solid black',
-										'vertical-align':'top'
-									})
-									.append(
-										$('<b>').text(chan.alias),
-										'<br>Enabled:',
-										$('<input>').attr('type','checkbox').attr((chan.enabled?'checked':'false'),'checked').change(function(){chans[i].enabled = this.checked;}),
-										'<br>',
-										$('<div>').css({
-												'display':'inline-block',
-												'border':'1px solid black'
-											})
-											.append(
-												$('<input>').attr('type','text').val(chan.networks[0].name).change(function(){
-														var _this = this;
-														$.each(chan.networks,function(netI){
-															chans[i].networks[netI].name = $(_this).val();
-														});
-													}),
-												'<br>',
-												$('<a>').text('Show advanced settings').click(function(e){
-													e.preventDefault();
-													makeAdvancedChanEditingForm(chan,i,$(this).parent());
-												})
-											)
-									)
-							}),
-							$('<button>').text('New Channel').click(function(e){
-									e.preventDefault();
-									var alias = prompt('New Channel alias'),
-										netsToAdd = [],
-										maxId = 0;
-									if(alias!=='' && alias!==null){
-										netsToAdd = $.map(nets,function(n){
-												var maxOrder = 0;
-												if(n.type==1){
-													$.each(chans,function(chani,ch){
-														$.each(ch.networks,function(neti,nt){
-															if(nt.id==n.id &&  nt.order>maxOrder && maxOrder!=-1){
-																maxOrder = nt.order;
-															}
-														});
-													});
-												}
-												if(n.type===0){
-													return undefined;
-												}
-												return {
-														'id':n.id,
-														'name':'',
-														'hidden':false,
-														'order':maxOrder+1
-													};
-											});
-										$.each(chans,function(chani,c){
-											if(c.id>maxId){
-												maxId = c.id;
-											}
-										});
-										chans.push({
-												'id':maxId+1,
-												'alias':alias,
-												'enabled':true,
-												'networks':netsToAdd
-											});
-										$('#adminContent').empty();
-										makeChannelsPage(chans,nets);
-									}
-								})
-						),
-				$('<button>')
-					.text('submit')
-					.click(function(){
-						sendEdit('channels',chans);
-					})
-				);
 		},
 		makeIndexPage = function(info){
 			$('#adminContent').append(
@@ -617,11 +690,10 @@
 						makeChannelsPage(data.channels,data.nets);
 						break;
 					case 'hotlinks':
-						getJSONEditSettings(p,'Hotlink',data.hotlinks);
+						makeHotlinksPage(data.hotlinks);
 						break;
 					case 'smileys':
 						makeSmileysPage(data.smileys);
-						//getJSONEditSettings(p,'Smiley',data.smileys);
 						break;
 					case 'networks':
 						makeNetworksPage(data.networks);
@@ -631,9 +703,6 @@
 							passwd:''
 						});
 						getInputBoxSettings(p,'SQL',data);
-						break;
-					case 'op':
-						getJSONEditSettings(p,'OP',data.opGroups);
 						break;
 					case 'ws':
 						getInputBoxSettings(p,'WebSockets',data.websockets);

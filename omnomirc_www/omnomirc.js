@@ -48,7 +48,6 @@ oirc = (function(){
 						checkLoginUrl = data.checkLoginUrl;
 						
 						set = ls.get('OmnomIRCCL'+settings.net());
-						console.log(set);
 						if(set===null || set=='' || !set || clOnly){
 							network.getJSON(checkLoginUrl+'&network='+net.toString()+'&jsoncallback=?',function(data){
 								nick = data.nick;

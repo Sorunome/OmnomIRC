@@ -1052,6 +1052,11 @@ class WebSocketsHandler(SocketServer.StreamRequestHandler):
 							'id':m['id'],
 							'network':m['network']
 						})
+					except:
+						self.identified = False
+						self.send_message(json.dumps({'relog':3}))
+						return
+					try:
 						self.banned = r['isbanned']
 						if r['loggedin']:
 							self.identified = True
@@ -1069,7 +1074,6 @@ class WebSocketsHandler(SocketServer.StreamRequestHandler):
 							self.send_message(json.dumps({'relog':r['relog']}))
 					except:
 						self.identified = False
-						self.send_message(json.dumps({'relog':3}))
 				elif m['action'] == 'chan':
 					if self.identified:
 						self.part()
