@@ -159,7 +159,6 @@ if($you->isGlobalOp()){
 				break;
 			case 'smileys':
 				$vars->set('smileys',$jsonData);
-				writeConfig();
 				break;
 			case 'networks':
 				$config['networks'] = $jsonData;

@@ -48,6 +48,7 @@ oirc = (function(){
 						checkLoginUrl = data.checkLoginUrl;
 						
 						set = ls.get('OmnomIRCCL'+settings.net());
+						console.log(set);
 						if(set===null || set=='' || !set || clOnly){
 							network.getJSON(checkLoginUrl+'&network='+net.toString()+'&jsoncallback=?',function(data){
 								nick = data.nick;
@@ -2380,17 +2381,16 @@ oirc = (function(){
 					return s;
 				},
 				parseLinks = function(text){
-					text = text.replace(/(\x01)/g,"");
 					if (!text || text === null || text === undefined){
-						return;
+						return '';
 					}
 					//text = text.replace(/http:\/\/www\.omnimaga\.org\//g,"\x01www.omnimaga.org/");
-					text = text.replace(/http:\/\/ourl\.ca\//g,"\x01ourl.ca/");
-					text = text.replace(/((h111:\/\/(www\.omnimaga\.org\/|ourl\.ca))[-a-zA-Z0-9@:;%_+.~#?&//=]+)/, '<a target="_top" href="$1">$1</a>');
-					text = text.replace(RegExp("(^|.)(((f|ht)(tp|tps):\/\/)[^\\s\x02\x03\x0f\x16\x1d\x1f]*)","g"),'$1<a target="_blank" href="$2">$2</a>');
-					text = text.replace(RegExp("(^|\\s)(www\\.[^\\s\x02\x03\x0f\x16\x1d\x1f]*)","g"),'$1<a target="_blank" href="http://$2">$2</a>');
-					text = text.replace(RegExp("(^|.)\x01([^\\s\x02\x03\x0f\x16\x1d\x1f]*)","g"),'$1<a target="_top" href="http://$2">http://$2</a>');
-					return text;
+					return text.replace(/(\x01)/g,"")
+							.replace(/http:\/\/ourl\.ca\//g,"\x01ourl.ca/")
+							.replace(/((h111:\/\/(www\.omnimaga\.org\/|ourl\.ca))[-a-zA-Z0-9@:;%_+.~#?&//=]+)/, '<a target="_top" href="$1">$1</a>')
+							.replace(RegExp("(^|.)(((f|ht)(tp|tps):\/\/)[^\\s\x02\x03\x0f\x16\x1d\x1f]*)","g"),'$1<a target="_blank" href="$2">$2</a>')
+							.replace(RegExp("(^|\\s)(www\\.[^\\s\x02\x03\x0f\x16\x1d\x1f]*)","g"),'$1<a target="_blank" href="http://$2">$2</a>')
+							.replace(RegExp("(^|.)\x01([^\\s\x02\x03\x0f\x16\x1d\x1f]*)","g"),'$1<a target="_top" href="http://$2">http://$2</a>');
 				},
 				parseColors = function(colorStr){
 					var arrayResults = [],
@@ -2464,8 +2464,8 @@ oirc = (function(){
 								didChange = false;
 						}
 						if(didChange){
-							colorStr += '</span>';
-							colorStr += '<span class="fg-'+textDecoration.fg+' bg-'+textDecoration.bg+'" style="'+(textDecoration.bold?'font-weight:bold;':'')+(textDecoration.underline?'text-decoration:underline;':'')+(textDecoration.italic?'font-style:italic;':'')+'">';
+							colorStr += '</span>'+
+									'<span class="fg-'+textDecoration.fg+' bg-'+textDecoration.bg+'" style="'+(textDecoration.bold?'font-weight:bold;':'')+(textDecoration.underline?'text-decoration:underline;':'')+(textDecoration.italic?'font-style:italic;':'')+'">';
 						}else{
 							colorStr+=arrayResults[i];
 						}

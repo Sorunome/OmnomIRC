@@ -1069,6 +1069,7 @@ class WebSocketsHandler(SocketServer.StreamRequestHandler):
 							self.send_message(json.dumps({'relog':r['relog']}))
 					except:
 						self.identified = False
+						self.send_message(json.dumps({'relog':3}))
 				elif m['action'] == 'chan':
 					if self.identified:
 						self.part()
