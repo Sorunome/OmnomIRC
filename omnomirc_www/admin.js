@@ -651,7 +651,7 @@
 								});
 							})
 						:
-							$('<a>').text('Click here to apply the update').attr('href','updater.php')
+							$('<a>').text('Click here to apply the update').attr('href','updater.php'+(document.URL.split('network=')[1]!==undefined?'?network='+document.URL.split('network=')[1].split('&')[0].split('#')[0]:''))
 						)
 					);
 				}

@@ -1961,11 +1961,12 @@ oirc = (function(){
 							$('input#message,span#message').css('width',htmlWidth*(hide_userlist?1:0.91) - 121);
 						}
 						if(options.get(15,'T')=='T'){
-							$('#mBoxCont').css('width',((htmlWidth/100)*mBoxContWidthOffset)-22);
+							var widthOffset = (htmlWidth/100)*mBoxContWidthOffset;
+							$('#mBoxCont').css('width',widthOffset-22);
 							if(is_mobile_webkit){
-								$('#scrollBarLine').css('left',((htmlWidth/100)*mBoxContWidthOffset) - 16);
-								$('#scrollBar').css('left',((htmlWidth/100)*mBoxContWidthOffset) - 17);
-								$('#UserListContainer').css('left',(htmlWidth/100)*mBoxContWidthOffset);
+								$('#scrollBarLine').css('left',widthOffset - 16);
+								$('#scrollBar').css('left',widthOffset - 17);
+								$('#UserListContainer').css('left',widthOffset);
 							}
 							scroll.reCalcBar();
 						}
