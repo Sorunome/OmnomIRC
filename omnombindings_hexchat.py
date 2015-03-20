@@ -21,7 +21,8 @@ def getNick(prefix,nick):
 def doHighlight(msg):
 	return hexchat.get_info('nick') in msg
 def topicBinding(word,word_eol,userdata):
-	if hexchat.strip(word[0]) in TOPICBOTNICK:
+	s = hexchat.strip(word[0])
+	if s in TOPICBOTNICK or s in TOPICBOTNICK:
 		return hexchat.EAT_ALL
 	return hexchat.EAT_NONE
 def binding(word,word_eol,userdata):
