@@ -360,7 +360,7 @@ oirc = (function(){
 						defaultOption:'T'
 					},
 					{
-						disp:'Enable',
+						disp:'Enable OmnomIRC',
 						id:5,
 						defaultOption:'T'
 					},
