@@ -336,6 +336,17 @@ class Networks{
 	public function getNetsArray(){
 		return $this->nets;
 	}
+	public function getNetworkId(){
+		global $config;
+		if(isset($_GET['network'])){
+			if(($n = $this->get((int)$_GET['network'])) != NULL){
+				if($n['type'] == 1){
+					return $n['id'];
+				}
+			}
+		}
+		return $config['settings']['defaultNetwork'];
+	}
 }
 $networks = new Networks();
 class Users{
@@ -398,19 +409,9 @@ class You{
 			$json->addWarning('ID not set, some features may be unavailable');
 			$this->id = 0;
 		}
-		if(isset($_GET['network'])){
-			if(($this->network = $networks->get((int)$_GET['network'])) != NULL){
-				if($this->network['type'] == 1){
-					$this->network = $this->network['id'];
-				}else{
-					$this->network = $config['settings']['defaultNetwork'];
-				}
-			}else{
-				$this->network = $config['settings']['defaultNetwork'];
-			}
-		}else{
-			$this->network = $config['settings']['defaultNetwork'];
-		}
+		
+		$this->network = $networks->getNetworkId();
+		
 		if(isset($_GET['channel'])){
 			if(preg_match('/^[0-9]+$/',$_GET['channel'])){
 				$this->setChan($_GET['channel']);

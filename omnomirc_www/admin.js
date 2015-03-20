@@ -470,6 +470,8 @@
 											).val(net.config.guests).change(function(e){
 												nets[i].config.guests = parseInt(this.value,10);
 											}),
+											'<br>Extra Channels Message:<br>',
+											$('<textarea>').text(net.config.extraChanMsg).change(function(){nets[i].config.extraChanMsg = this.value;}),
 											'<br>Op Groups: ',
 											$('<a>').text('show').click(function(e){
 												e.preventDefault();

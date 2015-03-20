@@ -33,7 +33,7 @@ oirc = (function(){
 					if(clOnly===undefined){
 						clOnly = false;
 					}
-					network.getJSON('config.php?js'+(document.URL.split('network=')[1]!==undefined?'&network='+document.URL.split('network=')[1].split('&')[0].split('#')[0]:''),function(data){
+					network.getJSON('config.php?js'+(document.URL.split('network=')[1]!==undefined?'&network='+document.URL.split('network=')[1].split('&')[0].split('#')[0]:'')+(clOnly?'&clonly':''),function(data){
 						var set;
 						if(!clOnly){
 							hostname = data.hostname;
@@ -42,6 +42,7 @@ oirc = (function(){
 							networks = data.networks;
 							net = data.network;
 							options.setDefaults(data.defaults);
+							options.setExtraChanMsg(data.extraChanMsg);
 							ws.set(data.websockets.use,data.websockets.host,data.websockets.port,data.websockets.ssl);
 						}
 						
@@ -347,7 +348,9 @@ oirc = (function(){
 						id:9,
 						defaultOption:'F',
 						before:function(){
-							alert("-READ THIS-\nNot all extra channels are owned and controlled by Omnimaga. We cannot be held liable for the content of them.\n\nBy using them, you agree to be governed by the rules inside them.\n\nOmnimaga rules still apply for OmnomIRC communication.");
+							if(extraChanMsg!==''){
+								alert(extraChanMsg);
+							}
 							return true;
 						}
 					},
@@ -438,7 +441,8 @@ oirc = (function(){
 						id:18,
 						defaultOption:'F'
 					}
-				];
+				],
+				extraChanMsg = '';
 			return {
 				setDefaults:function(d){
 					defaults = d;
@@ -468,6 +472,9 @@ oirc = (function(){
 						return (defaults.charAt(optionsNum-1)!=='' && defaults.charAt(optionsNum-1)!='-'?defaults.charAt(optionsNum-1):defaultOption);
 					}
 					return result;
+				},
+				setExtraChanMsg:function(s){
+					extraChanMsg = s;
 				},
 				getFullOptionsString:function(){
 					var optionsString = (refreshCache?(cache=ls.get('OmnomIRCSettings'+settings.net())):cache),

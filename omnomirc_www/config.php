@@ -77,6 +77,17 @@ if(isset($_GET['js'])){
 		}
 	}
 	$cl .= '?sid='.$clsid;
+	if(isset($_GET['clonly'])){
+		echo json_encode(Array(
+			'checkLoginUrl' => $cl
+		));
+		exit;
+	}
+	
+	$net = $networks->getNetworkId();
+	
+	$extraChanMsg = '';
+	
 	$dispNetworks = Array();
 	foreach($config['networks'] as $n){
 		$dispNetworks[] = Array(
@@ -86,6 +97,12 @@ if(isset($_GET['js'])){
 			'name' => $n['name'],
 			'type' => $n['type']
 		);
+		if($n['id'] == $net){
+			$msg = $vars->get('extra_chan_msg_'.(string)$n['id']);
+			if($msg!==NULL){
+				$extraChanMsg = $msg;
+			}
+		}
 	}
 	echo json_encode(Array(
 		'hostname' => $config['settings']['hostname'],
@@ -100,7 +117,8 @@ if(isset($_GET['js'])){
 			'host' => $config['websockets']['host'],
 			'port' => $config['websockets']['port'],
 			'ssl' => $config['websockets']['ssl']
-		)
+		),
+		'extraChanMsg' => $extraChanMsg
 	));
 }
 ?>
