@@ -40,6 +40,22 @@ function getConfig(){
 }
 $config = getConfig();
 
+function getCheckLoginUrl(){
+	global $you,$networks;
+	$net = $networks->get($you->getNetwork());
+	$cl = $net['config']['checkLogin'];
+	$ts = time();
+	$clsid = urlencode(htmlspecialchars(str_replace(';','%^%',hash_hmac('sha512',(isset($_SERVER['HTTP_REFERER'])?$_SERVER['HTTP_REFERER']:'THE GAME'),$config['security']['sigKey'].$ts.$you->getNetwork()).'|'.$ts)));
+	if(isset($_SERVER['HTTP_REFERER'])){
+		$urlhost = parse_url($_SERVER['HTTP_REFERER']);
+		if($urlhost['host'] != $_SERVER['SERVER_NAME']){
+			$clsid = '';
+		}
+	}
+	$cl .= '?sid='.$clsid;
+	return $cl;
+}
+
 if(isset($_GET['js'])){
 	include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 	header('Content-type: text/json');
@@ -66,23 +82,14 @@ if(isset($_GET['js'])){
 		return (($a['order'] < $b['order'])?-1:1);
 	});
 	$net = $networks->get($you->getNetwork());
-	$defaults = $net['config']['defaults'];
-	$cl = $net['config']['checkLogin'];
-	$ts = time();
-	$clsid = urlencode(htmlspecialchars(str_replace(';','%^%',hash_hmac('sha512',(isset($_SERVER['HTTP_REFERER'])?$_SERVER['HTTP_REFERER']:'THE GAME'),$config['security']['sigKey'].$ts.$you->getNetwork()).'|'.$ts)));
-	if(isset($_SERVER['HTTP_REFERER'])){
-		$urlhost = parse_url($_SERVER['HTTP_REFERER']);
-		if($urlhost['host'] != $_SERVER['SERVER_NAME']){
-			$clsid = '';
-		}
-	}
-	$cl .= '?sid='.$clsid;
+	$cl = getCheckLoginUrl();
 	if(isset($_GET['clonly'])){
 		echo json_encode(Array(
 			'checkLoginUrl' => $cl
 		));
 		exit;
 	}
+	$defaults = $net['config']['defaults'];
 	
 	$net = $networks->getNetworkId();
 	

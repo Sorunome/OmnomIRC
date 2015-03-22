@@ -57,10 +57,7 @@ function getPage($title,$head,$body,$page){
 			'</html>';
 }
 if(strpos($_SERVER['HTTP_USER_AGENT'],'textmode;')!==false || isset($_GET['textmode'])){
-	$cl = $networks->get($you->getNetwork());
-	$cl = $cl["config"]["checkLogin"];
-	$ts = time();   
-	header('Location: '.$cl.'?textmode&sid='.urlencode(htmlspecialchars(str_replace(";","%^%",hash_hmac('sha512',(isset($_SERVER['HTTP_X_FORWARDED_FOR'])?$_SERVER['HTTP_X_FORWARDED_FOR']:$_SERVER['REMOTE_ADDR']),$config['security']['sigKey'].$ts.$you->getNetwork())."|".$ts))).'&network='.$you->getNetwork());
+	header('Location: '.getCheckLoginUrl().'&textmode');
 }elseif(isset($_GET['options'])){
 /*
 Options:
