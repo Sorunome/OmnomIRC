@@ -306,7 +306,7 @@ if(!isset($_GET['server'])){
 			$config['channels'][0]['networks'][0]['name'] = $_POST['chan'];
 			$config['networks'][1]['config']['opGroups'] = Array($_POST['group']);
 			if($_POST['defaultOp'] !== ''){
-				$sql->query("INSERT INTO `irc_userstuff` (`name`,`globalOp`) VALUES ('%s',1)",strtolower($_POST['defaultOp']));
+				$sql->query("INSERT INTO `irc_userstuff` (`name`,`network`,`globalOp`) VALUES ('%s',1,1)",strtolower($_POST['defaultOp']));
 			}
 			
 			$config['settings']['hostname'] = $_SERVER['SERVER_NAME'];
