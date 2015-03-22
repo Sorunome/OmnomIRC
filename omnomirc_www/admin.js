@@ -461,7 +461,7 @@
 											$('<input>').attr('type','text').val(net.config.externalStyleSheet).css('width',120).change(function(){nets[i].config.externalStyleSheet = this.value;}),
 											'<br>',
 											$('<button>').text('Use Current settings as defaults').click(function(){
-													nets[i].config.defaults = options.getFullOptionsString();
+													nets[i].config.defaults = oirc.options.getFullOptionsString();
 												}),
 											'<br>',
 											$('<select>').append(
@@ -470,6 +470,8 @@
 											).val(net.config.guests).change(function(e){
 												nets[i].config.guests = parseInt(this.value,10);
 											}),
+											'<br>Extra Channels Message:<br>',
+											$('<textarea>').text(net.config.extraChanMsg).change(function(){nets[i].config.extraChanMsg = this.value;}),
 											'<br>Op Groups: ',
 											$('<a>').text('show').click(function(e){
 												e.preventDefault();
@@ -528,7 +530,16 @@
 									'vertical-align':'top'
 								})
 								.append(
-										$('<span>').css('font-weight','bold').text(net.name),
+										$('<span>').append(
+											$('<span>').css('font-weight','bold').text(net.name),
+											'&nbsp;',
+											$('<a>').text('edit').click(function(e){
+												e.preventDefault();
+												$(this).parent().replaceWith(
+													$('<input>').attr('type','text').val(net.name).change(function(){nets[i].name = this.value;})
+												);
+											})
+										),
 										'<br>Enabled:',
 										$('<input>').attr('type','checkbox').attr((net.enabled?'checked':'false'),'checked').change(function(){nets[i].enabled = this.checked;}),
 										'<br>Normal:',
@@ -651,7 +662,7 @@
 								});
 							})
 						:
-							$('<a>').text('Click here to apply the update').attr('href','updater.php')
+							$('<a>').text('Click here to apply the update').attr('href','updater.php'+(document.URL.split('network=')[1]!==undefined?'?network='+document.URL.split('network=')[1].split('&')[0].split('#')[0]:''))
 						)
 					);
 				}

@@ -51,11 +51,13 @@ CREATE TABLE IF NOT EXISTS `irc_permissions` (
   PRIMARY KEY (`generic_autoincrementing_prikey`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ;
 
-DROP TABLE IF EXISTS `irc_topics`;
-CREATE TABLE IF NOT EXISTS `irc_topics` (
+DROP TABLE IF EXISTS `irc_channels`;
+CREATE TABLE IF NOT EXISTS `irc_channels` (
   `channum` int(11) NOT NULL AUTO_INCREMENT,
-  `chan` varchar(45) NOT NULL,
-  `topic` varchar(1024) NOT NULL,
+  `chan` varchar(45) NOT NULL DEFAULT '',
+  `topic` varchar(1024) NOT NULL DEFAULT '',
+  `ops` TEXT NOT NULL DEFAULT '',
+  `bans` TEXT NOT NULL DEFAULT '',
   PRIMARY KEY (`channum`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;
 
@@ -75,9 +77,8 @@ DROP TABLE IF EXISTS `irc_userstuff`;
 CREATE TABLE IF NOT EXISTS `irc_userstuff` (
   `usernum` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(45) NOT NULL,
+  `network` int(11) NOT NULL,
   `ignores` varchar(1024) NOT NULL,
-  `ops` varchar(1024) NOT NULL,
-  `bans` varchar(1024) NOT NULL,
   `kicks` varchar(1024) NOT NULL,
   `globalOp` int(10) NOT NULL,
   `globalBan` int(10) NOT NULL,

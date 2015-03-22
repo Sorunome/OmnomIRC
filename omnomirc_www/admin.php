@@ -92,6 +92,16 @@ if($you->isGlobalOp()){
 				$json->add('smileys',$vars->get('smileys'));
 				break;
 			case 'networks':
+				foreach($config['networks'] as &$n){
+					if($n['type'] == 1){
+						$m = $vars->get('extra_chan_msg_'.(string)$n['id']);
+						if($m!==NULL){
+							$n['config']['extraChanMsg'] = $m;
+						}else{
+							$n['config']['extraChanMsg'] = '';
+						}
+					}
+				}
 				$json->add('networks',$config['networks']);
 				break;
 			case 'ws':
@@ -159,6 +169,12 @@ if($you->isGlobalOp()){
 				$json->add('message','Config saved!');
 				break;
 			case 'networks':
+				foreach($jsonData as &$n){
+					if(isset($n['config']['extraChanMsg'])){
+						$vars->set('extra_chan_msg_'.(string)$n['id'],$n['config']['extraChanMsg']);
+						unset($n['config']['extraChanMsg']);
+					}
+				}
 				$config['networks'] = $jsonData;
 				writeConfig();
 				break;

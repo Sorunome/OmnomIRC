@@ -94,6 +94,7 @@ body{
 	z-index:42;
 	left:89%;
 	left:calc(90% - 17px);
+	left: -webkit-calc(90% - 17px);
 	cursor:pointer;
 	border-radius: 2px;
 	border:1px solid #6699ff;
@@ -120,11 +121,13 @@ body{
 	width: 6px;
 	height: 100%;
 	height: calc(100% - 39px);
+	height: -webkit-calc(100% - 39px);
 	border: 1px solid #6699FF;
 	border-top:none;
 	top: 38px;
 	left:89%;
 	left: calc(90% - 16px);
+	left: -webkit-calc(90% - 16px);
 	background-color: #CAE4FF;
 }
 body, td, th , tr{
@@ -507,17 +510,14 @@ input#message,span#message{
 	width: 84%;
 	width: calc(91% - 121px);
 	width: -webkit-calc(91% - 121px);
+	margin-top: 3px;
 }
 input#message,span#message,input,select{
 	background-color:#FFF;
 	color:#000;
 	border:1px solid #6699FF;
 }
-input#message {
-	margin-top: 3px;
-}
 span#message {
-	margin-top: 3px;
 	display:inline-block;
 	height:16px;
 	padding: 3px 2px 2px 2px;
@@ -562,6 +562,7 @@ span#message {
 	overflow-x:hidden;
 	overflow-y:hidden;
 	height: calc(100% - 4em);
+	height: -webkit-calc(100% - 4em);
 	background-color: #CAE4FF;
 	border-top: 1px solid #6699FF;
 	transition: 1s 1s background-color;
