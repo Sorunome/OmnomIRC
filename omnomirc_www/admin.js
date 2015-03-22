@@ -530,7 +530,16 @@
 									'vertical-align':'top'
 								})
 								.append(
-										$('<span>').css('font-weight','bold').text(net.name),
+										$('<span>').append(
+											$('<span>').css('font-weight','bold').text(net.name),
+											'&nbsp;',
+											$('<a>').text('edit').click(function(e){
+												e.preventDefault();
+												$(this).parent().replaceWith(
+													$('<input>').attr('type','text').val(net.name).change(function(){nets[i].name = this.value;})
+												);
+											})
+										),
 										'<br>Enabled:',
 										$('<input>').attr('type','checkbox').attr((net.enabled?'checked':'false'),'checked').change(function(){nets[i].enabled = this.checked;}),
 										'<br>Normal:',
