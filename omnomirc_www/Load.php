@@ -72,12 +72,7 @@ $lines = $omnomirc->loadChannel($count);
 
 $temp = $sql->query("SELECT MAX(line_number) AS max FROM `irc_lines`");
 $curMax = $temp[0]['max'];
-$curtopic = $sql->query("SELECT topic FROM `irc_topics` WHERE `chan`='%s'",strtolower($channel));
-if($curtopic[0]['topic']!==NULL){
-	$curtopic = $curtopic[0]['topic'];
-}else{
-	$curtopic = '';
-}
+$curtopic = $channels->getTopic($channel);
 $lines[] = Array(
 	'curLine' => (int)$curMax,
 	'type' => 'topic',

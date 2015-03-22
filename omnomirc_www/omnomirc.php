@@ -149,6 +149,10 @@ class Sqli{
 		$result->free();
 		return $res;
 	}
+	public function insertId(){
+		$mysqli = $this->connectSql();
+		return $mysqli->insert_id;
+	}
 }
 $sql = new Sqli();
 class GlobalVars{
@@ -556,7 +560,7 @@ class You{
 		return false;
 	}
 	public function isOp(){
-		global $config;
+		global $config,$channels;
 		if($this->ops !== NULL){
 			return $this->ops;
 		}
@@ -564,8 +568,7 @@ class You{
 			$this->ops = true;
 			return true;
 		}
-		$userSql = $this->info($nick);
-		if(strpos($userSql['ops'],$this->chan."\n")!==false){
+		if($channels->isOp($this->chan,$this->nick,$this->network)){
 			$this->ops = true;
 			return true;
 		}
@@ -573,9 +576,9 @@ class You{
 		return false;
 	}
 	public function isBanned(){
-		global $networks;
+		global $networks,$channels;
 		$userSql = $this->info();
-		if($userSql['bans']!==NULL && (strpos($userSql['bans'],$this->chan."\n")!==false || $userSql['globalBan']=='1')){
+		if($userSql['globalBan']=='1' || $channels->isBanned($this->chan,$this->nick,$this->network)){
 			return true;
 		}
 		if(!$this->isLoggedIn()){
@@ -711,6 +714,111 @@ class OmnomIRC{
 	}
 }
 $omnomirc = new OmnomIRC();
+class Channels{
+	private $lastFetchType;
+	private function getChanId($chan,$create = false){
+		global $sql;
+		$tmp = $sql->query("SELECT `channum` FROM `irc_channels` WHERE chan='%s'",strtolower($chan));
+		$tmp = $tmp[0];
+		if($tmp['channum']==NULL){
+			if($create){
+				$sql->query("INSERT INTO `irc_channels` (`chan`) VALUES ('%s')",strtolower($chan));
+				return (int)$sql->insertId();
+			}else{
+				return -1;
+			}
+		}
+		return (int)$tmp['channum'];
+	}
+	private function isTypeById($type,$id,$nick,$network){
+		global $sql;
+		$res = $sql->query("SELECT `%s` FROM `irc_channels` WHERE `channum`=%d",$type,$id);
+		$res = json_decode($res[0][$type],true);
+		if(json_last_error()){
+			return false;
+		}
+		$this->lastFetchType = $res;
+		foreach($res as $i => $r){
+			if($r['nick'] == strtolower($nick) && $r['net'] == (int)$network){
+				return $i;
+			}
+		}
+		return false;
+	}
+	private function addType($type,$chan,$nick,$network){
+		global $sql;
+		$id = $this->getChanId($chan,true);
+		if($this->isTypeById($type,$id,$nick,$network)!==false){
+			return false;
+		}
+		$res = $this->lastFetchType;
+		$res[] = Array(
+			'nick' => strtolower($nick),
+			'net' => (int)$network
+		);
+		$sql->query("UPDATE `irc_channels` SET `%s`='%s' WHERE `channum`=%d",$type,json_encode($res),$id);
+		return true;
+	}
+	private function remType($type,$chan,$nick,$network){
+		global $sql;
+		$id = $this->getChanId($chan);
+		if($id == -1){
+			return false;
+		}
+		$offset = $this->isTypeById($type,$id,$nick,$network);
+		if($offset===false){
+			return false;
+		}
+		$res = $this->lastFetchType;
+		unset($res[$offset]);
+		$sql->query("UPDATE `irc_channels` SET `%s`='%s' WHERE `channum`=%d",$type,json_encode($res),$id);
+		return true;
+	}
+	private function isType($type,$chan,$nick,$network){
+		global $sql;
+		$id = $this->getChanId($chan);
+		if($id == -1){
+			return false;
+		}
+		return $this->isTypeById($type,$id,$nick,$network)!==false;
+	}
+	public function setTopic($chan,$topic){
+		global $sql;
+		$sql->query("UPDATE `irc_channels` SET `topic`='%s' WHERE `channum`=%d",$topic,$this->getChanId($chan,true));
+	}
+	public function getTopic($chan){
+		global $sql;
+		$id = $this->getChanId($chan);
+		if($id == -1){
+			return '';
+		}
+		$res = $sql->query("SELECT `topic` FROM `irc_channels` WHERE `channum`=%d",$id);
+		$res = $res[0]['topic'];
+		if($res===NULL){
+			return '';
+		}
+		return $res;
+	}
+	public function addOp($chan,$nick,$network){
+		return $this->addType('ops',$chan,$nick,$network);
+	}
+	public function remOp($chan,$nick,$network){
+		return $this->remType('ops',$chan,$nick,$network);
+	}
+	public function addBan($chan,$nick,$network){
+		return $this->addType('bans',$chan,$nick,$network);
+	}
+	public function remBan($chan,$nick,$network){
+		return $this->remType('bans',$chan,$nick,$network);
+	}
+	public function isOp($chan,$nick,$network){
+		return $this->isType('ops',$chan,$nick,$network);
+	}
+	public function isBanned($chan,$nick,$network){
+		return $this->isType('bans',$chan,$nick,$network);
+	}
+}
+$channels = new Channels();
 
 if(isset($_GET['ident'])){
 	header('Content-Type:text/json');

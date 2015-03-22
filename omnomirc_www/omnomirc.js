@@ -800,6 +800,9 @@ oirc = (function(){
 									return newRequest = parser.addLine(line);
 								});
 							}
+							if(data.banned === true){
+								newRequest = false;
+							}
 							if(newRequest){
 								setTimer();
 							}

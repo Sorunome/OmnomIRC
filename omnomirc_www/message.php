@@ -176,14 +176,9 @@ if(substr($parts[0],0,1)=='/'){
 			if($you->isOp()){
 				unset($parts[0]);
 				$newTopic = implode(' ',$parts);
-				$temp = $sql->query("SELECT * FROM `irc_topics` WHERE chan='%s'",strtolower($channel));
-				$temp = $temp[0];
-				if($temp['chan']==NULL){
-					$sql->query("INSERT INTO `irc_topics` (chan,topic) VALUES('%s','')",strtolower($channel));
-				}
-				$sql->query("UPDATE `irc_topics` SET topic='%s' WHERE chan='%s'",$newTopic,strtolower($channel));
-				$sql->query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES('%s','%s','%s',%d,%d,'%s')",$newTopic,$nick,$channel,0,1,'topic');
-				$sql->query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s','%s')",$nick,$newTopic,"topic",$channel,time(),'1');
+				$channels->setTopic($channel,$newTopic);
+				$sql->query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES ('%s','%s','%s',%d,%d,'%s')",$newTopic,$nick,$channel,0,1,'topic');
+				$sql->query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES ('%s','%s','%s','%s','%s','%s')",$nick,$newTopic,"topic",$channel,time(),'1');
 			}else{
 				$returnmessage = "You aren't op";
 				$sendPm = true;
@@ -194,13 +189,9 @@ if(substr($parts[0],0,1)=='/'){
 			if($you->isOp()){
 				unset($parts[0]);
 				$userToOp = trim(implode(' ',$parts));
-				$remote = new You($userToOp);
-				$userSql = $remote->info();
-				if(strpos($userSql['ops'],$channel."\n")===false) {
-					$userSql['ops'].=$channel."\n";
-					$sql->query("UPDATE `irc_userstuff` SET ops='%s' WHERE name='%s'",$userSql["ops"],strtolower($userToOp));
-					$sql->query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES('%s','%s','%s',%d,%d,'%s')","+o $userToOp",$nick,$channel,0,1,'mode');
-					$sql->query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s','%s')",$nick,"+o $userToOp","mode",$channel,time(),'1');
+				if($channels->addOp($channel,$userToOp,$you->getNetwork())){
+					$sql->query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES ('%s','%s','%s',%d,%d,'%s')","+o $userToOp",$nick,$channel,0,1,'mode');
+					$sql->query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES ('%s','%s','%s','%s','%s','%s')",$nick,"+o $userToOp","mode",$channel,time(),'1');
 				}else{
 					$returnmessage = "\x034ERROR: couldn't op $userToOp: already op.";
 					$sendPm = true;
@@ -215,20 +206,7 @@ if(substr($parts[0],0,1)=='/'){
 			if($you->isOp()){
 				unset($parts[0]);
 				$userToOp = trim(implode(" ",$parts));
-				$remote = new You($userToOp);
-				$userSql = $remote->info();
-				$allOpChans = explode("\n","\n".$userSql['ops']);
-				$deoped = false;
-				for($i=0;$i<sizeof($allOpChans);$i++){
-					if ($allOpChans[$i]==$channel){
-						$deoped = true;
-						unset($allOpChans[$i]);
-					}
-				}
-				unset($allOpChans[0]); //whitespace bug
-				$userSql['ops'] = implode("\n",$allOpChans);
-				if($deoped){
-					$sql->query("UPDATE `irc_userstuff` SET ops='%s' WHERE name='%s'",$userSql["ops"],strtolower($userToOp));
+				if($channels->remOp($channel,$userToOp,$you->getNetwork())){
 					$sql->query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES('%s','%s','%s',%d,%d,'%s')","-o $userToOp",$nick,$channel,0,1,'mode');
 					$sql->query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s','%s')",$nick,"-o $userToOp","mode",$channel,time(),'1');
 				}else{
@@ -245,11 +223,7 @@ if(substr($parts[0],0,1)=='/'){
 			if($you->isOp()){
 				unset($parts[0]);
 				$userToOp = trim(implode(' ',$parts));
-				$remote = new You($userToOp);
-				$userSql = $remote->info();
-				if(strpos($userSql['bans'],$channel."\n")===false){
-					$userSql['bans'].=$channel."\n";
-					$sql->query("UPDATE `irc_userstuff` SET bans='%s' WHERE name='%s'",$userSql["bans"],strtolower($userToOp));
+				if($channels->addBan($channel,$userToOp,$you->getNetwork())){
 					$sql->query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES('%s','%s','%s',%d,%d,'%s')","+b $userToOp",$nick,$channel,0,1,'mode');
 					$sql->query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s','%s')",$nick,"+b $userToOp","mode",$channel,time(),'1');
 				}else{
@@ -267,20 +241,7 @@ if(substr($parts[0],0,1)=='/'){
 			if($you->isOp()){
 				unset($parts[0]);
 				$userToOp = trim(implode(' ',$parts));
-				$remote = new You($userToOp);
-				$userSql = $remote->info();
-				$allOpChans = explode("\n","\n".$userSql['bans']);
-				$deoped = false;
-				for($i=0;$i<sizeof($allOpChans);$i++){
-					if($allOpChans[$i]==$channel){
-						$deoped = true;
-						unset($allOpChans[$i]);
-					}
-				}
-				unset($allOpChans[0]); //whitespace bug
-				$userSql['bans'] = implode("\n",$allOpChans);
-				if($deoped){
-					$sql->query("UPDATE `irc_userstuff` SET bans='%s' WHERE name='%s'",$userSql["bans"],strtolower($userToOp));
+				if($channels->remBan($channel,$userToOp,$you->getNetwork())){
 					$sql->query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES('%s','%s','%s',%d,%d,'%s')","-b $userToOp",$nick,$channel,0,1,'mode');
 					$sql->query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES('%s','%s','%s','%s','%s','%s')",$nick,"-b $userToOp","mode",$channel,time(),'1');
 				}else{
