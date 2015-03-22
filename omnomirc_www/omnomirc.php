@@ -521,11 +521,11 @@ class You{
 		if($this->infoStuff !== NULL){
 			return $this->infoStuff;
 		}
-		$temp = $sql->query("SELECT * FROM `irc_userstuff` WHERE name='%s'",strtolower($this->nick));
+		$temp = $sql->query("SELECT * FROM `irc_userstuff` WHERE name='%s' AND network=%d",strtolower($this->nick),$this->network);
 		$userSql = $temp[0];
 		if($userSql['name']===NULL){
-			$sql->query("INSERT INTO `irc_userstuff` (name) VALUES('%s')",strtolower($this->nick));
-			$temp = $sql->query("SELECT * FROM `irc_userstuff` WHERE name='%s'",strtolower($this->nick));
+			$sql->query("INSERT INTO `irc_userstuff` (name,network) VALUES ('%s',%d)",strtolower($this->nick),$this->network);
+			$temp = $sql->query("SELECT * FROM `irc_userstuff` WHERE usernum=%d",$sql->insertId());
 			$userSql = $temp[0];
 		}
 		$this->infoStuff = $userSql;

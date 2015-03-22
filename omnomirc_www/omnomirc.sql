@@ -77,6 +77,7 @@ DROP TABLE IF EXISTS `irc_userstuff`;
 CREATE TABLE IF NOT EXISTS `irc_userstuff` (
   `usernum` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(45) NOT NULL,
+  `network` int(11) NOT NULL,
   `ignores` varchar(1024) NOT NULL,
   `kicks` varchar(1024) NOT NULL,
   `globalOp` int(10) NOT NULL,
