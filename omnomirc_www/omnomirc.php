@@ -252,7 +252,7 @@ class GlobalVars{
 		if(isset($r['id'])){ //check if we need to update or add a new
 			$sql->query("UPDATE irc_vars SET value='%s',type='%s' WHERE name='%s'",$c,$type,$s);
 		}else{
-			$sql->query("INSERT INTO irc_vars (name,value,type) VALUES('%s','%s',%d)",$s,$c,(int)$type);
+			$sql->query("INSERT INTO irc_vars (name,value,type) VALUES ('%s','%s',%d)",$s,$c,(int)$type);
 		}
 		return true;
 	}
@@ -357,13 +357,13 @@ class Users{
 	public function notifyJoin($nick,$channel,$net){
 		global $sql;
 		if($nick){
-			$sql->query("INSERT INTO `irc_lines` (name1,type,channel,time,online) VALUES('%s','join','%s','%s',%d)",$nick,$channel,time(),(int)$net);
+			$sql->query("INSERT INTO `irc_lines` (name1,type,channel,time,online) VALUES ('%s','join','%s','%s',%d)",$nick,$channel,time(),(int)$net);
 		}
 	}
 	public function notifyPart($nick,$channel,$net){
 		global $sql;
 		if($nick){
-			$sql->query("INSERT INTO `irc_lines` (name1,type,channel,time,online) VALUES('%s','part','%s','%s',%d)",$nick,$channel,time(),(int)$net);
+			$sql->query("INSERT INTO `irc_lines` (name1,type,channel,time,online) VALUES ('%s','part','%s','%s',%d)",$nick,$channel,time(),(int)$net);
 		}
 	}
 	public function clean(){
@@ -511,7 +511,7 @@ class You{
 				$users->notifyJoin($this->nick,$this->chan,$this->getNetwork());
 			}
 		}else{
-			$sql->query("INSERT INTO `irc_users` (`username`,`channel`,`time`,`online`) VALUES('%s','%s','%s',%d)",$this->nick,$this->chan,time(),$this->getNetwork());
+			$sql->query("INSERT INTO `irc_users` (`username`,`channel`,`time`,`online`) VALUES ('%s','%s','%s',%d)",$this->nick,$this->chan,time(),$this->getNetwork());
 			$users->notifyJoin($this->nick,$this->chan,$this->getNetwork());
 		}
 		$users->clean();
