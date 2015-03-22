@@ -184,6 +184,19 @@ if(substr($parts[0],0,1)=='/'){
 				$sendPm = true;
 			}
 			break;
+		case 'mode':
+			$sendNormal = false;
+			if($you->isOp()){
+				unset($parts[0]);
+				$modeStr = trim(implode(' ',$parts));
+				$channels->setMode($channel,$modeStr);
+				$sql->query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES ('%s','%s','%s',%d,%d,'%s')",$modeStr,$nick,$channel,0,1,'mode');
+					$sql->query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES ('%s','%s','%s','%s','%s','%s')",$nick,$modeStr,"mode",$channel,time(),'1');
+			}else{
+				$returnmessage = "You aren't op";
+				$sendPm = true;
+			}
+			break;
 		case 'op':
 			$sendNormal = false;
 			if($you->isOp()){
