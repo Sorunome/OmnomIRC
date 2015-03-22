@@ -155,8 +155,13 @@ class Bot(threading.Thread):
 			self.recieveStr = 'T>'
 			self.sendStr = 'T<'
 	def idToChan(self,i):
-		if i in self.chans:
+		if self.chans.has_key(i):
 			return self.chans[i]
+		try:
+			if self.chans.has_key(int(i)):
+				return self.chans[int(i)]
+		except:
+			return -1
 		return -1
 	def chanToId(self,c):
 		for i,ch in self.chans.iteritems():
