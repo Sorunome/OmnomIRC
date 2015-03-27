@@ -39,6 +39,12 @@ if(!$you->isLoggedIn()){
 	echo $json->get();
 	die();
 }
+if($you->isBanned()){
+	$json->add('banned',true);
+	$json->addError('banned');
+	echo $json->get();
+	die();
+}
 $message = removeLinebrakes(base64_url_decode(str_replace(' ','+',$message)));
 $type = 'message';
 $message = str_replace(Array("\r","\r\n","\n"),' ',$message);
