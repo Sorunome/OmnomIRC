@@ -734,7 +734,7 @@ class Channels{
 		global $sql;
 		$res = $sql->query("SELECT `%s` FROM `irc_channels` WHERE `channum`=%d",$type,$id);
 		$res = json_decode($res[0][$type],true);
-		if(json_last_error()){
+		if(json_last_error() || $res[0][$type] == NULL){
 			return false;
 		}
 		$this->lastFetchType = $res;
