@@ -145,6 +145,8 @@ oirc = (function(){
 		network = (function(){
 			var errors = [],
 				warnings = [],
+				errorsOpen = false,
+				warningsOpen = false,
 				didRelog = false,
 				removeSig = function(s){
 					try{
@@ -184,29 +186,35 @@ oirc = (function(){
 						.find('.count')
 						.text(warnings.length);
 				},
-				checkCallback = function(data,fn,recall){
-					if(data.relog!==undefined && data.relog!=2){
+				checkCallback = function(data,fn,recall,url){
+					if(data.relog!=2){
 						if(data.errors!==undefined){
-							$.each(data.errors,function(i,e){
+							$.map(data.errors,function(e){
 								if(e.type!==undefined){
-									addError(s,e);
+									addError(url,e);
 								}else{
-									addError(s,{
+									addError(url,{
 										type:'misc',
 										message:e
 									});
 								}
+								if(errorsOpen){
+									$('.errors > .errorPopupCont').append(getSinglePopupEntry(errors[errors.length - 1]));
+								}
 							});
 						}
 						if(data.warnings!==undefined){
-							$.each(data.warnings,function(i,w){
+							$.map(data.warnings,function(w){
 								if(w.type!==undefined){
-									addWarning(s,w);
+									addWarning(url,w);
 								}else{
-									addWarning(s,{
+									addWarning(url,{
 										type:'misc',
 										message:w
 									});
+								}
+								if(warningsOpen){
+									$('.warnings > .errorPopupCont').append(getSinglePopupEntry(warnings[warnings.length - 1]));
 								}
 							});
 						}
@@ -232,6 +240,44 @@ oirc = (function(){
 					}else{
 						fn(data);
 					}
+				},
+				getSinglePopupEntry = function(e){
+					return $('<div>')
+						.css('border-bottom','1px solid black')
+						.append(
+							'Time: ',
+							(new Date(e.time)).toLocaleTimeString(),
+							'<br>File: ',
+							$('<span>').text(e.file).html(),
+							$.map(e.content,function(val,i){
+								return ['<br>',$('<span>').text(i).html(),': ',$('<span>').text(val).html()];
+							})
+						);
+				},
+				makePopup = function(type,data,fn){
+					return $('<div>')
+						.addClass('errorPopup')
+						.addClass(type.toLowerCase())
+						.append(
+							$('<a>')
+								.text('Close')
+								.click(function(e){
+									e.preventDefault();
+									$(this).parent().remove();
+									fn();
+								}),
+							'&nbsp;',
+							$('<b>')
+								.text(type),
+							$('<div>')
+								.addClass('errorPopupCont')
+								.append(
+									$.map(data,function(e){
+										return getSinglePopupEntry(e);
+									})
+								)
+						)
+						.appendTo('body');
 				};
 			return {
 				getJSON:function(s,fn,async,urlparams){
@@ -241,16 +287,16 @@ oirc = (function(){
 					if(urlparams==undefined){
 						urlparams = true;
 					}
+					var url = s+(urlparams?'&'+settings.getUrlParams():'');
 					return $.ajax({
-							url:s+(urlparams?'&'+settings.getUrlParams():''),
+							url:url,
 							dataType:'json',
 							async:async
 						})
 						.done(function(data){
 							checkCallback(data,fn,function(){
 								network.getJSON(s,fn,async,urlparams);
-							});
-							
+							},url);
 						});
 				},
 				post:function(s,pdata,fn,async,urlparams){
@@ -260,58 +306,38 @@ oirc = (function(){
 					if(urlparams==undefined){
 						urlparams = true;
 					}
+					var url = s+(urlparams?'&'+settings.getUrlParams():'');
 					return $.ajax({
 							type:'POST',
-							url:s+(urlparams?'&'+settings.getUrlParams():''),
+							url:url,
 							async:async,
 							data:pdata
 						})
 						.done(function(data){
 							checkCallback(data,fn,function(){
 								network.post(s,pdata,fn,async,urlparams);
-							});
+							},url);
 						});
 				},
 				init:function(){
-					var makePopup = function(type,data){
-						return $('<div>')
-								.addClass('errorPopup')
-								.append(
-									$('<a>')
-										.text('Close')
-										.click(function(e){
-											e.preventDefault();
-											$(this).parent().remove();
-										}),
-									'&nbsp;',
-									$('<b>')
-										.text(type),
-									$('<div>')
-										.append(
-											$.map(data,function(e){
-												return $('<div>')
-													.css('border-bottom','1px solid black')
-													.append(
-														'Time: ',
-														(new Date(e.time)).toLocaleTimeString(),
-														'<br>File: ',
-														$('<span>').text(e.file).html(),
-														$.map(e.content,function(val,i){
-															return ['<br>',$('<span>').text(i).html(),': ',$('<span>').text(val).html()];
-														})
-													);
-											})
-										)
-								)
-								.appendTo('body');
-					};
+					
 					$('#errors > .icon')
 						.click(function(){
-							makePopup('Errors',errors);
+							if(!errorsOpen){
+								errorsOpen = true;
+								makePopup('Errors',errors,function(){
+									errorsOpen = false;
+								});
+							}
 						});
 					$('#warnings > .icon')
 						.click(function(){
-							makePopup('Warnings',warnings);
+							if(!warningsOpen){
+								warningsOpen = true;
+								makePopup('Warnings',warnings,function(){
+									warningsOpen = false;
+								});
+							}
 						});
 				}
 			};

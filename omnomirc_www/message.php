@@ -23,6 +23,7 @@ if(isset($_GET['textmode'])){
 	session_start();
 }
 include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
+
 function removeLinebrakes($s){
 	return str_replace(Array('\0','\r','\n'),'',$s);
 }

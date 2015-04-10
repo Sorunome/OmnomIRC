@@ -91,6 +91,7 @@ header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Cache-Control: post-check=0, pre-check=0',false);
 header('Pragma: no-cache');
 date_default_timezone_set('UTC');
+
 include_once(realpath(dirname(__FILE__)).'/config.php');
 function base64_url_encode($input){
 	return strtr(base64_encode($input),'+/=','-_,');
@@ -734,7 +735,7 @@ class Channels{
 		global $sql;
 		$res = $sql->query("SELECT `%s` FROM `irc_channels` WHERE `channum`=%d",$type,$id);
 		$res = json_decode($res[0][$type],true);
-		if(json_last_error() || $res[0][$type] == NULL){
+		if(json_last_error() || !isset($res[0]) || $res[0][$type] == NULL){
 			return false;
 		}
 		$this->lastFetchType = $res;
