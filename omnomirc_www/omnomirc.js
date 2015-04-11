@@ -2697,7 +2697,9 @@ oirc = (function(){
 							return false;
 							break;
 						case 'refresh':
-							location.reload();
+							if(logMode!==true && channels.getCurrent()!==''){
+								location.reload();
+							}
 							return false;
 							break;
 						case 'join':

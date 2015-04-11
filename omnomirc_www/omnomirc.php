@@ -298,7 +298,7 @@ class Secure{
 		$ts = time();
 		$hard = 60*60*24;
 		$soft = 60*5;
-		if(isset($sigParts[1]) && ((int)$sigParts[0])==$sigParts[0]){
+		if($sig != '' && $nick != '' && isset($sigParts[1]) && ((int)$sigParts[0])==$sigParts[0]){
 			$sts = (int)$sigParts[0];
 			$sigs = $sigParts[1];
 			if($sts > ($ts - $hard - $soft) && $sts < ($ts + $hard + $soft)){
@@ -446,7 +446,7 @@ class You{
 		$this->globalOps = NULL;
 		$this->ops = NULL;
 		$this->infoStuff = NULL;
-		$this->loggedIn = ($this->nick!=='' && $this->sig!=='' && $security->checkSig($this->sig,$this->nick,$this->network));
+		$this->loggedIn = $security->checkSig($this->sig,$this->nick,$this->network);
 		if(!$this->loggedIn){
 			if(!isset($_GET['noLoginErrors'])){
 				$json->addWarning('Not logged in');
