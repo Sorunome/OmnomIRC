@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS `irc_channels` (
   `topic` varchar(1024) NOT NULL DEFAULT '',
   `ops` TEXT NOT NULL DEFAULT '',
   `bans` TEXT NOT NULL DEFAULT '',
+  `modes` TEXT NOT NULL DEFAULT '',
   PRIMARY KEY (`channum`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;
 

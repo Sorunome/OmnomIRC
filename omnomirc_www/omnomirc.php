@@ -91,6 +91,7 @@ header('Cache-Control: no-store, no-cache, must-revalidate');
 header('Cache-Control: post-check=0, pre-check=0',false);
 header('Pragma: no-cache');
 date_default_timezone_set('UTC');
+
 include_once(realpath(dirname(__FILE__)).'/config.php');
 function base64_url_encode($input){
 	return strtr(base64_encode($input),'+/=','-_,');
@@ -734,7 +735,7 @@ class Channels{
 		global $sql;
 		$res = $sql->query("SELECT `%s` FROM `irc_channels` WHERE `channum`=%d",$type,$id);
 		$res = json_decode($res[0][$type],true);
-		if(json_last_error()){
+		if(json_last_error() || !isset($res[0]) || $res[0][$type] == NULL){
 			return false;
 		}
 		$this->lastFetchType = $res;
@@ -816,6 +817,102 @@ class Channels{
 	}
 	public function isBanned($chan,$nick,$network){
 		return $this->isType('bans',$chan,$nick,$network);
+	}
+	public function setMode($chan,$s){
+		global $sql,$you;
+		$id = $this->getChanId($chan,true);
+		$oldModes = $sql->query("SELECT `modes` FROM `irc_channels` WHERE `channum`=%d",$id);
+		$oldModes = $oldModes[0]['modes'];
+		if($oldModes===NULL){
+			$oldModes = '';
+		}
+		$s = $oldModes."\n".$s;
+		
+		$network = $you->getNetwork();
+		$space = strpos($s,' ');
+		$modesWithArgs = 'ob';
+		$allowedModes = 'obc';
+		
+		
+		$args = Array();
+		if($space===false){
+			$modestring = $s;
+		}else{
+			$modestring = substr($s,0,$space); // parse args
+			$argstring = substr($s,$space+1);
+			preg_match_all('/"(?:\\\\.|[^\\\\"])*"|\S+/',$argstring,$matches);
+			$args = $matches[0];
+			foreach($args as &$a){
+				if($a[0] == '"'){
+					$a = substr($a,1,strlen($a)-2);
+				}
+				$a = stripslashes($a);
+			}
+			$args = array_reverse($args);
+		}
+		$modes = Array(
+			'+' => Array(),
+			'-' => Array()
+		);
+		$add = NULL;
+		for($i=0;$i<strlen($modestring);$i++){
+			$c = $modestring[$i];
+			switch($c){
+				case '+':
+					$add = true;
+					break;
+				case '-':
+					$add = false;
+					break;
+				case "\n":
+					$add = NULL;
+					break;
+				default:
+					if(strpos($allowedModes,$c)!==false){
+						if($add===true){
+							if(strpos($modesWithArgs,$c)!==false){
+								$arg = array_pop($args);
+								switch($c){
+									case 'o':
+										$this->addOp($chan,$arg,$network);
+										break;
+									case 'b':
+										$this->addBan($chan,$arg,$network);
+										break;
+								}
+							}else{
+								unset($modes['-'][$c]);
+								$modes['+'][$c] = true;
+							}
+						}elseif($add===false){
+							if(strpos($modesWithArgs,$c)!==false){
+								$arg = array_pop($args);
+								switch($c){
+									case 'o':
+										$this->remOp($chan,$arg,$network);
+										break;
+									case 'b':
+										$this->remBan($chan,$arg,$network);
+										break;
+								}
+							}else{
+								unset($modes['+'][$c]);
+								$modes['-'][$c] = true;
+							}
+						}
+					}
+			}
+		}
+		$newModes = '+';
+		foreach($modes['+'] as $m => $t){
+			$newModes .= $m;
+		}
+		$newModes .= '-';
+		foreach($modes['-'] as $m => $t){
+			$newModes .= $m;
+		}
+		$sql->query("UPDATE `irc_channels` SET `modes`='%s' WHERE `channum`=%d",$newModes,$id);
+		return true;
 	}
 }
 $channels = new Channels();

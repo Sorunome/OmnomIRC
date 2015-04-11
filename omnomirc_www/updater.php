@@ -1,6 +1,6 @@
 <?php
 error_reporting(0);
-$installScriptVersion = '2.9.0.4';
+$installScriptVersion = '2.9.0.5';
 include_once(realpath(dirname(__FILE__)).'/config.php');
 // IMPORTANT!!!! sqli object ONLY FOR INSTALLATION SCRIPT
 class Sqli{

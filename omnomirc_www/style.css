@@ -662,7 +662,7 @@ span#message {
 
 #icons {
 	position:absolute;
-	bottom:3px;
+	bottom:6px;
 	right:270px;
 	z-index:45;
 	line-height:16px;

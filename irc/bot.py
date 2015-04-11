@@ -155,8 +155,13 @@ class Bot(threading.Thread):
 			self.recieveStr = 'T>'
 			self.sendStr = 'T<'
 	def idToChan(self,i):
-		if i in self.chans:
+		if self.chans.has_key(i):
 			return self.chans[i]
+		try:
+			if self.chans.has_key(int(i)):
+				return self.chans[int(i)]
+		except:
+			return -1
 		return -1
 	def chanToId(self,c):
 		for i,ch in self.chans.iteritems():
@@ -242,11 +247,11 @@ class Bot(threading.Thread):
 			print('(1)<< '+str({'name1':n1,'name2':n2,'type':t,'message':m,'channel':c}))
 			sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`) VALUES ('%s','%s','%s','%s','%s','%s',%d)",[n1,n2,m,t,c,str(int(time.time())),int(self.i)])
 			if t=='topic':
-				temp = sql.query("SELECT channum FROM `irc_topics` WHERE chan='%s'",[c.lower()])
+				temp = sql.query("SELECT channum FROM `irc_channels` WHERE chan='%s'",[c.lower()])
 				if len(temp)==0:
-					sql.query("INSERT INTO `irc_topics` (chan,topic) VALUES('%s','%s')",[c.lower(),m])
+					sql.query("INSERT INTO `irc_channels` (chan,topic) VALUES('%s','%s')",[c.lower(),m])
 				else:
-					sql.query("UPDATE `irc_topics` SET topic='%s' WHERE chan='%s'",[m,c.lower()])
+					sql.query("UPDATE `irc_channels` SET topic='%s' WHERE chan='%s'",[m,c.lower()])
 			if t=='action' or t=='message':
 				sql.query("UPDATE `irc_users` SET lastMsg='%s' WHERE username='%s' AND channel='%s' AND online=%d",[str(int(time.time())),n1,c,int(self.i)])
 			handle.updateCurline()
