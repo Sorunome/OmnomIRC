@@ -2693,14 +2693,16 @@ oirc = (function(){
 							}
 							break;
 						case 'relog':
-							settings.fetch(undefined,true);
-							return false;
+							addLine = false;
+							if(logMode!==true && channels.getCurrent()!==''){
+								settings.fetch(undefined,true);
+							}
 							break;
 						case 'refresh':
+							addLine = false;
 							if(logMode!==true && channels.getCurrent()!==''){
 								location.reload();
 							}
-							return false;
 							break;
 						case 'join':
 							tdMessage = [name,' has joined '+channels.getCurrentName()];
