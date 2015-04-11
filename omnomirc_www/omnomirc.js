@@ -2542,9 +2542,9 @@ oirc = (function(){
 					return text.replace(/(\x01)/g,"")
 							.replace(/http:\/\/ourl\.ca\//g,"\x01ourl.ca/")
 							.replace(/((h111:\/\/(www\.omnimaga\.org\/|ourl\.ca))[-a-zA-Z0-9@:;%_+.~#?&//=]+)/, '<a target="_top" href="$1">$1</a>')
-							.replace(RegExp("(^|.)(((f|ht)(tp|tps):\/\/)[^\\s\x02\x03\x0f\x16\x1d\x1f]*)","g"),'$1<a target="_blank" href="$2">$2</a>')
-							.replace(RegExp("(^|\\s)(www\\.[^\\s\x02\x03\x0f\x16\x1d\x1f]*)","g"),'$1<a target="_blank" href="http://$2">$2</a>')
-							.replace(RegExp("(^|.)\x01([^\\s\x02\x03\x0f\x16\x1d\x1f]*)","g"),'$1<a target="_top" href="http://$2">http://$2</a>');
+							.replace(RegExp("(^|.)(((f|ht)(tp|tps):\/\/)[^\\s\x02\x03\x0f\x16\x1d\x1f\"]*)","g"),'$1<a target="_blank" href="$2">$2</a>')
+							.replace(RegExp("(^|\\s)(www\\.[^\\s\x02\x03\x0f\x16\x1d\x1f\"]*)","g"),'$1<a target="_blank" href="http://$2">$2</a>')
+							.replace(RegExp("(^|.)\x01([^\\s\x02\x03\x0f\x16\x1d\x1f\"]*)","g"),'$1<a target="_top" href="http://$2">http://$2</a>');
 				},
 				parseColors = function(colorStr){
 					var arrayResults = [],
