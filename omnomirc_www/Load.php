@@ -82,11 +82,13 @@ array_push($lines,array(
 $json->add('lines',$lines);
 $users = array();
 $result = $sql->query("SELECT username,online,channel FROM `irc_users` WHERE `channel`='%s' AND `isOnline`=1 AND username IS NOT NULL ORDER BY username",$channel);
-foreach($result as $user){
-	array_push($users,array(
-		'nick' => $user['username'],
-		'network' => (int)$user['online']
-	));
+if($result[0]['username']!==NULL){ // we have at least one user
+	foreach($result as $user){
+		array_push($users,array(
+			'nick' => $user['username'],
+			'network' => (int)$user['online']
+		));
+	}
 }
 $json->add('users',$users);
 if($you->isLoggedIn()){
