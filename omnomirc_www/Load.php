@@ -41,7 +41,7 @@ if(!$you->isLoggedIn() && $net['config']['guests'] == 0){
 		$json->addError($msg);
 	}
 	echo $json->get();
-	die();
+	exit;
 }
 
 
