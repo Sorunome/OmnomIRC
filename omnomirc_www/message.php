@@ -68,12 +68,7 @@ $pm = false;
 $sendNormal = true;
 $reload = false;
 $sendPm = false;
-$userSql = $you->info();
-if(strpos($userSql['bans'],$you->chan."\n")!==false){
-	$json->addError('banned');
-	echo $json->get();
-	die();
-}
+
 if(substr($parts[0],0,1)=='/'){
 	switch(strtolower(substr($parts[0],1))) {
 		case 'me':
