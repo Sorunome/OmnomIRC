@@ -526,7 +526,7 @@ class You{
 		$userSql = $temp[0];
 		if($userSql['name']===NULL){
 			$sql->query("INSERT INTO `irc_userstuff` (name,network) VALUES ('%s',%d)",strtolower($this->nick),$this->network);
-			$temp = $sql->query("SELECT * FROM `irc_userstuff` WHERE usernum=%d",$sql->insertId());
+			$temp = $sql->query("SELECT usernum,name,ignores,kicks,globalOp,globalBan,network FROM `irc_userstuff` WHERE usernum=%d",$sql->insertId());
 			$userSql = $temp[0];
 		}
 		$this->infoStuff = $userSql;
