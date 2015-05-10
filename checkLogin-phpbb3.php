@@ -60,6 +60,11 @@ if(isset($_GET['op']) && !isset($_GET['time'])){
 	echo json_encode(Array(
 		'group' => $group
 	));
+}elseif(isset($_GET['c'])){
+	header('Content-Type: text/json');
+	echo json_encode(array(
+		'nick' => $_GET['n']
+	));
 }elseif(isset($_GET['time'])){
 	header('Content-Type: text/json');
 	echo json_encode(Array(

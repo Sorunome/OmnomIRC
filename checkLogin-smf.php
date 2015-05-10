@@ -52,11 +52,6 @@ if(isset($_GET['op']) && !isset($_GET['time'])){
 	echo json_encode(Array(
 		'group' => $group
 	));
-}elseif(isset($_GET['time'])){
-	header('Content-Type: text/json');
-	echo json_encode(Array(
-		'time' => time()
-	));
 }elseif(isset($_GET['c'])){
 	header('Content-Type: text/json');
 	
@@ -73,6 +68,11 @@ if(isset($_GET['op']) && !isset($_GET['time'])){
 	}
 	echo json_encode(array(
 		'nick' => $cnick
+	));
+}elseif(isset($_GET['time'])){
+	header('Content-Type: text/json');
+	echo json_encode(Array(
+		'time' => time()
 	));
 }elseif(isset($_GET['ul'])){
 	$request = $smcFunc['db_query']('',"SELECT id_member FROM {db_prefix}members WHERE real_name = {string:real_name} LIMIT 1",array('real_name' => $_GET['ul']) );

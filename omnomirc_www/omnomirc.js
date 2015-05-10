@@ -2544,7 +2544,7 @@ oirc = (function(){
 							cn = $('<span>').append($('<span>').addClass('uName-'+rcolors[sum %= 9].toString()).html(n)).html();
 							break;
 						case '2': //server
-							if(net!==undefined){
+							if(net!==undefined && net.checkLogin!==undefined){
 								addLink = false;
 								if(cacheServerNicks[uid]===undefined){
 									network.getJSON(net.checkLogin+'?c='+uid.toString(10)+'&n='+ne,function(data){

@@ -55,6 +55,16 @@ if(isset($_GET['op']) && !isset($_GET['time'])){
 	echo json_encode(Array(
 		'group' => $group
 	));
+}elseif(isset($_GET['c'])){
+	header('Content-Type: text/json');
+	// here you return the HTML of a nick, so add colors, links and all those things. $_GET['c'] holds the UID and $_GET['n'] holds the nick.
+	// It is recommended to fetch everything from the UID and if that fails just reply back the nick
+	
+	$n = $_GET['n'];
+	
+	echo json_encode(array(
+		'nick' => $n
+	));
 }elseif(isset($_GET['time'])){
 	header('Content-Type: text/json');
 	echo json_encode(Array(
