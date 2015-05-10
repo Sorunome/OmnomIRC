@@ -33,8 +33,8 @@ if(!isset($_GET['op'])){
 					&& $user_info['name']!='' && !$user_info['is_guest'] && !is_not_banned()){
 			$nick = html_entity_decode($user_info['name']);
 			$time = (string)time();
-			$signature = $time.'|'.hash_hmac('sha512',$nick,$network.$encryptKeyToUse.$time);
 			$uid = $context['user']['id'];
+			$signature = $time.'|'.hash_hmac('sha512',$nick.$uid,$network.$encryptKeyToUse.$time);
 		}
 	}
 }
@@ -56,6 +56,23 @@ if(isset($_GET['op']) && !isset($_GET['time'])){
 	header('Content-Type: text/json');
 	echo json_encode(Array(
 		'time' => time()
+	));
+}elseif(isset($_GET['c'])){
+	header('Content-Type: text/json');
+	
+	$request = $smcFunc['db_query']('',"SELECT id_member FROM {db_prefix}members WHERE id_member = {int:id_member} LIMIT 1",array('id_member' => $_GET['c']) );
+	$res = $smcFunc['db_fetch_assoc']($request);
+	$smcFunc['db_free_result']($request);
+	
+	$cnick = $_GET['n'];
+	if($res){
+		$id = (int)$res['id_member'];
+		loadMemberData($id);
+		loadMemberContext($id);
+		$cnick = '<span style="color:'.$memberContext[$id]['group_color'].';">'.$memberContext[$id]['link'].'</span>';
+	}
+	echo json_encode(array(
+		'nick' => $cnick
 	));
 }elseif(isset($_GET['ul'])){
 	$request = $smcFunc['db_query']('',"SELECT id_member FROM {db_prefix}members WHERE real_name = {string:real_name} LIMIT 1",array('real_name' => $_GET['ul']) );

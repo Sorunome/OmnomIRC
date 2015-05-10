@@ -33,8 +33,8 @@ if(!isset($_GET['op'])){
 					&& $mybb->user['username']!='' && !$mybb->user['isbannedgroup']){
 			$nick = $mybb->user['username'];
 			$time = (string)time();
-			$signature = $time.'|'.hash_hmac('sha512',$nick,$network.$encryptKeyToUse.$time);
 			$uid = $mybb->user['uid'];
+			$signature = $time.'|'.hash_hmac('sha512',$nick.$uid,$network.$encryptKeyToUse.$time);
 		}
 	}
 }

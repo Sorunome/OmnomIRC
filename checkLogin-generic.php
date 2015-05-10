@@ -35,8 +35,8 @@ if(!isset($_GET['op'])){
 					&& $isUserLoggedIn){
 			$nick = 'somename'; // get the name of the user
 			$time = (string)time();
-			$signature = $time.'|'.hash_hmac('sha512',$nick,$network.$encryptKeyToUse.$time);
 			$uid = 9001; // get the user id of the user
+			$signature = $time.'|'.hash_hmac('sha512',$nick.$uid,$network.$encryptKeyToUse.$time);
 		}
 	}
 }

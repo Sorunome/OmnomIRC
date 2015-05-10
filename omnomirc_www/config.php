@@ -97,13 +97,17 @@ if(isset($_GET['js'])){
 	
 	$dispNetworks = Array();
 	foreach($config['networks'] as $n){
-		$dispNetworks[] = Array(
+		$addNet = array(
 			'id' => $n['id'],
 			'normal' => $n['normal'],
 			'userlist' => $n['userlist'],
 			'name' => $n['name'],
 			'type' => $n['type']
 		);
+		if($addNet['type'] == 1){
+			$addNet['checkLogin'] = $n['config']['checkLogin'];
+		}
+		$dispNetworks[] = $addNet;
 		if($n['id'] == $net){
 			$msg = $vars->get('extra_chan_msg_'.(string)$n['id']);
 			if($msg!==NULL){

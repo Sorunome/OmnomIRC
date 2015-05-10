@@ -70,25 +70,20 @@ $json->add('admin',$you->isGlobalOp());
 $lines = $omnomirc->loadChannel($count);
 
 array_push($lines,array(
-	'curLine' => (int)$sql->query("SELECT MAX(line_number) AS max FROM `irc_lines`")[0]['max'],
+	'curLine' => (int)$sql->query("SELECT MAX(`line_number`) AS `max` FROM `irc_lines`")[0]['max'],
 	'type' => 'topic',
 	'network' => -1,
 	'time' => time(),
 	'name' => '',
 	'message' => $channels->getTopic($channel),
 	'name2' => '',
-	'chan' => $channel
+	'chan' => $channel,
+	'uid' => -1
 ));
 $json->add('lines',$lines);
-$users = array();
-$result = $sql->query("SELECT username,online,channel FROM `irc_users` WHERE `channel`='%s' AND `isOnline`=1 AND username IS NOT NULL ORDER BY username",$channel);
-if($result[0]['username']!==NULL){ // we have at least one user
-	foreach($result as $user){
-		array_push($users,array(
-			'nick' => $user['username'],
-			'network' => (int)$user['online']
-		));
-	}
+$users = $sql->query("SELECT `username` AS `nick`,`online` AS `network` FROM `irc_users` WHERE `channel`='%s' AND `isOnline`=1 AND `username` IS NOT NULL ORDER BY `username`",$channel);
+if($users[0]['nick'] == NULL){
+	$users = Array();
 }
 $json->add('users',$users);
 if($you->isLoggedIn()){

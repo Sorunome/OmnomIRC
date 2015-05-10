@@ -38,8 +38,8 @@ if(!isset($_GET['op'])){
 					&& $user->data['is_registered']){ // TODO: not banned etc
 			$nick = $user->data['username'];
 			$time = (string)time();
-			$signature = $time.'|'.hash_hmac('sha512',$nick,$network.$encryptKeyToUse.$time);
 			$uid = (int)$user->data['user_id'];
+			$signature = $time.'|'.hash_hmac('sha512',$nick.$uid,$network.$encryptKeyToUse.$time);
 		}
 	}
 }

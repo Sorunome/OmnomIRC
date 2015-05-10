@@ -32,8 +32,8 @@ if(!isset($_GET['op'])){
 			
 			$nick = ($loguser['displayname']==''?$loguser['name']:$loguser['displayname']);
 			$time = (string)time();
-			$signature = $time.'|'.hash_hmac('sha512',$nick,$network.$encryptKeyToUse.$time);
 			$uid = $loguser['id'];
+			$signature = $time.'|'.hash_hmac('sha512',$nick.$uid,$network.$encryptKeyToUse.$time);
 		}
 	}
 }

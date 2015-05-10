@@ -504,7 +504,7 @@ class OIRCLink(threading.Thread):
 				temp = handle.getCurline()
 				if temp>curline:
 					curline = temp
-					res = sql.query('SELECT fromSource,channel,type,action,prikey,nick,message FROM irc_outgoing_messages')
+					res = sql.query('SELECT fromSource,channel,type,action,prikey,nick,message,uid FROM irc_outgoing_messages')
 					if len(res) > 0:
 						print('(1)>> '+str(res))
 						lastline = 0
@@ -516,7 +516,7 @@ class OIRCLink(threading.Thread):
 								if row['type']=='server':
 									handle.sendToOther('OmnomIRC',row['nick'],row['type'],row['message'],row['channel'],row['fromSource'])
 								else:
-									handle.sendToOther(row['nick'],'',row['type'],row['message'],row['channel'],row['fromSource'])
+									handle.sendToOther(row['nick'],'',row['type'],row['message'],row['channel'],row['fromSource'],int(row['uid']))
 								
 								if row['type']=='topic':
 									handle.sendTopicToOther(row['message'],row['channel'],row['fromSource'])
@@ -767,7 +767,7 @@ class Main():
 		for b in self.bots:
 			if ib != b.i and b.main:
 				b.send(s)
-	def sendToOther(self,n1,n2,t,m,c,s):
+	def sendToOther(self,n1,n2,t,m,c,s,uid = -1):
 		oircOnly = False
 		try:
 			c = int(c)
@@ -829,7 +829,7 @@ class Main():
 								client.identified
 							)
 						)):
-						client.sendLine(n1,n2,t,m,c,s)
+						client.sendLine(n1,n2,t,m,c,s,uid)
 				except Exception as inst:
 					print(inst)
 					traceback.print_exc()
@@ -991,8 +991,8 @@ class WebSocketsHandler(SocketServer.StreamRequestHandler):
 				return
 		if c!='':
 			print('('+str(self.network)+')>> '+str({'chan':c,'nick':self.nick,'message':m,'type':t}))
-			handle.sendToOther(self.nick,'',t,m,c,self.network)
-			sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`) VALUES ('%s','%s','%s','%s','%s','%s',%d)",[self.nick,'',m,t,c,str(int(time.time())),int(self.network)])
+			handle.sendToOther(self.nick,'',t,m,c,self.network,self.uid)
+			sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`,`uid`) VALUES ('%s','%s','%s','%s','%s','%s',%d,%d)",[self.nick,'',m,t,c,str(int(time.time())),int(self.network),self.uid])
 			sql.query("UPDATE `irc_users` SET lastMsg='%s' WHERE username='%s' AND channel='%s' AND online=%d",[str(int(time.time())),self.nick,self.chan,int(self.network)])
 			handle.updateCurline()
 	def join(self): # updates nick in userlist
@@ -1006,13 +1006,13 @@ class WebSocketsHandler(SocketServer.StreamRequestHandler):
 				sql.query("INSERT INTO `irc_lines` (name1,type,channel,time,online) VALUES('%s','join','%s','%s',%d)",[self.nick,self.chan,str(int(time.time())),int(self.network)])
 		else:
 			sql.query("INSERT INTO `irc_users` (`username`,`channel`,`time`,`online`) VALUES('%s','%s',0,%d)",[self.nick,self.chan,self.network])
-			sql.query("INSERT INTO `irc_lines` (name1,type,channel,time,online) VALUES('%s','join','%s','%s',%d)",[self.nick,self.chan,str(int(time.time())),int(self.network)])
+			sql.query("INSERT INTO `irc_lines` (name1,type,channel,time,online,uid) VALUES('%s','join','%s','%s',%d,%d)",[self.nick,self.chan,str(int(time.time())),int(self.network),self.uid])
 	def part(self):
 		if self.chan!='':
 			sql.query("UPDATE `irc_users` SET `isOnline`='0' WHERE `username` = '%s' AND `channel` = '%s' AND `online` = %d",[self.nick,self.chan,self.network]);
-			sql.query("INSERT INTO `irc_lines` (name1,type,channel,time,online) VALUES('%s','part','%s','%s',%d)",[self.nick,self.chan,str(int(time.time())),int(self.network)])
+			sql.query("INSERT INTO `irc_lines` (name1,type,channel,time,online,uid) VALUES('%s','part','%s','%s',%d,%d)",[self.nick,self.chan,str(int(time.time())),int(self.network),self.uid])
 
-	def sendLine(self,n1,n2,t,m,c,s): #name 1, name 2, type, message, channel, source
+	def sendLine(self,n1,n2,t,m,c,s,uid): #name 1, name 2, type, message, channel, source
 		if self.banned:
 			return False
 		s = json.dumps({'line':{
@@ -1023,7 +1023,8 @@ class WebSocketsHandler(SocketServer.StreamRequestHandler):
 			'name':n1.encode('utf-8'),
 			'message':m.encode('utf-8'),
 			'name2':n2.encode('utf-8'),
-			'chan':c
+			'chan':c,
+			'uid':uid
 		}})
 		self.send_message(s)
 	def handshake(self):

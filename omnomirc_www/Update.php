@@ -131,7 +131,8 @@ while(true){
 			'name' => 'OmnomIRC',
 			'message' => 'Time to relog!',
 			'name2' => '',
-			'chan' => ''
+			'chan' => '',
+			'uid' => -1
 		);
 	}
 	if($result['line_number'] === NULL){
@@ -152,7 +153,8 @@ while(true){
 				'name' => $result['name1'],
 				'message' => $result['message'],
 				'name2' => $result['name2'],
-				'chan' => $result['channel']
+				'chan' => $result['channel'],
+				'uid' => (int)$result['uid']
 			);
 		}else{
 			$lines[] = Array(
@@ -163,7 +165,8 @@ while(true){
 				'name' => '',
 				'message' => '',
 				'name2' => '',
-				'chan' => ''
+				'chan' => '',
+				'uid' => -1
 			);
 		}
 		$json->add('lines',$lines);
@@ -183,7 +186,8 @@ while(true){
 				'name' => $result['name1'],
 				'message' => $result['message'],
 				'name2' => $result['name2'],
-				'chan' => $result['channel']
+				'chan' => $result['channel'],
+				'uid' => (int)$result['uid']
 			);
 		}else{
 			$lines[] = Array(
@@ -194,7 +198,8 @@ while(true){
 				'name' => '',
 				'message' => '',
 				'name2' => '',
-				'chan' => ''
+				'chan' => '',
+				'uid' => -1
 			);
 		}
 	}

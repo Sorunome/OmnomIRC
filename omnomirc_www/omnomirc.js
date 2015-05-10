@@ -367,7 +367,25 @@ oirc = (function(){
 					{
 						disp:'Colored Names',
 						id:3,
-						defaultOption:'F'
+						defaultOption:'0',
+						handler:function(){
+							return $('<td>')
+								.attr('colspan',2)
+								.css('border-right','none')
+								.append($('<select>')
+									.change(function(){
+										options.set(3,this.value);
+									})
+									.append(
+										$.map(['none','calc','server'],function(v,i){
+											return $('<option>')
+												.attr((options.get(3,'0')==i?'selected':'false'),'selected')
+												.val(i)
+												.text(v);
+										})
+									)
+								)
+						}
 					},
 					{
 						disp:'Show extra Channels',
@@ -718,7 +736,7 @@ oirc = (function(){
 					network.getJSON('omnomirc.php?getcurline&noLoginErrors',function(data){
 						request.setCurLine(data.curline);
 						request.start();
-					},undefined,false);
+					});
 				},
 				identify = function(){
 					ws.send($.extend({action:'ident'},settings.getIdentParams()));
@@ -743,6 +761,7 @@ oirc = (function(){
 					socket.onmessage = function(e){
 						try{
 							var data = JSON.parse(e.data);
+							console.log(data);
 							if(allowLines && data.line!==undefined){
 								parser.addLine(data.line);
 							}
@@ -2503,24 +2522,49 @@ oirc = (function(){
 				maxLines = 200,
 				lastMessage = 0,
 				ignores = [],
-				parseName = function(n,o){
+				cacheServerNicks = {},
+				parseName = function(n,o,uid){
+					if(uid === undefined){
+						uid = -1;
+					}
 					n = (n=='\x00'?'':n); //fix 0-string bug
 					var ne = encodeURIComponent(n);
 					n = $('<span>').text(n).html();
 					var rcolors = [19,20,22,24,25,26,27,28,29],
 						sum = 0,
 						i = 0,
-						cn = n;
-					if(options.get(3,'F')=='T'){
-						while(n[i]){
-							sum += n.charCodeAt(i++);
-						}
-						cn = $('<span>').append($('<span>').addClass('uName-'+rcolors[sum %= 9].toString()).html(n)).html();
-					}else{
-						cn = n;
+						cn = n,
+						net = settings.networks()[o],
+						addLink = true;
+					switch(options.get(3,'0')){
+						case '1': // calc
+							while(n[i]){
+								sum += n.charCodeAt(i++);
+							}
+							cn = $('<span>').append($('<span>').addClass('uName-'+rcolors[sum %= 9].toString()).html(n)).html();
+							break;
+						case '2': //server
+							if(net!==undefined){
+								addLink = false;
+								if(cacheServerNicks[uid]===undefined){
+									network.getJSON(net.checkLogin+'?c='+uid.toString(10)+'&n='+ne,function(data){
+										cacheServerNicks[uid] = data.nick;
+									},false,false);
+								}
+								cn = cacheServerNicks[uid];
+							}else{
+								cn = n;
+							}
+							break;
+						default: // none
+							cn = n;
+							break;
 					}
-					if(settings.networks()[o]!==undefined){
-						return '<span title="'+settings.networks()[o].name+'">'+settings.networks()[o].normal.split('NICKENCODE').join(ne).split('NICK').join(cn)+'</span>';
+					if(net!==undefined && addLink){
+						cn = net.normal.split('NICKENCODE').join(ne).split('NICK').join(cn).split('USERID').join(uid.toString(10));
+					}
+					if(net!==undefined){
+						return '<span title="'+net.name+'">'+cn+'</span>';
 					}
 					return '<span title="Unknown Network">'+cn+'</span>';
 				},
@@ -2662,7 +2706,7 @@ oirc = (function(){
 						return false;
 					}
 					var $mBox = $('#MessageBox'),
-						name = parseName(line.name,line.network),
+						name = parseName(line.name,line.network,line.uid),
 						message = parseMessage(line.message),
 						tdName = '*',
 						tdMessage = message,
