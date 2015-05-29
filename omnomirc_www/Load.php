@@ -34,12 +34,7 @@ if(isset($_GET['userinfo'])){
 
 $net = $networks->get($you->getNetwork());
 if(!$you->isLoggedIn() && $net['config']['guests'] == 0){
-	$msg = 'You need to log in to be able to view chat!';
-	if(isset($_GET['noLoginErrors'])){
-		$json->add('message',$msg);
-	}else{
-		$json->addError($msg);
-	}
+	$json->add('message','You need to log in to be able to view chat!');
 	echo $json->get();
 	exit;
 }

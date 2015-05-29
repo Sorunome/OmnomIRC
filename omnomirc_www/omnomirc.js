@@ -2302,9 +2302,11 @@ oirc = (function(){
 					});
 				},
 				init:function(){
-					if(settings.loggedIn()){
-						$('#sendMessage')
-							.submit(function(e){
+					
+					$('#sendMessage')
+						.submit(function(e){
+							e.preventDefault();
+							if(settings.loggedIn()){
 								var val = '';
 								if(!wysiwyg.support()){
 									val = $('#message').val();
@@ -2314,14 +2316,13 @@ oirc = (function(){
 									oldMessages.add($('#message').html());
 									val = wysiwyg.getMsg();
 								}
-								e.preventDefault();
 								if(!$('#message').attr('disabled') && val!==''){
 									sendMessage(val);
 								}
-							});
-					}else{
+							}
+						});
+					if(!settings.loggedIn()){
 						$('#message')
-							.attr('disabled','true')
 							.val('You need to login if you want to chat!');
 					}
 				}

@@ -77,8 +77,7 @@ while(true){
 	}
 	$you->update();
 	if($nick){
-		$query = $sql->query("
-			SELECT * FROM `irc_lines`
+		$query = $sql->query("SELECT * FROM `irc_lines`
 			WHERE
 				`line_number` > %d
 			AND
@@ -90,14 +89,14 @@ while(true){
 						(
 							`channel` = '%s'
 							AND
-							`online` = %d
+							`Online` = %d
 						)
 						OR
 						(
 							
 							`name1` = '%s'
 							AND
-							`online` = %d
+							`Online` = %d
 						)
 					)
 					AND
@@ -171,7 +170,7 @@ while(true){
 		}
 		$json->add('lines',$lines);
 		echo $json->get();
-		die();
+		exit;
 	}
 	foreach($query as $result){
 		if(!isset($result['time'])){
