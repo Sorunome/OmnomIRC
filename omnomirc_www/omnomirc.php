@@ -308,6 +308,7 @@ class Secure{
 					}
 					return true;
 				}
+				$json->doRelog(3);
 				return false;
 			}else{
 				if($this->sign($nick,$uid,$network,(string)$sts) == $sig){

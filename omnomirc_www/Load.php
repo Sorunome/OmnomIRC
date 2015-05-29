@@ -29,7 +29,7 @@ if(isset($_GET['userinfo'])){
 		$json->addError('Bad parameters');
 		echo $json->get();
 	}
-	die();
+	exit;
 }
 
 $net = $networks->get($you->getNetwork());
