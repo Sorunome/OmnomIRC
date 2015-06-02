@@ -1345,12 +1345,17 @@ oirc = (function(){
 					if(startChar == ' '){
 						startPos++;
 					}
+					console.log('=====');
+					console.log(startChar);
+					console.log(startPos);
+					endPos = (!wysiwyg.support()?$('#message')[0].selectionStart:window.getSelection().anchorOffset);
 					endChar = messageVal.charAt(endPos);
 					while(endChar != ' ' && ++endPos <= messageVal.length){
 						endChar = messageVal.charAt(endPos);
 					}
 					endPos0 = endPos;
-					return messageVal.substr(startPos,endPos - startPos).trim();
+					tabWord = messageVal.substr(startPos,endPos - startPos).trim();
+					return tabWord;
 				},
 				getTabComplete = function(){
 					var messageVal = (!wysiwyg.support()?$('#message')[0].value:node.nodeValue),
@@ -1358,29 +1363,13 @@ oirc = (function(){
 					if(messageVal === null){
 						return;
 					}
+					name = search(getCurrentWord(),tabCount);
 					if(!isInTab){
 						tabAppendStr = ' ';
-						startPos = (!wysiwyg.support()?$('#message')[0].selectionStart:window.getSelection().anchorOffset);
-						startChar = messageVal.charAt(startPos);
-						while(startChar != ' ' && --startPos > 0){
-							startChar = messageVal.charAt(startPos);
-						}
-						if(startChar == ' '){
-							startChar+=2;
-						}
 						if(startPos===0){
 							tabAppendStr = ': ';
 						}
-						endPos = (!wysiwyg.support()?$('#message')[0].selectionStart:window.getSelection().anchorOffset);
-						endChar = messageVal.charAt(endPos);
-						while(endChar != ' ' && ++endPos <= messageVal.length){
-							endChar = messageVal.charAt(endPos);
-						}
-						if(endChar == ' '){
-							endChar-=2;
-						}
 					}
-					name = search(getCurrentWord(),tabCount);
 					if(name == getCurrentWord()){
 						tabCount = 0;
 						name = search(getCurrentWord(),tabCount);
@@ -1418,10 +1407,9 @@ oirc = (function(){
 								if(!e.ctrlKey){
 									e.preventDefault();
 									
-									tabWord = getCurrentWord();
 									getTabComplete();
-									tabCount++;
 									isInTab = true;
+									tabCount++;
 									setTimeout(1,1);
 								}
 							}else{
