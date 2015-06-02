@@ -5,13 +5,10 @@ function getConfig(){
 	$json = "";
 	foreach($cfg as $line){
 		if($searchingJson){
-			if(trim($line)=='//JSONSTART'){
+			if(trim($line)=='?>'){
 				$searchingJson = false;
 			}
 		}else{
-			if(trim($line)=='//JSONEND'){
-				break;
-			}
 			$json .= "\n".$line;
 		}
 	}
@@ -23,10 +20,9 @@ function writeConfig(){
 	$file = '<?php
 /* This is a automatically generated config-file by OmnomIRC, please use the admin pannel to edit it! */
 header("Location:index.php");
-//JSONSTART
-//'.json_encode($config).'
-//JSONEND
-?>';
+exit;
+?>
+'.json_encode($config);
 	if(file_put_contents(realpath(dirname(__FILE__)).'/config.json.php',$file)){
 		return true;
 	}else{
@@ -43,13 +39,16 @@ function base64_url_decode($input){
 	return base64_decode(strtr($input,'-_,','+/=')); 
 }
 if(!isset($_GET['server'])){
+	if(!$config['installed']){
+		die('Installation is still in progress');
+	}
 	(@include_once(realpath(dirname(__FILE__)).'/hook-'.$config['hook'].'.php')) or die('Failed to include hook file!');
 }
 
 if(isset($_GET['op'])){
 	header('Content-Type: application/json');
 	$group = '';
-	$id = $_GET['u'];
+	$id = $_GET['op'];
 	if($id == (int)$id){
 		$group = hook_get_group((int)$id);
 	}
@@ -71,8 +70,8 @@ if(isset($_GET['op'])){
 	$key = htmlspecialchars(str_replace(';','%^%',$_GET['server']));
 	$keyParts = explode('|',$key);
 	$ts = time();
-	if(sizeof($keyParts) >= 3 && (int)$keyParts[1] < ($ts + 60) && (int)$keyParts[1] > ($ts - 60)
-				&& hash_hmac('sha512',$keyParts[2],$config['sigKey'].$keyParts[1].$config['network']) == $keyParts[0]){
+	if(!$config['installed'] || (sizeof($keyParts) >= 3 && (int)$keyParts[1] < ($ts + 60) && (int)$keyParts[1] > ($ts - 60)
+				&& hash_hmac('sha512',$keyParts[2],$config['sigKey'].$keyParts[1].$config['network']) == $keyParts[0])){
 		// we are now a verified server
 		switch($_GET['action']){
 			case 'getHooks':

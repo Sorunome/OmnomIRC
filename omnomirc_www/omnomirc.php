@@ -558,7 +558,7 @@ class You{
 		}
 		$net = $networks->get($this->getNetwork());
 		$cl = $net['config']['checkLogin'];
-		$returnPosition = json_decode(trim(file_get_contents($cl.'?op&u='.$this->id.'&nick='.base64_url_encode($this->nick))));
+		$returnPosition = json_decode(trim(file_get_contents($cl.'?op='.$this->id)));
 		$opGroups = array_map('strtolower',array_map('trim',array_map('strip_tags',$net['config']['opGroups'])));
 		if(in_array(strtolower(trim(strip_tags($returnPosition->group))),$opGroups)){
 			$this->globalOps = true;

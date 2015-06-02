@@ -7,7 +7,7 @@ require_once "../global.php";
 function hook_get_group($id){
 	// $id is the int of the user, should return a string to identify the group
 	$user = get_user((int) $id);
-	return $user['usergroup'];
+	return $user['usergroup'] or '';
 }
 function hook_get_color_nick($n,$id){
 	// $n is the nick, $id is the user id, return a string (HTML) how the nick color should look like
