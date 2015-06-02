@@ -1345,9 +1345,6 @@ oirc = (function(){
 					if(startChar == ' '){
 						startPos++;
 					}
-					console.log('=====');
-					console.log(startChar);
-					console.log(startPos);
 					endPos = (!wysiwyg.support()?$('#message')[0].selectionStart:window.getSelection().anchorOffset);
 					endChar = messageVal.charAt(endPos);
 					while(endChar != ' ' && ++endPos <= messageVal.length){

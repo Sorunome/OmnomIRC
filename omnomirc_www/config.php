@@ -58,7 +58,7 @@ function getCheckLoginUrl(){
 
 if(isset($_GET['js'])){
 	include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
-	header('Content-type: text/json');
+	header('Content-type: application/json');
 	
 	$cl = getCheckLoginUrl();
 	if(isset($_GET['clonly'])){
