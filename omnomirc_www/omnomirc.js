@@ -484,6 +484,11 @@ oirc = (function(){
 						disp:'Use WYSIWYG editor (experimental)',
 						id:18,
 						defaultOption:'F'
+					},
+					{
+						disp:'Enable simple text decorations',
+						id:19,
+						defaultOption:'F'
 					}
 				],
 				extraChanMsg = '';
@@ -2316,8 +2321,10 @@ oirc = (function(){
 									oldMessages.add($('#message').html());
 									val = wysiwyg.getMsg();
 								}
+								val = parser.parseTextDecorations(val);
 								if(!$('#message').attr('disabled') && val!==''){
 									sendMessage(val);
+									$('#message').focus(); // fix IE not doing that automatically
 								}
 							}
 						});
@@ -2934,6 +2941,15 @@ oirc = (function(){
 				},
 				setIgnoreList:function(a){
 					ignores = a;
+				},
+				parseTextDecorations:function(s){
+					if(s !== '' && options.get(19,'F') == 'T'){
+						if(s[0] == '>'){
+							s = '\x033'+s;
+						}
+						s = s.replace(/(\*[^\*]+\*)/g,'\x02$1\x02').replace(/(\/[^\/]+\/)/g,'\x1d$1\x1d').replace(/(_[^_]+_)/g,'\x1f$1\x1f');
+					}
+					return s;
 				}
 			};
 		})();

@@ -721,6 +721,9 @@ span#message {
 	top:35px;
 	z-index:10;
 }
+#logDatePicker > table {
+	width:172px;
+}
 .logDatePickerDay{
 	cursor:pointer;
 }
