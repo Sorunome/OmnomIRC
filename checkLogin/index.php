@@ -12,7 +12,6 @@ function getConfig(){
 			$json .= "\n".$line;
 		}
 	}
-	$json = implode("\n",explode("\n//",$json));
 	return json_decode($json,true);
 }
 function writeConfig(){
@@ -71,18 +70,9 @@ if(isset($_GET['op'])){
 	$keyParts = explode('|',$key);
 	$ts = time();
 	if(!$config['installed'] || (sizeof($keyParts) >= 3 && (int)$keyParts[1] < ($ts + 60) && (int)$keyParts[1] > ($ts - 60)
-				&& hash_hmac('sha512',$keyParts[2],$config['sigKey'].$keyParts[1].$config['network']) == $keyParts[0])){
+				&& hash_hmac('sha512',$keyParts[2],$config['sigKey'].$keyParts[1]) == $keyParts[0])){
 		// we are now a verified server
 		switch($_GET['action']){
-			case 'getHooks':
-				$a = array();
-				foreach(scandir('.') as $f){
-					if(preg_match('/^hook-([a-zA-Z0-9-\.,+_]+)\.php$/',$f,$match)){
-						$a[] = $match[1];
-					}
-				}
-				echo json_encode($a);
-				break;
 			case 'set':
 				$val = $_GET['val'];
 				switch($_GET['var']){
@@ -100,6 +90,33 @@ if(isset($_GET['op'])){
 				}
 				echo json_encode(array(
 					'success' => writeConfig()
+				));
+				break;
+			case 'get':
+				$hooks = array();
+				foreach(scandir('.') as $f){
+					if(preg_match('/^hook-([a-zA-Z0-9-\.,+_]+)\.php$/',$f,$match)){
+						$hooks[] = $match[1];
+					}
+				}
+				echo json_encode(array(
+					'hook' => $config['hook'],
+					'network' => $config['network'],
+					'hooks' => $hooks
+				));
+				break;
+			case 'update':
+				$msg = '';
+				if($s = @file_get_contents(base64_url_decode($_GET['a']))){
+					if(!(@file_put_contents(base64_url_decode($_GET['b']),$s))){
+						$msg = 'Couldn\'t save file';
+					}
+				}else{
+					$msg = 'No route to download server';
+				}
+				echo json_encode(array(
+					'success' => ($msg === ''),
+					'message' => $msg
 				));
 				break;
 		}

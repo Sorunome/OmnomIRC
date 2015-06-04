@@ -67,6 +67,15 @@ class Json{
 	public function doRelog($i){
 		$this->relog = $i;
 	}
+	public function getIndex($key){
+		if(isset($this->json[$key])){
+			return $this->json[$key];
+		}
+		return NULL;
+	}
+	public function deleteIndex($key){
+		unset($this->json[$key]);
+	}
 }
 $json = new Json();
 
@@ -710,18 +719,6 @@ class OmnomIRC{
 			}
 			break;
 		}
-		if($you->nick===false){
-			$linesExtra[] = array(
-				'curLine' => 0,
-				'type' => 'relog',
-				'network' => 0,
-				'time' => time(),
-				'name' => 'OmnomIRC',
-				'message' => 'Time to relog!',
-				'name2' => '',
-				'chan' => ''
-			);
-		}
 		return array_merge($lines,$linesExtra);
 	}
 	public function getNick($uid,$net){
@@ -948,7 +945,7 @@ class Channels{
 $channels = new Channels();
 
 if(isset($_GET['ident'])){
-	header('Content-Type:text/json');
+	header('Content-Type:application/json');
 	$json->add('loggedin',$you->isLoggedIn());
 	$json->add('isglobalop',$you->isGlobalOp());
 	$json->add('isbanned',$you->isBanned());
@@ -956,7 +953,7 @@ if(isset($_GET['ident'])){
 	exit;
 }
 if(isset($_GET['getcurline'])){
-	header('Content-Type:text/json');
+	header('Content-Type:application/json');
 	$json->clear();
 	$json->add('curline',(int)file_get_contents($config['settings']['curidFilePath']));
 	echo $json->get();

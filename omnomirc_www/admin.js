@@ -457,6 +457,34 @@
 											$('<b>').text('OmnomIRC network'),
 											'<br>checkLogin:',
 											$('<input>').attr('type','text').val(net.config.checkLogin).css('width',160).change(function(){nets[i].config.checkLogin = this.value;}),
+											'<br>checkLogin hook:',
+											$('<span>').on('now',function(){
+												var _self = this;
+												console.log(_self);
+												oirc.network.getJSON('admin.php?get=checkLogin&i='+i.toString(10),function(data){
+													var s = '';
+													if(data.success === false){
+														s = 'ERROR: couldn\'t reach checkLogin server, perhaps the changed URL needs to be saved?';
+													}else if(data.auth === false){
+														s = 'ERROR: couldn\'t identify with checkLogin server, perhaps sigKey is false?';
+													}
+													if(s!==''){
+														$(_self).replaceWith($('<span>').append(s));
+														return;
+													}
+													$(_self).replaceWith(
+														$('<span>').append(
+															$('<select>').append(
+																$.map(data.checkLogin.hooks,function(v){
+																	return $('<option>').val(v).text(v);
+																})
+															).val(data.checkLogin.hook).change(function(){
+																nets[i].config.checkLoginHook = this.value;
+															})
+														)
+													);
+												});
+											}).trigger('now'),
 											'<br>externalStyleSheet:',
 											$('<input>').attr('type','text').val(net.config.externalStyleSheet).css('width',120).change(function(){nets[i].config.externalStyleSheet = this.value;}),
 											'<br>',
