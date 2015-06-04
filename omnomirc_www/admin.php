@@ -37,10 +37,9 @@ function writeConfig($silent = false){
 	$file = '<?php
 /* This is a automatically generated config-file by OmnomIRC, please use the admin pannel to edit it! */
 header("Location:index.php");
-//JSONSTART
-//'.json_encode($config).'
-//JSONEND
-?>';
+exit;
+?>
+'.json_encode($config);
 	if(file_put_contents(realpath(dirname(__FILE__)).'/config.json.php',$file)){
 		if(!$silent){
 			if(!($m = $json->getIndex('message'))){

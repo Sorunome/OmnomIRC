@@ -25,17 +25,13 @@ function getConfig(){
 	$json = "";
 	foreach($cfg as $line){
 		if($searchingJson){
-			if(trim($line)=='//JSONSTART'){
+			if(trim($line)=='?>'){
 				$searchingJson = false;
 			}
 		}else{
-			if(trim($line)=='//JSONEND'){
-				break;
-			}
 			$json .= "\n".$line;
 		}
 	}
-	$json = implode("\n",explode("\n//",$json));
 	return json_decode($json,true);
 }
 $config = getConfig();
