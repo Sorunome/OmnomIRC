@@ -25,26 +25,22 @@ function getConfig(){
 	$json = "";
 	foreach($cfg as $line){
 		if($searchingJson){
-			if(trim($line)=='//JSONSTART'){
+			if(trim($line)=='?>'){
 				$searchingJson = false;
 			}
 		}else{
-			if(trim($line)=='//JSONEND'){
-				break;
-			}
 			$json .= "\n".$line;
 		}
 	}
-	$json = implode("\n",explode("\n//",$json));
 	return json_decode($json,true);
 }
 $config = getConfig();
 
 function getCheckLoginUrl(){
-	global $you,$networks;
+	global $you,$networks,$config;
 	$net = $networks->get($you->getNetwork());
 	$cl = $net['config']['checkLogin'];
-	$ts = time();
+	$ts = (string)time();
 	$clsid = urlencode(htmlspecialchars(str_replace(';','%^%',hash_hmac('sha512',(isset($_SERVER['HTTP_REFERER'])?$_SERVER['HTTP_REFERER']:'THE GAME'),$config['security']['sigKey'].$ts.$you->getNetwork()).'|'.$ts)));
 	if(isset($_SERVER['HTTP_REFERER'])){
 		$urlhost = parse_url($_SERVER['HTTP_REFERER']);
@@ -58,7 +54,16 @@ function getCheckLoginUrl(){
 
 if(isset($_GET['js'])){
 	include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
-	header('Content-type: text/json');
+	header('Content-type: application/json');
+	
+	$cl = getCheckLoginUrl();
+	if(isset($_GET['clonly'])){
+		echo json_encode(Array(
+			'checkLoginUrl' => $cl
+		));
+		exit;
+	}
+	
 	$channels = Array();
 	foreach($config['channels'] as $chan){
 		if($chan['enabled']){
@@ -82,13 +87,7 @@ if(isset($_GET['js'])){
 		return (($a['order'] < $b['order'])?-1:1);
 	});
 	$net = $networks->get($you->getNetwork());
-	$cl = getCheckLoginUrl();
-	if(isset($_GET['clonly'])){
-		echo json_encode(Array(
-			'checkLoginUrl' => $cl
-		));
-		exit;
-	}
+	
 	$defaults = $net['config']['defaults'];
 	
 	$net = $networks->getNetworkId();
@@ -97,13 +96,17 @@ if(isset($_GET['js'])){
 	
 	$dispNetworks = Array();
 	foreach($config['networks'] as $n){
-		$dispNetworks[] = Array(
+		$addNet = array(
 			'id' => $n['id'],
 			'normal' => $n['normal'],
 			'userlist' => $n['userlist'],
 			'name' => $n['name'],
 			'type' => $n['type']
 		);
+		if($addNet['type'] == 1){
+			$addNet['checkLogin'] = $n['config']['checkLogin'];
+		}
+		$dispNetworks[] = $addNet;
 		if($n['id'] == $net){
 			$msg = $vars->get('extra_chan_msg_'.(string)$n['id']);
 			if($msg!==NULL){

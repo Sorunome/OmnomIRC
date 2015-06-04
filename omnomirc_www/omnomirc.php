@@ -33,9 +33,9 @@ class Json{
 	private $errors;
 	private $relog;
 	public function clear(){
-		$this->warnings = Array();
-		$this->errors = Array();
-		$this->json = Array();
+		$this->warnings = array();
+		$this->errors = array();
+		$this->json = array();
 	}
 	public function __construct(){
 		$this->clear();
@@ -67,6 +67,15 @@ class Json{
 	public function doRelog($i){
 		$this->relog = $i;
 	}
+	public function getIndex($key){
+		if(isset($this->json[$key])){
+			return $this->json[$key];
+		}
+		return NULL;
+	}
+	public function deleteIndex($key){
+		unset($this->json[$key]);
+	}
 }
 $json = new Json();
 
@@ -75,11 +84,11 @@ function errorHandler($errno,$errstr,$errfile,$errline){
 	switch($errno){
 		case E_USER_WARNING:
 		case E_USER_NOTICE:
-			$json->addWarning(Array('type' => 'php','number' => $errno,'message'=>$errstr,'file' => $errfile,'line' => $errline));
+			$json->addWarning(array('type' => 'php','number' => $errno,'message'=>$errstr,'file' => $errfile,'line' => $errline));
 			break;
 		//case E_USER_ERROR: // no need, already caught by default.
 		default:
-			$json->addError(Array('type' => 'php','number' => $errno,'message'=>$errstr,'file' => $errfile,'line' => $errline));
+			$json->addError(array('type' => 'php','number' => $errno,'message'=>$errstr,'file' => $errfile,'line' => $errline));
 	}
 }
 if(!(isset($textmode) && $textmode===true)){
@@ -111,7 +120,7 @@ class Sqli{
 			die('Could not connect to SQL DB: '.$mysqli->connect_errno.' '.$mysqli->connect_error);
 		}
 		if(!$mysqli->set_charset('utf8')){
-			$json->addError(Array('type' => 'mysql','message' => 'Couldn\'t use utf8'));
+			$json->addError(array('type' => 'mysql','message' => 'Couldn\'t use utf8'));
 		}
 		$this->mysqliConnection = $mysqli;
 		return $mysqli;
@@ -121,7 +130,7 @@ class Sqli{
 		$mysqli = $this->connectSql();
 		$params = func_get_args();
 		$query = $params[0];
-		$args = Array();
+		$args = array();
 		for($i=1;$i<count($params);$i++)
 			$args[$i-1] = $mysqli->real_escape_string($params[$i]);
 		$result = $mysqli->query(vsprintf($query,$args));
@@ -132,16 +141,16 @@ class Sqli{
 			die($mysqli->error.' Query: '.vsprintf($query,$args));
 		}
 		if($result===true){ //nothing returned
-			return Array();
+			return array();
 		}
-		$res = Array();
+		$res = array();
 		$i = 0;
 		while($row = $result->fetch_assoc()){
 			$res[] = $row;
 			if($i++>=1000)
 				break;
 		}
-		if($res === Array()){
+		if($res === array()){
 			$fields = $result->fetch_fields();
 			for($i=0;$i<count($fields);$i++)
 				$res[$fields[$i]->name] = NULL;
@@ -288,29 +297,30 @@ class GlobalVars{
 }
 $vars = new GlobalVars();
 class Secure{
-	private function sign($s,$n,$t){
+	private function sign($s,$u,$n,$t){
 		global $config;
-		return $t.'|'.hash_hmac('sha512',$s,$n.$config['security']['sigKey'].$t);
+		return $t.'|'.hash_hmac('sha512',$s.$u,$n.$config['security']['sigKey'].$t);
 	}
-	public function checkSig($sig,$nick,$network){
+	public function checkSig($sig,$nick,$uid,$network){
 		global $json;
 		$sigParts = explode('|',$sig);
 		$ts = time();
 		$hard = 60*60*24;
 		$soft = 60*5;
-		if(isset($sigParts[1]) && ((int)$sigParts[0])==$sigParts[0]){
+		if($sig != '' && $nick != '' && isset($sigParts[1]) && ((int)$sigParts[0])==$sigParts[0]){
 			$sts = (int)$sigParts[0];
 			$sigs = $sigParts[1];
 			if($sts > ($ts - $hard - $soft) && $sts < ($ts + $hard + $soft)){
-				if($this->sign($nick,$network,(string)$sts) == $sig){
+				if($this->sign($nick,$uid,$network,(string)$sts) == $sig){
 					if(!($sts > ($ts - $hard) && $sts < ($ts + $hard))){
 						$json->doRelog(1);
 					}
 					return true;
 				}
+				$json->doRelog(3);
 				return false;
 			}else{
-				if($this->sign($nick,$network,(string)$sts) == $sig){
+				if($this->sign($nick,$uid,$network,(string)$sts) == $sig){
 					$json->doRelog(2);
 				}else{
 					$json->doRelog(3);
@@ -327,7 +337,7 @@ class Networks{
 	private $nets;
 	public function __construct(){
 		global $config;
-		$this->nets = Array();
+		$this->nets = array();
 		foreach($config['networks'] as $n){
 			$this->nets[$n['id']] = $n;
 		}
@@ -338,7 +348,7 @@ class Networks{
 		}
 		return NULL;
 	}
-	public function getNetsArray(){
+	public function getNetsarray(){
 		return $this->nets;
 	}
 	public function getNetworkId(){
@@ -412,7 +422,7 @@ class You{
 			$this->id = (int)$_GET['id'];
 		}else{
 			$json->addWarning('ID not set, some features may be unavailable');
-			$this->id = 0;
+			$this->id = -1;
 		}
 		
 		$this->network = $networks->getNetworkId();
@@ -446,7 +456,7 @@ class You{
 		$this->globalOps = NULL;
 		$this->ops = NULL;
 		$this->infoStuff = NULL;
-		$this->loggedIn = ($this->nick!=='' && $this->sig!=='' && $security->checkSig($this->sig,$this->nick,$this->network));
+		$this->loggedIn = $security->checkSig($this->sig,$this->nick,$this->id,$this->network);
 		if(!$this->loggedIn){
 			if(!isset($_GET['noLoginErrors'])){
 				$json->addWarning('Not logged in');
@@ -522,12 +532,18 @@ class You{
 		if($this->infoStuff !== NULL){
 			return $this->infoStuff;
 		}
-		$temp = $sql->query("SELECT * FROM `irc_userstuff` WHERE name='%s' AND network=%d",strtolower($this->nick),$this->network);
+		$temp = $sql->query("SELECT usernum,name,ignores,kicks,globalOp,globalBan,network,uid FROM `irc_userstuff` WHERE uid=%d AND network=%d",$this->id,$this->network);
 		$userSql = $temp[0];
-		if($userSql['name']===NULL){
-			$sql->query("INSERT INTO `irc_userstuff` (name,network) VALUES ('%s',%d)",strtolower($this->nick),$this->network);
-			$temp = $sql->query("SELECT * FROM `irc_userstuff` WHERE usernum=%d",$sql->insertId());
-			$userSql = $temp[0];
+		if($this->loggedIn){
+			if($userSql['uid']===NULL){
+				$sql->query("INSERT INTO `irc_userstuff` (name,uid,network) VALUES ('%s',%d,%d)",$this->nick,$this->id,$this->network);
+				$temp = $sql->query("SELECT usernum,name,ignores,kicks,globalOp,globalBan,network,uid FROM `irc_userstuff` WHERE usernum=%d",$sql->insertId());
+				$userSql = $temp[0];
+			}
+			if($userSql['name'] != $this->nick){
+				$sql->query("UPDATE `irc_userstuff` SET `name`='%s' WHERE uid=%d AND network=%d",$this->nick,$this->id,$this->network);
+				$userSql['name'] = $this->nick;
+			}
 		}
 		$this->infoStuff = $userSql;
 		return $userSql;
@@ -551,7 +567,7 @@ class You{
 		}
 		$net = $networks->get($this->getNetwork());
 		$cl = $net['config']['checkLogin'];
-		$returnPosition = json_decode(trim(file_get_contents($cl.'?op&u='.$this->id.'&nick='.base64_url_encode($this->nick))));
+		$returnPosition = json_decode(trim(file_get_contents($cl.'?op='.$this->id)));
 		$opGroups = array_map('strtolower',array_map('trim',array_map('strip_tags',$net['config']['opGroups'])));
 		if(in_array(strtolower(trim(strip_tags($returnPosition->group))),$opGroups)){
 			$this->globalOps = true;
@@ -596,6 +612,9 @@ class You{
 	public function isLoggedIn(){
 		return $this->loggedIn;
 	}
+	public function getUid(){
+		return $this->id;
+	}
 }
 $you = new You();
 class OmnomIRC{
@@ -605,10 +624,10 @@ class OmnomIRC{
 		if($userSql['name']!=NULL){
 			$ignorelist = $userSql['ignores'];
 		}
-		$lines = Array();
+		$lines = array();
 		foreach($res as $result){
 			if((strpos($userSql['ignores'],strtolower($result['name1'])."\n")===false) || $overrideIgnores){
-				$lines[] = Array(
+				$lines[] = array(
 					'curLine' => ($table=='irc_lines'?(int)$result['line_number']:0),
 					'type' => $result['type'],
 					'network' => (int)$result['Online'],
@@ -616,7 +635,8 @@ class OmnomIRC{
 					'name' => $result['name1'],
 					'message' => $result['message'],
 					'name2' => $result['name2'],
-					'chan' => $result['channel']
+					'chan' => $result['channel'],
+					'uid' => (int)$result['uid']
 				);
 			}
 		}
@@ -625,7 +645,7 @@ class OmnomIRC{
 	public function loadChannel($count){
 		global $you,$sql;
 		$table = 'irc_lines';
-		$linesExtra = Array();
+		$linesExtra = array();
 		
 		while(true){
 			if($you->chan[0] == '*' && $you->nick){ // PM
@@ -699,19 +719,17 @@ class OmnomIRC{
 			}
 			break;
 		}
-		if($you->nick===false){
-			$linesExtra[] = Array(
-				'curLine' => 0,
-				'type' => 'relog',
-				'network' => 0,
-				'time' => time(),
-				'name' => 'OmnomIRC',
-				'message' => 'Time to relog!',
-				'name2' => '',
-				'chan' => ''
-			);
-		}
 		return array_merge($lines,$linesExtra);
+	}
+	public function getNick($uid,$net){
+		global $sql;
+		$res = $sql->query("SELECT `name` FROM `irc_userstuff` WHERE `uid`=%d AND `network`=%d",(int)$uid,(int)$net);
+		return $res[0]['name'];
+	}
+	public function getUid($nick,$net){
+		global $sql;
+		$res = $sql->query("SELECT `uid` FROM `irc_userstuff` WHERE LOWER(`name`)=LOWER('%s') AND `network`=%d",$nick,(int)$net);
+		return ($res[0]['uid'] === NULL ? NULL : (int)$res[0]['uid']);
 	}
 }
 $omnomirc = new OmnomIRC();
@@ -732,29 +750,38 @@ class Channels{
 		return (int)$tmp['channum'];
 	}
 	private function isTypeById($type,$id,$nick,$network){
-		global $sql;
+		global $sql,$omnomirc;
+		$uid = $omnomirc->getUid($nick,$network);
+		if($uid === NULL){
+			return false;
+		}
 		$res = $sql->query("SELECT `%s` FROM `irc_channels` WHERE `channum`=%d",$type,$id);
 		$res = json_decode($res[0][$type],true);
-		if(json_last_error() || !isset($res[0]) || $res[0][$type] == NULL){
+		if(json_last_error() || !isset($res[0])){
 			return false;
 		}
 		$this->lastFetchType = $res;
 		foreach($res as $i => $r){
-			if($r['nick'] == strtolower($nick) && $r['net'] == (int)$network){
+			if($r['uid'] == $uid && $r['net'] == (int)$network){
 				return $i;
 			}
 		}
 		return false;
 	}
 	private function addType($type,$chan,$nick,$network){
-		global $sql;
+		global $sql,$omnomirc;
+		$uid = $omnomirc->getUid($nick,$network);
+		if($uid === NULL){
+			return false;
+		}
+		
 		$id = $this->getChanId($chan,true);
 		if($this->isTypeById($type,$id,$nick,$network)!==false){
 			return false;
 		}
 		$res = $this->lastFetchType;
-		$res[] = Array(
-			'nick' => strtolower($nick),
+		$res[] = array(
+			'uid' => (int)$uid,
 			'net' => (int)$network
 		);
 		$sql->query("UPDATE `irc_channels` SET `%s`='%s' WHERE `channum`=%d",$type,json_encode($res),$id);
@@ -834,7 +861,7 @@ class Channels{
 		$allowedModes = 'obc';
 		
 		
-		$args = Array();
+		$args = array();
 		if($space===false){
 			$modestring = $s;
 		}else{
@@ -850,9 +877,9 @@ class Channels{
 			}
 			$args = array_reverse($args);
 		}
-		$modes = Array(
-			'+' => Array(),
-			'-' => Array()
+		$modes = array(
+			'+' => array(),
+			'-' => array()
 		);
 		$add = NULL;
 		for($i=0;$i<strlen($modestring);$i++){
@@ -918,7 +945,7 @@ class Channels{
 $channels = new Channels();
 
 if(isset($_GET['ident'])){
-	header('Content-Type:text/json');
+	header('Content-Type:application/json');
 	$json->add('loggedin',$you->isLoggedIn());
 	$json->add('isglobalop',$you->isGlobalOp());
 	$json->add('isbanned',$you->isBanned());
@@ -926,7 +953,7 @@ if(isset($_GET['ident'])){
 	exit;
 }
 if(isset($_GET['getcurline'])){
-	header('Content-Type:text/json');
+	header('Content-Type:application/json');
 	$json->clear();
 	$json->add('curline',(int)file_get_contents($config['settings']['curidFilePath']));
 	echo $json->get();

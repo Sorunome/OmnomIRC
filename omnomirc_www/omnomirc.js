@@ -367,7 +367,25 @@ oirc = (function(){
 					{
 						disp:'Colored Names',
 						id:3,
-						defaultOption:'F'
+						defaultOption:'0',
+						handler:function(){
+							return $('<td>')
+								.attr('colspan',2)
+								.css('border-right','none')
+								.append($('<select>')
+									.change(function(){
+										options.set(3,this.value);
+									})
+									.append(
+										$.map(['none','calc','server'],function(v,i){
+											return $('<option>')
+												.attr((options.get(3,'0')==i?'selected':'false'),'selected')
+												.val(i)
+												.text(v);
+										})
+									)
+								)
+						}
 					},
 					{
 						disp:'Show extra Channels',
@@ -465,6 +483,11 @@ oirc = (function(){
 					{
 						disp:'Use WYSIWYG editor (experimental)',
 						id:18,
+						defaultOption:'F'
+					},
+					{
+						disp:'Enable simple text decorations',
+						id:19,
 						defaultOption:'F'
 					}
 				],
@@ -718,7 +741,7 @@ oirc = (function(){
 					network.getJSON('omnomirc.php?getcurline&noLoginErrors',function(data){
 						request.setCurLine(data.curline);
 						request.start();
-					},undefined,false);
+					});
 				},
 				identify = function(){
 					ws.send($.extend({action:'ident'},settings.getIdentParams()));
@@ -743,6 +766,7 @@ oirc = (function(){
 					socket.onmessage = function(e){
 						try{
 							var data = JSON.parse(e.data);
+							console.log(data);
 							if(allowLines && data.line!==undefined){
 								parser.addLine(data.line);
 							}
@@ -1321,12 +1345,14 @@ oirc = (function(){
 					if(startChar == ' '){
 						startPos++;
 					}
+					endPos = (!wysiwyg.support()?$('#message')[0].selectionStart:window.getSelection().anchorOffset);
 					endChar = messageVal.charAt(endPos);
 					while(endChar != ' ' && ++endPos <= messageVal.length){
 						endChar = messageVal.charAt(endPos);
 					}
 					endPos0 = endPos;
-					return messageVal.substr(startPos,endPos - startPos).trim();
+					tabWord = messageVal.substr(startPos,endPos - startPos).trim();
+					return tabWord;
 				},
 				getTabComplete = function(){
 					var messageVal = (!wysiwyg.support()?$('#message')[0].value:node.nodeValue),
@@ -1334,29 +1360,13 @@ oirc = (function(){
 					if(messageVal === null){
 						return;
 					}
+					name = search(getCurrentWord(),tabCount);
 					if(!isInTab){
 						tabAppendStr = ' ';
-						startPos = (!wysiwyg.support()?$('#message')[0].selectionStart:window.getSelection().anchorOffset);
-						startChar = messageVal.charAt(startPos);
-						while(startChar != ' ' && --startPos > 0){
-							startChar = messageVal.charAt(startPos);
-						}
-						if(startChar == ' '){
-							startChar+=2;
-						}
 						if(startPos===0){
 							tabAppendStr = ': ';
 						}
-						endPos = (!wysiwyg.support()?$('#message')[0].selectionStart:window.getSelection().anchorOffset);
-						endChar = messageVal.charAt(endPos);
-						while(endChar != ' ' && ++endPos <= messageVal.length){
-							endChar = messageVal.charAt(endPos);
-						}
-						if(endChar == ' '){
-							endChar-=2;
-						}
 					}
-					name = search(getCurrentWord(),tabCount);
 					if(name == getCurrentWord()){
 						tabCount = 0;
 						name = search(getCurrentWord(),tabCount);
@@ -1394,10 +1404,9 @@ oirc = (function(){
 								if(!e.ctrlKey){
 									e.preventDefault();
 									
-									tabWord = getCurrentWord();
 									getTabComplete();
-									tabCount++;
 									isInTab = true;
+									tabCount++;
 									setTimeout(1,1);
 								}
 							}else{
@@ -1961,7 +1970,8 @@ oirc = (function(){
 						is_android = ((nua.indexOf('Mozilla/5.0') > -1 && nua.indexOf('Android ') > -1 && nua.indexOf('AppleWebKit') > -1) && !(nua.indexOf('Chrome') > -1)),
 						is_ios = (nua.match(/(iPod|iPhone|iPad)/i) && nua.match(/AppleWebKit/i)),
 						is_mobile_webkit = (nua.match(/AppleWebKit/i) && nua.match(/Android/i)),
-						hide_userlist = options.get(14,'F')=='T';
+						hide_userlist = options.get(14,'F')=='T',
+						show_scrollbar = options.get(15,'T')=='T';
 					page.changeLinks();
 					if(!wysiwyg.support()){
 						$('#message').replaceWith(
@@ -1983,41 +1993,10 @@ oirc = (function(){
 						});
 						wysiwyg.init();
 					}
-					$('#windowbg2').css('height',parseInt($('html').height(),10) - parseInt($('#message').height() + 14,10));
-					$('#mBoxCont').css('height',parseInt($('#windowbg2').height(),10) - 42);
-					$(window).resize(function(){
-						if(!is_ios){
-							var htmlHeight = window.innerHeight,
-								htmlWidth = window.innerWidth,
-								windowsbg2Height = htmlHeight - parseInt($('#message').height() + 14,10);
-							$('#windowbg2').css('height',windowsbg2Height);
-							$('#mBoxCont').css('height',windowsbg2Height - 42);
-							$('html,body').height(htmlHeight);
-							
-							$('input#message,span#message').css('width',htmlWidth*(hide_userlist?1:0.91) - 121);
-						}
-						if(options.get(15,'T')=='T'){
-							var widthOffset = (htmlWidth/100)*mBoxContWidthOffset;
-							$('#mBoxCont').css('width',widthOffset-22);
-							if(is_mobile_webkit){
-								$('#scrollBarLine').css('left',widthOffset - 16);
-								$('#scrollBar').css('left',widthOffset - 17);
-								$('#UserListContainer').css('left',widthOffset);
-							}
-							scroll.reCalcBar();
-						}
-						scroll.down();
-					}).trigger('resize').blur(function(){
-						isBlurred = true;
-					}).focus(function(){
-						isBlurred = false;
-					});
 					if(hide_userlist){ // hide userlist is on
 						mBoxContWidthOffset = 99;
 						$('<style>')
 							.append(
-								'#scrollBar{left:98%;left:calc(99% - 17px);left:-webkit-calc(99% - 17px);}',
-								'#scrollBarLine{left:98%;left:calc(99% - 16px);left:-webkit-calc(99% - 16px);}',
 								'input#message,span#message{width:93%;width:calc(100% - 121px);width:-webkit-calc(100% - 121px);}',
 								'#mBoxCont{width:99%;}',
 								'.arrowButtonHoriz2,.arrowButtonHoriz3 > div:nth-child(2){left:98%;left:calc(99% - 5px);left:-webkit-calc(99% - 5px);}',
@@ -2031,6 +2010,34 @@ oirc = (function(){
 					instant.init();
 					logs.init();
 					registerToggle();
+					$('#scrollBarLine').css('top',parseInt($('#header').outerHeight(),10)-1); // -1 due to border
+					$(window).resize(function(){
+						var htmlHeight = window.innerHeight,
+							htmlWidth = window.innerWidth,
+							headerHeight = $('#header').outerHeight(),
+							footerHeight = $('#footer').outerHeight();
+						if(!is_ios){
+							$('#mBoxCont').css('height',htmlHeight - footerHeight - headerHeight);
+							$('html,body').height(htmlHeight);
+							
+							$('#message').css('width',htmlWidth*(hide_userlist?1:0.91) - 121);
+						}
+						if(show_scrollbar){
+							var widthOffset = (htmlWidth/100)*mBoxContWidthOffset;
+							$('#mBoxCont').css('width',widthOffset-22);
+							$('#scrollBarLine').css({
+								left:widthOffset - 16,
+								height:htmlHeight - headerHeight
+							});
+							$('#scrollBar').css('left',widthOffset - 17);
+							scroll.reCalcBar();
+						}
+						scroll.down();
+					}).trigger('resize').blur(function(){
+						isBlurred = true;
+					}).focus(function(){
+						isBlurred = false;
+					});
 					$('#aboutButton').click(function(e){
 						e.preventDefault();
 						$('#about').toggle();
@@ -2050,8 +2057,7 @@ oirc = (function(){
 							channels.join(options.get(4,String.fromCharCode(45)).charCodeAt(0) - 45);
 						}else{
 							registerToggle();
-							$('#windowbg2').css('height',parseInt($('html').height(),10) - parseInt($('#message').height() + 14,10));
-							$('#mBoxCont').css('height',parseInt($('#windowbg2').height(),10) - 42).empty().append(
+							$('#mBoxCont').empty().append(
 								'<br>',
 								$('<a>')
 									.css('font-size',20)
@@ -2084,8 +2090,9 @@ oirc = (function(){
 		statusBar = (function(){
 			var text = '',
 				started = false,
+				use = options.get(11,'T')!='T',
 				start = function(){
-					if(options.get(11,'T')!='T'){
+					if(use){
 						return;
 					}
 					if(!started){
@@ -2283,9 +2290,11 @@ oirc = (function(){
 					});
 				},
 				init:function(){
-					if(settings.loggedIn()){
-						$('#sendMessage')
-							.submit(function(e){
+					
+					$('#sendMessage')
+						.submit(function(e){
+							e.preventDefault();
+							if(settings.loggedIn()){
 								var val = '';
 								if(!wysiwyg.support()){
 									val = $('#message').val();
@@ -2295,14 +2304,15 @@ oirc = (function(){
 									oldMessages.add($('#message').html());
 									val = wysiwyg.getMsg();
 								}
-								e.preventDefault();
+								val = parser.parseTextDecorations(val);
 								if(!$('#message').attr('disabled') && val!==''){
 									sendMessage(val);
+									$('#message').focus(); // fix IE not doing that automatically
 								}
-							});
-					}else{
+							}
+						});
+					if(!settings.loggedIn()){
 						$('#message')
-							.attr('disabled','true')
 							.val('You need to login if you want to chat!');
 					}
 				}
@@ -2503,24 +2513,49 @@ oirc = (function(){
 				maxLines = 200,
 				lastMessage = 0,
 				ignores = [],
-				parseName = function(n,o){
+				cacheServerNicks = {},
+				parseName = function(n,o,uid){
+					if(uid === undefined){
+						uid = -1;
+					}
 					n = (n=='\x00'?'':n); //fix 0-string bug
 					var ne = encodeURIComponent(n);
 					n = $('<span>').text(n).html();
 					var rcolors = [19,20,22,24,25,26,27,28,29],
 						sum = 0,
 						i = 0,
-						cn = n;
-					if(options.get(3,'F')=='T'){
-						while(n[i]){
-							sum += n.charCodeAt(i++);
-						}
-						cn = $('<span>').append($('<span>').addClass('uName-'+rcolors[sum %= 9].toString()).html(n)).html();
-					}else{
-						cn = n;
+						cn = n,
+						net = settings.networks()[o],
+						addLink = true;
+					switch(options.get(3,'0')){
+						case '1': // calc
+							while(n[i]){
+								sum += n.charCodeAt(i++);
+							}
+							cn = $('<span>').append($('<span>').addClass('uName-'+rcolors[sum %= 9].toString()).html(n)).html();
+							break;
+						case '2': //server
+							if(net!==undefined && net.checkLogin!==undefined){
+								addLink = false;
+								if(cacheServerNicks[uid]===undefined){
+									network.getJSON(net.checkLogin+'?c='+uid.toString(10)+'&n='+ne,function(data){
+										cacheServerNicks[uid] = data.nick;
+									},false,false);
+								}
+								cn = cacheServerNicks[uid];
+							}else{
+								cn = n;
+							}
+							break;
+						default: // none
+							cn = n;
+							break;
 					}
-					if(settings.networks()[o]!==undefined){
-						return '<span title="'+settings.networks()[o].name+'">'+settings.networks()[o].normal.split('NICKENCODE').join(ne).split('NICK').join(cn)+'</span>';
+					if(net!==undefined && addLink){
+						cn = net.normal.split('NICKENCODE').join(ne).split('NICK').join(cn).split('USERID').join(uid.toString(10));
+					}
+					if(net!==undefined){
+						return '<span title="'+net.name+'">'+cn+'</span>';
 					}
 					return '<span title="Unknown Network">'+cn+'</span>';
 				},
@@ -2662,7 +2697,7 @@ oirc = (function(){
 						return false;
 					}
 					var $mBox = $('#MessageBox'),
-						name = parseName(line.name,line.network),
+						name = parseName(line.name,line.network,line.uid),
 						message = parseMessage(line.message),
 						tdName = '*',
 						tdMessage = message,
@@ -2693,12 +2728,16 @@ oirc = (function(){
 							}
 							break;
 						case 'relog':
-							settings.fetch(undefined,true);
-							return false;
+							addLine = false;
+							if(logMode!==true && channels.getCurrent()!==''){
+								settings.fetch(undefined,true);
+							}
 							break;
 						case 'refresh':
-							location.reload();
-							return false;
+							addLine = false;
+							if(logMode!==true && channels.getCurrent()!==''){
+								location.reload();
+							}
 							break;
 						case 'join':
 							tdMessage = [name,' has joined '+channels.getCurrentName()];
@@ -2839,8 +2878,9 @@ oirc = (function(){
 							$mBox.find('tr:first').remove();
 						}
 						
-						if($('<span>').append(tdName).text() == '*'){
-							statusTxt = $('<span>').append(tdName).text()+' ';
+						
+						if(tdName == '*'){
+							statusTxt = '* ';
 						}else{
 							statusTxt = '<'+line.name+'> ';
 						}
@@ -2849,12 +2889,10 @@ oirc = (function(){
 						}
 						statusTxt += $('<span>').append(tdMessage).text();
 						statusBar.set(statusTxt);
+						
+						
 						$mBox.append(
 							$('<tr>')
-								.css({
-									width:'100%',
-									height:1
-								})
 								.addClass((options.get(6,'T')=='T' && (lineHigh = !lineHigh)?'lineHigh':''))
 								.addClass(((new Date(lastMessage)).getDay()!=(new Date(line.time*1000)).getDay())?'seperator':'') //new day indicator
 								.append(
@@ -2885,10 +2923,19 @@ oirc = (function(){
 				},
 				setIgnoreList:function(a){
 					ignores = a;
+				},
+				parseTextDecorations:function(s){
+					if(s !== '' && options.get(19,'F') == 'T'){
+						if(s[0] == '>'){
+							s = '\x033'+s;
+						}
+						s = s.replace(/(\*[^\*]+\*)/g,'\x02$1\x02').replace(/(\/[^\/]+\/)/g,'\x1d$1\x1d').replace(/(_[^_]+_)/g,'\x1f$1\x1f');
+					}
+					return s;
 				}
 			};
 		})();
-	$(document).ready(function(){
+	$(function(){
 		network.init();
 		switch($('body').attr('page')){
 			case 'options':

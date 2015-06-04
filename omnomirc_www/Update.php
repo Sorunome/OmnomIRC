@@ -77,8 +77,7 @@ while(true){
 	}
 	$you->update();
 	if($nick){
-		$query = $sql->query("
-			SELECT * FROM `irc_lines`
+		$query = $sql->query("SELECT * FROM `irc_lines`
 			WHERE
 				`line_number` > %d
 			AND
@@ -90,14 +89,14 @@ while(true){
 						(
 							`channel` = '%s'
 							AND
-							`online` = %d
+							`Online` = %d
 						)
 						OR
 						(
 							
 							`name1` = '%s'
 							AND
-							`online` = %d
+							`Online` = %d
 						)
 					)
 					AND
@@ -131,7 +130,8 @@ while(true){
 			'name' => 'OmnomIRC',
 			'message' => 'Time to relog!',
 			'name2' => '',
-			'chan' => ''
+			'chan' => '',
+			'uid' => -1
 		);
 	}
 	if($result['line_number'] === NULL){
@@ -152,7 +152,8 @@ while(true){
 				'name' => $result['name1'],
 				'message' => $result['message'],
 				'name2' => $result['name2'],
-				'chan' => $result['channel']
+				'chan' => $result['channel'],
+				'uid' => (int)$result['uid']
 			);
 		}else{
 			$lines[] = Array(
@@ -163,12 +164,13 @@ while(true){
 				'name' => '',
 				'message' => '',
 				'name2' => '',
-				'chan' => ''
+				'chan' => '',
+				'uid' => -1
 			);
 		}
 		$json->add('lines',$lines);
 		echo $json->get();
-		die();
+		exit;
 	}
 	foreach($query as $result){
 		if(!isset($result['time'])){
@@ -183,7 +185,8 @@ while(true){
 				'name' => $result['name1'],
 				'message' => $result['message'],
 				'name2' => $result['name2'],
-				'chan' => $result['channel']
+				'chan' => $result['channel'],
+				'uid' => (int)$result['uid']
 			);
 		}else{
 			$lines[] = Array(
@@ -194,7 +197,8 @@ while(true){
 				'name' => '',
 				'message' => '',
 				'name2' => '',
-				'chan' => ''
+				'chan' => '',
+				'uid' => -1
 			);
 		}
 	}

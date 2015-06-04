@@ -1,6 +1,6 @@
 <?php
 error_reporting(0);
-$installScriptVersion = '2.9.0.5';
+$installScriptVersion = '2.9.1';
 include_once(realpath(dirname(__FILE__)).'/config.php');
 // IMPORTANT!!!! sqli object ONLY FOR INSTALLATION SCRIPT
 class Sqli{
@@ -79,10 +79,9 @@ function writeConfig(){
 	$file = '<?php
 /* This is a automatically generated config-file by OmnomIRC, please use the admin pannel to edit it! */
 header("Location:index.php");
-//JSONSTART
-//'.json_encode($config).'
-//JSONEND
-?>';
+exit;
+?>
+'.json_encode($config);
 	if(!file_put_contents(realpath(dirname(__FILE__)).'/config.json.php',$file)){
 		die('{"errors":["ERROR: Coulnd\'t write config, please make file config.json.php writeable for PHP"],"step":1}');
 	}

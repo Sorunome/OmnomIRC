@@ -105,6 +105,6 @@ def binding(word,word_eol,userdata):
 	return hexchat.EAT_NONE
 hexchat.hook_print('Channel Message',binding)
 hexchat.hook_print('Channel Msg Hilight',binding)
-hexchat.hook_print('Topic Change',topicBinding)
+#hexchat.hook_print('Topic Change',topicBinding)
 
 print(__module_name__, 'version', __module_version__, 'loaded.')

@@ -29,17 +29,12 @@ if(isset($_GET['userinfo'])){
 		$json->addError('Bad parameters');
 		echo $json->get();
 	}
-	die();
+	exit;
 }
 
 $net = $networks->get($you->getNetwork());
 if(!$you->isLoggedIn() && $net['config']['guests'] == 0){
-	$msg = 'You need to log in to be able to view chat!';
-	if(isset($_GET['noLoginErrors'])){
-		$json->add('message',$msg);
-	}else{
-		$json->addError($msg);
-	}
+	$json->add('message','You need to log in to be able to view chat!');
 	echo $json->get();
 	exit;
 }
@@ -59,8 +54,8 @@ $channel = $you->chan;
 if($you->isBanned()){
 	$json->add('banned',true);
 	$json->add('admin',false);
-	$json->add('lines',Array());
-	$json->add('users',Array());
+	$json->add('lines',array());
+	$json->add('users',array());
 	echo $json->get();
 	die();
 }
@@ -69,40 +64,23 @@ $json->add('admin',$you->isGlobalOp());
 
 $lines = $omnomirc->loadChannel($count);
 
-
-$temp = $sql->query("SELECT MAX(line_number) AS max FROM `irc_lines`");
-$curMax = $temp[0]['max'];
-$curtopic = $channels->getTopic($channel);
-$lines[] = Array(
-	'curLine' => (int)$curMax,
+array_push($lines,array(
+	'curLine' => (int)$sql->query("SELECT MAX(`line_number`) AS `max` FROM `irc_lines`")[0]['max'],
 	'type' => 'topic',
 	'network' => -1,
 	'time' => time(),
 	'name' => '',
-	'message' => $curtopic,
+	'message' => $channels->getTopic($channel),
 	'name2' => '',
-	'chan' => $you->chan
-);
+	'chan' => $channel,
+	'uid' => -1
+));
 $json->add('lines',$lines);
-$users = Array();
-$result = $sql->query("SELECT username,online,channel FROM `irc_users` WHERE `channel`='%s' AND `isOnline`=1",$channel);
-foreach($result as $user){
-	if($user['username']!=NULL){
-		$users[count($users)][0] = strtolower($user['username']);
-		$users[count($users) - 1][1] = $user['username'];
-		$users[count($users) - 1][2] = $user['online'];
-		$users[count($users) - 1][3] = $user['channel'];
-	}
+$users = $sql->query("SELECT `username` AS `nick`,`online` AS `network` FROM `irc_users` WHERE `channel`='%s' AND `isOnline`=1 AND `username` IS NOT NULL ORDER BY `username`",$channel);
+if($users[0]['nick'] == NULL){
+	$users = Array();
 }
-asort($users);
-$realUsers = Array();
-foreach($users as $user){
-	$realUsers[] = Array(
-		'nick' => $user[1],
-		'network' => (int)$user[2]
-	);
-}
-$json->add('users',$realUsers);
+$json->add('users',$users);
 if($you->isLoggedIn()){
 	$userSql = $you->info();
 	$ignorelist = '';
@@ -110,7 +88,6 @@ if($you->isLoggedIn()){
 		$i = explode("\n",$userSql['ignores']);
 		array_pop($i); // last element is always garbage
 		$json->add('ignores',$i);
-		
 	}
 }
 echo $json->get();

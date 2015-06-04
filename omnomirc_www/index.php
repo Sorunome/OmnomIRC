@@ -49,6 +49,7 @@ function getPage($title,$head,$body,$page){
 				'<script type="text/javascript" src="jquery-1.11.0.min.js"></script>'.
 				'<script src="omnomirc.js"></script>'.
 				'<title>'.$title.'</title>'.
+				'<script type="text/javascript">document.domain="'.$config['settings']['hostname'].'";</script>'.
 				$head.
 			'</head>'.
 			'<body page="'.$page.'">'.
@@ -165,42 +166,39 @@ if($i){
 	$hotlinksHTML .= '<td style="display:none;" id="adminLink"><a href="?admin">Admin</a></td>';
 }
 $hotlinksHTML .= '</tr>';
-echo getPage('OmnomIRC','
-<script type="text/javascript">
-document.domain="'.$config['settings']['hostname'].'"
-</script>
-','
-<div class="windowbg2" id="windowbg2">
-<div id="chattingHeader" style="margin:0;padding:0;height:39px;">
-	<div id="Channels">
-		<div id="ChanListButtons">
-			<span style="font-size:10pt;" class="arrowButton" id="arrowLeftChan">&#9668;</span>
-			<span style="font-size:10pt;" class="arrowButton" id="arrowRightChan">&#9658;</span>
+echo getPage('OmnomIRC','','
+<div id="header">
+	<div id="chattingHeader">
+		<div id="Channels">
+			<div id="ChanListButtons">
+				<span style="font-size:10pt;" class="arrowButton" id="arrowLeftChan">&#9668;</span>
+				<span style="font-size:10pt;" class="arrowButton" id="arrowRightChan">&#9658;</span>
+			</div>
+			<div id="ChanListCont">
+				<div id="ChanList"></div>
+			</div>
 		</div>
-		<div id="ChanListCont">
-			<div id="ChanList"></div>
-		</div>
-	</div>
-	<div id="topicbox">
-		<div id="TopicButtons">
-			<span style="font-size:8pt;" class="arrowButton" id="arrowLeftTopic">&#9668;</span>
-			<span style="font-size:8pt;" class="arrowButton" id="arrowRightTopic">&#9658;</span>
-		</div>
-		<div id="topicCont">
-			<div id="topic" style="white-space:nowrap;"></div>
+		<div id="topicbox">
+			<div id="TopicButtons">
+				<span style="font-size:8pt;" class="arrowButton" id="arrowLeftTopic">&#9668;</span>
+				<span style="font-size:8pt;" class="arrowButton" id="arrowRightTopic">&#9658;</span>
+			</div>
+			<div id="topicCont">
+				<div id="topic" style="white-space:nowrap;"></div>
+			</div>
 		</div>
 	</div>
-</div>
-<div id="logsHeader" style="margin:0;padding:0;height:39px;display:none;">
-	<b>Log viewer</b> (<a id="logCloseButton">Close</a>)<br>
-	Channel: <span id="logChanIndicator"></span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Day: <span id="logDateCont">
-		<input type="text" id="logDate" readonly="readonly">
-		<div id="logDatePicker" style="display:none;"></div>
-	</span> <a id="logGoButton">Go</a>
+	<div id="logsHeader" style="display:none;">
+		<b>Log viewer</b> (<a id="logCloseButton">Close</a>)<br>
+		Channel: <span id="logChanIndicator"></span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Day: <span id="logDateCont">
+			<input type="text" id="logDate" readonly="readonly">
+			<div id="logDatePicker" style="display:none;"></div>
+		</span> <a id="logGoButton">Go</a>
+	</div>
 </div>
 
 <div id="mBoxCont">
-	<table id="MessageBox" cellpadding="0px" cellspacing="0px" style="width:100%;height:inherit;">
+	<table id="MessageBox" cellpadding="0px" cellspacing="0px">
 	</table>
 </div>
 <div id="UserListContainer">
@@ -209,8 +207,8 @@ document.domain="'.$config['settings']['hostname'].'"
 	</table>
 	<div id="UserListInnerCont"><div id="UserList"></div></div>
 </div>
-</div>
-</div>
+
+<div id="footer">
 	<img id="smileyMenuButton" src="smileys/smiley.gif" style="margin-left:2px;margin-right:2px;">
 	<span><div id="textDecoForm" style="display:none;">
 		<button id="textDecoFormBold" style="font-weight:bold;">B</button>
@@ -221,15 +219,16 @@ document.domain="'.$config['settings']['hostname'].'"
 		<span contenteditable="true" accesskey="i" id="message"></span>
 		<input type="submit" value="Send" id="send" />
 	</form>
-<div id="icons">
-	<span id="warnings" style="display:none;">
-	<span class="count">0</span><span class="icon"></span>
-	</span>
-	<span id="errors" style="display:none;">
-	&nbsp;<span class="count">0</span><span class="icon"></span>
-	</span>
+	<div id="icons">
+		<span id="warnings" style="display:none;">
+		<span class="count">0</span><span class="icon"></span>
+		</span>
+		<span id="errors" style="display:none;">
+		&nbsp;<span class="count">0</span><span class="icon"></span>
+		</span>
+	</div>
 </div>
-<div id="about" style="display:none;"><div style="position: relative; left: -50%;"><span style="position:absolute;z-index:9002;top:1px;right:2px"><a onclick="document.getElementById(\'about\').style.display=\'none\';">Close</a></span>
+<div id="about"><div class="popup"><span style="position:absolute;z-index:9002;top:1px;right:2px"><a onclick="document.getElementById(\'about\').style.display=\'none\';">Close</a></span>
 	<div style="text-align:center;"><a href="http://omnomirc.omnimaga.org/" target="_blank"><img src="omnomirc.png" alt="OmnomIRC"></a></div>
 	<p><a href="https://omnomirc.omnimaga.org/" target="_blank">OmnomIRC</a> is developed by <a href="https://www.omnimaga.org" alt="Omnimaga" target="_blank">Omnimaga</a></p>
 	<p>Found an issue/bug? <a href="https://github.com/Sorunome/OmnomIRC2/issues" target="_blank">Report it!</a></p>
@@ -239,9 +238,9 @@ document.domain="'.$config['settings']['hostname'].'"
 	<ul><li><a href="http://www.omnimaga.org/index.php?action=profile;u=691" target="_blank">Darl181</a></li></ul>
 	<a href="http://omnomirc.omnimaga.org/" target="_blank">Homepage</a> | <a href="https://github.com/Sorunome/OmnomIRC2" target="_blank">GitHub</a>
 </div></div>
-<div id="smileyselect" style="display:none;">
+<div id="smileyselect" class="popup">
 </div>
-<div id="lastSeenCont" style="display:none;"></div>
+<div id="lastSeenCont" class="popup"></div>
 <audio id="ding" src="beep.wav" hidden></audio>
 ','main');
 
