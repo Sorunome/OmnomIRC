@@ -1970,7 +1970,8 @@ oirc = (function(){
 						is_android = ((nua.indexOf('Mozilla/5.0') > -1 && nua.indexOf('Android ') > -1 && nua.indexOf('AppleWebKit') > -1) && !(nua.indexOf('Chrome') > -1)),
 						is_ios = (nua.match(/(iPod|iPhone|iPad)/i) && nua.match(/AppleWebKit/i)),
 						is_mobile_webkit = (nua.match(/AppleWebKit/i) && nua.match(/Android/i)),
-						hide_userlist = options.get(14,'F')=='T';
+						hide_userlist = options.get(14,'F')=='T',
+						show_scrollbar = options.get(15,'T')=='T';
 					page.changeLinks();
 					if(!wysiwyg.support()){
 						$('#message').replaceWith(
@@ -1992,41 +1993,10 @@ oirc = (function(){
 						});
 						wysiwyg.init();
 					}
-					$('#windowbg2').css('height',parseInt($('html').height(),10) - parseInt($('#message').height() + 14,10));
-					$('#mBoxCont').css('height',parseInt($('#windowbg2').height(),10) - 42);
-					$(window).resize(function(){
-						if(!is_ios){
-							var htmlHeight = window.innerHeight,
-								htmlWidth = window.innerWidth,
-								windowsbg2Height = htmlHeight - parseInt($('#message').height() + 14,10);
-							$('#windowbg2').css('height',windowsbg2Height);
-							$('#mBoxCont').css('height',windowsbg2Height - 42);
-							$('html,body').height(htmlHeight);
-							
-							$('input#message,span#message').css('width',htmlWidth*(hide_userlist?1:0.91) - 121);
-						}
-						if(options.get(15,'T')=='T'){
-							var widthOffset = (htmlWidth/100)*mBoxContWidthOffset;
-							$('#mBoxCont').css('width',widthOffset-22);
-							if(is_mobile_webkit){
-								$('#scrollBarLine').css('left',widthOffset - 16);
-								$('#scrollBar').css('left',widthOffset - 17);
-								$('#UserListContainer').css('left',widthOffset);
-							}
-							scroll.reCalcBar();
-						}
-						scroll.down();
-					}).trigger('resize').blur(function(){
-						isBlurred = true;
-					}).focus(function(){
-						isBlurred = false;
-					});
 					if(hide_userlist){ // hide userlist is on
 						mBoxContWidthOffset = 99;
 						$('<style>')
 							.append(
-								'#scrollBar{left:98%;left:calc(99% - 17px);left:-webkit-calc(99% - 17px);}',
-								'#scrollBarLine{left:98%;left:calc(99% - 16px);left:-webkit-calc(99% - 16px);}',
 								'input#message,span#message{width:93%;width:calc(100% - 121px);width:-webkit-calc(100% - 121px);}',
 								'#mBoxCont{width:99%;}',
 								'.arrowButtonHoriz2,.arrowButtonHoriz3 > div:nth-child(2){left:98%;left:calc(99% - 5px);left:-webkit-calc(99% - 5px);}',
@@ -2040,6 +2010,34 @@ oirc = (function(){
 					instant.init();
 					logs.init();
 					registerToggle();
+					$('#scrollBarLine').css('top',parseInt($('#header').outerHeight(),10)-1); // -1 due to border
+					$(window).resize(function(){
+						var htmlHeight = window.innerHeight,
+							htmlWidth = window.innerWidth,
+							headerHeight = $('#header').outerHeight(),
+							footerHeight = $('#footer').outerHeight();
+						if(!is_ios){
+							$('#mBoxCont').css('height',htmlHeight - footerHeight - headerHeight);
+							$('html,body').height(htmlHeight);
+							
+							$('#message').css('width',htmlWidth*(hide_userlist?1:0.91) - 121);
+						}
+						if(show_scrollbar){
+							var widthOffset = (htmlWidth/100)*mBoxContWidthOffset;
+							$('#mBoxCont').css('width',widthOffset-22);
+							$('#scrollBarLine').css({
+								left:widthOffset - 16,
+								height:htmlHeight - headerHeight
+							});
+							$('#scrollBar').css('left',widthOffset - 17);
+							scroll.reCalcBar();
+						}
+						scroll.down();
+					}).trigger('resize').blur(function(){
+						isBlurred = true;
+					}).focus(function(){
+						isBlurred = false;
+					});
 					$('#aboutButton').click(function(e){
 						e.preventDefault();
 						$('#about').toggle();
@@ -2059,8 +2057,7 @@ oirc = (function(){
 							channels.join(options.get(4,String.fromCharCode(45)).charCodeAt(0) - 45);
 						}else{
 							registerToggle();
-							$('#windowbg2').css('height',parseInt($('html').height(),10) - parseInt($('#message').height() + 14,10));
-							$('#mBoxCont').css('height',parseInt($('#windowbg2').height(),10) - 42).empty().append(
+							$('#mBoxCont').empty().append(
 								'<br>',
 								$('<a>')
 									.css('font-size',20)
@@ -2093,8 +2090,9 @@ oirc = (function(){
 		statusBar = (function(){
 			var text = '',
 				started = false,
+				use = options.get(11,'T')!='T',
 				start = function(){
-					if(options.get(11,'T')!='T'){
+					if(use){
 						return;
 					}
 					if(!started){
@@ -2880,8 +2878,9 @@ oirc = (function(){
 							$mBox.find('tr:first').remove();
 						}
 						
-						if($('<span>').append(tdName).text() == '*'){
-							statusTxt = $('<span>').append(tdName).text()+' ';
+						
+						if(tdName == '*'){
+							statusTxt = '* ';
 						}else{
 							statusTxt = '<'+line.name+'> ';
 						}
@@ -2890,12 +2889,10 @@ oirc = (function(){
 						}
 						statusTxt += $('<span>').append(tdMessage).text();
 						statusBar.set(statusTxt);
+						
+						
 						$mBox.append(
 							$('<tr>')
-								.css({
-									width:'100%',
-									height:1
-								})
 								.addClass((options.get(6,'T')=='T' && (lineHigh = !lineHigh)?'lineHigh':''))
 								.addClass(((new Date(lastMessage)).getDay()!=(new Date(line.time*1000)).getDay())?'seperator':'') //new day indicator
 								.append(
@@ -2938,7 +2935,7 @@ oirc = (function(){
 				}
 			};
 		})();
-	$(document).ready(function(){
+	$(function(){
 		network.init();
 		switch($('body').attr('page')){
 			case 'options':
