@@ -84,7 +84,7 @@ def binding(word,word_eol,userdata):
 			if res: # nick
 				textEvent = 'Change Nick'
 				args = [getNick(res.group(1),res.group(3))]
-				break;
+				break
 			
 			break
 		

@@ -416,7 +416,7 @@ oirc = (function(){
 					{
 						disp:'Show Timestamps',
 						id:10,
-						defaultOption:'F'
+						defaultOption:'T'
 					},
 					{
 						disp:'Show Updates in Browser Status Bar',
@@ -2889,7 +2889,7 @@ oirc = (function(){
 						}else{
 							statusTxt = '<'+line.name+'> ';
 						}
-						if(options.get(10,'F')=='T'){
+						if(options.get(10,'T')=='T'){
 							statusTxt = '['+(new Date(line.time*1000)).toLocaleTimeString()+'] '+statusTxt;
 						}
 						statusTxt += $('<span>').append(tdMessage).text();
@@ -2901,7 +2901,7 @@ oirc = (function(){
 								.addClass((options.get(6,'T')=='T' && (lineHigh = !lineHigh)?'lineHigh':''))
 								.addClass(((new Date(lastMessage)).getDay()!=(new Date(line.time*1000)).getDay())?'seperator':'') //new day indicator
 								.append(
-									(options.get(10,'F')=='T'?$('<td>')
+									(options.get(10,'T')=='T'?$('<td>')
 										.addClass('irc-date')
 										.append('['+(new Date(line.time*1000)).toLocaleTimeString()+']'):''),
 									$('<td>')
