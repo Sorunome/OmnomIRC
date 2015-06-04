@@ -126,6 +126,9 @@ a:hover {
 	white-space:nowrap;
 	padding-right:2px;
 }
+#MessageBox td.irc-date,#MessageBox td.name {
+	white-space: nowrap;
+}
 .lineHigh {
 	background:#cae4ff;
 }

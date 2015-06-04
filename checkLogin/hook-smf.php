@@ -2,7 +2,7 @@
 // Do initial setup stuff here
 
 $ssi_guest_access = true;
-@require(dirname(__FILE__).'/SSI.php');
+require(realpath(dirname(__FILE__)).'/../SSI.php');
 
 function hook_get_group($id){
 	// $id is the int of the user, should return a string to identify the group
