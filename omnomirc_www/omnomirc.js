@@ -1965,6 +1965,29 @@ oirc = (function(){
 						});
 				},
 				isBlurred = false,
+				calcResize = function(allowHeightChange){
+					var htmlHeight = window.innerHeight,
+						htmlWidth = window.innerWidth,
+						headerHeight = $('#header').outerHeight(),
+						footerHeight = $('#footer').outerHeight();
+					if(allowHeightChange){
+						$('#mBoxCont').css('height',htmlHeight - footerHeight - headerHeight);
+						$('html,body').height(htmlHeight);
+						
+						$('#message').css('width',htmlWidth*(hide_userlist?1:0.91) - 121);
+					}
+					if(show_scrollbar){
+						var widthOffset = (htmlWidth/100)*mBoxContWidthOffset;
+						$('#mBoxCont').css('width',widthOffset-22);
+						$('#scrollBarLine').css('left',widthOffset - 16);
+						if(allowHeightChange){
+							$('#scrollBarLine').css('height',htmlHeight - headerHeight);
+						}
+						$('#scrollBar').css('left',widthOffset - 17);
+						scroll.reCalcBar();
+					}
+					scroll.down();
+				},
 				init = function(){
 					var nua = navigator.userAgent,
 						is_android = ((nua.indexOf('Mozilla/5.0') > -1 && nua.indexOf('Android ') > -1 && nua.indexOf('AppleWebKit') > -1) && !(nua.indexOf('Chrome') > -1)),
@@ -2011,28 +2034,11 @@ oirc = (function(){
 					logs.init();
 					registerToggle();
 					$('#scrollBarLine').css('top',parseInt($('#header').outerHeight(),10)-1); // -1 due to border
+					if(is_ios){
+						calcResize(true);
+					}
 					$(window).resize(function(){
-						var htmlHeight = window.innerHeight,
-							htmlWidth = window.innerWidth,
-							headerHeight = $('#header').outerHeight(),
-							footerHeight = $('#footer').outerHeight();
-						if(!is_ios){
-							$('#mBoxCont').css('height',htmlHeight - footerHeight - headerHeight);
-							$('html,body').height(htmlHeight);
-							
-							$('#message').css('width',htmlWidth*(hide_userlist?1:0.91) - 121);
-						}
-						if(show_scrollbar){
-							var widthOffset = (htmlWidth/100)*mBoxContWidthOffset;
-							$('#mBoxCont').css('width',widthOffset-22);
-							$('#scrollBarLine').css({
-								left:widthOffset - 16,
-								height:htmlHeight - headerHeight
-							});
-							$('#scrollBar').css('left',widthOffset - 17);
-							scroll.reCalcBar();
-						}
-						scroll.down();
+						calcResize(!is_ios);
 					}).trigger('resize').blur(function(){
 						isBlurred = true;
 					}).focus(function(){
@@ -2090,9 +2096,8 @@ oirc = (function(){
 		statusBar = (function(){
 			var text = '',
 				started = false,
-				use = options.get(11,'T')!='T',
 				start = function(){
-					if(use){
+					if(options.get(11,'T')!='T'){
 						return;
 					}
 					if(!started){

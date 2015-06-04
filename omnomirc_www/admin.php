@@ -119,7 +119,7 @@ if($you->isGlobalOp()){
 				$json->add('networks',$config['networks']);
 				break;
 			case 'checkLogin':
-				if(isset($_GET['i']) && isset($config['networks'][$_GET['id']]) && $config['networks'][$_GET['id']]['type'] == 1){
+				if(isset($_GET['i']) && isset($config['networks'][$_GET['i']]) && $config['networks'][$_GET['i']]['type'] == 1){
 					$json->add('checkLogin',json_decode(file_get_contents($config['networks'][$_GET['i']]['config']['checkLogin'].'?server='.getCheckLoginChallenge().'&action=get'),true));
 				}else{
 					$json->add('success',false);

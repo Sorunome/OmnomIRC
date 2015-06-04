@@ -45,9 +45,9 @@ function getPage($title,$head,$body,$page){
 				'<link rel="icon" type="image/png" href="omni.png">'.
 				'<link rel="stylesheet" type="text/css" href="style.css" />'.
 				($ess!=''?'<link rel="stylesheet" type="text/css" href="'.$ess.'" />':'').
-				'<script src="btoa.js"></script>'.
-				'<script type="text/javascript" src="jquery-1.11.0.min.js"></script>'.
-				'<script src="omnomirc.js"></script>'.
+				'<script type="text/javascript" src="btoa.js"></script>'.
+				'<script type="text/javascript" src="jquery-1.11.3.min.js"></script>'.
+				'<script type="text/javascript" src="omnomirc.js"></script>'.
 				'<title>'.$title.'</title>'.
 				'<script type="text/javascript">document.domain="'.$config['settings']['hostname'].'";</script>'.
 				$head.
@@ -229,14 +229,14 @@ echo getPage('OmnomIRC','','
 	</div>
 </div>
 <div id="about"><div class="popup"><span style="position:absolute;z-index:9002;top:1px;right:2px"><a onclick="document.getElementById(\'about\').style.display=\'none\';">Close</a></span>
-	<div style="text-align:center;"><a href="http://omnomirc.omnimaga.org/" target="_blank"><img src="omnomirc.png" alt="OmnomIRC"></a></div>
+	<div style="text-align:center;"><a href="https://omnomirc.omnimaga.org/" target="_blank"><img src="omnomirc.png" alt="OmnomIRC"></a></div>
 	<p><a href="https://omnomirc.omnimaga.org/" target="_blank">OmnomIRC</a> is developed by <a href="https://www.omnimaga.org" alt="Omnimaga" target="_blank">Omnimaga</a></p>
 	<p>Found an issue/bug? <a href="https://github.com/Sorunome/OmnomIRC2/issues" target="_blank">Report it!</a></p>
 	<h1>Programmers</h1>
 	<ul><li><a href="http://netham45.org/" target="_blank">Netham45</a></li><li><a href="http://www.sorunome.de" target="_blank">Sorunome</a></li><li><a href="http://eeems.ca/" target="_blank">Eeems</a></li></ul>
 	<h1>Style</h1>
-	<ul><li><a href="http://www.omnimaga.org/index.php?action=profile;u=691" target="_blank">Darl181</a></li></ul>
-	<a href="http://omnomirc.omnimaga.org/" target="_blank">Homepage</a> | <a href="https://github.com/Sorunome/OmnomIRC2" target="_blank">GitHub</a>
+	<ul><li><a href="https://www.omnimaga.org/profile/Darl181" target="_blank">Darl181</a></li></ul>
+	<a href="https://omnomirc.omnimaga.org/" target="_blank">Homepage</a> | <a href="https://github.com/Sorunome/OmnomIRC2" target="_blank">GitHub</a>
 </div></div>
 <div id="smileyselect" class="popup">
 </div>
