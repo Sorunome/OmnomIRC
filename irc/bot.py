@@ -19,7 +19,7 @@
 #
 #	You should have received a copy of the GNU General Public License
 #	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
-import threading,socket,string,time,sys,json,MySQLdb,traceback,errno,chardet,SocketServer,struct,signal,subprocess,select
+import threading,socket,string,time,sys,json,MySQLdb,traceback,errno,chardet,struct,signal,subprocess,select
 from base64 import b64encode
 from hashlib import sha1
 from mimetools import Message
@@ -73,7 +73,7 @@ class Config:
 		self.json = json.loads(jsons[:-1])
 
 #sql handler
-class Sql():
+class Sql:
 	def __init__(self):
 		global config
 	def fetchOneAssoc(self,cur):
@@ -121,6 +121,116 @@ class Sql():
 			traceback.print_exc()
 			return False
 
+class ServerHandler():
+	def __init__(self,s,address):
+		self.socket = s
+		self.client_address = address
+	def setup(self):
+		return
+	def recieve(self):
+		data = self.socket.recv(1024)
+		return True
+	def close(self):
+		return
+	def isHandler(self,s):
+		return s == self.socket
+	def getSocket(self):
+		return self.socket
+
+class Server(threading.Thread):
+	host = ''
+	port = 0
+	backlog = 5
+	stopnow = False
+	def __init__(self,host,port,handler):
+		threading.Thread.__init__(self)
+		self.host = host
+		self.port = port
+		self.handler = handler
+	def getHandler(self,client,address):
+		return self.handler(client,address)
+	def getInputHandler(self,s):
+		for i in self.inputHandlers:
+			if i.isHandler(s):
+				return i
+		return False
+	def getSocket(self):
+		return socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+	def run(self):
+		server = self.getSocket()
+		server.bind((self.host,self.port))
+		server.listen(self.backlog)
+		server.settimeout(5)
+		input = [server]
+		self.inputHandlers = []
+		while not self.stopnow:
+			inputready,outputready,exceptready = select.select(input,[],[],5)
+			for s in inputready:
+				if s == server:
+					# handle incoming socket connections
+					client, address = server.accept()
+					client.settimeout(0.1)
+					handler = self.getHandler(client,address)
+					handler.setup()
+					self.inputHandlers.append(handler)
+					input.append(client)
+				else:
+					# handle other socket connections
+					i = self.getInputHandler(s)
+					if i:
+						try:
+							if not i.recieve():
+								try:
+									i.close()
+								except:
+									pass
+								try:
+									s.close()
+								except:
+									pass
+								input.remove(s)
+								self.inputHandlers.remove(i)
+						except socket.timeout:
+							pass
+						except Exception as err:
+							print(err)
+							traceback.print_exc()
+							try:
+								i.close()
+							except:
+								pass
+							try:
+								s.close()
+							except:
+								pass
+							input.remove(s)
+							self.inputHandlers.remove(i)
+							break
+					else:
+						s.close()
+						input.remove(s)
+		for s in input:
+			try:
+				s.close()
+			except:
+				pass
+		for i in self.inputHandlers:
+			try:
+				i.close()
+			except:
+				pass
+	def stop(self):
+		self.stopnow = True
+
+
+class SSLServer(Server):
+	def getSocket(self):
+		dir = os.path.dirname(__file__)
+		key_file = os.path.join(dir,'server.key')
+		cert_file = os.path.join(dir,'server.crt')
+		import ssl
+		s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+		return ssl.wrap_socket(s, keyfile=key_file, certfile=cert_file, cert_reqs=ssl.CERT_NONE)
 #irc bot
 class Bot(threading.Thread):
 	def __init__(self,server,port,nick,ns,main,passwd,i,tbe,mn,tn,dssl):
@@ -530,7 +640,7 @@ class OIRCLink(threading.Thread):
 
 #gCn bridge
 connectedCalcs = []
-class CalculatorThread(SocketServer.BaseRequestHandler):
+class CalculatorHandler(ServerHandler):
 	connectedToIRC=False
 	chan=''
 	calcName=''
@@ -543,11 +653,14 @@ class CalculatorThread(SocketServer.BaseRequestHandler):
 		c = self.chanToId(self.chan)
 		if c!=-1:
 			handle.removeUser(self.calcName,c,self.i)
-	def stopThread(self):
+	def close(self):
 		print('Giving signal to quit calculator...')
-		self.stopnow = True
+		connectedCalcs.remove(self)
 		self.send('\xAD'+('**** Server going down! ****').encode('ASCII'))
-		self.request.close()
+		try:
+			self.socket.close()
+		except:
+			pass
 	def checkExit(self):
 		if self.stopnow:
 			print('exiting...')
@@ -582,7 +695,7 @@ class CalculatorThread(SocketServer.BaseRequestHandler):
 	def send(self,message):
 		message = '\xFF\x89\x00\x00\x00\x00\x00'+('Omnom').encode('ASCII')+struct.pack('<H',len(message))+message
 		message = struct.pack('<H',len(message)+1)+('b').encode('ASCII')+message+('*').encode('ASCII')
-		self.request.sendall(message)
+		self.send.sendall(message)
 	def idToChan(self,i):
 		if i in self.chans:
 			return self.chans[i]
@@ -598,10 +711,10 @@ class CalculatorThread(SocketServer.BaseRequestHandler):
 				return True
 				break
 		return False
-	def handle(self):
+	def setup(self):
 		global config
-		print(threading.current_thread())
 		print('New calculator\n')
+		connectedCalcs.append(self)
 		self.i = handle.getCalcNetworkId()
 		self.chans = {}
 		self.defaultChan = ''
@@ -613,109 +726,75 @@ class CalculatorThread(SocketServer.BaseRequestHandler):
 						if self.defaultChan == '':
 							self.defaultChan = c['name']
 						break
-		
+	def recieve(self):
 		try:
-			self.request.settimeout(10)
-			connectedCalcs.append(self)
-			while not self.stopnow:
-				#data = self.rfile.readline()
-				time.sleep(0.0001)
-				try:
-					data = self.request.recv(1024)
-				except socket.timeout:
-					continue
-				except Exception as err:
-					print('Error:')
-					print(err)
-					break
-				if not data:  # EOF
-					break
-				printString = '';
-				sendMessage = False
-				if (data[2]=='j'):
-					self.calcName=''
-					self.chan=''
-					for i in range(4, int(ord(data[3]))+4):
-						self.chan=self.chan+data[i]
-					for i in range(int(ord(data[3]))+5, int(ord(data[int(ord(data[3]))+4]))+int(ord(data[3]))+5):
-						self.calcName=self.calcName+data[i]
-					self.chan = self.chan.lower()
-					printString+='Join-message recieved. Calc-Name:'+self.calcName+' Channel:'+self.chan+'\n'
-					if not(self.findchan(self.chan)):
-						printString+='Invalid channel, defaulting to '+self.defaultChan+'\n'
-						self.chan=self.defaultChan
-				if (data[2]=='c'):
-					calcId=data[3:]
-					printString+='Calc-message recieved. Calc-ID:'+calcId+'\n'
-				if (data[2]=='b' or data[2]=='f'):
-					if ord(data[17])==171:
-						self.send('\xAB'+('OmnomIRC').encode('ASCII'))
-						if not self.connectedToIRC:
-							printString+=self.calcName+' has joined\n'
-							self.connectedToIRC=True
+			data = self.request.recv(1024)
+		except socket.timeout:
+			return True
+		except Exception as err:
+			print('Error:')
+			print(err)
+			return False
+		if not data:  # EOF
+			return False
+		try:
+			printString = '';
+			sendMessage = False
+			if (data[2]=='j'):
+				self.calcName=''
+				self.chan=''
+				for i in range(4, int(ord(data[3]))+4):
+					self.chan=self.chan+data[i]
+				for i in range(int(ord(data[3]))+5, int(ord(data[int(ord(data[3]))+4]))+int(ord(data[3]))+5):
+					self.calcName=self.calcName+data[i]
+				self.chan = self.chan.lower()
+				printString+='Join-message recieved. Calc-Name:'+self.calcName+' Channel:'+self.chan+'\n'
+				if not(self.findchan(self.chan)):
+					printString+='Invalid channel, defaulting to '+self.defaultChan+'\n'
+					self.chan=self.defaultChan
+			if (data[2]=='c'):
+				calcId=data[3:]
+				printString+='Calc-message recieved. Calc-ID:'+calcId+'\n'
+			if (data[2]=='b' or data[2]=='f'):
+				if ord(data[17])==171:
+					self.send('\xAB'+('OmnomIRC').encode('ASCII'))
+					if not self.connectedToIRC:
+						printString+=self.calcName+' has joined\n'
+						self.connectedToIRC=True
+						self.send('\xAD'+('**Now speeking in channel '+self.chan).encode('ASCII'))
+						self.sendToIRC('join','')
+						self.userJoin()
+				elif ord(data[17])==172:
+					if self.connectedToIRC:
+						printString+=self.calcName+' has quit\n'
+						self.connectedToIRC=False
+						self.userPart()
+						self.sendToIRC('quit','')
+				elif ord(data[17])==173 and data[5:10]=='Omnom':
+					printString+='msg ('+self.calcName+') '+data[data.find(':',18)+1:-1]+'\n'
+					message=data[data.find(":",18)+1:-1]
+					if message.split(' ')[0].lower()=='/join':
+						if self.findchan(message[message.find(' ')+1:].lower()):
+							self.sendToIRC('part','')
+							self.userPart()
+							self.chan=message[message.find(' ')+1:].lower()
 							self.send('\xAD'+('**Now speeking in channel '+self.chan).encode('ASCII'))
 							self.sendToIRC('join','')
 							self.userJoin()
-					elif ord(data[17])==172:
-						if self.connectedToIRC:
-							printString+=self.calcName+' has quit\n'
-							self.connectedToIRC=False
-							self.userPart()
-							self.sendToIRC('quit','')
-					elif ord(data[17])==173 and data[5:10]=='Omnom':
-						printString+='msg ('+self.calcName+') '+data[data.find(':',18)+1:-1]+'\n'
-						message=data[data.find(":",18)+1:-1]
-						if message.split(' ')[0].lower()=='/join':
-							if self.findchan(message[message.find(' ')+1:].lower()):
-								self.sendToIRC('part','')
-								self.userPart()
-								self.chan=message[message.find(' ')+1:].lower()
-								self.send('\xAD'+('**Now speeking in channel '+self.chan).encode('ASCII'))
-								self.sendToIRC('join','')
-								self.userJoin()
-							else:
-								self.send('\xAD'+('**Channel '+message[message.find(' ')+1:]+' doesn\'t exist!').encode('ASCII'))
-						elif message.split(' ')[0].lower()=='/me':
-							self.sendToIRC('action',message[message.find(' ')+1:])
 						else:
-							self.sendToIRC('message',message)
-				
-				if printString!='':
-					print(threading.current_thread())
-					print(printString)
-			if self.connectedToIRC:
-				self.userPart()
-				self.sendToIRC('quit','client disconnect')
-				
-		except:
+							self.send('\xAD'+('**Channel '+message[message.find(' ')+1:]+' doesn\'t exist!').encode('ASCII'))
+					elif message.split(' ')[0].lower()=='/me':
+						self.sendToIRC('action',message[message.find(' ')+1:])
+					else:
+						self.sendToIRC('message',message)
+					
+			if printString!='':
+				print(threading.current_thread())
+				print(printString)
+		except Exception as inst:
+			print(inst)
 			traceback.print_exc()
-			self.sendToIRC('quit','server error')
-			if self.connectedToIRC:
-				self.userPart()
-		print(threading.current_thread())
-		connectedCalcs.remove(self)
-		print('Thread done\n')
-
-class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
-	allow_reuse_address = True
-	pass
-
-
-class ThreadedTCPServerSSL(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
-	allow_reuse_address = True
-	def __init__(self, server_address, RequestHandlerClass, bind_and_activate=True):
-		"""Constructor. May be extended, do not override."""
-		import os
-		SocketServer.TCPServer.__init__(self, server_address, RequestHandlerClass, False)
-		dir = os.path.dirname(__file__)
-		key_file = os.path.join(dir,'server.key')
-		cert_file = os.path.join(dir,'server.crt')
-		import ssl
-		self.socket = ssl.wrap_socket(self.socket, keyfile=key_file, certfile=cert_file, cert_reqs=ssl.CERT_NONE)
-		if bind_and_activate:
-			self.server_bind()
-			self.server_activate()
-	pass
+		return True
 
 #main handler
 class Main():
@@ -860,7 +939,7 @@ class Main():
 				self.websocketserver.start()
 			if self.calcNetwork!=-1:
 				sql.query('DELETE FROM `irc_users` WHERE online = %d',[self.calcNetwork['id']])
-				self.gCn_server = ThreadedTCPServer((self.calcNetwork['config']['server'],self.calcNetwork['config']['port']),CalculatorThread)
+				self.gCn_server = Server(self.calcNetwork['config']['server'],self.calcNetwork['config']['port'],CalculatorHandler)
 				gCn_thread = threading.Thread(target=self.gCn_server.serve_forever)
 				gCn_thread.daemon = True
 				gCn_thread.start()
@@ -888,118 +967,6 @@ class Main():
 		
 		sys.exit(code)
 
-
-
-class ServerHandler():
-	def __init__(self,s,address):
-		self.socket = s
-		self.client_address = address
-	def setup(self):
-		return
-	def recieve(self):
-		data = self.socket.recv(1024)
-		return True
-	def close(self):
-		return
-	def isHandler(self,s):
-		return s == self.socket
-	def getSocket(self):
-		return self.socket
-
-class Server(threading.Thread):
-	host = ''
-	port = 0
-	backlog = 5
-	stopnow = False
-	def __init__(self,host,port,handler):
-		threading.Thread.__init__(self)
-		self.host = host
-		self.port = port
-		self.handler = handler
-	def getHandler(self,client,address):
-		return self.handler(client,address)
-	def getInputHandler(self,s):
-		for i in self.inputHandlers:
-			if i.isHandler(s):
-				return i
-		return False
-	def getSocket(self):
-		return socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-	def run(self):
-		server = self.getSocket()
-		server.bind((self.host,self.port))
-		server.listen(self.backlog)
-		server.settimeout(5)
-		input = [server]
-		self.inputHandlers = []
-		while not self.stopnow:
-			inputready,outputready,exceptready = select.select(input,[],[],5)
-			for s in inputready:
-				if s == server:
-					# handle incoming socket connections
-					client, address = server.accept()
-					client.settimeout(0.1)
-					handler = self.getHandler(client,address)
-					handler.setup()
-					self.inputHandlers.append(handler)
-					input.append(client)
-				else:
-					# handle other socket connections
-					i = self.getInputHandler(s)
-					if i:
-						try:
-							if not i.recieve():
-								try:
-									i.close()
-								except:
-									pass
-								try:
-									s.close()
-								except:
-									pass
-								input.remove(s)
-								self.inputHandlers.remove(i)
-						except socket.timeout:
-							pass
-						except Exception as err:
-							print(err)
-							traceback.print_exc()
-							try:
-								i.close()
-							except:
-								pass
-							try:
-								s.close()
-							except:
-								pass
-							input.remove(s)
-							self.inputHandlers.remove(i)
-							break
-					else:
-						s.close()
-						input.remove(s)
-		for s in input:
-			try:
-				s.close()
-			except:
-				pass
-		for i in self.inputHandlers:
-			try:
-				i.close()
-			except:
-				pass
-	def stop(self):
-		self.stopnow = True
-
-
-class SSLServer(Server):
-	def getSocket(self):
-		dir = os.path.dirname(__file__)
-		key_file = os.path.join(dir,'server.key')
-		cert_file = os.path.join(dir,'server.crt')
-		import ssl
-		s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-		return ssl.wrap_socket(s, keyfile=key_file, certfile=cert_file, cert_reqs=ssl.CERT_NONE)
 
 # websockethandler skeleton from https://gist.github.com/jkp/3136208
 connectedClients = []
