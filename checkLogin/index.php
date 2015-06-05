@@ -94,7 +94,7 @@ if(isset($_GET['op'])){
 				break;
 			case 'get':
 				$hooks = array();
-				foreach(scandir('.') as $f){
+				foreach(scandir(realpath(dirname(__FILE__))) as $f){
 					if(preg_match('/^hook-([a-zA-Z0-9-\.,+_]+)\.php$/',$f,$match)){
 						$hooks[] = $match[1];
 					}

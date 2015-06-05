@@ -91,6 +91,45 @@
 					})
 			);
 		},
+		makeThemesPage = function(themes){
+			$('#adminContent').append(
+				'<div style="font-weight:bold">Theme Settings</div>',
+				$('<span>').append(
+					$.map(themes,function(t,i){
+						return [$('<span>').text(t.name),' ',$('<a>').text('edit').click(function(e){
+							e.preventDefault();
+							$(this).parent().replaceWith(
+								$('<span>').append(
+									$('<a>').text('Back').click(function(e){
+										e.preventDefault();
+										$('#adminContent').empty();
+										makeThemesPage(themes);
+									}),'<br><br>Name:',
+									$('<input>').attr('type','text').val(t.name).change(function(){themes[i].name = this.value;})
+								)
+							);
+						}),'<br>'];
+					}),
+					'<br>',
+					$('<a>').text('add Theme').click(function(e){
+						e.preventDefault();
+						var name = prompt('new hotlink name');
+						if(name!=='' && name!==null){
+							themes.push({
+								name:name,
+								colors:{}
+							});
+							$('#adminContent').empty();
+							makeThemesPage(themes);
+						}
+					})
+				),
+				'<br>',
+				$('<button>').text('submit').click(function(){
+					sendEdit('themes',themes);
+				})
+			);
+		},
 		makeChannelsPage = function(chans,nets){
 			var makeAdvancedChanEditingForm = function(chan,i,elem){
 					$(elem).empty().append(
@@ -724,6 +763,9 @@
 				switch(p){
 					case 'index':
 						makeIndexPage(data);
+						break;
+					case 'themes':
+						makeThemesPage(data.themes);
 						break;
 					case 'channels':
 						makeChannelsPage(data.channels,data.nets);

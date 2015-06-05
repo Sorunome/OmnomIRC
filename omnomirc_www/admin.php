@@ -90,6 +90,12 @@ if($you->isGlobalOp()){
 					$json->add('updaterReady',false);
 				}
 				break;
+			case 'themes':
+				if(!$a = $vars->get('themes')){
+					$a = array();
+				}
+				$json->add('themes',$a);
+				break;
 			case 'channels':
 				$json->add('channels',$config['channels']);
 				$json->add('nets',$networks->getNetsArray());
@@ -164,6 +170,10 @@ if($you->isGlobalOp()){
 				}else{
 					$json->addError('Couldn\'t back up config');
 				}
+				break;
+			case 'themes':
+				$vars->set('themes',$jsonData);
+				$json->add('message','Themes saved!');
 				break;
 			case 'channels':
 				$config['channels'] = $jsonData;
