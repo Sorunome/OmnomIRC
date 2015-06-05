@@ -758,12 +758,14 @@ oirc = (function(){
 						fallback();
 					}
 					socket.onopen = function(e){
+						console.log(e);
 						connected = true;
 						for(var i = 0;i < sendBuffer.length;i++){
 							ws.send(sendBuffer[i]);
 						}
 					};
 					socket.onmessage = function(e){
+						console.log(e);
 						try{
 							var data = JSON.parse(e.data);
 							console.log(data);
@@ -778,10 +780,12 @@ oirc = (function(){
 						}catch(e){};
 					};
 					socket.onclose = function(e){
+						console.log(e);
 						use = false;
 						fallback();
 					};
 					socket.onerror = function(e){
+						console.error(e);
 						socket.close();
 						use = false;
 						fallback();
@@ -1956,6 +1960,8 @@ oirc = (function(){
 					);
 				},
 				mBoxContWidthOffset = 90,
+				hide_userlist = false,
+				show_scrollbar = true,
 				registerToggle = function(){
 					$('#toggleButton')
 						.click(function(e){
@@ -1992,9 +1998,9 @@ oirc = (function(){
 					var nua = navigator.userAgent,
 						is_android = ((nua.indexOf('Mozilla/5.0') > -1 && nua.indexOf('Android ') > -1 && nua.indexOf('AppleWebKit') > -1) && !(nua.indexOf('Chrome') > -1)),
 						is_ios = (nua.match(/(iPod|iPhone|iPad)/i) && nua.match(/AppleWebKit/i)),
-						is_mobile_webkit = (nua.match(/AppleWebKit/i) && nua.match(/Android/i)),
-						hide_userlist = options.get(14,'F')=='T',
-						show_scrollbar = options.get(15,'T')=='T';
+						is_mobile_webkit = (nua.match(/AppleWebKit/i) && nua.match(/Android/i));
+					hide_userlist = options.get(14,'F')=='T';
+					show_scrollbar = options.get(15,'T')=='T';
 					page.changeLinks();
 					if(!wysiwyg.support()){
 						$('#message').replaceWith(

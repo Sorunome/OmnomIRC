@@ -19,7 +19,7 @@
 #
 #	You should have received a copy of the GNU General Public License
 #	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
-import threading,socket,string,time,sys,json,MySQLdb,traceback,errno,chardet,SocketServer,struct,signal,subprocess
+import threading,socket,string,time,sys,json,MySQLdb,traceback,errno,chardet,SocketServer,struct,signal,subprocess,select
 from base64 import b64encode
 from hashlib import sha1
 from mimetools import Message
@@ -66,12 +66,10 @@ class Config:
 		f.close()
 		for l in lines:
 			if searchingJson:
-				if l.strip()=='//JSONSTART':
+				if l.strip()=='?>':
 					searchingJson = False
 			else:
-				if l.strip()=='//JSONEND':
-					break
-				jsons += l[2:] + "\n"
+				jsons += l + "\n"
 		self.json = json.loads(jsons[:-1])
 
 #sql handler
@@ -856,11 +854,10 @@ class Main():
 		try:
 			if config.json['websockets']['use']:
 				if config.json['websockets']['ssl']:
-					self.websocketserver = ThreadedTCPServerSSL((config.json['websockets']['host'],config.json['websockets']['port']),WebSocketsHandler)
+					self.websocketserver = SSLServer(config.json['websockets']['host'],config.json['websockets']['port'],WebSocketsHandler)
 				else:
-					self.websocketserver = ThreadedTCPServer((config.json['websockets']['host'],config.json['websockets']['port']),WebSocketsHandler)
-				websocket_thread = threading.Thread(target=self.websocketserver.serve_forever)
-				websocket_thread.start()
+					self.websocketserver = Server(config.json['websockets']['host'],config.json['websockets']['port'],WebSocketsHandler)
+				self.websocketserver.start()
 			if self.calcNetwork!=-1:
 				sql.query('DELETE FROM `irc_users` WHERE online = %d',[self.calcNetwork['id']])
 				self.gCn_server = ThreadedTCPServer((self.calcNetwork['config']['server'],self.calcNetwork['config']['port']),CalculatorThread)
@@ -887,20 +884,127 @@ class Main():
 				i.stopThread()
 		
 		if config.json['websockets']['use']:
-			self.websocketserver.shutdown()
-			for i in connectedClients:
-				i.stopThread()
+			self.websocketserver.stop()
 		
 		sys.exit(code)
 
 
 
-connectedClients = []
+class ServerHandler():
+	def __init__(self,s,address):
+		self.socket = s
+		self.client_address = address
+	def setup(self):
+		return
+	def recieve(self):
+		data = self.socket.recv(1024)
+		return True
+	def close(self):
+		return
+	def isHandler(self,s):
+		return s == self.socket
+	def getSocket(self):
+		return self.socket
 
-# websockethandler sceleton from https://gist.github.com/jkp/3136208
-class WebSocketsHandler(SocketServer.StreamRequestHandler):
-	magic = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
+class Server(threading.Thread):
+	host = ''
+	port = 0
+	backlog = 5
 	stopnow = False
+	def __init__(self,host,port,handler):
+		threading.Thread.__init__(self)
+		self.host = host
+		self.port = port
+		self.handler = handler
+	def getHandler(self,client,address):
+		return self.handler(client,address)
+	def getInputHandler(self,s):
+		for i in self.inputHandlers:
+			if i.isHandler(s):
+				return i
+		return False
+	def getSocket(self):
+		return socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+	def run(self):
+		server = self.getSocket()
+		server.bind((self.host,self.port))
+		server.listen(self.backlog)
+		server.settimeout(5)
+		input = [server]
+		self.inputHandlers = []
+		while not self.stopnow:
+			inputready,outputready,exceptready = select.select(input,[],[],5)
+			for s in inputready:
+				if s == server:
+					# handle incoming socket connections
+					client, address = server.accept()
+					client.settimeout(0.1)
+					handler = self.getHandler(client,address)
+					handler.setup()
+					self.inputHandlers.append(handler)
+					input.append(client)
+				else:
+					# handle other socket connections
+					i = self.getInputHandler(s)
+					if i:
+						try:
+							if not i.recieve():
+								try:
+									i.close()
+								except:
+									pass
+								try:
+									s.close()
+								except:
+									pass
+								input.remove(s)
+								self.inputHandlers.remove(i)
+						except socket.timeout:
+							pass
+						except Exception as err:
+							print(err)
+							traceback.print_exc()
+							try:
+								i.close()
+							except:
+								pass
+							try:
+								s.close()
+							except:
+								pass
+							input.remove(s)
+							self.inputHandlers.remove(i)
+							break
+					else:
+						s.close()
+						input.remove(s)
+		for s in input:
+			try:
+				s.close()
+			except:
+				pass
+		for i in self.inputHandlers:
+			try:
+				i.close()
+			except:
+				pass
+	def stop(self):
+		self.stopnow = True
+
+
+class SSLServer(Server):
+	def getSocket(self):
+		dir = os.path.dirname(__file__)
+		key_file = os.path.join(dir,'server.key')
+		cert_file = os.path.join(dir,'server.crt')
+		import ssl
+		s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+		return ssl.wrap_socket(s, keyfile=key_file, certfile=cert_file, cert_reqs=ssl.CERT_NONE)
+
+# websockethandler skeleton from https://gist.github.com/jkp/3136208
+connectedClients = []
+class WebSocketsHandler(ServerHandler):
+	magic = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
 	sig = ''
 	network = -1
 	uid = -1
@@ -911,73 +1015,50 @@ class WebSocketsHandler(SocketServer.StreamRequestHandler):
 	chan = ''
 	msgStack = []
 	
-	def stopThread(self):
-		print('Giving signal to quit web-client...')
-		self.stopnow = True
-		self.request.close()
-		
 	def setup(self):
-		SocketServer.StreamRequestHandler.setup(self)
 		print("connection established"+str(self.client_address))
 		self.handshake_done = False
-		
-	def handle(self):
-		print(threading.current_thread())
 		print('New Web-Client\n')
+		connectedClients.append(self)
+	def recieve(self):
 		
-		try:
-			self.request.settimeout(3)
-			connectedClients.append(self)
-			while not self.stopnow:
-				time.sleep(0.1)
-				try:
-					if not self.handshake_done:
-						self.handshake()
-					else:
-						self.read_next_message()
-				except socket.timeout:
-					continue
-				except Exception as err:
-					print('ERROR:'+str(err))
-					traceback.print_exc()
-					break
-		except:
-			traceback.print_exc()
-		self.part()
-		print(threading.current_thread())
-		connectedClients.remove(self)
-		print('Thread done\n')
+		if not self.handshake_done:
+			return self.handshake()
+		else:
+			return self.read_next_message()
 	def read_next_message(self):
-		length = ord(self.rfile.read(2)[1]) & 127
+		length = ord(self.socket.recv(2)[1]) & 127
 		if length == 126:
-			length = struct.unpack(">H", self.rfile.read(2))[0]
+			length = struct.unpack(">H", self.socket.recv(2))[0]
 		elif length == 127:
-			length = struct.unpack(">Q", self.rfile.read(8))[0]
-		masks = [ord(byte) for byte in self.rfile.read(4)]
+			length = struct.unpack(">Q", self.socket.recv(8))[0]
+		masks = [ord(byte) for byte in self.socket.recv(4)]
 		decoded = ""
-		for char in self.rfile.read(length):
+		for char in self.socket.recv(length):
 			decoded += chr(ord(char) ^ masks[len(decoded) % 4])
-		
 		try:
-			self.on_message(json.loads(decoded))
-		except:
-			pass
+			return self.on_message(json.loads(decoded))
+		except Exception as inst:
+			traceback.print_exc()
+			return True
 	def send_message(self, message):
 		try:
-			self.request.send(chr(129))
+			self.socket.send(chr(129))
 			length = len(message)
 			if length <= 125:
-				self.request.send(chr(length))
+				self.socket.send(chr(length))
 			elif length >= 126 and length <= 65535:
-				self.request.send(chr(126))
-				self.request.send(struct.pack(">H", length))
+				self.socket.send(chr(126))
+				self.socket.send(struct.pack(">H", length))
 			else:
-				self.request.send(chr(127))
-				self.request.send(struct.pack(">Q", length))
-			self.request.send(message)
+				self.socket.send(chr(127))
+				self.socket.send(struct.pack(">Q", length))
+			self.socket.send(message)
 		except IOError, e:
+			traceback.print_exc()
 			if e.errno == errno.EPIPE:
-				self.stopThread()
+				return self.close()
+		return True
 	def addLine(self,t,m):
 		global handle,sql
 		c = self.chan
@@ -1028,10 +1109,10 @@ class WebSocketsHandler(SocketServer.StreamRequestHandler):
 		}})
 		self.send_message(s)
 	def handshake(self):
-		data = self.request.recv(1024).strip()
+		data = self.socket.recv(1024).strip()
 		headers = Message(StringIO(data.split('\r\n', 1)[1]))
 		if headers.get("Upgrade", None) != "websocket":
-			return
+			return False
 		print('Handshaking...')
 		key = headers['Sec-WebSocket-Key']
 		digest = b64encode(sha1(key + self.magic).hexdigest().decode('hex'))
@@ -1039,7 +1120,8 @@ class WebSocketsHandler(SocketServer.StreamRequestHandler):
 		response += 'Upgrade: websocket\r\n'
 		response += 'Connection: Upgrade\r\n'
 		response += 'Sec-WebSocket-Accept: %s\r\n\r\n' % digest
-		self.handshake_done = self.request.send(response)
+		self.handshake_done = self.socket.send(response)
+		return True
 	def checkRelog(self,r,m):
 		if r.has_key('relog'):
 			self.send_message(json.dumps({'relog':r['relog']}))
@@ -1131,8 +1213,17 @@ class WebSocketsHandler(SocketServer.StreamRequestHandler):
 							else: # normal message
 								self.addLine('message',msg)
 		except:
-			print(threading.current_thread())
 			traceback.print_exc()
+		return True
+	def close(self):
+		print('connection closed')
+		try:
+			self.part()
+			self.socket.close()
+		except:
+			pass
+		connectedClients.remove(self)
+		return False
 
 config = Config()
 sql = Sql()
