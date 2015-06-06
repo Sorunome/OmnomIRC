@@ -656,7 +656,15 @@ class CalculatorHandler(ServerHandler):
 	def close(self):
 		print('Giving signal to quit calculator...')
 		connectedCalcs.remove(self)
-		self.send('\xAD'+('**** Server going down! ****').encode('ASCII'))
+		try:
+			self.sendToIRC('quit','')
+			self.userPart()
+		except:
+			pass
+		try:
+			self.send('\xAD'+('**** Server going down! ****').encode('ASCII'))
+		except:
+			pass
 		try:
 			self.socket.close()
 		except:
@@ -674,6 +682,12 @@ class CalculatorHandler(ServerHandler):
 	def sendLine(self,n1,n2,t,m,c,s): #name 1, name 2, type, message, channel, source
 		c = self.idToChan(c)
 		if c!=-1:
+			n1 = n1.encode('ASCII')
+			n2 = n2.encode('ASCII')
+			t = t.encode('ASCII')
+			m = m.encode('ASCII')
+			c = c.encode('ASCII')
+			
 			if t=='message':
 				self.send('\xAD'+'%s:%s' % (n1,m))
 			elif t=='action':
@@ -695,7 +709,7 @@ class CalculatorHandler(ServerHandler):
 	def send(self,message):
 		message = '\xFF\x89\x00\x00\x00\x00\x00'+('Omnom').encode('ASCII')+struct.pack('<H',len(message))+message
 		message = struct.pack('<H',len(message)+1)+('b').encode('ASCII')+message+('*').encode('ASCII')
-		self.send.sendall(message)
+		self.socket.sendall(message)
 	def idToChan(self,i):
 		if i in self.chans:
 			return self.chans[i]
@@ -728,7 +742,7 @@ class CalculatorHandler(ServerHandler):
 						break
 	def recieve(self):
 		try:
-			data = self.request.recv(1024)
+			data = self.socket.recv(1024)
 		except socket.timeout:
 			return True
 		except Exception as err:
@@ -789,7 +803,6 @@ class CalculatorHandler(ServerHandler):
 						self.sendToIRC('message',message)
 					
 			if printString!='':
-				print(threading.current_thread())
 				print(printString)
 		except Exception as inst:
 			print(inst)
@@ -913,6 +926,7 @@ class Main():
 		
 	def sigquit(self):
 		print('sigquit')
+		self.quit()
 	def serve(self):
 		signal.signal(signal.SIGQUIT,self.sigquit)
 		self.calcNetwork = -1
@@ -940,13 +954,9 @@ class Main():
 			if self.calcNetwork!=-1:
 				sql.query('DELETE FROM `irc_users` WHERE online = %d',[self.calcNetwork['id']])
 				self.gCn_server = Server(self.calcNetwork['config']['server'],self.calcNetwork['config']['port'],CalculatorHandler)
-				gCn_thread = threading.Thread(target=self.gCn_server.serve_forever)
-				gCn_thread.daemon = True
-				gCn_thread.start()
-				self.gCn_server.serve_forever()
-			else:
-				while True:
-					time.sleep(30)
+				self.gCn_server.start()
+			while True:
+				time.sleep(30)
 		except KeyboardInterrupt:
 			print('KeyboardInterrupt, exiting...')
 			self.quit()
@@ -958,11 +968,11 @@ class Main():
 			b.stopThread()
 		self.oircLink.stopThread()
 		if self.calcNetwork != -1:
-			self.gCn_server.shutdown()
-			for i in connectedCalcs:
-				i.stopThread()
+			print('stopping calculator server...')
+			self.gCn_server.stop()
 		
 		if config.json['websockets']['use']:
+			print('stopping websocket server...')
 			self.websocketserver.stop()
 		
 		sys.exit(code)
