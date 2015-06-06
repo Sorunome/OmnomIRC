@@ -924,7 +924,7 @@ class Main():
 					print(inst)
 					traceback.print_exc()
 		
-	def sigquit(self):
+	def sigquit(self,e,s):
 		print('sigquit')
 		self.quit()
 	def serve(self):

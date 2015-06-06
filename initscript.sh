@@ -29,7 +29,7 @@ stop() {
   fi
   echo 'Stopping service…' >&2
 #  rm $CURIDFILE
-  kill -15 $(cat "$PIDFILE") && rm -f "$PIDFILE"
+  kill -3 $(cat "$PIDFILE") && rm -f "$PIDFILE"
   echo 'Service stopped' >&2
 }
 
