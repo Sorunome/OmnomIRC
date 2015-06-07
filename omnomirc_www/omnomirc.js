@@ -758,14 +758,12 @@ oirc = (function(){
 						fallback();
 					}
 					socket.onopen = function(e){
-						console.log(e);
 						connected = true;
 						for(var i = 0;i < sendBuffer.length;i++){
 							ws.send(sendBuffer[i]);
 						}
 					};
 					socket.onmessage = function(e){
-						console.log(e);
 						try{
 							var data = JSON.parse(e.data);
 							console.log(data);
@@ -780,12 +778,10 @@ oirc = (function(){
 						}catch(e){};
 					};
 					socket.onclose = function(e){
-						console.log(e);
 						use = false;
 						fallback();
 					};
 					socket.onerror = function(e){
-						console.error(e);
 						socket.close();
 						use = false;
 						fallback();
@@ -2940,7 +2936,9 @@ oirc = (function(){
 						if(s[0] == '>'){
 							s = '\x033'+s;
 						}
-						s = s.replace(/(\*[^\*]+\*)/g,'\x02$1\x02').replace(/(\/[^\/]+\/)/g,'\x1d$1\x1d').replace(/(_[^_]+_)/g,'\x1f$1\x1f');
+						s = s.replace(/((^|\s)\*[^\*]+\*($|\s))/g,'\x02$1\x02')
+								.replace(/((^|\s)\/[^\/]+\/($|\s))/g,'\x1d$1\x1d')
+								.replace(/((^|\s)_[^_]+_($|\s))/g,'\x1f$1\x1f');
 					}
 					return s;
 				}

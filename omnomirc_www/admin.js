@@ -98,6 +98,7 @@
 					$.map(themes,function(t,i){
 						return [$('<span>').text(t.name),' ',$('<a>').text('edit').click(function(e){
 							e.preventDefault();
+							themes[i].lastModified = -1;
 							$(this).parent().replaceWith(
 								$('<span>').append(
 									$('<a>').text('Back').click(function(e){
@@ -105,7 +106,31 @@
 										$('#adminContent').empty();
 										makeThemesPage(themes);
 									}),'<br><br>Name:',
-									$('<input>').attr('type','text').val(t.name).change(function(){themes[i].name = this.value;})
+									$('<input>').attr('type','text').val(t.name).change(function(){themes[i].name = this.value;}),
+									$.map([{name:'Background',type:'bg'}, // $c3
+											{name:'Alternative background',type:'bg2'}, // $c2
+											{name:'Border',type:'border'}, // $c1
+											{name:'Text',type:'text'}, //$color
+											{name:'Links',type:'link'}, //$link
+											{name:'Tab links',type:'tablink',use:'Links'}, //$tablink
+											{name:'Buttons',type:'btn',use:'Alternative background'}, //$btncolor
+											{name:'Button Hover',type:'btnhover',use:'Alternative background'},
+											{name:'Input bar',type:'form',use:'Background'} /*$formcolor*/],function(c){
+										return ['<br>',(c.use!==undefined?
+											$('<span>').append(
+												'Use instead of ',c.use,
+												$('<input>').attr('type','checkbox').attr((t['use'+c.type]?'checked':'false'),'checked').change(function(){
+													themes[i]['use'+c.type] = this.checked;
+												})
+											):''),c.name,':',$('<input>').attr('type','color').val(t.colors[c.type]).change(function(){
+											if(themes[i].colors instanceof Array){
+												themes[i].colors = {}
+											}
+											themes[i].colors[c.type] = this.value;
+										})];
+									}),
+									'<br>Extra style sheet:',
+									$('<input>').attr('type','text').val(t.sheet).change(function(){themes[i].sheet = this.value;})
 								)
 							);
 						}),'<br>'];
@@ -117,7 +142,8 @@
 						if(name!=='' && name!==null){
 							themes.push({
 								name:name,
-								colors:{}
+								colors:{},
+								lastModified:-1
 							});
 							$('#adminContent').empty();
 							makeThemesPage(themes);
@@ -463,56 +489,56 @@
 							if(net.type===0){ // no server networks displaying
 								return undefined;
 							}
-							var $netSpecific = $('<b>').text('Unkown network type');
-							switch(net.type){
-								case 0:
-									$netSpecific.text('Server Network');
-									break;
-								case 1:
-									var drawOpGroupsSettings = function(elem){
-											$(elem).replaceWith(
-												$('<span>').append(
-													$.map(nets[i].config.opGroups,function(opg,j){
-														return ['<br>'+$('<span>').text(opg).html()+' ',
-															$('<a>').text('x').click(function(e){
-																e.preventDefault();
-																nets[i].config.opGroups.splice(j,1);
+							return [$('<span>').text(net.name),' ',$('<a>').text('edit').click(function(e){
+								e.preventDefault();
+								var $netSpecific = $('<b>').text('Unkown network type');
+								switch(net.type){
+									case 0:
+										$netSpecific.text('Server Network');
+										break;
+									case 1:
+										var drawOpGroupsSettings = function(elem){
+												$(elem).replaceWith(
+													$('<span>').append(
+														$.map(nets[i].config.opGroups,function(opg,j){
+															return ['<br>'+$('<span>').text(opg).html()+' ',
+																$('<a>').text('x').click(function(e){
+																	e.preventDefault();
+																	nets[i].config.opGroups.splice(j,1);
+																	drawOpGroupsSettings($(this).parent());
+																})];
+														}),
+														'<br>',
+														$('<button>').text('add op group').click(function(e){
+															e.preventDefault();
+															var group = prompt('New Network Name');
+															if(group != ''  && group != null){
+																nets[i].config.opGroups.push(group);
 																drawOpGroupsSettings($(this).parent());
-															})];
-													}),
-													'<br>',
-													$('<button>').text('add op group').click(function(e){
-														e.preventDefault();
-														var group = prompt('New Network Name');
-														if(group != ''  && group != null){
-															nets[i].config.opGroups.push(group);
-															drawOpGroupsSettings($(this).parent());
+															}
+														})
+													)
+												);
+											};
+										$netSpecific = $('<span>').append(
+												$('<b>').text('OmnomIRC network'),
+												'<br>checkLogin:',
+												$('<input>').attr('type','text').val(net.config.checkLogin).change(function(){nets[i].config.checkLogin = this.value;}),
+												'<br>checkLogin hook:',
+												$('<span>').text('loading...').on('now',function(){
+													var _self = this;
+													oirc.network.getJSON('admin.php?get=checkLogin&i='+i.toString(10),function(data){
+														var s = '';
+														if(data.success === false){
+															s = 'ERROR: couldn\'t reach checkLogin server, perhaps the changed URL needs to be saved?';
+														}else if(data.auth === false){
+															s = 'ERROR: couldn\'t identify with checkLogin server, perhaps sigKey is false?';
 														}
-													})
-												)
-											);
-										};
-									$netSpecific = $('<span>').append(
-											$('<b>').text('OmnomIRC network'),
-											'<br>checkLogin:',
-											$('<input>').attr('type','text').val(net.config.checkLogin).css('width',160).change(function(){nets[i].config.checkLogin = this.value;}),
-											'<br>checkLogin hook:',
-											$('<span>').on('now',function(){
-												var _self = this;
-												console.log(_self);
-												oirc.network.getJSON('admin.php?get=checkLogin&i='+i.toString(10),function(data){
-													var s = '';
-													if(data.success === false){
-														s = 'ERROR: couldn\'t reach checkLogin server, perhaps the changed URL needs to be saved?';
-													}else if(data.auth === false){
-														s = 'ERROR: couldn\'t identify with checkLogin server, perhaps sigKey is false?';
-													}
-													if(s!==''){
-														$(_self).replaceWith($('<span>').append(s));
-														return;
-													}
-													$(_self).replaceWith(
-														$('<span>').append(
+														if(s!==''){
+															$(_self).replaceWith($('<span>').append(s));
+															return;
+														}
+														$(_self).replaceWith(
 															$('<select>').append(
 																$.map(data.checkLogin.hooks,function(v){
 																	return $('<option>').val(v).text(v);
@@ -520,83 +546,95 @@
 															).val(data.checkLogin.hook).change(function(){
 																nets[i].config.checkLoginHook = this.value;
 															})
+														);
+													});
+												}).trigger('now'),
+												'<br>Theme:',
+												$('<span>').text('loading...').on('now',function(){
+													var _self = this;
+													oirc.network.getJSON('admin.php?get=themes',function(data){
+														$(_self).replaceWith(
+															$('<select>').append(
+																$('<option>').val(-1).text('default'),
+																$.map(data.themes,function(v,i){
+																	return $('<option>').val(i).text(v.name);
+																})
+															).val(net.config.theme).change(function(){nets[i].config.theme = parseInt(this.value,10);})
+														);
+													});
+												}).trigger('now'),
+												'<br>',
+												$('<button>').text('Use Current settings as defaults').click(function(){
+														nets[i].config.defaults = oirc.options.getFullOptionsString();
+													}),
+												'<br>',
+												$('<select>').append(
+													$('<option>').val(0).text('Deny Guest Access'),
+													$('<option>').val(1).text('Guests are read-only')
+												).val(net.config.guests).change(function(e){
+													nets[i].config.guests = parseInt(this.value,10);
+												}),
+												'<br>Extra Channels Message:<br>',
+												$('<textarea>').text(net.config.extraChanMsg).change(function(){nets[i].config.extraChanMsg = this.value;}),
+												'<br>Op Groups: ',
+												$('<a>').text('show').click(function(e){
+													e.preventDefault();
+													drawOpGroupsSettings(this);
+												})
+											);
+										break;
+									case 2:
+										$netSpecific = $('<span>').append(
+												$('<b>').text('CalcNet network'),
+												'<br>Server:',
+												$('<input>').attr('type','text').val(net.config.server).change(function(){nets[i].config.server = this.value;}),
+												'<br>Port:',
+												$('<input>').attr('type','number').val(net.config.port).change(function(){nets[i].config.port = parseInt($(this).val(),10);})
+											);
+										break;
+									case 3:
+										$netSpecific = $('<span>').append(
+												$('<b>').text('IRC network'),
+												'<br>Nick:',
+												$('<input>').attr('type','text').val(net.config.main.nick).change(function(){nets[i].config.main.nick = this.value;}),
+												'<br>Server:',
+												$('<input>').attr('type','text').val(net.config.main.server).change(function(){nets[i].config.main.server = this.value;}),
+												'<br>Port',
+												$('<input>').attr('type','number').val(net.config.main.port).change(function(){nets[i].config.main.port = parseInt($(this).val(),10)}),
+												'<br>SSL:',
+												$('<input>').attr('type','checkbox').attr((net.config.main.ssl?'checked':'false'),'checked').change(function(){nets[i].config.main.ssl = this.checked;}),
+												'<br>NickServ:',
+												$('<input>').attr('type','text').val(net.config.main.nickserv).change(function(){nets[i].config.main.nickserv = this.value;}),
+												'<br>',
+												$('<a>').text('Show advanced settings').click(function(e){
+													e.preventDefault();
+													$(this).replaceWith(
+														$('<span>').append(
+															'<br>',
+															$('<b>').text('TopicBot'),
+															'<br>Nick:',
+															$('<input>').attr('type','text').val(net.config.topic.nick).change(function(){nets[i].config.topic.nick = this.value;}),
+															'<br>Server:',
+															$('<input>').attr('type','text').val(net.config.topic.server).change(function(){nets[i].config.topic.server = this.value;}),
+															'<br>Port',
+															$('<input>').attr('type','number').val(net.config.topic.port).change(function(){nets[i].config.topic.port = parseInt($(this).val(),10)}),
+															'<br>SSL:',
+															$('<input>').attr('type','checkbox').attr((net.config.topic.ssl?'checked':'false'),'checked').change(function(){nets[i].config.topic.ssl = this.checked;}),
+															'<br>NickServ:',
+															$('<input>').attr('type','text').val(net.config.topic.nickserv).change(function(){nets[i].config.topic.nickserv = this.value;})
 														)
 													);
-												});
-											}).trigger('now'),
-											'<br>externalStyleSheet:',
-											$('<input>').attr('type','text').val(net.config.externalStyleSheet).css('width',120).change(function(){nets[i].config.externalStyleSheet = this.value;}),
-											'<br>',
-											$('<button>').text('Use Current settings as defaults').click(function(){
-													nets[i].config.defaults = oirc.options.getFullOptionsString();
-												}),
-											'<br>',
-											$('<select>').append(
-												$('<option>').val(0).text('Deny Guest Access'),
-												$('<option>').val(1).text('Guests are read-only')
-											).val(net.config.guests).change(function(e){
-												nets[i].config.guests = parseInt(this.value,10);
-											}),
-											'<br>Extra Channels Message:<br>',
-											$('<textarea>').text(net.config.extraChanMsg).change(function(){nets[i].config.extraChanMsg = this.value;}),
-											'<br>Op Groups: ',
-											$('<a>').text('show').click(function(e){
-												e.preventDefault();
-												drawOpGroupsSettings(this);
-											})
-										);
-									break;
-								case 2:
-									$netSpecific = $('<span>').append(
-											$('<b>').text('CalcNet network'),
-											'<br>Server:',
-											$('<input>').attr('type','text').val(net.config.server).change(function(){nets[i].config.server = this.value;}),
-											'<br>Port:',
-											$('<input>').attr('type','number').val(net.config.port).change(function(){nets[i].config.port = parseInt($(this).val(),10);})
-										);
-									break;
-								case 3:
-									$netSpecific = $('<span>').append(
-											$('<b>').text('IRC network'),
-											'<br>Nick:',
-											$('<input>').attr('type','text').val(net.config.main.nick).change(function(){nets[i].config.main.nick = this.value;}),
-											'<br>Server:',
-											$('<input>').attr('type','text').val(net.config.main.server).change(function(){nets[i].config.main.server = this.value;}),
-											'<br>Port',
-											$('<input>').attr('type','number').val(net.config.main.port).change(function(){nets[i].config.main.port = parseInt($(this).val(),10)}),
-											'<br>SSL:',
-											$('<input>').attr('type','checkbox').attr((net.config.main.ssl?'checked':'false'),'checked').change(function(){nets[i].config.main.ssl = this.checked;}),
-											'<br>NickServ:',
-											$('<input>').attr('type','text').val(net.config.main.nickserv).change(function(){nets[i].config.main.nickserv = this.value;}),
-											'<br>',
-											$('<a>').text('Show advanced settings').click(function(e){
-												e.preventDefault();
-												$(this).replaceWith(
-													$('<span>').append(
-														'<br>',
-														$('<b>').text('TopicBot'),
-														'<br>Nick:',
-														$('<input>').attr('type','text').val(net.config.topic.nick).change(function(){nets[i].config.topic.nick = this.value;}),
-														'<br>Server:',
-														$('<input>').attr('type','text').val(net.config.topic.server).change(function(){nets[i].config.topic.server = this.value;}),
-														'<br>Port',
-														$('<input>').attr('type','number').val(net.config.topic.port).change(function(){nets[i].config.topic.port = parseInt($(this).val(),10)}),
-														'<br>SSL:',
-														$('<input>').attr('type','checkbox').attr((net.config.topic.ssl?'checked':'false'),'checked').change(function(){nets[i].config.topic.ssl = this.checked;}),
-														'<br>NickServ:',
-														$('<input>').attr('type','text').val(net.config.topic.nickserv).change(function(){nets[i].config.topic.nickserv = this.value;})
-													)
-												);
-											})
-										);
-									break;
-							}
-							return $('<div>').css({
-									'display':'inline-block',
-									'border':'1px solid black',
-									'vertical-align':'top'
-								})
-								.append(
+												})
+											);
+										break;
+								}
+								$(this).parent().replaceWith(
+									$('<div>')
+									.append(
+										$('<a>').text('back').click(function(e){
+											$('#adminContent').empty();
+											makeNetworksPage(nets);
+										}),'<br><br>',
 										$('<span>').append(
 											$('<span>').css('font-weight','bold').text(net.name),
 											'&nbsp;',
@@ -618,7 +656,9 @@
 										$('<input>').attr('type','text').val(net.irc.prefix).css('width',50).change(function(){nets[i].irc.prefix = this.value;}),
 										'<br>',
 										$netSpecific
-									);
+									)
+								);
+							}),'<br>'];
 						}),
 						$('<select>').append(
 								$('<option>').val(-1).text('Add Network...'),
@@ -636,7 +676,7 @@
 										case 1: // omnomirc
 											specificConfig = {
 												'checkLogin':'link to checkLogin file',
-												'externalStyleSheet':'',
+												'theme':-1,
 												'defaults':''
 											};
 											break;

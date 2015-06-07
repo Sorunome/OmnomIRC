@@ -36,15 +36,15 @@ include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 
 function getPage($title,$head,$body,$page){
 	global $config,$networks,$you;
-	$ess = $networks->get($you->getNetwork());
-	$ess = $ess['config']['externalStyleSheet'];
+	$theme = $networks->get($you->getNetwork());
+	$theme = $theme['config']['theme'];
 	return '<!DOCTYPE html>'.
 			'<html>'.
 			'<head>'.
 				'<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />'.
 				'<link rel="icon" type="image/png" href="omni.png">'.
 				'<link rel="stylesheet" type="text/css" href="style.css" />'.
-				($ess!=''?'<link rel="stylesheet" type="text/css" href="'.$ess.'" />':'').
+				($theme!=-1?'<link rel="stylesheet" type="text/css" href="theme.php?theme='.$theme.'" />':'').
 				'<script type="text/javascript" src="btoa.js"></script>'.
 				'<script type="text/javascript" src="jquery-1.11.3.min.js"></script>'.
 				'<script type="text/javascript" src="omnomirc.js"></script>'.

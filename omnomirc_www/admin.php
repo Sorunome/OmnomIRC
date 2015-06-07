@@ -172,6 +172,11 @@ if($you->isGlobalOp()){
 				}
 				break;
 			case 'themes':
+				foreach($jsonData as &$t){
+					if($t['lastModified'] == -1){
+						$t['lastModified'] = time();
+					}
+				}
 				$vars->set('themes',$jsonData);
 				$json->add('message','Themes saved!');
 				break;
