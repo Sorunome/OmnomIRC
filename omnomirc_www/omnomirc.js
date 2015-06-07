@@ -2581,12 +2581,18 @@ oirc = (function(){
 						return '';
 					}
 					//text = text.replace(/http:\/\/www\.omnimaga\.org\//g,"\x01www.omnimaga.org/");
-					return text.replace(/(\x01)/g,"")
-							.replace(/http:\/\/ourl\.ca\//g,"\x01ourl.ca/")
-							.replace(/((h111:\/\/(www\.omnimaga\.org\/|ourl\.ca))[-a-zA-Z0-9@:;%_+.~#?&//=]+)/, '<a target="_top" href="$1">$1</a>')
-							.replace(RegExp("(^|.)(((f|ht)(tp|tps):\/\/)[^\\s\x02\x03\x0f\x16\x1d\x1f\"]*)","g"),'$1<a target="_blank" href="$2">$2</a>')
-							.replace(RegExp("(^|\\s)(www\\.[^\\s\x02\x03\x0f\x16\x1d\x1f\"]*)","g"),'$1<a target="_blank" href="http://$2">$2</a>')
-							.replace(RegExp("(^|.)\x01([^\\s\x02\x03\x0f\x16\x1d\x1f\"]*)","g"),'$1<a target="_top" href="http://$2">http://$2</a>');
+					var a = ['ourl.ca','omnimaga.org','www.omnimaga.org'];
+					var ier = "[^\\s\x01\x02\x03\x04\x0f\x16\x1d\x1f\"]"; // irc end regex
+					text = text.replace(RegExp("(\x01|\x04)","g"),"");
+					$.map(a,function(url){
+						url = url.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+						text = text.replace(RegExp("(^|\\s)(((f|ht)(tp|tps):\/\/)"+url+ier+"*)"),'$1\x01$2')
+									.replace(RegExp("(^|\\s)("+url+ier+"*)"),'$1\x04$2');
+					});
+					return text.replace(RegExp("(^|[^a-zA-Z0-9_\x01])(((f|ht)(tp|tps):\/\/)"+ier+"+)","g"),'$1<a target="_blank" href="$2">$2</a>')
+							.replace(RegExp("(^|[^a-zA-Z0-9_\x01])(www\\."+ier+"+)","g"),'$1<a target="_blank" href="http://$2">$2</a>')
+							.replace(RegExp("(^|.)\x01("+ier+"+)","g"),'$1<a target="_top" href="$2">$2</a>')
+							.replace(RegExp("(^|.)\x04("+ier+"+)","g"),'$1<a target="_top" href="http://$2">$2</a>');
 				},
 				parseColors = function(colorStr){
 					var arrayResults = [],
