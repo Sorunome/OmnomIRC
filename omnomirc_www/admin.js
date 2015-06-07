@@ -107,15 +107,17 @@
 										makeThemesPage(themes);
 									}),'<br><br>Name:',
 									$('<input>').attr('type','text').val(t.name).change(function(){themes[i].name = this.value;}),
-									$.map([{name:'Background',type:'bg'}, // $c3
-											{name:'Alternative background',type:'bg2'}, // $c2
-											{name:'Border',type:'border'}, // $c1
-											{name:'Text',type:'text'}, //$color
-											{name:'Links',type:'link'}, //$link
-											{name:'Tab links',type:'tablink',use:'Links'}, //$tablink
-											{name:'Buttons',type:'btn',use:'Alternative background'}, //$btncolor
+									$.map([{name:'Background',type:'bg'},
+											{name:'Alternative background',type:'bg2'},
+											{name:'Border',type:'border'},
+											{name:'Text',type:'text'},
+											{name:'Links',type:'link'},
+											{name:'Tab links',type:'tablink',use:'Links'},
+											{name:'Buttons',type:'btn',use:'Alternative background'},
 											{name:'Button Hover',type:'btnhover',use:'Alternative background'},
-											{name:'Input bar',type:'form',use:'Background'} /*$formcolor*/],function(c){
+											{name:'Input bar',type:'form',use:'Background'},
+											{name:'Popup background',type:'popupbg',use:'Alternative background'},
+											{name:'Popup border',type:'popupborder',use:'Border'}],function(c){
 										return ['<br>',(c.use!==undefined?
 											$('<span>').append(
 												'Use instead of ',c.use,
