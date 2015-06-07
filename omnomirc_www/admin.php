@@ -90,6 +90,12 @@ if($you->isGlobalOp()){
 					$json->add('updaterReady',false);
 				}
 				break;
+			case 'themes':
+				if(!$a = $vars->get('themes')){
+					$a = array();
+				}
+				$json->add('themes',$a);
+				break;
 			case 'channels':
 				$json->add('channels',$config['channels']);
 				$json->add('nets',$networks->getNetsArray());
@@ -119,7 +125,7 @@ if($you->isGlobalOp()){
 				$json->add('networks',$config['networks']);
 				break;
 			case 'checkLogin':
-				if(isset($_GET['i']) && isset($config['networks'][$_GET['id']]) && $config['networks'][$_GET['id']]['type'] == 1){
+				if(isset($_GET['i']) && isset($config['networks'][$_GET['i']]) && $config['networks'][$_GET['i']]['type'] == 1){
 					$json->add('checkLogin',json_decode(file_get_contents($config['networks'][$_GET['i']]['config']['checkLogin'].'?server='.getCheckLoginChallenge().'&action=get'),true));
 				}else{
 					$json->add('success',false);
@@ -164,6 +170,15 @@ if($you->isGlobalOp()){
 				}else{
 					$json->addError('Couldn\'t back up config');
 				}
+				break;
+			case 'themes':
+				foreach($jsonData as &$t){
+					if($t['lastModified'] == -1){
+						$t['lastModified'] = time();
+					}
+				}
+				$vars->set('themes',$jsonData);
+				$json->add('message','Themes saved!');
 				break;
 			case 'channels':
 				$config['channels'] = $jsonData;

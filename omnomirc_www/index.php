@@ -36,18 +36,18 @@ include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 
 function getPage($title,$head,$body,$page){
 	global $config,$networks,$you;
-	$ess = $networks->get($you->getNetwork());
-	$ess = $ess['config']['externalStyleSheet'];
+	$theme = $networks->get($you->getNetwork());
+	$theme = $theme['config']['theme'];
 	return '<!DOCTYPE html>'.
 			'<html>'.
 			'<head>'.
 				'<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />'.
 				'<link rel="icon" type="image/png" href="omni.png">'.
 				'<link rel="stylesheet" type="text/css" href="style.css" />'.
-				($ess!=''?'<link rel="stylesheet" type="text/css" href="'.$ess.'" />':'').
-				'<script src="btoa.js"></script>'.
-				'<script type="text/javascript" src="jquery-1.11.0.min.js"></script>'.
-				'<script src="omnomirc.js"></script>'.
+				($theme!=-1?'<link rel="stylesheet" type="text/css" href="theme.php?theme='.$theme.'" />':'').
+				'<script type="text/javascript" src="btoa.js"></script>'.
+				'<script type="text/javascript" src="jquery-1.11.3.min.js"></script>'.
+				'<script type="text/javascript" src="omnomirc.js"></script>'.
 				'<title>'.$title.'</title>'.
 				'<script type="text/javascript">document.domain="'.$config['settings']['hostname'].'";</script>'.
 				$head.
@@ -127,7 +127,8 @@ tr td:nth-child(5) {
 echo getPage('OmnomIRC admin panel','','
 <div id="container">
 <div style="font-weight:bold;">OmnomIRC Admin Panel</div>
-<div id="adminNav"><a page="index">Index</a> | <a page="channels">Channels</a> | <a page="hotlinks">Hotlinks</a> | <a page="smileys">Smileys</a> | <a page="networks">Networks</a> | <a page="sql">SQL</a> | <a page="ws">WebSockets</a> | <a page="misc">Misc</a></div>
+<div id="adminNav"><a page="index">Index</a> | <a page="themes">Theme</a> | <a page="channels">Channels</a> | <a page="hotlinks">Hotlinks</a> | <a page="smileys">Smileys</a> | 
+	<a page="networks">Networks</a> | <a page="sql">SQL</a> | <a page="ws">WebSockets</a> | <a page="misc">Misc</a></div>
 <div id="adminContent" style="overflow-y:auto;">Loading...</div>
 </div>
 <div id="adminFooter"><a href="index.php">Back to OmnomIRC</a></div>
@@ -229,14 +230,14 @@ echo getPage('OmnomIRC','','
 	</div>
 </div>
 <div id="about"><div class="popup"><span style="position:absolute;z-index:9002;top:1px;right:2px"><a onclick="document.getElementById(\'about\').style.display=\'none\';">Close</a></span>
-	<div style="text-align:center;"><a href="http://omnomirc.omnimaga.org/" target="_blank"><img src="omnomirc.png" alt="OmnomIRC"></a></div>
+	<div style="text-align:center;"><a href="https://omnomirc.omnimaga.org/" target="_blank"><img src="omnomirc.png" alt="OmnomIRC"></a></div>
 	<p><a href="https://omnomirc.omnimaga.org/" target="_blank">OmnomIRC</a> is developed by <a href="https://www.omnimaga.org" alt="Omnimaga" target="_blank">Omnimaga</a></p>
 	<p>Found an issue/bug? <a href="https://github.com/Sorunome/OmnomIRC2/issues" target="_blank">Report it!</a></p>
 	<h1>Programmers</h1>
 	<ul><li><a href="http://netham45.org/" target="_blank">Netham45</a></li><li><a href="http://www.sorunome.de" target="_blank">Sorunome</a></li><li><a href="http://eeems.ca/" target="_blank">Eeems</a></li></ul>
 	<h1>Style</h1>
-	<ul><li><a href="http://www.omnimaga.org/index.php?action=profile;u=691" target="_blank">Darl181</a></li></ul>
-	<a href="http://omnomirc.omnimaga.org/" target="_blank">Homepage</a> | <a href="https://github.com/Sorunome/OmnomIRC2" target="_blank">GitHub</a>
+	<ul><li><a href="https://www.omnimaga.org/profile/Darl181" target="_blank">Darl181</a></li></ul>
+	<a href="https://omnomirc.omnimaga.org/" target="_blank">Homepage</a> | <a href="https://github.com/Sorunome/OmnomIRC2" target="_blank">GitHub</a>
 </div></div>
 <div id="smileyselect" class="popup">
 </div>

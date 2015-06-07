@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS `irc_lines` (
   `channel` varchar(45) NOT NULL,
   `time` varchar(45) NOT NULL,
   `Online` int(10) NOT NULL DEFAULT '0',
+  `uid` int(10) NOT NULL DEFAULT '-1',
   PRIMARY KEY (`line_number`),
   KEY `time` (`time`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;
@@ -25,6 +26,7 @@ CREATE TABLE IF NOT EXISTS `irc_lines_old` (
   `channel` varchar(45) NOT NULL,
   `time` varchar(45) NOT NULL,
   `Online` int(10) NOT NULL DEFAULT '0',
+  `uid` int(10) NOT NULL DEFAULT '-1',
   PRIMARY KEY (`line_number`),
   KEY `time` (`time`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;
@@ -105,6 +107,7 @@ ALTER TABLE `irc_lines_old`
 ALTER TABLE `irc_users`
  ADD KEY `channel` (`channel`), ADD KEY `isOnline` (`isOnline`), ADD KEY `username` (`username`), ADD KEY `online` (`online`);
 
+ALTER TABLE `irc_userstuff` ADD UNIQUE (`uid` ,`network`) COMMENT '';
 
 
 
@@ -126,8 +129,8 @@ DELIMITER $$
 DROP EVENT IF EXISTS `Flush Logs Nightly`$$
 CREATE EVENT `Flush Logs Nightly` ON SCHEDULE EVERY 1 DAY STARTS '2013-10-31 00:00:00' ON COMPLETION NOT PRESERVE ENABLE COMMENT 'Flushes the logs into the archive table' DO BEGIN
 	SET @time := (select max(`time`) from `irc_lines`);
-	INSERT INTO `irc_lines_old` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`Online`)
-	SELECT `name1`,`name2`,`message`,`type`,`channel`,`time`,`Online`
+	INSERT INTO `irc_lines_old` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`Online`,`uid`)
+	SELECT `name1`,`name2`,`message`,`type`,`channel`,`time`,`Online`,`uid`
 	FROM `irc_lines` ORDER BY `line_number` ASC;
 	DELETE FROM `irc_lines` WHERE `time` < @time;
 END$$

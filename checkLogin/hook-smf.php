@@ -22,7 +22,7 @@ function hook_get_color_nick($n,$id){
 		$id = (int)$res['id_member'];
 		loadMemberData($id);
 		loadMemberContext($id);
-		$n = '<span style="color:'.$memberContext[$id]['group_color'].';">'.$memberContext[$id]['link'].'</span>';
+		$n = '<a style="color:'.$memberContext[$id]['group_color'].';border-color:'.$memberContext[$id]['group_color'].'" target="_top" '.substr($memberContext[$id]['link'],2);
 	}
 	return $n;
 }

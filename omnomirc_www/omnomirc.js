@@ -416,7 +416,7 @@ oirc = (function(){
 					{
 						disp:'Show Timestamps',
 						id:10,
-						defaultOption:'F'
+						defaultOption:'T'
 					},
 					{
 						disp:'Show Updates in Browser Status Bar',
@@ -1956,6 +1956,8 @@ oirc = (function(){
 					);
 				},
 				mBoxContWidthOffset = 90,
+				hide_userlist = false,
+				show_scrollbar = true,
 				registerToggle = function(){
 					$('#toggleButton')
 						.click(function(e){
@@ -1965,13 +1967,36 @@ oirc = (function(){
 						});
 				},
 				isBlurred = false,
+				calcResize = function(allowHeightChange){
+					var htmlHeight = window.innerHeight,
+						htmlWidth = window.innerWidth,
+						headerHeight = $('#header').outerHeight(),
+						footerHeight = $('#footer').outerHeight();
+					if(allowHeightChange){
+						$('#mBoxCont').css('height',htmlHeight - footerHeight - headerHeight);
+						$('html,body').height(htmlHeight);
+						
+						$('#message').css('width',htmlWidth*(hide_userlist?1:0.91) - 121);
+					}
+					if(show_scrollbar){
+						var widthOffset = (htmlWidth/100)*mBoxContWidthOffset;
+						$('#mBoxCont').css('width',widthOffset-22);
+						$('#scrollBarLine').css('left',widthOffset - 16);
+						if(allowHeightChange){
+							$('#scrollBarLine').css('height',htmlHeight - headerHeight);
+						}
+						$('#scrollBar').css('left',widthOffset - 17);
+						scroll.reCalcBar();
+					}
+					scroll.down();
+				},
 				init = function(){
 					var nua = navigator.userAgent,
 						is_android = ((nua.indexOf('Mozilla/5.0') > -1 && nua.indexOf('Android ') > -1 && nua.indexOf('AppleWebKit') > -1) && !(nua.indexOf('Chrome') > -1)),
 						is_ios = (nua.match(/(iPod|iPhone|iPad)/i) && nua.match(/AppleWebKit/i)),
-						is_mobile_webkit = (nua.match(/AppleWebKit/i) && nua.match(/Android/i)),
-						hide_userlist = options.get(14,'F')=='T',
-						show_scrollbar = options.get(15,'T')=='T';
+						is_mobile_webkit = (nua.match(/AppleWebKit/i) && nua.match(/Android/i));
+					hide_userlist = options.get(14,'F')=='T';
+					show_scrollbar = options.get(15,'T')=='T';
 					page.changeLinks();
 					if(!wysiwyg.support()){
 						$('#message').replaceWith(
@@ -2011,28 +2036,11 @@ oirc = (function(){
 					logs.init();
 					registerToggle();
 					$('#scrollBarLine').css('top',parseInt($('#header').outerHeight(),10)-1); // -1 due to border
+					if(is_ios){
+						calcResize(true);
+					}
 					$(window).resize(function(){
-						var htmlHeight = window.innerHeight,
-							htmlWidth = window.innerWidth,
-							headerHeight = $('#header').outerHeight(),
-							footerHeight = $('#footer').outerHeight();
-						if(!is_ios){
-							$('#mBoxCont').css('height',htmlHeight - footerHeight - headerHeight);
-							$('html,body').height(htmlHeight);
-							
-							$('#message').css('width',htmlWidth*(hide_userlist?1:0.91) - 121);
-						}
-						if(show_scrollbar){
-							var widthOffset = (htmlWidth/100)*mBoxContWidthOffset;
-							$('#mBoxCont').css('width',widthOffset-22);
-							$('#scrollBarLine').css({
-								left:widthOffset - 16,
-								height:htmlHeight - headerHeight
-							});
-							$('#scrollBar').css('left',widthOffset - 17);
-							scroll.reCalcBar();
-						}
-						scroll.down();
+						calcResize(!is_ios);
 					}).trigger('resize').blur(function(){
 						isBlurred = true;
 					}).focus(function(){
@@ -2090,9 +2098,8 @@ oirc = (function(){
 		statusBar = (function(){
 			var text = '',
 				started = false,
-				use = options.get(11,'T')!='T',
 				start = function(){
-					if(use){
+					if(options.get(11,'T')!='T'){
 						return;
 					}
 					if(!started){
@@ -2884,7 +2891,7 @@ oirc = (function(){
 						}else{
 							statusTxt = '<'+line.name+'> ';
 						}
-						if(options.get(10,'F')=='T'){
+						if(options.get(10,'T')=='T'){
 							statusTxt = '['+(new Date(line.time*1000)).toLocaleTimeString()+'] '+statusTxt;
 						}
 						statusTxt += $('<span>').append(tdMessage).text();
@@ -2896,7 +2903,7 @@ oirc = (function(){
 								.addClass((options.get(6,'T')=='T' && (lineHigh = !lineHigh)?'lineHigh':''))
 								.addClass(((new Date(lastMessage)).getDay()!=(new Date(line.time*1000)).getDay())?'seperator':'') //new day indicator
 								.append(
-									(options.get(10,'F')=='T'?$('<td>')
+									(options.get(10,'T')=='T'?$('<td>')
 										.addClass('irc-date')
 										.append('['+(new Date(line.time*1000)).toLocaleTimeString()+']'):''),
 									$('<td>')
@@ -2929,7 +2936,9 @@ oirc = (function(){
 						if(s[0] == '>'){
 							s = '\x033'+s;
 						}
-						s = s.replace(/(\*[^\*]+\*)/g,'\x02$1\x02').replace(/(\/[^\/]+\/)/g,'\x1d$1\x1d').replace(/(_[^_]+_)/g,'\x1f$1\x1f');
+						s = s.replace(/((^|\s)\*[^\*]+\*($|\s))/g,'\x02$1\x02')
+								.replace(/((^|\s)\/[^\/]+\/($|\s))/g,'\x1d$1\x1d')
+								.replace(/((^|\s)_[^_]+_($|\s))/g,'\x1f$1\x1f');
 					}
 					return s;
 				}
