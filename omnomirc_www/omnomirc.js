@@ -1509,6 +1509,7 @@ oirc = (function(){
 		scroll = (function(){
 			var isDown = false,
 				is_touch = (('ontouchstart' in window) || (navigator.MaxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0)),
+				headerOffset = 0,
 				touchScroll = function($elem,fn){
 					var lastY = -1;
 					$elem.bind('touchstart',function(e){
@@ -1598,7 +1599,12 @@ oirc = (function(){
 				},
 				reCalcBar = function(){
 					if($('#scrollBar').length!==0){
-						$('#scrollBar').css('top',(document.getElementById('mBoxCont').scrollTop/(document.getElementById('mBoxCont').scrollHeight-document.getElementById('mBoxCont').clientHeight))*($('body')[0].offsetHeight-$('#scrollBar')[0].offsetHeight-38)+38);
+						var mBox = document.getElementById('mBoxCont');
+						if(mBox.scrollHeight <= mBox.clientHeight){
+							$('#scrollBar').css('top',0);
+						}else{
+							$('#scrollBar').css('top',(mBox.scrollTop/(mBox.scrollHeight-mBox.clientHeight))*($('body')[0].offsetHeight-$('#scrollBar')[0].offsetHeight-headerOffset)+headerOffset);
+						}
 					}
 				},
 				enableUserlist = function(){
@@ -1625,10 +1631,10 @@ oirc = (function(){
 							var newscrollbartop = 0;
 							if($bar.data('isClicked')){
 								newscrollbartop = parseInt($bar.css('top'),10)+(y-$bar.data('prevY'));
-								document.getElementById('mBoxCont').scrollTop = ((newscrollbartop-38)/($('body')[0].offsetHeight-$bar[0].offsetHeight-38))*(document.getElementById('mBoxCont').scrollHeight-document.getElementById('mBoxCont').clientHeight);
+								document.getElementById('mBoxCont').scrollTop = ((newscrollbartop-headerOffset)/($('body')[0].offsetHeight-$bar[0].offsetHeight-headerOffset))*(document.getElementById('mBoxCont').scrollHeight-document.getElementById('mBoxCont').clientHeight);
 								isDown = false;
-								if(newscrollbartop<38){
-									newscrollbartop = 38;
+								if(newscrollbartop<headerOffset){
+									newscrollbartop = headerOffset;
 									document.getElementById('mBoxCont').scrollTop = 0;
 								}
 								if(newscrollbartop>($('body')[0].offsetHeight-$bar[0].offsetHeight)){
@@ -1843,6 +1849,7 @@ oirc = (function(){
 				},
 				init:function(){
 					enableButtons();
+					headerOffset = $('#header').height() - 2;
 					if(options.get(15,'T')=='T'){
 						showBar();
 					}else{
@@ -2749,7 +2756,7 @@ oirc = (function(){
 						case 'refresh':
 							addLine = false;
 							if(logMode!==true && channels.getCurrent()!==''){
-								location.reload();
+								location.reload(true);
 							}
 							break;
 						case 'join':
@@ -2903,25 +2910,24 @@ oirc = (function(){
 						statusTxt += $('<span>').append(tdMessage).text();
 						statusBar.set(statusTxt);
 						
-						
-						$mBox.append(
-							$('<tr>')
-								.addClass((options.get(6,'T')=='T' && (lineHigh = !lineHigh)?'lineHigh':''))
-								.addClass(((new Date(lastMessage)).getDay()!=(new Date(line.time*1000)).getDay())?'seperator':'') //new day indicator
-								.append(
-									(options.get(10,'T')=='T'?$('<td>')
-										.addClass('irc-date')
-										.append('['+(new Date(line.time*1000)).toLocaleTimeString()+']'):''),
-									$('<td>')
-										.addClass('name')
-										.append(tdName),
-									$('<td>')
-										.addClass(line.type)
-										.append(tdMessage)
-								)
-						).find('img').load(function(e){
+						var $tr = $('<tr>')
+							.addClass((options.get(6,'T')=='T' && (lineHigh = !lineHigh)?'lineHigh':''))
+							.addClass(((new Date(lastMessage)).getDay()!=(new Date(line.time*1000)).getDay())?'seperator':'') //new day indicator
+							.append(
+								(options.get(10,'T')=='T'?$('<td>')
+									.addClass('irc-date')
+									.append('['+(new Date(line.time*1000)).toLocaleTimeString()+']'):''),
+								$('<td>')
+									.addClass('name')
+									.append(tdName),
+								$('<td>')
+									.addClass(line.type)
+									.append(tdMessage)
+							);
+						$tr.find('img').load(function(e){
 							scroll.slide();
 						});
+						$mBox.append($tr);
 						scroll.slide();
 						
 						lastMessage = line.time*1000;

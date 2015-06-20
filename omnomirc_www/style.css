@@ -44,12 +44,10 @@ body{
 	margin:0px;
 	padding:0px;
 	background-color: #DFEFFF;
-	*height:100%
-}
-body, td, th , tr{
-	font-size: 10px;
+	font-size: 0.7em;
+	line-height:1.2em;
 	font-family:verdana,sans-serif;
-	line-height:13px;
+	*height:100%
 }
 a {
 	text-decoration: none;
@@ -59,13 +57,13 @@ a {
 	cursor:pointer;
 }
 a:hover {
-	text-shadow: 0 0 4px rgba(0, 40, 170, 0.5);
+	text-shadow: 0 0 0.1em rgba(0, 40, 170, 0.5);
 }
 
 #header{
 	margin:0;
 	padding:0;
-	height:39px;
+	height:3.8em;
 }
 #header > div {
 	margin:0;
@@ -74,15 +72,15 @@ a:hover {
 
 #footer {
 	margin:0;
-	padding:0 0 5px 0;
+	padding:0 0 0.5em 0;
 }
 .popup {
 	display:none;
 	position:absolute;
 	background-color:#A1C2FF;
 	border:1px solid #69F;
-	border-radius:2px;
-	padding:2px;
+	border-radius:0.3em;
+	padding:0.3em;
 }
 
 
@@ -110,9 +108,9 @@ a:hover {
 	background: rgba(255, 0, 0, 0.25);
 	color: black;
 	font-weight: normal;
-	padding: 0 2px;
+	padding: 0 0.2em;
 	border: 1px solid rgba(255, 0, 0, 0.3);
-	border-radius: 4px;
+	border-radius: 0.3em;
 }
 .seperator > td {
 	border-top-style:solid;
@@ -124,7 +122,7 @@ a:hover {
 	font-family:terminal,sans-serif;
 	width:1%;
 	white-space:nowrap;
-	padding-right:2px;
+	padding-right:0.2em;
 }
 #MessageBox td.irc-date,#MessageBox td.name {
 	white-space: nowrap;
@@ -147,7 +145,7 @@ td.message {
 	padding-left: 1px:
 }
 td.action > a:nth-child(1) {
-	margin-right: -3px;
+	margin-right: -0.3em;
 }
 td.action > a:nth-child(1) > span {
 	margin-right:0;
@@ -221,7 +219,7 @@ td.action > a:nth-child(1) > span {
 	left:0px;
 	padding-bottom: 2px;
 	margin: 0 2px;
-	top: 3px;
+	top: 0.3em;
 }
 #ChanList {
 	margin-left:6px;
@@ -369,7 +367,7 @@ td.action > a:nth-child(1) > span {
 
 /*about start*/
 #about {
-	top:50px;
+	top:6em;
 	width:70%;
 	left:50%;
 	position:absolute;
@@ -401,8 +399,7 @@ td.action > a:nth-child(1) > span {
 }
 #hotlinks {
 	margin-left:10%;
-	font-size:6pt;
-	width:85px;
+	width:100%;
 }
 /*hotlinks end*/
 
