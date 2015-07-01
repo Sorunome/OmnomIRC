@@ -527,14 +527,17 @@ oirc = (function(){
 						}
 					});
 					return [num,def];
-				};
+				},
+				resultCache = [];
 			return {
 				setDefaults:function(d){
 					defaults = d;
 				},
 				set:function(optionsNum,value){
 					var optionsString = ls.get('OmnomIRCSettings'+settings.net());
+					delete resultCache[optionsNum]; // this may be the string
 					optionsNum = getOptionsNum(optionsNum)[0];
+					delete resultCache[optionsNum]; // and this the id
 					if(optionsNum == -1){
 						return;
 					}
@@ -546,15 +549,18 @@ oirc = (function(){
 					ls.set('OmnomIRCSettings'+settings.net(),optionsString);
 					refreshCache = true;
 				},
-				get:function(optionsNum){
+				get:function(s){
 					var optionsString = (refreshCache?(cache=ls.get('OmnomIRCSettings'+settings.net())):cache),
 						result,
 						defaultOption;
 					refreshCache = false;
 					if(optionsString===null){
-						return defaultOption;
+						return undefined;
 					}
-					optionsNum = getOptionsNum(optionsNum);
+					if(resultCache[s] !== undefined){
+						return resultCache[s];
+					}
+					optionsNum = getOptionsNum(s);
 					defaultOption = optionsNum[1];
 					optionsNum = optionsNum[0];
 					if(optionsNum == -1){
@@ -562,8 +568,9 @@ oirc = (function(){
 					}
 					result = optionsString.charAt(optionsNum-1);
 					if(result=='-'){
-						return (defaults.charAt(optionsNum-1)!=='' && defaults.charAt(optionsNum-1)!='-'?defaults.charAt(optionsNum-1):defaultOption);
+						result = (defaults.charAt(optionsNum-1)!=='' && defaults.charAt(optionsNum-1)!='-'?defaults.charAt(optionsNum-1):defaultOption);
 					}
+					resultCache[s] = result;
 					return result;
 				},
 				setExtraChanMsg:function(s){
