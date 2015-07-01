@@ -353,19 +353,22 @@ oirc = (function(){
 			var defaults = '',
 				refreshCache = true,
 				cache = '',
-				optionMenu = [
+				allOptions = [
 					{
 						disp:'Highlight Bold',
+						alt:'highBold',
 						id:1,
 						defaultOption:'T'
 					},
 					{
 						disp:'Highlight Red',
+						alt:'highRed',
 						id:2,
 						defaultOption:'T'
 					},
 					{
 						disp:'Colored Names',
+						alt:'colordNames',
 						id:3,
 						defaultOption:'0',
 						handler:function(){
@@ -379,7 +382,7 @@ oirc = (function(){
 									.append(
 										$.map(['none','calc','server'],function(v,i){
 											return $('<option>')
-												.attr((options.get(3,'0')==i?'selected':'false'),'selected')
+												.attr((options.get('colordNames')==i?'selected':'false'),'selected')
 												.val(i)
 												.text(v);
 										})
@@ -388,7 +391,14 @@ oirc = (function(){
 						}
 					},
 					{
+						alt:'curChan',
+						id:4,
+						hidden:true,
+						defaultOption:'-'
+					},
+					{
 						disp:'Show extra Channels',
+						alt:'extraChans',
 						id:9,
 						defaultOption:'F',
 						before:function(){
@@ -400,41 +410,49 @@ oirc = (function(){
 					},
 					{
 						disp:'Alternating Line Highlight',
+						alt:'altLines',
 						id:6,
 						defaultOption:'T'
 					},
 					{
 						disp:'Enable OmnomIRC',
+						alt:'enable',
 						id:5,
 						defaultOption:'T'
 					},
 					{
 						disp:'Ding on Highlight',
+						alt:'ding',
 						id:8,
 						defaultOption:'F'
 					},
 					{
 						disp:'Show Timestamps',
+						alt:'times',
 						id:10,
 						defaultOption:'T'
 					},
 					{
 						disp:'Show Updates in Browser Status Bar',
+						alt:'statusBar',
 						id:11,
 						defaultOption:'T'
 					},
 					{
 						disp:'Show Smileys',
+						alt:'smileys',
 						id:12,
 						defaultOption:'T'
 					},
 					{
 						disp:'Hide Userlist',
+						alt:'hideUserlist',
 						id:14,
 						defaultOption:'F'
 					},
 					{
 						disp:'Number chars for Highlighting',
+						alt:'charsHigh',
 						id:13,
 						defaultOption:'3',
 						handler:function(){
@@ -448,7 +466,7 @@ oirc = (function(){
 									.append(
 										$.map([0,1,2,3,4,5,6,7,8,9],function(i){
 											return $('<option>')
-												.attr((options.get(13,'3')==i?'selected':'false'),'selected')
+												.attr((options.get('charsHigh')==i?'selected':'false'),'selected')
 												.val(i)
 												.text(i+1);
 										})
@@ -458,16 +476,19 @@ oirc = (function(){
 					},
 					{
 						disp:'Show Scrollbar',
+						alt:'scrollBar',
 						id:15,
 						defaultOption:'T'
 					},
 					{
 						disp:'Enable Scrollwheel',
+						alt:'scrollWheel',
 						id:16,
-						defaultOption:'F'
+						defaultOption:'T'
 					},
 					{
 						disp:'Browser Notifications',
+						alt:'browserNotifications',
 						id:7,
 						defaultOption:'F',
 						before:function(){
@@ -477,30 +498,46 @@ oirc = (function(){
 					},
 					{
 						disp:'Show OmnomIRC join/part messages',
+						alt:'oircJoinPart',
 						id:17,
 						defaultOption:'F'
 					},
 					{
 						disp:'Use WYSIWYG editor (experimental)',
+						alt:'wysiwyg',
 						id:18,
 						defaultOption:'F'
 					},
 					{
 						disp:'Enable simple text decorations',
+						alt:'textDeco',
 						id:19,
 						defaultOption:'F'
 					}
 				],
-				extraChanMsg = '';
+				extraChanMsg = '',
+				getOptionsNum = function(s){
+					var num = -1,
+						def = '';
+					$.each(allOptions,function(i,v){
+						if(v.alt == s || v.id == s){
+							num = v.id;
+							def = v.defaultOption;
+							return;
+						}
+					});
+					return [num,def];
+				};
 			return {
 				setDefaults:function(d){
 					defaults = d;
 				},
 				set:function(optionsNum,value){
-					if(optionsNum < 1 || optionsNum > 40){
+					var optionsString = ls.get('OmnomIRCSettings'+settings.net());
+					optionsNum = getOptionsNum(optionsNum)[0];
+					if(optionsNum == -1){
 						return;
 					}
-					var optionsString = ls.get('OmnomIRCSettings'+settings.net());
 					if(optionsString===null){
 						ls.set('OmnomIRCSettings'+settings.net(),'----------------------------------------');
 						optionsString = ls.get('OmnomIRCSettings'+settings.net());
@@ -509,12 +546,19 @@ oirc = (function(){
 					ls.set('OmnomIRCSettings'+settings.net(),optionsString);
 					refreshCache = true;
 				},
-				get:function(optionsNum,defaultOption){
+				get:function(optionsNum){
 					var optionsString = (refreshCache?(cache=ls.get('OmnomIRCSettings'+settings.net())):cache),
-						result;
+						result,
+						defaultOption;
 					refreshCache = false;
 					if(optionsString===null){
 						return defaultOption;
+					}
+					optionsNum = getOptionsNum(optionsNum);
+					defaultOption = optionsNum[1];
+					optionsNum = optionsNum[0];
+					if(optionsNum == -1){
+						return undefined;
 					}
 					result = optionsString.charAt(optionsNum-1);
 					if(result=='-'){
@@ -538,7 +582,10 @@ oirc = (function(){
 							return $('<table>')
 								.addClass('optionsTable')
 								.append(
-									$.map(optionMenu,function(o){
+									$.map(allOptions,function(o){
+										if(o.hidden){
+											return;
+										}
 										return ((alternator = !alternator)?$('<tr>')
 											.append(
 												$.merge(
@@ -710,10 +757,10 @@ oirc = (function(){
 				},
 				make:function(s,c){
 					if(instant.current()){
-						if(options.get(7,'F')=='T'){
+						if(options.get('browserNotifications')=='T'){
 							show(s);
 						}
-						if(options.get(8,'F')=='T'){
+						if(options.get('ding')=='T'){
 							$('#ding')[0].play();
 						}
 						if(c!=channels.getCurrentName()){
@@ -835,7 +882,7 @@ oirc = (function(){
 					}
 					handler = network.getJSON(
 							'Update.php?high='+
-							(parseInt(options.get(13,'3'),10)+1).toString()+
+							(parseInt(options.get('charsHigh'),10)+1).toString()+
 							'&channel='+channels.getCurrent(false,true)+
 							'&lineNum='+curLine.toString(),
 						function(data){
@@ -912,7 +959,7 @@ oirc = (function(){
 					try{
 						var chanList = JSON.parse(ls.get('OmnomIRCChannels'+settings.net())),
 							exChans = $.map(chans,function(ch){
-								if((ch.ex && options.get(9,'F')=='T') || !ch.ex){
+								if((ch.ex && options.get('extraChans')=='T') || !ch.ex){
 									return ch;
 								}
 								return undefined;
@@ -959,7 +1006,7 @@ oirc = (function(){
 				draw = function(){
 					$('#ChanList').empty().append(
 						$.map(chans,function(c,i){
-							if((c.ex && options.get(9,'F')=='T') || !c.ex){
+							if((c.ex && options.get('extraChans')=='T') || !c.ex){
 								var mouseX = 0, // new closur as in map
 									startX = 0,
 									initDrag = false,
@@ -1581,7 +1628,7 @@ oirc = (function(){
 							if(document.getElementById('mBoxCont').scrollTop==(document.getElementById('mBoxCont').scrollHeight-document.getElementById('mBoxCont').clientHeight)){
 								isDown = true;
 							}
-							if(options.get(15,'T')=='T'){
+							if(options.get('scrollBar')=='T'){
 								reCalcBar();
 							}
 						};
@@ -1609,7 +1656,7 @@ oirc = (function(){
 				},
 				enableUserlist = function(){
 					var moveUserList = function(delta){
-							$(this).css('top',Math.min(0,Math.max(((/Opera/i.test(navigator.userAgent))?-30:0)+document.getElementById('UserListInnerCont').clientHeight-this.scrollHeight,parseInt(this.style.top,10)+delta)));
+							$(this).css('top',Math.min(0,Math.max(((/Opera/i.test(navigator.userAgent))?-30:0)+document.getElementById('UserListInnerCont').clientHeight-this.scrollHeight,parseInt($('#UserList').css('top'),10)+delta)));
 						};
 					$('#UserList')
 						.css('top',0)
@@ -1850,12 +1897,12 @@ oirc = (function(){
 				init:function(){
 					enableButtons();
 					headerOffset = $('#header').height() - 2;
-					if(options.get(15,'T')=='T'){
+					if(options.get('scrollBar')=='T'){
 						showBar();
 					}else{
 						showButtons();
 					}
-					if(options.get(16,'F')=='T'){
+					if(options.get('scrollWheel')=='T'){
 						enableWheel();
 					}
 					enableUserlist();
@@ -1919,13 +1966,13 @@ oirc = (function(){
 					return msg;
 				},
 				support:function(){
-					return (('contentEditable' in document.documentElement) && options.get(18,'F')=='T');
+					return (('contentEditable' in document.documentElement) && options.get('wysiwyg')=='T');
 				}
 			}
 		})(),
 		page = (function(){
 			var initSmileys = function(){
-					if(options.get(12,'T')=='T'){
+					if(options.get('smileys')=='T'){
 						$('#smileyMenuButton')
 							.css('cursor','pointer')
 							.click(function(){
@@ -1969,7 +2016,7 @@ oirc = (function(){
 					$('#toggleButton')
 						.click(function(e){
 							e.preventDefault();
-							options.set(5,!(options.get(5,'T')=='T')?'T':'F');
+							options.set(5,!(options.get('enable')=='T')?'T':'F');
 							document.location.reload();
 						});
 				},
@@ -2002,8 +2049,8 @@ oirc = (function(){
 						is_android = ((nua.indexOf('Mozilla/5.0') > -1 && nua.indexOf('Android ') > -1 && nua.indexOf('AppleWebKit') > -1) && !(nua.indexOf('Chrome') > -1)),
 						is_ios = (nua.match(/(iPod|iPhone|iPad)/i) && nua.match(/AppleWebKit/i)),
 						is_mobile_webkit = (nua.match(/AppleWebKit/i) && nua.match(/Android/i));
-					hide_userlist = options.get(14,'F')=='T';
-					show_scrollbar = options.get(15,'T')=='T';
+					hide_userlist = options.get('hideUserlist')=='T';
+					show_scrollbar = options.get('scrollBar')=='T';
 					page.changeLinks();
 					if(!wysiwyg.support()){
 						$('#message').replaceWith(
@@ -2062,14 +2109,14 @@ oirc = (function(){
 				load:function(){
 					indicator.start();
 					settings.fetch(function(){
-						if(options.get(5,'T')=='T'){
+						if(options.get('enable')=='T'){
 							init();
 							initSmileys();
 							send.init();
 							oldMessages.init();
 							channels.init();
 							ws.init()
-							channels.join(options.get(4,String.fromCharCode(45)).charCodeAt(0) - 45);
+							channels.join(options.get('curChan').charCodeAt(0) - 45);
 						}else{
 							registerToggle();
 							$('#mBoxCont').empty().append(
@@ -2106,7 +2153,7 @@ oirc = (function(){
 			var text = '',
 				started = false,
 				start = function(){
-					if(options.get(11,'T')!='T'){
+					if(options.get('statusBar')!='T'){
 						return;
 					}
 					if(!started){
@@ -2541,7 +2588,7 @@ oirc = (function(){
 						cn = n,
 						net = settings.networks()[o],
 						addLink = true;
-					switch(options.get(3,'0')){
+					switch(options.get('colordNames')){
 						case '1': // calc
 							while(n[i]){
 								sum += n.charCodeAt(i++);
@@ -2682,12 +2729,12 @@ oirc = (function(){
 					return colorStr;
 				},
 				parseHighlight = function(s){
-					if(s.toLowerCase().indexOf(settings.nick().toLowerCase().substr(0,parseInt(options.get(13,'3'),10)+1)) >= 0 && settings.nick() != ''){
+					if(s.toLowerCase().indexOf(settings.nick().toLowerCase().substr(0,parseInt(options.get('charsHigh'),10)+1)) >= 0 && settings.nick() != ''){
 						var style = '';
-						if(options.get(2,'T')!='T'){
+						if(options.get('highRed')!='T'){
 							style += 'background:none;padding:none;border:none;';
 						}
-						if(options.get(1,'T')=='T'){
+						if(options.get('highBold')=='T'){
 							style += 'font-weight:bold;';
 						}
 						return '<span class="highlight" style="'+style+'">'+s+'</span>';
@@ -2701,7 +2748,7 @@ oirc = (function(){
 					s = (s=="\x00"?'':s); //fix 0-string bug
 					s = $('<span>').text(s).html();
 					s = parseLinks(s);
-					if(options.get(12,'T')=='T' && noSmileys===false){
+					if(options.get('smileys')=='T' && noSmileys===false){
 						s = parseSmileys(s);
 					}
 					s = parseColors(s);
@@ -2767,7 +2814,7 @@ oirc = (function(){
 									network:line.network
 								});
 							}
-							if(addLine && settings.networks()[line.network].type==1 && options.get(17,'F')=='F'){
+							if(addLine && settings.networks()[line.network].type==1 && options.get('oircJoinPart')=='F'){
 								addLine = false;
 							}
 							break;
@@ -2779,7 +2826,7 @@ oirc = (function(){
 									network:line.network
 								});
 							}
-							if(addLine && settings.networks()[line.network].type==1 && options.get(17,'F')=='F'){
+							if(addLine && settings.networks()[line.network].type==1 && options.get('oircJoinPart')=='F'){
 								addLine = false;
 							}
 							break;
@@ -2904,17 +2951,17 @@ oirc = (function(){
 						}else{
 							statusTxt = '<'+line.name+'> ';
 						}
-						if(options.get(10,'T')=='T'){
+						if(options.get('times')=='T'){
 							statusTxt = '['+(new Date(line.time*1000)).toLocaleTimeString()+'] '+statusTxt;
 						}
 						statusTxt += $('<span>').append(tdMessage).text();
 						statusBar.set(statusTxt);
 						
 						var $tr = $('<tr>')
-							.addClass((options.get(6,'T')=='T' && (lineHigh = !lineHigh)?'lineHigh':''))
+							.addClass((options.get('altLines')=='T' && (lineHigh = !lineHigh)?'lineHigh':''))
 							.addClass(((new Date(lastMessage)).getDay()!=(new Date(line.time*1000)).getDay())?'seperator':'') //new day indicator
 							.append(
-								(options.get(10,'T')=='T'?$('<td>')
+								(options.get('times')=='T'?$('<td>')
 									.addClass('irc-date')
 									.append('['+(new Date(line.time*1000)).toLocaleTimeString()+']'):''),
 								$('<td>')
@@ -2944,7 +2991,7 @@ oirc = (function(){
 					ignores = a;
 				},
 				parseTextDecorations:function(s){
-					if(s !== '' && options.get(19,'F') == 'T'){
+					if(s !== '' && options.get('textDeco') == 'T'){
 						if(s[0] == '>'){
 							s = '\x033'+s;
 						}

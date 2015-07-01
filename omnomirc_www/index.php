@@ -62,24 +62,25 @@ if(strpos($_SERVER['HTTP_USER_AGENT'],'textmode;')!==false || isset($_GET['textm
 }elseif(isset($_GET['options'])){
 /*
 Options:
-1 - highlight bold
-2 - highlight red
-3 - color names
-4 - currentChannel
-5 - enabled
-6 - alternating line highlight
-7 - enable chrome notifications
-8 - ding on highlight
-9 - show extra channels
-10 - show timestamps
-11 - show updates in status bar
-12 - show smileys
-13 - highlight number chars
-14 - hide userlist
-15 - show scrollbar
-16 - enable main-window scrolling
-17 - show omnomirc join/part messages
-18 - use wysiwyg edtior
+1 - highlight bold (highBold)
+2 - highlight red (highRed)
+3 - color names (colordNames)
+4 - currentChannel (curChan)
+5 - enabled (enable)
+6 - alternating line highlight (altLines)
+7 - enable chrome notifications (browserNotifications)
+8 - ding on highlight (ding)
+9 - show extra channels (extraChans)
+10 - show timestamps (times)
+11 - show updates in status bar (statusBar)
+12 - show smileys (smileys)
+13 - highlight number chars (charsHigh)
+14 - hide userlist (hideUserlist)
+15 - show scrollbar (scrollBar)
+16 - enable main-window scrolling (scrollWheel)
+17 - show omnomirc join/part messages (oircJoinPart)
+18 - use wysiwyg edtior (wysiwyg)
+19 - use simple text decorations (textDeco)
 */
 echo getPage('OmnomIRC Options','
 <style type="text/css">
