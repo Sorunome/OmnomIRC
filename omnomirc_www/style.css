@@ -94,8 +94,10 @@ a:hover {
 }
 #MessageBox {
 	width:100%;
+	position:relative;
 	border-spacing:0;
 	height:inherit;
+	transition:top 0.4s ease;
 }
 #MessageBox td {
 	white-space: pre-wrap;	   /* css-3 */
@@ -207,7 +209,6 @@ td.action > a:nth-child(1) > span {
 	overflow-y:hidden;
 	height: 2em;
 	height: calc(2em + 2px);
-	height: -webkit-calc(2em + 2px);
 	width: 100%;
 	box-shadow: inset 0 -1px #6699ff;  
 }
@@ -319,17 +320,15 @@ td.action > a:nth-child(1) > span {
 	overflow-x:hidden;
 	overflow-y:hidden;
 	background: #cae4ff;
-	border-right: 1px solid #6699ff;
 	border-left: none;
 	border-bottom: 1px solid #6699ff;
 	top: 2em;
 	top: calc(2em + 2px);
-	top: -webkit-calc(2em + 2px);
 	height: 1.1em;
 	height: calc(1.1em + 1px);
-	height: -webkit-calc(1.1em + 1px);
 	left: 0px;
 	width: 100%;
+	width: calc(100% - 3px);
 	padding-top: 4px;
 	padding-left: 3px;
 }
@@ -414,7 +413,6 @@ td.action > a:nth-child(1) > span {
 	overflow-x:hidden;
 	overflow-y:hidden;
 	height: calc(100% - 4em);
-	height: -webkit-calc(100% - 4em);
 	background-color: #CAE4FF;
 	border-top: 1px solid #6699FF;
 	transition: 1s 1s background-color;
@@ -440,6 +438,7 @@ td.action > a:nth-child(1) > span {
 	position:absolute;
 	height:100%;
 	width:10%;
+	width:calc(100% - 1px);
 	height:100%;
 	left:90%;
 	top:0;
@@ -456,24 +455,20 @@ td.action > a:nth-child(1) > span {
 	color:#525252;
 	left: 90%;
 	left: calc(99% - 10px);
-	left: -webkit-calc(99% - 10px);
 }
 .arrowButtonHoriz2,.arrowButtonHoriz3 > div:nth-child(2) {
 	left:89%;
 	left:calc(90% - 5px);
-	left:-webkit-calc(90% - 5px);
 	
 }
 #UserListContainer .arrowButtonHoriz3 > div:nth-child(2) {
 	left: 90%;
 	left:calc(99% - 10px);
-	left:-webkit-calc(99% - 10px);
 }
 #UserListContainer:hover {
 	left: 90%;
 	height: 100%;
 	transition: left 0.5s 0.2s;
-	-webkit-transition: left 0.5s 0.2s;
 	-o-transition-property: left;
 	-o-transition-duration: 0.5s;
 	-o-transition-delay: 0.2s;
@@ -497,19 +492,16 @@ td.action > a:nth-child(1) > span {
 	background-color: #CAE4FF;
 	box-shadow: none;
 	transition: background-color 1s 1s, box-shadow 1s 1s;
-	-webkit-transition: background-color 1s 1s, box-shadow 1s 1s;
 }
 #scrollBar:hover {
 	background-color: #DFEFFF;
 	box-shadow: none;
 	transition: background-color .5s .25s, box-shadow 1s 0s;
-	-webkit-transition: background-color .5s .25s, box-shadow 1s 0s;
 }
 #scrollBar:active {
 	background-color: #DFEFFF;
 	box-shadow: 0 0 4px #6699FF;
 	transition: background-color 0s 0s, box-shadow 0s 0s;
-	-webkit-transition: background-color 0s 0s, box-shadow 0s 0s;
 }
 #scrollBarLine {
 	position: absolute;
@@ -548,7 +540,6 @@ td.action > a:nth-child(1) > span {
 #message{
 	width: 84%;
 	width: calc(91% - 121px);
-	width: -webkit-calc(91% - 121px);
 	margin-top: 3px;
 }
 #message,input,select{
@@ -584,12 +575,10 @@ span#message {
 	border-radius:3px;
 	cursor:pointer;
 	transition: background-color 1s 0s;
-	-webkit-transition: background-color 1s 0s;
 }
 #send:hover,button:hover {
 	background-color:#DFEFFF;
 	transition: background-color 1s 0s;
-	-webkit-transition: background-color 1s 0s;
 }
 /*input end*/
 
