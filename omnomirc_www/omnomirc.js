@@ -541,9 +541,12 @@ oirc = (function(){
 					if(optionsNum == -1){
 						return;
 					}
-					if(optionsString===null){
+					if(!optionsString){
 						ls.set('OmnomIRCSettings'+settings.net(),'----------------------------------------');
 						optionsString = ls.get('OmnomIRCSettings'+settings.net());
+					}
+					if(!optionsString){ // we have cookies / local storage disabled, normal chatting will still work, though
+						return;
 					}
 					optionsString = optionsString.substring(0,optionsNum-1)+value+optionsString.substring(optionsNum);
 					ls.set('OmnomIRCSettings'+settings.net(),optionsString);
@@ -554,9 +557,7 @@ oirc = (function(){
 						result,
 						defaultOption;
 					refreshCache = false;
-					if(optionsString===null){
-						return undefined;
-					}
+					
 					if(resultCache[s] !== undefined){
 						return resultCache[s];
 					}
@@ -564,9 +565,13 @@ oirc = (function(){
 					defaultOption = optionsNum[1];
 					optionsNum = optionsNum[0];
 					if(optionsNum == -1){
-						return undefined;
+						return;
 					}
-					result = optionsString.charAt(optionsNum-1);
+					if(!optionsString){
+						result = '-';
+					}else{
+						result = optionsString.charAt(optionsNum-1);
+					}
 					if(result=='-'){
 						result = (defaults.charAt(optionsNum-1)!=='' && defaults.charAt(optionsNum-1)!='-'?defaults.charAt(optionsNum-1):defaultOption);
 					}
@@ -791,11 +796,14 @@ oirc = (function(){
 				host = '',
 				port = 0,
 				ssl = true,
+				tryFallback = true,
 				fallback = function(){
-					network.getJSON('omnomirc.php?getcurline&noLoginErrors',function(data){
-						request.setCurLine(data.curline);
-						request.start();
-					});
+					if(tryFallback){
+						network.getJSON('omnomirc.php?getcurline&noLoginErrors',function(data){
+							request.setCurLine(data.curline);
+							request.start();
+						});
+					}
 				},
 				identify = function(){
 					ws.send($.extend({action:'ident'},settings.getIdentParams()));
@@ -822,7 +830,10 @@ oirc = (function(){
 							var data = JSON.parse(e.data);
 							console.log(data);
 							if(allowLines && data.line!==undefined){
-								parser.addLine(data.line);
+								if(!parser.addLine(data.line)){
+									tryFallback = false;
+									socket.close();
+								}
 							}
 							if(data.relog!==undefined && data.relog!=0){
 								settings.fetch(function(){
@@ -2034,6 +2045,9 @@ oirc = (function(){
 						headerHeight = $('#header').outerHeight(),
 						footerHeight = $('#footer').outerHeight();
 					if(allowHeightChange){
+						$('#scrollBarLine').css('top',parseInt($('#header').outerHeight(),10)-1); // -1 due to border
+						
+						
 						$('#mBoxCont').css('height',htmlHeight - footerHeight - headerHeight);
 						$('html,body').height(htmlHeight);
 						
@@ -2096,7 +2110,6 @@ oirc = (function(){
 					instant.init();
 					logs.init();
 					registerToggle();
-					$('#scrollBarLine').css('top',parseInt($('#header').outerHeight(),10)-1); // -1 due to border
 					if(is_ios){
 						calcResize(true);
 					}
@@ -2288,7 +2301,7 @@ oirc = (function(){
 				},
 				read:function(){
 					var temp = ls.get('oldMessages-'+channels.getCurrent(true,true));
-					if(temp!==null){
+					if(temp){
 						messages = temp.split("\n");
 					}else{
 						messages = [];
@@ -2764,8 +2777,8 @@ oirc = (function(){
 				lineHigh = false;
 			return {
 				addLine:function(line,logMode){
-					if(line.name === null || line.name === undefined || line.type === null || ignores.indexOf(line.name.toLowerCase()) > -1){
-						return false;
+					if(line.name === null || line.name === undefined || line.type === null || ignores.indexOf(line.name.toLowerCase()) > -1 || (line.chan!=channels.getCurrent(true) && line.chan[0]!='*')){
+						return true; // invalid line but we don't want to stop the new requests
 					}
 					var $mBox = $('#MessageBox'),
 						name = parseName(line.name,line.network,line.uid),
