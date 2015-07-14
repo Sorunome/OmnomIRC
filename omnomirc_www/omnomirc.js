@@ -2043,24 +2043,25 @@ oirc = (function(){
 					var htmlHeight = window.innerHeight,
 						htmlWidth = window.innerWidth,
 						headerHeight = $('#header').outerHeight(),
-						footerHeight = $('#footer').outerHeight();
+						footerHeight = $('#footer').outerHeight(),
+						em = Number(getComputedStyle(document.body,'').fontSize.match(/(\d*(\.\d*)?)px/)[1]);
 					if(allowHeightChange){
-						$('#scrollBarLine').css('top',parseInt($('#header').outerHeight(),10)-1); // -1 due to border
+						$('#scrollBarLine').css('top',parseInt($('#header').outerHeight(),10));
 						
 						
-						$('#mBoxCont').css('height',htmlHeight - footerHeight - headerHeight);
+						$('#mBoxCont').css('height',htmlHeight - footerHeight - headerHeight - 0.2*em);
 						$('html,body').height(htmlHeight);
 						
-						$('#message').css('width',htmlWidth*(hide_userlist?1:0.91) - 121);
+						$('#message').css('width',htmlWidth*(hide_userlist?1:0.91) - 12*em);
 					}
 					if(show_scrollbar){
 						var widthOffset = (htmlWidth/100)*mBoxContWidthOffset;
-						$('#mBoxCont').css('width',widthOffset-22);
-						$('#scrollBarLine').css('left',widthOffset - 16);
+						$('#mBoxCont').css('width',widthOffset-1.9*em);
+						$('#scrollBarLine').css('left',widthOffset - 1.4*em);
 						if(allowHeightChange){
-							$('#scrollBarLine').css('height',htmlHeight - headerHeight);
+							$('#scrollBarLine').css('height',htmlHeight - headerHeight - 0.1*em);
 						}
-						$('#scrollBar').css('left',widthOffset - 17);
+						$('#scrollBar').css('left',widthOffset - 1.5*em);
 						scroll.reCalcBar();
 					}
 					scroll.down();
@@ -2097,7 +2098,6 @@ oirc = (function(){
 						mBoxContWidthOffset = 99;
 						$('<style>')
 							.append(
-								'input#message,span#message{width:93%;width:calc(100% - 121px);width:-webkit-calc(100% - 121px);}',
 								'#mBoxCont{width:99%;}',
 								'.arrowButtonHoriz2,.arrowButtonHoriz3 > div:nth-child(2){left:98%;left:calc(99% - 5px);left:-webkit-calc(99% - 5px);}',
 								'#UserListContainer{left:99%;transition: left 0.5s 1s;-webkit-transition: left 0.5s 1s;-o-transition-property: left;-o-transition-duration: 0.5d;-o-transition-delay: ls;}',
@@ -2142,7 +2142,7 @@ oirc = (function(){
 							$('#mBoxCont').empty().append(
 								'<br>',
 								$('<a>')
-									.css('font-size',20)
+									.css('font-size','20pt')
 									.text('OmnomIRC is disabled. Click here to enable.')
 									.click(function(e){
 										e.preventDefault();
@@ -2150,6 +2150,7 @@ oirc = (function(){
 										window.location.reload();
 									})
 							);
+							$('#footer,#header').css('display','none');
 							indicator.stop();
 						}
 					});

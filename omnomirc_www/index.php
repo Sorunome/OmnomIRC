@@ -173,8 +173,8 @@ echo getPage('OmnomIRC','','
 	<div id="chattingHeader">
 		<div id="Channels">
 			<div id="ChanListButtons">
-				<span style="font-size:10pt;" class="arrowButton" id="arrowLeftChan">&#9668;</span>
-				<span style="font-size:10pt;" class="arrowButton" id="arrowRightChan">&#9658;</span>
+				<span style="font-size:1.1em;" class="arrowButton" id="arrowLeftChan">&#9668;</span>
+				<span style="font-size:1.1em;" class="arrowButton" id="arrowRightChan">&#9658;</span>
 			</div>
 			<div id="ChanListCont">
 				<div id="ChanList"></div>
@@ -182,8 +182,8 @@ echo getPage('OmnomIRC','','
 		</div>
 		<div id="topicbox">
 			<div id="TopicButtons">
-				<span style="font-size:8pt;" class="arrowButton" id="arrowLeftTopic">&#9668;</span>
-				<span style="font-size:8pt;" class="arrowButton" id="arrowRightTopic">&#9658;</span>
+				<span style="font-size:0.8em;" class="arrowButton" id="arrowLeftTopic">&#9668;</span>
+				<span style="font-size:0.8em;" class="arrowButton" id="arrowRightTopic">&#9658;</span>
 			</div>
 			<div id="topicCont">
 				<div id="topic" style="white-space:nowrap;"></div>
