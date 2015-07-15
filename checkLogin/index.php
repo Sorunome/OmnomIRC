@@ -87,6 +87,10 @@ if(isset($_GET['op'])){
 						break;
 					case 'network':
 						$config['network'] = (int)$val;
+						break;
+					case 'oircUrl':
+						$config['oircUrl'] = base64_url_decode($val);
+						break;
 				}
 				echo json_encode(array(
 					'success' => writeConfig()
@@ -147,7 +151,7 @@ if(isset($_GET['op'])){
 		header('Content-Type: text/plain');
 		echo $signature."\n".$nick."\n".$uid;
 	}elseif (isset($_GET['textmode'])){
-		header('Location: '.$oircUrl.'/textmode.php?login&nick='.base64_url_encode($nick).'&signature='.base64_url_encode($signature).'&id='.$uid.(isset($_GET['network'])?'&network='.(int)$_GET['network']:''));
+		header('Location: '.$config['oircUrl'].'/textmode.php?login&nick='.base64_url_encode($nick).'&signature='.base64_url_encode($signature).'&id='.$uid.(isset($_GET['network'])?'&network='.(int)$_GET['network']:''));
 	}else{
 		header('Content-Type: application/json');
 		$json = json_encode(Array(
