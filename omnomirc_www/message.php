@@ -48,7 +48,6 @@ if($you->isBanned()){
 }
 $message = removeLinebrakes(base64_url_decode(str_replace(' ','+',$message)));
 $type = 'message';
-$message = str_replace(Array("\r","\r\n","\n"),' ',$message);
 $parts = explode(' ',$message);
 
 if(strlen($message) <= 0){
