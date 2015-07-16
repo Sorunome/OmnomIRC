@@ -1656,10 +1656,13 @@ oirc = (function(){
 				},
 				enableWheel = function(){
 					$mBoxCont.bind('DOMMouseScroll mousewheel',function(e){
-						e.preventDefault();
-						e.stopPropagation();
-						e.cancelBubble = true;
+						var oldTop = $mBox[0].style.top;
 						moveWindow((/Firefox/i.test(navigator.userAgent)?(e.originalEvent.detail*(-20)):(e.originalEvent.wheelDelta/2)));
+						if(oldTop != $mBox[0].style.top){
+							e.preventDefault();
+							e.stopPropagation();
+							e.cancelBubble = true;
+						}
 					});
 					if(is_touch){
 						touchScroll($mBoxCont,function(d){
@@ -2392,6 +2395,7 @@ oirc = (function(){
 									oldMessages.add($('#message').html());
 									val = wysiwyg.getMsg();
 								}
+								console.log(val);
 								val = parser.parseTextDecorations(val);
 								if(!$('#message').attr('disabled') && val!==''){
 									sendMessage(val);

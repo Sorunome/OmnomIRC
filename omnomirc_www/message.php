@@ -25,7 +25,7 @@ if(isset($_GET['textmode'])){
 include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 
 function removeLinebrakes($s){
-	return str_replace(Array('\0','\r','\n'),'',$s);
+	return str_replace(Array("\0","\r","\n"),'',$s);
 }
 $message = (isset($_GET['message'])?$_GET['message']:'');
 if(strlen($message) < 4){
