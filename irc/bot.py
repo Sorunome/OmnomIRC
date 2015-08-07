@@ -528,7 +528,7 @@ class Bot(threading.Thread):
 				self.send('QUIT :%s' % self.quitMsg,True,False)
 				self.handleQuit(self.nick,self.quitMsg)
 			if self.main:
-				sql.query('DELETE FROM `irc_users` WHERE online = %d',[int(self.i)])
+				sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE online = %d",[int(self.i)])
 				handle.updateCurline() # others do this automatically
 			try:
 				self.s.close()
@@ -540,7 +540,7 @@ class Bot(threading.Thread):
 	def delUsersInChan(self,c):
 		c = self.chanToId(c)
 		if c != -1:
-			sql.query("DELETE FROM `irc_users` WHERE online = %d AND channel = '%s'",[int(self.i),c])
+			sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE `online` = %d AND `channel` = '%s'",[int(self.i),c])
 	def getUsersInChan(self,c):
 		self.delUsersInChan(c)
 		self.send('WHO %s' % c)
@@ -579,7 +579,7 @@ class Bot(threading.Thread):
 				add = 'T)'
 			print('Starting bot... ('+str(self.i)+add)
 			if self.main:
-				sql.query('DELETE FROM `irc_users` WHERE online = %d',[int(self.i)])
+				sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE online = %d",[int(self.i)])
 			self.connectToIRC()
 			self.readbuffer = ''
 			
@@ -952,7 +952,7 @@ class Main():
 					self.websocketserver = Server(config.json['websockets']['host'],config.json['websockets']['port'],WebSocketsHandler)
 				self.websocketserver.start()
 			if self.calcNetwork!=-1:
-				sql.query('DELETE FROM `irc_users` WHERE online = %d',[self.calcNetwork['id']])
+				sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE online = %d",[self.calcNetwork['id']])
 				self.gCn_server = Server(self.calcNetwork['config']['server'],self.calcNetwork['config']['port'],CalculatorHandler)
 				self.gCn_server.start()
 			while True:
@@ -1059,7 +1059,7 @@ class WebSocketsHandler(ServerHandler):
 			return
 		res = sql.query("SELECT usernum,time,isOnline FROM `irc_users` WHERE `username` = '%s' AND `channel` = '%s' AND `online` = %d",[self.nick,self.chan,self.network])
 		if len(res)>0: # Update
-			sql.query("UPDATE `irc_users` SET `time`=0,`isOnline`='1' WHERE `usernum` = %d",[int(res[0]['usernum'])])
+			sql.query("UPDATE `irc_users` SET `time`=0,`isOnline`=1 WHERE `usernum` = %d",[int(res[0]['usernum'])])
 			if int(res[0]['isOnline'] == 0):
 				sql.query("INSERT INTO `irc_lines` (name1,type,channel,time,online) VALUES('%s','join','%s','%s',%d)",[self.nick,self.chan,str(int(time.time())),int(self.network)])
 		else:
@@ -1067,7 +1067,7 @@ class WebSocketsHandler(ServerHandler):
 			sql.query("INSERT INTO `irc_lines` (name1,type,channel,time,online,uid) VALUES('%s','join','%s','%s',%d,%d)",[self.nick,self.chan,str(int(time.time())),int(self.network),self.uid])
 	def part(self):
 		if self.chan!='':
-			sql.query("UPDATE `irc_users` SET `isOnline`='0' WHERE `username` = '%s' AND `channel` = '%s' AND `online` = %d",[self.nick,self.chan,self.network]);
+			sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE `username` = '%s' AND `channel` = '%s' AND `online` = %d",[self.nick,self.chan,self.network]);
 			sql.query("INSERT INTO `irc_lines` (name1,type,channel,time,online,uid) VALUES('%s','part','%s','%s',%d,%d)",[self.nick,self.chan,str(int(time.time())),int(self.network),self.uid])
 
 	def sendLine(self,n1,n2,t,m,c,s,uid): #name 1, name 2, type, message, channel, source

@@ -41,31 +41,29 @@ html{
 }
 body{
 	overflow:hidden;
-	margin:0px;
-	padding:0px;
+	margin:0;
+	padding:0;
 	background-color: #DFEFFF;
-	*height:100%
-}
-body, td, th , tr{
-	font-size: 10px;
+	font-size:10pt;
+	line-height:1.2em;
 	font-family:verdana,sans-serif;
-	line-height:13px;
+	*height:100%
 }
 a {
 	text-decoration: none;
 	color: #0025AA;
-	border-bottom: 1px solid rgba(0, 0, 255, 0.3);
+	border-bottom: 0.1em solid rgba(0, 0, 255, 0.3);
 	padding: 0;
 	cursor:pointer;
 }
 a:hover {
-	text-shadow: 0 0 4px rgba(0, 40, 170, 0.5);
+	text-shadow: 0 0 0.1em rgba(0, 40, 170, 0.5);
 }
 
 #header{
 	margin:0;
 	padding:0;
-	height:39px;
+	height:3.8em;
 }
 #header > div {
 	margin:0;
@@ -74,15 +72,15 @@ a:hover {
 
 #footer {
 	margin:0;
-	padding:0 0 5px 0;
+	padding:0.3em 0 0.4em 0;
 }
 .popup {
 	display:none;
 	position:absolute;
 	background-color:#A1C2FF;
-	border:1px solid #69F;
-	border-radius:2px;
-	padding:2px;
+	border:0.1em solid #69F;
+	border-radius:0.3em;
+	padding:0.3em;
 }
 
 
@@ -93,11 +91,14 @@ a:hover {
 	overflow-x:hidden;
 	overflow-y:hidden;
 	padding-bottom: 0;
+	margin-top:0.1em;
 }
 #MessageBox {
 	width:100%;
+	position:relative;
 	border-spacing:0;
 	height:inherit;
+	transition:top 0.4s ease;
 }
 #MessageBox td {
 	white-space: pre-wrap;	   /* css-3 */
@@ -110,13 +111,13 @@ a:hover {
 	background: rgba(255, 0, 0, 0.25);
 	color: black;
 	font-weight: normal;
-	padding: 0 2px;
-	border: 1px solid rgba(255, 0, 0, 0.3);
-	border-radius: 4px;
+	padding: 0 0.2em;
+	border:0.1em solid rgba(255, 0, 0, 0.3);
+	border-radius: 0.3em;
 }
 .seperator > td {
 	border-top-style:solid;
-	border-top-width:1px !important;
+	border-top-width:0.1em !important;
 	border-top-color:#999999;
 }
 .irc-date {
@@ -124,7 +125,7 @@ a:hover {
 	font-family:terminal,sans-serif;
 	width:1%;
 	white-space:nowrap;
-	padding-right:2px;
+	padding-right:0.2em;
 }
 #MessageBox td.irc-date,#MessageBox td.name {
 	white-space: nowrap;
@@ -136,18 +137,18 @@ a:hover {
 td.name {
 	width:1%;
 	border-style:solid;
-	border-width:0px;
-	border-right-width:1px;
+	border-width:0;
+	border-right-width:0.1em;
 	border-color:#999;
 	text-align:right;
 	white-space:nowrap;
-	padding:0 1px 0 0;
+	padding:0 0.1em 0 0;
 }
 td.message {
-	padding-left: 1px:
+	padding-left:0.1em:
 }
 td.action > a:nth-child(1) {
-	margin-right: -3px;
+	margin-right: -0.3em;
 }
 td.action > a:nth-child(1) > span {
 	margin-right:0;
@@ -208,24 +209,23 @@ td.action > a:nth-child(1) > span {
 	overflow-x:hidden;
 	overflow-y:hidden;
 	height: 2em;
-	height: calc(2em + 2px);
-	height: -webkit-calc(2em + 2px);
+	height: calc(2em + 0.2em);
 	width: 100%;
-	box-shadow: inset 0 -1px #6699ff;  
+	box-shadow: inset 0 -0.1em #6699ff;  
 }
 #ChanListButtons {
 	width:98%;
 	overflow:hidden;
 	display:inline;
 	position:relative;
-	left:0px;
-	padding-bottom: 2px;
-	margin: 0 2px;
-	top: 3px;
+	left:0;
+	padding-bottom:0.2em;
+	margin: 0 0.2em;
+	top: 0.3em;
 }
 #ChanList {
-	margin-left:6px;
-	margin-top:3px;
+	margin-left:0.6em;
+	margin-top:0.3em;
 	width:500%;
 }
 #ChanListCont {
@@ -233,8 +233,8 @@ td.action > a:nth-child(1) > span {
 	overflow-x:hidden;
 	display:block;
 	position:relative;
-	left:23px;
-	top:-16px;
+	left:2.3em;
+	top:-1.3em;
 }
 .chanList {
 	margin:0;
@@ -250,9 +250,9 @@ td.action > a:nth-child(1) > span {
 	height:100%;
 	
 	background-color: transparent;
-	padding: 2px;
-	border-radius: 4px 4px 0 0;
-	border: 1px solid rgba(102, 153, 255, 0.3);
+	padding: 0.2em;
+	border-radius:0.4em 0.4em 0 0;
+	border:0.1em solid rgba(102, 153, 255, 0.3);
 	border-top-color: rgba(102, 153, 255, 0.6);
 	border-bottom: none;
 	white-space: pre-wrap;	   /* css-3 */
@@ -266,22 +266,22 @@ td.action > a:nth-child(1) > span {
 }
 .chan:hover {
 	background-color:rgba(202, 228, 255, 0.5);
-	padding-top: 3px;
+	padding-top:0.3em;
 }
 .chan.curchan {
 	height:108%;
 	font-weight:bolder;
 	color:#FFF;
-	padding-bottom:4px;
+	padding-bottom:0.4em;
 	height:100%;
 	cursor: pointer;
 	
 	background: #cae4ff;
 	color: black;
 	font-weight: normal;
-	padding: 4px 6px 2px 6px;
-	border-radius: 4px 4px 0 0;
-	border: solid 1px #6699ff;
+	padding:0.4em 0.6em 0.2em 0.6em;
+	border-radius:0.4em 0.4em 0 0;
+	border: solid 0.1em #6699ff;
 	border-bottom-color: #cae4ff;
 }
 .chan>.closeButton:hover{
@@ -292,26 +292,25 @@ td.action > a:nth-child(1) > span {
 
 /*topic bar start*/
 #topic {
-	margin-bottom: 2px !important;
-	margin-top: -1px !important;
+	margin-top:0.15em;
 }
 #TopicButtons {
 	width:98%;
 	overflow:hidden;
 	display:inline;
 	position:relative;
-	left:0px;
+	left:0;
 	margin:0;
 	padding:0;
-	top: -4px;
+	top: -0.4em;
 }
 #topicCont {
 	width:96%;
 	overflow-x:hidden;
 	display:block;
 	position:relative;
-	left:23px;
-	top:-16px;
+	left:2.3em;
+	top:-1.6em;
 	margin:0;
 	padding:0;
 }
@@ -321,19 +320,17 @@ td.action > a:nth-child(1) > span {
 	overflow-x:hidden;
 	overflow-y:hidden;
 	background: #cae4ff;
-	border-right: 1px solid #6699ff;
 	border-left: none;
-	border-bottom: 1px solid #6699ff;
+	border-bottom:0.1em solid #6699ff;
 	top: 2em;
-	top: calc(2em + 2px);
-	top: -webkit-calc(2em + 2px);
+	top: calc(2em + 0.2em);
 	height: 1.1em;
-	height: calc(1.1em + 1px);
-	height: -webkit-calc(1.1em + 1px);
-	left: 0px;
+	height: calc(1.2em);
+	left: 0;
 	width: 100%;
-	padding-top: 4px;
-	padding-left: 3px;
+	width: calc(100% - 0.3em);
+	padding-top: 0.4em;
+	padding-left: 0.3em;
 }
 /*topic bar end*/
 
@@ -369,7 +366,7 @@ td.action > a:nth-child(1) > span {
 
 /*about start*/
 #about {
-	top:50px;
+	top:6em;
 	width:70%;
 	left:50%;
 	position:absolute;
@@ -401,8 +398,7 @@ td.action > a:nth-child(1) > span {
 }
 #hotlinks {
 	margin-left:10%;
-	font-size:6pt;
-	width:85px;
+	width:100%;
 }
 /*hotlinks end*/
 
@@ -417,9 +413,8 @@ td.action > a:nth-child(1) > span {
 	overflow-x:hidden;
 	overflow-y:hidden;
 	height: calc(100% - 4em);
-	height: -webkit-calc(100% - 4em);
 	background-color: #CAE4FF;
-	border-top: 1px solid #6699FF;
+	border-top:0.1em solid #6699FF;
 	transition: 1s 1s background-color;
 	cursor:default;
 	padding:0;
@@ -436,13 +431,14 @@ td.action > a:nth-child(1) > span {
 	top:0;
 	margin:0;
 	padding-left: 10%;
-	padding-top: 2px;
+	padding-top:0.2em;
 	transition: top .4s;
 }
 #UserListContainer {
 	position:absolute;
 	height:100%;
 	width:10%;
+	width:calc(10% - 0.1em);
 	height:100%;
 	left:90%;
 	top:0;
@@ -450,75 +446,67 @@ td.action > a:nth-child(1) > span {
 	overflow:hidden;
 	background: #cae4ff;
 	border:none;
-	border-left:1px solid #6699FF;
+	border-left:0.1em solid #6699FF;
 	margin-top: 0;
 	z-index:43;
-/*	box-shadow:  0 0 2px rgba(0, 0, 0, 0.5); */
 }
 #UserListContainer .arrowButtonHoriz2 {
 	color:#525252;
 	left: 90%;
-	left: calc(99% - 10px);
-	left: -webkit-calc(99% - 10px);
+	left: calc(99% - 1em);
 }
 .arrowButtonHoriz2,.arrowButtonHoriz3 > div:nth-child(2) {
 	left:89%;
-	left:calc(90% - 5px);
-	left:-webkit-calc(90% - 5px);
+	left:calc(90% - 0.5em);
 	
 }
 #UserListContainer .arrowButtonHoriz3 > div:nth-child(2) {
 	left: 90%;
-	left:calc(99% - 10px);
-	left:-webkit-calc(99% - 10px);
+	left:calc(99% - 1em);
 }
 #UserListContainer:hover {
 	left: 90%;
 	height: 100%;
 	transition: left 0.5s 0.2s;
-	-webkit-transition: left 0.5s 0.2s;
 	-o-transition-property: left;
 	-o-transition-duration: 0.5s;
 	-o-transition-delay: 0.2s;
 }
 #lastSeenCont {
 	z-index:44;
-	top:10px;
-	right:10px;
+	top:1em;
+	right:1em;
 }
 /*userlist end*/
 
 /*scrollbar start*/
 #scrollBar {
-	width:8px;
-	height:100px;
+	width:0.8em;
+	height:10em;
 	position:absolute;
 	z-index:42;
 	cursor:pointer;
-	border-radius: 2px;
-	border:1px solid #6699ff;
+	border-radius:0.2em;
+	border:0.1em solid #6699ff;
 	background-color: #CAE4FF;
 	box-shadow: none;
 	transition: background-color 1s 1s, box-shadow 1s 1s;
-	-webkit-transition: background-color 1s 1s, box-shadow 1s 1s;
 }
 #scrollBar:hover {
 	background-color: #DFEFFF;
 	box-shadow: none;
 	transition: background-color .5s .25s, box-shadow 1s 0s;
-	-webkit-transition: background-color .5s .25s, box-shadow 1s 0s;
 }
 #scrollBar:active {
 	background-color: #DFEFFF;
-	box-shadow: 0 0 4px #6699FF;
+	box-shadow: 0 0 0.4em #6699FF;
 	transition: background-color 0s 0s, box-shadow 0s 0s;
-	-webkit-transition: background-color 0s 0s, box-shadow 0s 0s;
 }
 #scrollBarLine {
 	position: absolute;
 	z-index: 41;
-	width: 6px;
-	border: 1px solid #6699FF;
+	width: 0.6em;
+	border: 0.1em solid #6699FF;
 	border-top:none;
 	background-color: #CAE4FF;
 }
@@ -526,8 +514,8 @@ td.action > a:nth-child(1) > span {
 
 /*smiley select start*/
 #smileyMenuButton {
-	margin-bottom: -3px;
-	margin-right: 4px;
+	margin-bottom: -0.3em;
+	margin-right: 0.4em;
 }
 #smileyselect, #smileyselect * {
 	-webkit-user-select:none;
@@ -538,78 +526,72 @@ td.action > a:nth-child(1) > span {
 }
 
 #smileyselect {
-	width:200px;
-	left:10px;
-	bottom:50px;
+	width:20em;
+	left:1em;
+	bottom:3.5em;
 }
 #smileyselect img {
 	cursor:pointer;
-}
+};
 /*smiley select end*/
 
 /*input start*/
 #message{
-	width: 84%;
-	width: calc(91% - 121px);
-	width: -webkit-calc(91% - 121px);
-	margin-top: 3px;
+	margin-top:0.3em;
 }
 #message,input,select{
 	background-color:#FFF;
 	color:#000;
-	border:1px solid #6699FF;
+	border:0.1em solid #6699FF;
 }
 span#message {
 	display:inline-block;
-	height:16px;
-	padding: 3px 2px 2px 2px;
+	height:1em;
+	padding:0.3em 0.2em 0.2em 0.2em;
 	background-color:#ffffff;
-	border:1px solid black;
-	border-radius:2px;
-	font-size:12px;
+	border:0.1em solid black;
+	border-radius:0.2em;
+	font-size:1.2em;
 	vertical-align:top;
 }
 #textDecoForm{
 	position:absolute;
 	background-color:#A1C2FF;
-	border:1px solid #69F;
-	border-radius:5px;
-	bottom:30px;
+	border:0.1em solid #69F;
+	border-radius:0.5em;
+	bottom:3em;
 }
 #send {
-	width:45px;
-	padding:0 6px;
-	margin:0 3px;
+	padding:0 0.6em;
+	margin:0 0.3em;
 }
 #send,button{
 	background-color:#A1C2FF;
-	border:1px solid #69F;
-	border-radius:3px;
+	border:0.1em solid #69F;
+	border-radius:0.3em;
 	cursor:pointer;
 	transition: background-color 1s 0s;
-	-webkit-transition: background-color 1s 0s;
 }
 #send:hover,button:hover {
 	background-color:#DFEFFF;
 	transition: background-color 1s 0s;
-	-webkit-transition: background-color 1s 0s;
 }
 /*input end*/
 
 /*options start*/
 .optionsTable{
 	display:inline-block;
-	margin-left:10px;
+	margin-left:1em;
 }
 .optionsTable .option{
 	text-decoration: none;
 	font-weight:bold;
 	color:#0025AA;
-	border-bottom: 1px solid rgba(0, 0, 255, 0.3);
+	border-bottom: 0.1em solid rgba(0, 0, 255, 0.3);
 	padding:0;
 }
 .optionsTable .option:hover{
-	text-shadow:0 0 4px rgba(0, 40, 170, 0.5);
+	text-shadow:0 0 0.4em rgba(0, 40, 170, 0.5);
 	cursor:pointer;
 }
 .optionsTable .option.selected{
@@ -625,27 +607,27 @@ span#message {
 /*error/warning icons start*/
 #icons {
 	position:absolute;
-	bottom:6px;
-	right:270px;
+	bottom:0.6em;
+	right:27em;
 	z-index:45;
-	line-height:16px;
+	line-height:1.6em;
 	vertical-align:middle;
 }
 #warnings > .icon {
 	display:inline-block;
-	width:16px;
-	height:16px;
+	width:1.6em;
+	height:1.6em;
 	padding:0;
-	margin:0 0 0 2px;
+	margin:0 0 0 0.2em;
 	background:url(icons.png) no-repeat scroll -17px 0px;
 	cursor:pointer;
 }
 #errors > .icon {
 	display:inline-block;
-	width:16px;
-	height:16px;
+	width:1.2em;
+	height:1.2em;
 	padding:0;
-	margin:0 0 0 2px;
+	margin:0 0 0 0.2em;
 	background:url(icons.png) no-repeat scroll -34px 0px;
 	cursor:pointer;
 }
@@ -656,7 +638,7 @@ span#message {
 	top:0;
 	left:0;
 	padding:5;
-	border:1px solid black;
+	border:0.1em solid black;
 	overflow:auto;
 	height:100%;
 }
@@ -666,9 +648,9 @@ span#message {
 #logsHeader{
 	overflow:hidden;
 	background: #cae4ff;
-	border-right: 1px solid #6699ff;
+	border-right:0.1em solid #6699ff;
 	border-left: none;
-	border-bottom: 1px solid #6699ff;
+	border-bottom:0.1em solid #6699ff;
 }
 #logDate{
 	cursor:pointer;
@@ -679,16 +661,16 @@ span#message {
 }
 #logDatePicker{
 	position:absolute;
-	padding:2px;
+	padding:0.2em;
 	background: #a1c2ff;
-	border:1px solid #6699ff;
-	border-radius: 5px;
-	left:160px;
-	top:35px;
+	border:0.1em solid #6699ff;
+	border-radius:0.5em;
+	left:17em;
+	top:3.5em;
 	z-index:10;
 }
 #logDatePicker > table {
-	width:172px;
+	width:17.2em;
 }
 .logDatePickerDay{
 	cursor:pointer;

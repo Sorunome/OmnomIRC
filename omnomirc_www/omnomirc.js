@@ -353,19 +353,22 @@ oirc = (function(){
 			var defaults = '',
 				refreshCache = true,
 				cache = '',
-				optionMenu = [
+				allOptions = [
 					{
 						disp:'Highlight Bold',
+						alt:'highBold',
 						id:1,
 						defaultOption:'T'
 					},
 					{
 						disp:'Highlight Red',
+						alt:'highRed',
 						id:2,
 						defaultOption:'T'
 					},
 					{
 						disp:'Colored Names',
+						alt:'colordNames',
 						id:3,
 						defaultOption:'0',
 						handler:function(){
@@ -379,7 +382,7 @@ oirc = (function(){
 									.append(
 										$.map(['none','calc','server'],function(v,i){
 											return $('<option>')
-												.attr((options.get(3,'0')==i?'selected':'false'),'selected')
+												.attr((options.get('colordNames')==i?'selected':'false'),'selected')
 												.val(i)
 												.text(v);
 										})
@@ -388,7 +391,14 @@ oirc = (function(){
 						}
 					},
 					{
+						alt:'curChan',
+						id:4,
+						hidden:true,
+						defaultOption:'-'
+					},
+					{
 						disp:'Show extra Channels',
+						alt:'extraChans',
 						id:9,
 						defaultOption:'F',
 						before:function(){
@@ -400,41 +410,49 @@ oirc = (function(){
 					},
 					{
 						disp:'Alternating Line Highlight',
+						alt:'altLines',
 						id:6,
 						defaultOption:'T'
 					},
 					{
 						disp:'Enable OmnomIRC',
+						alt:'enable',
 						id:5,
 						defaultOption:'T'
 					},
 					{
 						disp:'Ding on Highlight',
+						alt:'ding',
 						id:8,
 						defaultOption:'F'
 					},
 					{
 						disp:'Show Timestamps',
+						alt:'times',
 						id:10,
 						defaultOption:'T'
 					},
 					{
 						disp:'Show Updates in Browser Status Bar',
+						alt:'statusBar',
 						id:11,
 						defaultOption:'T'
 					},
 					{
 						disp:'Show Smileys',
+						alt:'smileys',
 						id:12,
 						defaultOption:'T'
 					},
 					{
 						disp:'Hide Userlist',
+						alt:'hideUserlist',
 						id:14,
 						defaultOption:'F'
 					},
 					{
 						disp:'Number chars for Highlighting',
+						alt:'charsHigh',
 						id:13,
 						defaultOption:'3',
 						handler:function(){
@@ -448,7 +466,7 @@ oirc = (function(){
 									.append(
 										$.map([0,1,2,3,4,5,6,7,8,9],function(i){
 											return $('<option>')
-												.attr((options.get(13,'3')==i?'selected':'false'),'selected')
+												.attr((options.get('charsHigh')==i?'selected':'false'),'selected')
 												.val(i)
 												.text(i+1);
 										})
@@ -458,16 +476,19 @@ oirc = (function(){
 					},
 					{
 						disp:'Show Scrollbar',
+						alt:'scrollBar',
 						id:15,
 						defaultOption:'T'
 					},
 					{
 						disp:'Enable Scrollwheel',
+						alt:'scrollWheel',
 						id:16,
-						defaultOption:'F'
+						defaultOption:'T'
 					},
 					{
 						disp:'Browser Notifications',
+						alt:'browserNotifications',
 						id:7,
 						defaultOption:'F',
 						before:function(){
@@ -477,49 +498,84 @@ oirc = (function(){
 					},
 					{
 						disp:'Show OmnomIRC join/part messages',
+						alt:'oircJoinPart',
 						id:17,
 						defaultOption:'F'
 					},
 					{
 						disp:'Use WYSIWYG editor (experimental)',
+						alt:'wysiwyg',
 						id:18,
 						defaultOption:'F'
 					},
 					{
 						disp:'Enable simple text decorations',
+						alt:'textDeco',
 						id:19,
 						defaultOption:'F'
 					}
 				],
-				extraChanMsg = '';
+				extraChanMsg = '',
+				getOptionsNum = function(s){
+					var num = -1,
+						def = '';
+					$.each(allOptions,function(i,v){
+						if(v.alt == s || v.id == s){
+							num = v.id;
+							def = v.defaultOption;
+							return;
+						}
+					});
+					return [num,def];
+				},
+				resultCache = [];
 			return {
 				setDefaults:function(d){
 					defaults = d;
 				},
 				set:function(optionsNum,value){
-					if(optionsNum < 1 || optionsNum > 40){
+					var optionsString = ls.get('OmnomIRCSettings'+settings.net());
+					delete resultCache[optionsNum]; // this may be the string
+					optionsNum = getOptionsNum(optionsNum)[0];
+					delete resultCache[optionsNum]; // and this the id
+					if(optionsNum == -1){
 						return;
 					}
-					var optionsString = ls.get('OmnomIRCSettings'+settings.net());
-					if(optionsString===null){
+					if(!optionsString){
 						ls.set('OmnomIRCSettings'+settings.net(),'----------------------------------------');
 						optionsString = ls.get('OmnomIRCSettings'+settings.net());
+					}
+					if(!optionsString){ // we have cookies / local storage disabled, normal chatting will still work, though
+						return;
 					}
 					optionsString = optionsString.substring(0,optionsNum-1)+value+optionsString.substring(optionsNum);
 					ls.set('OmnomIRCSettings'+settings.net(),optionsString);
 					refreshCache = true;
 				},
-				get:function(optionsNum,defaultOption){
+				get:function(s){
 					var optionsString = (refreshCache?(cache=ls.get('OmnomIRCSettings'+settings.net())):cache),
-						result;
+						result,
+						defaultOption;
 					refreshCache = false;
-					if(optionsString===null){
-						return defaultOption;
+					
+					if(resultCache[s] !== undefined){
+						return resultCache[s];
 					}
-					result = optionsString.charAt(optionsNum-1);
+					optionsNum = getOptionsNum(s);
+					defaultOption = optionsNum[1];
+					optionsNum = optionsNum[0];
+					if(optionsNum == -1){
+						return;
+					}
+					if(!optionsString){
+						result = '-';
+					}else{
+						result = optionsString.charAt(optionsNum-1);
+					}
 					if(result=='-'){
-						return (defaults.charAt(optionsNum-1)!=='' && defaults.charAt(optionsNum-1)!='-'?defaults.charAt(optionsNum-1):defaultOption);
+						result = (defaults.charAt(optionsNum-1)!=='' && defaults.charAt(optionsNum-1)!='-'?defaults.charAt(optionsNum-1):defaultOption);
 					}
+					resultCache[s] = result;
 					return result;
 				},
 				setExtraChanMsg:function(s){
@@ -538,7 +594,10 @@ oirc = (function(){
 							return $('<table>')
 								.addClass('optionsTable')
 								.append(
-									$.map(optionMenu,function(o){
+									$.map(allOptions,function(o){
+										if(o.hidden){
+											return;
+										}
 										return ((alternator = !alternator)?$('<tr>')
 											.append(
 												$.merge(
@@ -710,10 +769,10 @@ oirc = (function(){
 				},
 				make:function(s,c){
 					if(instant.current()){
-						if(options.get(7,'F')=='T'){
+						if(options.get('browserNotifications')=='T'){
 							show(s);
 						}
-						if(options.get(8,'F')=='T'){
+						if(options.get('ding')=='T'){
 							$('#ding')[0].play();
 						}
 						if(c!=channels.getCurrentName()){
@@ -737,11 +796,14 @@ oirc = (function(){
 				host = '',
 				port = 0,
 				ssl = true,
+				tryFallback = true,
 				fallback = function(){
-					network.getJSON('omnomirc.php?getcurline&noLoginErrors',function(data){
-						request.setCurLine(data.curline);
-						request.start();
-					});
+					if(tryFallback){
+						network.getJSON('omnomirc.php?getcurline&noLoginErrors',function(data){
+							request.setCurLine(data.curline);
+							request.start();
+						});
+					}
 				},
 				identify = function(){
 					ws.send($.extend({action:'ident'},settings.getIdentParams()));
@@ -768,7 +830,10 @@ oirc = (function(){
 							var data = JSON.parse(e.data);
 							console.log(data);
 							if(allowLines && data.line!==undefined){
-								parser.addLine(data.line);
+								if(!parser.addLine(data.line)){
+									tryFallback = false;
+									socket.close();
+								}
 							}
 							if(data.relog!==undefined && data.relog!=0){
 								settings.fetch(function(){
@@ -835,7 +900,7 @@ oirc = (function(){
 					}
 					handler = network.getJSON(
 							'Update.php?high='+
-							(parseInt(options.get(13,'3'),10)+1).toString()+
+							(parseInt(options.get('charsHigh'),10)+1).toString()+
 							'&channel='+channels.getCurrent(false,true)+
 							'&lineNum='+curLine.toString(),
 						function(data){
@@ -912,7 +977,7 @@ oirc = (function(){
 					try{
 						var chanList = JSON.parse(ls.get('OmnomIRCChannels'+settings.net())),
 							exChans = $.map(chans,function(ch){
-								if((ch.ex && options.get(9,'F')=='T') || !ch.ex){
+								if((ch.ex && options.get('extraChans')=='T') || !ch.ex){
 									return ch;
 								}
 								return undefined;
@@ -959,7 +1024,7 @@ oirc = (function(){
 				draw = function(){
 					$('#ChanList').empty().append(
 						$.map(chans,function(c,i){
-							if((c.ex && options.get(9,'F')=='T') || !c.ex){
+							if((c.ex && options.get('extraChans')=='T') || !c.ex){
 								var mouseX = 0, // new closur as in map
 									startX = 0,
 									initDrag = false,
@@ -1509,6 +1574,9 @@ oirc = (function(){
 		scroll = (function(){
 			var isDown = false,
 				is_touch = (('ontouchstart' in window) || (navigator.MaxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0)),
+				headerOffset = 0,
+				$mBox = false,
+				$mBoxCont = false,
 				touchScroll = function($elem,fn){
 					var lastY = -1;
 					$elem.bind('touchstart',function(e){
@@ -1573,37 +1641,47 @@ oirc = (function(){
 					addHook('#arrowLeftTopic','topicCont',-9);
 					addHook('#arrowRightTopic','topicCont',9);
 				},
+				moveWindow = function(delta){
+					var oldTop = -parseInt($mBox[0].style.top,10),
+						maxScroll = $mBox.height() - $mBoxCont.height(),
+						newTop = Math.min(maxScroll,Math.max(0,oldTop - delta));
+					isDown = false;
+					$mBox.css('top',-newTop)
+					if(newTop==maxScroll){
+						isDown = true;
+					}
+					if(options.get('scrollBar')=='T'){
+						reCalcBar();
+					}
+				},
 				enableWheel = function(){
-					var moveWindow = function(delta){
-							isDown = false;
-							document.getElementById('mBoxCont').scrollTop = Math.min(document.getElementById('mBoxCont').scrollHeight-document.getElementById('mBoxCont').clientHeight,Math.max(0,document.getElementById('mBoxCont').scrollTop-delta));
-							if(document.getElementById('mBoxCont').scrollTop==(document.getElementById('mBoxCont').scrollHeight-document.getElementById('mBoxCont').clientHeight)){
-								isDown = true;
-							}
-							if(options.get(15,'T')=='T'){
-								reCalcBar();
-							}
-						};
-					$('#mBoxCont').bind('DOMMouseScroll mousewheel',function(e){
-						e.preventDefault();
-						e.stopPropagation();
-						e.cancelBubble = true;
+					$mBoxCont.bind('DOMMouseScroll mousewheel',function(e){
+						var oldTop = $mBox[0].style.top;
 						moveWindow((/Firefox/i.test(navigator.userAgent)?(e.originalEvent.detail*(-20)):(e.originalEvent.wheelDelta/2)));
+						if(oldTop != $mBox[0].style.top){
+							e.preventDefault();
+							e.stopPropagation();
+							e.cancelBubble = true;
+						}
 					});
 					if(is_touch){
-						touchScroll($('#mBoxCont'),function(d){
+						touchScroll($mBoxCont,function(d){
 							moveWindow(d);
 						});
 					}
 				},
 				reCalcBar = function(){
 					if($('#scrollBar').length!==0){
-						$('#scrollBar').css('top',(document.getElementById('mBoxCont').scrollTop/(document.getElementById('mBoxCont').scrollHeight-document.getElementById('mBoxCont').clientHeight))*($('body')[0].offsetHeight-$('#scrollBar')[0].offsetHeight-38)+38);
+						if($mBox.height() <= $mBoxCont.height()){
+							$('#scrollBar').css('top',headerOffset);
+						}else{
+							$('#scrollBar').css('top',(parseInt($mBox[0].style.top,10)/($mBoxCont.height() - $mBox.height()))*($('body')[0].offsetHeight-$('#scrollBar')[0].offsetHeight-headerOffset)+headerOffset);
+						}
 					}
 				},
 				enableUserlist = function(){
 					var moveUserList = function(delta){
-							$(this).css('top',Math.min(0,Math.max(((/Opera/i.test(navigator.userAgent))?-30:0)+document.getElementById('UserListInnerCont').clientHeight-this.scrollHeight,parseInt(this.style.top,10)+delta)));
+							$(this).css('top',Math.min(0,Math.max(((/Opera/i.test(navigator.userAgent))?-30:0)+document.getElementById('UserListInnerCont').clientHeight-this.scrollHeight,parseInt($('#UserList').css('top'),10)+delta)));
 						};
 					$('#UserList')
 						.css('top',0)
@@ -1625,15 +1703,16 @@ oirc = (function(){
 							var newscrollbartop = 0;
 							if($bar.data('isClicked')){
 								newscrollbartop = parseInt($bar.css('top'),10)+(y-$bar.data('prevY'));
-								document.getElementById('mBoxCont').scrollTop = ((newscrollbartop-38)/($('body')[0].offsetHeight-$bar[0].offsetHeight-38))*(document.getElementById('mBoxCont').scrollHeight-document.getElementById('mBoxCont').clientHeight);
+								
+								$mBox.css('top',-((newscrollbartop-headerOffset)/($('body')[0].offsetHeight-$bar[0].offsetHeight-headerOffset))*($mBox.height() - $mBoxCont.height()));
 								isDown = false;
-								if(newscrollbartop<38){
-									newscrollbartop = 38;
-									document.getElementById('mBoxCont').scrollTop = 0;
+								if(newscrollbartop<headerOffset){
+									newscrollbartop = headerOffset;
+									$mBox.css('top',0);
 								}
 								if(newscrollbartop>($('body')[0].offsetHeight-$bar[0].offsetHeight)){
 									newscrollbartop = $('body')[0].offsetHeight-$bar[0].offsetHeight;
-									document.getElementById('mBoxCont').scrollTop =  $('#mBoxCont').prop('scrollHeight')-$('#mBoxCont')[0].clientHeight;
+									$mBox.css('top',$mBoxCont.height() - $mBox.height());
 									isDown = true;
 								}
 								$bar.css('top',newscrollbartop);
@@ -1643,10 +1722,12 @@ oirc = (function(){
 						mouseDownFn = function(){
 							$bar.data('isClicked',true);
 							$('#scrollArea').css('display','block');
+							$mBox.css('transition','none');
 						},
 						mouseUpFn = function(){
 							$bar.data('isClicked',false);
 							$('#scrollArea').css('display','none');
+							$mBox.css('transition','');
 						},
 						$bar = $('<div>').attr('id','scrollBar').data({prevY:0,isClicked:false}).appendTo('body')
 							.mousemove(function(e){
@@ -1710,16 +1791,12 @@ oirc = (function(){
 						upIntM,
 						downIntMfn = function(){
 							downIntM = setInterval(function(){
-								document.getElementById('mBoxCont').scrollTop -= 9;
-								isDown = false;
+								moveWindow(9);
 							},50);
 						},
 						upIntMfn = function(){
 							upIntM = setInterval(function(){
-								document.getElementById('mBoxCont').scrollTop += 9;
-								if(document.getElementById('mBoxCont').scrollTop+document.getElementById('mBoxCont').clientHeight==document.getElementById('mBoxCont').scrollHeight){
-									isDown = true;
-								}
+								moveWindow(-9);
 							},50);
 						},
 						$tmp;
@@ -1730,7 +1807,7 @@ oirc = (function(){
 								.css({
 									fontSize:'12pt',
 									width:12,
-									height:'9pt',
+									height:'12pt',
 									top:0,
 									position:'absolute',
 									fontWeight:'bolder',
@@ -1750,14 +1827,17 @@ oirc = (function(){
 									marginLeft:'-10pt'
 								})
 								.mousedown(function(){
+									$mBox.css('transition','none');
 									downIntMfn();
 								})
 								.mouseout(function(){
+									$mBox.css('transition','');
 									try{
 										clearInterval(downIntM);
 									}catch(e){}
 								})
 								.mouseup(function(){
+									$mBox.css('transition','');
 									try{
 										clearInterval(downIntM);
 									}catch(e){}
@@ -1781,8 +1861,8 @@ oirc = (function(){
 								.css({
 									fontSize:'12pt',
 									width:12,
-									height:'9pt',
-									bottom:'9pt',
+									height:'12pt',
+									bottom:'6pt',
 									position:'absolute',
 									fontWeight:'bolder',
 									marginTop:'-10pt',
@@ -1801,14 +1881,17 @@ oirc = (function(){
 									marginLeft:'-10pt'
 								})
 								.mousedown(function(){
+									$mBox.css('transition','none');
 									upIntMfn();
 								})
 								.mouseout(function(){
+									$mBox.css('transition','');
 									try{
 										clearInterval(upIntM);
 									}catch(e){}
 								})
 								.mouseup(function(){
+									$mBox.css('transition','');
 									try{
 										clearInterval(upIntM);
 									}catch(e){}
@@ -1827,12 +1910,12 @@ oirc = (function(){
 				};
 			return {
 				down:function(){
-					document.getElementById('mBoxCont').scrollTop = $('#mBoxCont').prop('scrollHeight');
+					$mBox.css('top',$mBoxCont.height() - $mBox.height()); // reverse direction on subtraction to gain negativity
 					reCalcBar();
 					isDown = true;
 				},
 				up:function(){
-					document.getElementById('mBoxCont').scrollTop = 0;
+					$mBox.css('top',0);;
 					reCalcBar();
 					isDown = false;
 				},
@@ -1842,21 +1925,19 @@ oirc = (function(){
 					}
 				},
 				init:function(){
+					$mBox = $('#MessageBox');
+					$mBoxCont = $('#mBoxCont');
 					enableButtons();
-					if(options.get(15,'T')=='T'){
+					headerOffset = $('#header').height() - 2;
+					if(options.get('scrollBar')=='T'){
 						showBar();
 					}else{
 						showButtons();
 					}
-					if(options.get(16,'F')=='T'){
+					if(options.get('scrollWheel')=='T'){
 						enableWheel();
 					}
 					enableUserlist();
-					$('#mBoxCont').scroll(function(e){
-						if($('#scrollBar').length !==0 && !$('#scrollBar').data('isClicked')){
-							reCalcBar();
-						}
-					});
 					$(document).add(window).add('body').add('html').scroll(function(e){
 						e.preventDefault();
 					});
@@ -1912,13 +1993,13 @@ oirc = (function(){
 					return msg;
 				},
 				support:function(){
-					return (('contentEditable' in document.documentElement) && options.get(18,'F')=='T');
+					return (('contentEditable' in document.documentElement) && options.get('wysiwyg')=='T');
 				}
 			}
 		})(),
 		page = (function(){
 			var initSmileys = function(){
-					if(options.get(12,'T')=='T'){
+					if(options.get('smileys')=='T'){
 						$('#smileyMenuButton')
 							.css('cursor','pointer')
 							.click(function(){
@@ -1962,7 +2043,7 @@ oirc = (function(){
 					$('#toggleButton')
 						.click(function(e){
 							e.preventDefault();
-							options.set(5,!(options.get(5,'T')=='T')?'T':'F');
+							options.set(5,!(options.get('enable')=='T')?'T':'F');
 							document.location.reload();
 						});
 				},
@@ -1971,21 +2052,25 @@ oirc = (function(){
 					var htmlHeight = window.innerHeight,
 						htmlWidth = window.innerWidth,
 						headerHeight = $('#header').outerHeight(),
-						footerHeight = $('#footer').outerHeight();
+						footerHeight = $('#footer').outerHeight(),
+						em = Number(getComputedStyle(document.body,'').fontSize.match(/(\d*(\.\d*)?)px/)[1]);
 					if(allowHeightChange){
-						$('#mBoxCont').css('height',htmlHeight - footerHeight - headerHeight);
+						$('#scrollBarLine').css('top',parseInt($('#header').outerHeight(),10));
+						
+						
+						$('#mBoxCont').css('height',htmlHeight - footerHeight - headerHeight - 0.2*em);
 						$('html,body').height(htmlHeight);
 						
-						$('#message').css('width',htmlWidth*(hide_userlist?1:0.91) - 121);
+						$('#message').css('width',htmlWidth*(hide_userlist?1:0.91) - 12*em);
 					}
 					if(show_scrollbar){
 						var widthOffset = (htmlWidth/100)*mBoxContWidthOffset;
-						$('#mBoxCont').css('width',widthOffset-22);
-						$('#scrollBarLine').css('left',widthOffset - 16);
+						$('#mBoxCont').css('width',widthOffset-1.9*em);
+						$('#scrollBarLine').css('left',widthOffset - 1.4*em);
 						if(allowHeightChange){
-							$('#scrollBarLine').css('height',htmlHeight - headerHeight);
+							$('#scrollBarLine').css('height',htmlHeight - headerHeight - 0.1*em);
 						}
-						$('#scrollBar').css('left',widthOffset - 17);
+						$('#scrollBar').css('left',widthOffset - 1.5*em);
 						scroll.reCalcBar();
 					}
 					scroll.down();
@@ -1995,8 +2080,8 @@ oirc = (function(){
 						is_android = ((nua.indexOf('Mozilla/5.0') > -1 && nua.indexOf('Android ') > -1 && nua.indexOf('AppleWebKit') > -1) && !(nua.indexOf('Chrome') > -1)),
 						is_ios = (nua.match(/(iPod|iPhone|iPad)/i) && nua.match(/AppleWebKit/i)),
 						is_mobile_webkit = (nua.match(/AppleWebKit/i) && nua.match(/Android/i));
-					hide_userlist = options.get(14,'F')=='T';
-					show_scrollbar = options.get(15,'T')=='T';
+					hide_userlist = options.get('hideUserlist')=='T';
+					show_scrollbar = options.get('scrollBar')=='T';
 					page.changeLinks();
 					if(!wysiwyg.support()){
 						$('#message').replaceWith(
@@ -2022,7 +2107,6 @@ oirc = (function(){
 						mBoxContWidthOffset = 99;
 						$('<style>')
 							.append(
-								'input#message,span#message{width:93%;width:calc(100% - 121px);width:-webkit-calc(100% - 121px);}',
 								'#mBoxCont{width:99%;}',
 								'.arrowButtonHoriz2,.arrowButtonHoriz3 > div:nth-child(2){left:98%;left:calc(99% - 5px);left:-webkit-calc(99% - 5px);}',
 								'#UserListContainer{left:99%;transition: left 0.5s 1s;-webkit-transition: left 0.5s 1s;-o-transition-property: left;-o-transition-duration: 0.5d;-o-transition-delay: ls;}',
@@ -2035,7 +2119,6 @@ oirc = (function(){
 					instant.init();
 					logs.init();
 					registerToggle();
-					$('#scrollBarLine').css('top',parseInt($('#header').outerHeight(),10)-1); // -1 due to border
 					if(is_ios){
 						calcResize(true);
 					}
@@ -2055,20 +2138,20 @@ oirc = (function(){
 				load:function(){
 					indicator.start();
 					settings.fetch(function(){
-						if(options.get(5,'T')=='T'){
+						if(options.get('enable')=='T'){
 							init();
 							initSmileys();
 							send.init();
 							oldMessages.init();
 							channels.init();
 							ws.init()
-							channels.join(options.get(4,String.fromCharCode(45)).charCodeAt(0) - 45);
+							channels.join(options.get('curChan').charCodeAt(0) - 45);
 						}else{
 							registerToggle();
 							$('#mBoxCont').empty().append(
 								'<br>',
 								$('<a>')
-									.css('font-size',20)
+									.css('font-size','20pt')
 									.text('OmnomIRC is disabled. Click here to enable.')
 									.click(function(e){
 										e.preventDefault();
@@ -2076,6 +2159,7 @@ oirc = (function(){
 										window.location.reload();
 									})
 							);
+							$('#footer,#header').css('display','none');
 							indicator.stop();
 						}
 					});
@@ -2099,7 +2183,7 @@ oirc = (function(){
 			var text = '',
 				started = false,
 				start = function(){
-					if(options.get(11,'T')!='T'){
+					if(options.get('statusBar')!='T'){
 						return;
 					}
 					if(!started){
@@ -2227,7 +2311,7 @@ oirc = (function(){
 				},
 				read:function(){
 					var temp = ls.get('oldMessages-'+channels.getCurrent(true,true));
-					if(temp!==null){
+					if(temp){
 						messages = temp.split("\n");
 					}else{
 						messages = [];
@@ -2311,6 +2395,7 @@ oirc = (function(){
 									oldMessages.add($('#message').html());
 									val = wysiwyg.getMsg();
 								}
+								console.log(val);
 								val = parser.parseTextDecorations(val);
 								if(!$('#message').attr('disabled') && val!==''){
 									sendMessage(val);
@@ -2534,7 +2619,7 @@ oirc = (function(){
 						cn = n,
 						net = settings.networks()[o],
 						addLink = true;
-					switch(options.get(3,'0')){
+					switch(options.get('colordNames')){
 						case '1': // calc
 							while(n[i]){
 								sum += n.charCodeAt(i++);
@@ -2580,13 +2665,18 @@ oirc = (function(){
 					if (!text || text === null || text === undefined){
 						return '';
 					}
-					//text = text.replace(/http:\/\/www\.omnimaga\.org\//g,"\x01www.omnimaga.org/");
-					return text.replace(/(\x01)/g,"")
-							.replace(/http:\/\/ourl\.ca\//g,"\x01ourl.ca/")
-							.replace(/((h111:\/\/(www\.omnimaga\.org\/|ourl\.ca))[-a-zA-Z0-9@:;%_+.~#?&//=]+)/, '<a target="_top" href="$1">$1</a>')
-							.replace(RegExp("(^|.)(((f|ht)(tp|tps):\/\/)[^\\s\x02\x03\x0f\x16\x1d\x1f\"]*)","g"),'$1<a target="_blank" href="$2">$2</a>')
-							.replace(RegExp("(^|\\s)(www\\.[^\\s\x02\x03\x0f\x16\x1d\x1f\"]*)","g"),'$1<a target="_blank" href="http://$2">$2</a>')
-							.replace(RegExp("(^|.)\x01([^\\s\x02\x03\x0f\x16\x1d\x1f\"]*)","g"),'$1<a target="_top" href="http://$2">http://$2</a>');
+					var a = ['ourl.ca','omnimaga.org','www.omnimaga.org'];
+					var ier = "[^\\s\x01\x02\x03\x04\x0f\x16\x1d\x1f\"]"; // irc end regex
+					text = text.replace(RegExp("(\x01|\x04)","g"),"");
+					$.map(a,function(url){
+						url = url.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
+						text = text.replace(RegExp("(^|\\s)(((f|ht)(tp|tps):\/\/)"+url+ier+"*)"),'$1\x01$2')
+									.replace(RegExp("(^|\\s)("+url+ier+"*)"),'$1\x04$2');
+					});
+					return text.replace(RegExp("(^|[^a-zA-Z0-9_\x01])(((f|ht)(tp|tps):\/\/)"+ier+"+)","g"),'$1<a target="_blank" href="$2">$2</a>')
+							.replace(RegExp("(^|[^a-zA-Z0-9_\x01])(www\\."+ier+"+)","g"),'$1<a target="_blank" href="http://$2">$2</a>')
+							.replace(RegExp("(^|.)\x01("+ier+"+)","g"),'$1<a target="_top" href="$2">$2</a>')
+							.replace(RegExp("(^|.)\x04("+ier+"+)","g"),'$1<a target="_top" href="http://$2">$2</a>');
 				},
 				parseColors = function(colorStr){
 					var arrayResults = [],
@@ -2611,10 +2701,8 @@ oirc = (function(){
 								s = arrayResults[i+1].replace(/^([0-9]{1,2}),([0-9]{1,2})(.*)/,'$1:$2');
 								if(s == arrayResults[i+1]){ // we didn't change background
 									s = arrayResults[i+1].replace(/^([0-9]{1,2}).*/,'$1');
-									textDecoration.fg = s;
-									if(s == arrayResults[i+1]){
-										arrayResults[i+1] = '';
-									}else{
+									if(s != arrayResults[i+1]){
+										textDecoration.fg = s;
 										arrayResults[i+1] = arrayResults[i+1].substr(s.length);
 									}
 								}else{ // we also changed background
@@ -2672,12 +2760,12 @@ oirc = (function(){
 					return colorStr;
 				},
 				parseHighlight = function(s){
-					if(s.toLowerCase().indexOf(settings.nick().toLowerCase().substr(0,parseInt(options.get(13,'3'),10)+1)) >= 0 && settings.nick() != ''){
+					if(s.toLowerCase().indexOf(settings.nick().toLowerCase().substr(0,parseInt(options.get('charsHigh'),10)+1)) >= 0 && settings.nick() != ''){
 						var style = '';
-						if(options.get(2,'T')!='T'){
+						if(options.get('highRed')!='T'){
 							style += 'background:none;padding:none;border:none;';
 						}
-						if(options.get(1,'T')=='T'){
+						if(options.get('highBold')=='T'){
 							style += 'font-weight:bold;';
 						}
 						return '<span class="highlight" style="'+style+'">'+s+'</span>';
@@ -2691,7 +2779,7 @@ oirc = (function(){
 					s = (s=="\x00"?'':s); //fix 0-string bug
 					s = $('<span>').text(s).html();
 					s = parseLinks(s);
-					if(options.get(12,'T')=='T' && noSmileys===false){
+					if(options.get('smileys')=='T' && noSmileys===false){
 						s = parseSmileys(s);
 					}
 					s = parseColors(s);
@@ -2700,8 +2788,11 @@ oirc = (function(){
 				lineHigh = false;
 			return {
 				addLine:function(line,logMode){
-					if(line.name === null || line.name === undefined || line.type === null || ignores.indexOf(line.name.toLowerCase()) > -1){
-						return false;
+					if(line.curLine > request.getCurLine()){
+						request.setCurLine(line.curLine);
+					}
+					if(line.name === null || line.name === undefined || line.type === null || ignores.indexOf(line.name.toLowerCase()) > -1 || (line.chan!=channels.getCurrent(true) && line.chan[0]!='*')){
+						return true; // invalid line but we don't want to stop the new requests
 					}
 					var $mBox = $('#MessageBox'),
 						name = parseName(line.name,line.network,line.uid),
@@ -2713,11 +2804,11 @@ oirc = (function(){
 					if(line.network == -1){
 						addLine = false;
 					}
-					if((line.type == 'message' || line.type == 'action') && line.name.toLowerCase() != 'new'){
-						tdMessage = message = parseHighlight(message);
-					}
-					if(line.curLine > request.getCurLine()){
-						request.setCurLine(line.curLine);
+					if((['message','action','pm','pmaction'].indexOf(line.type)>=0) && line.name.toLowerCase() != 'new'){
+						tdMessage = message = parseHighlight(message,line);
+						if(page.isBlurred()){
+							notification.make('('+channels.getCurrentName()+') <'+line.name+'> '+line.message,line.chan);
+						}
 					}
 					switch(line.type){
 						case 'reload':
@@ -2743,7 +2834,7 @@ oirc = (function(){
 						case 'refresh':
 							addLine = false;
 							if(logMode!==true && channels.getCurrent()!==''){
-								location.reload();
+								location.reload(true);
 							}
 							break;
 						case 'join':
@@ -2754,7 +2845,7 @@ oirc = (function(){
 									network:line.network
 								});
 							}
-							if(addLine && settings.networks()[line.network].type==1 && options.get(17,'F')=='F'){
+							if(addLine && settings.networks()[line.network].type==1 && options.get('oircJoinPart')=='F'){
 								addLine = false;
 							}
 							break;
@@ -2766,7 +2857,7 @@ oirc = (function(){
 									network:line.network
 								});
 							}
-							if(addLine && settings.networks()[line.network].type==1 && options.get(17,'F')=='F'){
+							if(addLine && settings.networks()[line.network].type==1 && options.get('oircJoinPart')=='F'){
 								addLine = false;
 							}
 							break;
@@ -2891,31 +2982,30 @@ oirc = (function(){
 						}else{
 							statusTxt = '<'+line.name+'> ';
 						}
-						if(options.get(10,'T')=='T'){
+						if(options.get('times')=='T'){
 							statusTxt = '['+(new Date(line.time*1000)).toLocaleTimeString()+'] '+statusTxt;
 						}
 						statusTxt += $('<span>').append(tdMessage).text();
 						statusBar.set(statusTxt);
 						
-						
-						$mBox.append(
-							$('<tr>')
-								.addClass((options.get(6,'T')=='T' && (lineHigh = !lineHigh)?'lineHigh':''))
-								.addClass(((new Date(lastMessage)).getDay()!=(new Date(line.time*1000)).getDay())?'seperator':'') //new day indicator
-								.append(
-									(options.get(10,'T')=='T'?$('<td>')
-										.addClass('irc-date')
-										.append('['+(new Date(line.time*1000)).toLocaleTimeString()+']'):''),
-									$('<td>')
-										.addClass('name')
-										.append(tdName),
-									$('<td>')
-										.addClass(line.type)
-										.append(tdMessage)
-								)
-						).find('img').load(function(e){
+						var $tr = $('<tr>')
+							.addClass((options.get('altLines')=='T' && (lineHigh = !lineHigh)?'lineHigh':''))
+							.addClass(((new Date(lastMessage)).getDay()!=(new Date(line.time*1000)).getDay())?'seperator':'') //new day indicator
+							.append(
+								(options.get('times')=='T'?$('<td>')
+									.addClass('irc-date')
+									.append('['+(new Date(line.time*1000)).toLocaleTimeString()+']'):''),
+								$('<td>')
+									.addClass('name')
+									.append(tdName),
+								$('<td>')
+									.addClass(line.type)
+									.append(tdMessage)
+							);
+						$tr.find('img').load(function(e){
 							scroll.slide();
 						});
+						$mBox.append($tr);
 						scroll.slide();
 						
 						lastMessage = line.time*1000;
@@ -2932,7 +3022,7 @@ oirc = (function(){
 					ignores = a;
 				},
 				parseTextDecorations:function(s){
-					if(s !== '' && options.get(19,'F') == 'T'){
+					if(s !== '' && options.get('textDeco') == 'T'){
 						if(s[0] == '>'){
 							s = '\x033'+s;
 						}

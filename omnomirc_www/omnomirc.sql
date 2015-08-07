@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS `irc_outgoing_messages` (
   `action` tinyint(1) NOT NULL DEFAULT '0',
   `fromSource` int(11) NOT NULL DEFAULT '0',
   `type` varchar(45) NOT NULL DEFAULT 'msg',
+  `uid` int(11) NOT NULL DEFAULT '-1',
   PRIMARY KEY (`prikey`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;
 
