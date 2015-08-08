@@ -1583,6 +1583,7 @@ oirc = (function(){
 						if($(e.target).is('a')){
 							return;
 						}
+						$mBox.css('transition','none');
 						e.preventDefault();
 						lastY = e.originalEvent.touches[0].clientY;
 					}).bind('touchmove',function(e){
@@ -1600,6 +1601,7 @@ oirc = (function(){
 						if($(e.target).is('a')){
 							return;
 						}
+						$mBox.css('transition','');
 						e.preventDefault();
 						lastY = -1;
 					});
@@ -2673,8 +2675,8 @@ oirc = (function(){
 						text = text.replace(RegExp("(^|\\s)(((f|ht)(tp|tps):\/\/)"+url+ier+"*)"),'$1\x01$2')
 									.replace(RegExp("(^|\\s)("+url+ier+"*)"),'$1\x04$2');
 					});
-					return text.replace(RegExp("(^|[^a-zA-Z0-9_\x01])(((f|ht)(tp|tps):\/\/)"+ier+"+)","g"),'$1<a target="_blank" href="$2">$2</a>')
-							.replace(RegExp("(^|[^a-zA-Z0-9_\x01])(www\\."+ier+"+)","g"),'$1<a target="_blank" href="http://$2">$2</a>')
+					return text.replace(RegExp("(^|[^a-zA-Z0-9_\x01\x04]|\x03\\d{1,2}(|,\\d{1,2}))(((f|ht)(tp|tps):\/\/)"+ier+"+)","g"),'$1<a target="_blank" href="$3">$3</a>')
+							.replace(RegExp("(^|[^a-zA-Z0-9_\x01\x04/])(www\\."+ier+"+)","g"),'$1<a target="_blank" href="http://$2">$2</a>')
 							.replace(RegExp("(^|.)\x01("+ier+"+)","g"),'$1<a target="_top" href="$2">$2</a>')
 							.replace(RegExp("(^|.)\x04("+ier+"+)","g"),'$1<a target="_top" href="http://$2">$2</a>');
 				},
