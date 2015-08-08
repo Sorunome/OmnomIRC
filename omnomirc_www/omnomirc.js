@@ -1682,8 +1682,8 @@ oirc = (function(){
 					}
 				},
 				enableUserlist = function(){
-					var moveUserList = function(delta){
-							$(this).css('top',Math.min(0,Math.max(((/Opera/i.test(navigator.userAgent))?-30:0)+document.getElementById('UserListInnerCont').clientHeight-this.scrollHeight,parseInt($('#UserList').css('top'),10)+delta)));
+					var moveUserList = function(delta,self){
+							$(self).css('top',Math.min(0,Math.max(((/Opera/i.test(navigator.userAgent))?-30:0)+document.getElementById('UserListInnerCont').clientHeight-self.scrollHeight,delta+parseInt($('#UserList').css('top'),10))));
 						};
 					$('#UserList')
 						.css('top',0)
@@ -1692,11 +1692,11 @@ oirc = (function(){
 								e.preventDefault();
 							}
 							e = e.originalEvent;
-							moveUserList((/Firefox/i.test(navigator.userAgent)?(e.detail*(-20)):(e.wheelDelta/2)));
+							moveUserList((/Firefox/i.test(navigator.userAgent)?(e.detail*(-20)):(e.wheelDelta/2)),this);
 						});
 					if(is_touch){
 						touchScroll($('#UserList'),function(d){
-							moveUserList(d);
+							moveUserList(d,this);
 						});
 					}
 				},

@@ -366,7 +366,7 @@ td.action > a:nth-child(1) > span {
 
 /*about start*/
 #about {
-	top:6em;
+	top:0;
 	width:70%;
 	left:50%;
 	position:absolute;
