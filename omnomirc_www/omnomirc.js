@@ -2672,8 +2672,8 @@ oirc = (function(){
 					text = text.replace(RegExp("(\x01|\x04)","g"),"");
 					$.map(a,function(url){
 						url = url.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
-						text = text.replace(RegExp("(^|\\s)(((f|ht)(tp|tps):\/\/)"+url+ier+"*)"),'$1\x01$2')
-									.replace(RegExp("(^|\\s)("+url+ier+"*)"),'$1\x04$2');
+						text = text.replace(RegExp("(^|\\s)(((f|ht)(tp|tps):\/\/)"+url+ier+"*)","g"),'$1\x01$2')
+									.replace(RegExp("(^|\\s)("+url+ier+"*)","g"),'$1\x04$2');
 					});
 					return text.replace(RegExp("(^|[^a-zA-Z0-9_\x01\x04]|\x03\\d{1,2}(|,\\d{1,2}))(((f|ht)(tp|tps):\/\/)"+ier+"+)","g"),'$1<a target="_blank" href="$3">$3</a>')
 							.replace(RegExp("(^|[^a-zA-Z0-9_\x01\x04/])(www\\."+ier+"+)","g"),'$1<a target="_blank" href="http://$2">$2</a>')
