@@ -377,7 +377,7 @@ oirc = (function(){
 								.css('border-right','none')
 								.append($('<select>')
 									.change(function(){
-										options.set(3,this.value);
+										options.set('colordNames',this.value);
 									})
 									.append(
 										$.map(['none','calc','server'],function(v,i){
@@ -513,6 +513,31 @@ oirc = (function(){
 						alt:'textDeco',
 						id:19,
 						defaultOption:'F'
+					},
+					{
+						disp:'Font Size',
+						alt:'fontSize',
+						id:20,
+						defaultOption:String.fromCharCode(9+45),
+						handler:function(){
+							return $('<td>')
+								.attr('colspan',2)
+								.css('border-right','none')
+								.append($('<input>')
+									.attr({
+										type:'number',
+										step:1,
+										min:1,
+										max:42
+									})
+									.css('width','3em')
+									.val(options.get('fontSize').charCodeAt(0) - 45)
+									.change(function(){
+										options.set('fontSize',String.fromCharCode(parseInt(this.value,10) + 45));
+										$('body').css('font-size',this.value+'pt');
+									})
+								)
+						}
 					}
 				],
 				extraChanMsg = '',
@@ -1318,7 +1343,7 @@ oirc = (function(){
 							currentb64 = getHandler(i,true);
 							currentName = chans[i].chan;
 							oldMessages.read();
-							options.set(4,String.fromCharCode(i+45));
+							options.set('curChan',String.fromCharCode(i+45));
 							if(!data.banned){
 								if(data.admin){
 									$('#adminLink').css('display','');
@@ -1660,11 +1685,11 @@ oirc = (function(){
 					$mBoxCont.bind('DOMMouseScroll mousewheel',function(e){
 						var oldTop = $mBox[0].style.top;
 						moveWindow((/Firefox/i.test(navigator.userAgent)?(e.originalEvent.detail*(-20)):(e.originalEvent.wheelDelta/2)));
-						if(oldTop != $mBox[0].style.top){
+						//if(oldTop != $mBox[0].style.top){
 							e.preventDefault();
 							e.stopPropagation();
 							e.cancelBubble = true;
-						}
+						//}
 					});
 					if(is_touch){
 						touchScroll($mBoxCont,function(d){
@@ -2082,6 +2107,7 @@ oirc = (function(){
 						is_android = ((nua.indexOf('Mozilla/5.0') > -1 && nua.indexOf('Android ') > -1 && nua.indexOf('AppleWebKit') > -1) && !(nua.indexOf('Chrome') > -1)),
 						is_ios = (nua.match(/(iPod|iPhone|iPad)/i) && nua.match(/AppleWebKit/i)),
 						is_mobile_webkit = (nua.match(/AppleWebKit/i) && nua.match(/Android/i));
+					$('body').css('font-size',(options.get('fontSize').charCodeAt(0) - 45).toString(10)+'pt');
 					hide_userlist = options.get('hideUserlist')=='T';
 					show_scrollbar = options.get('scrollBar')=='T';
 					page.changeLinks();
@@ -3048,6 +3074,7 @@ oirc = (function(){
 							$('#options').height($(window).height() - 75);
 						}
 					});
+					$('body').css('font-size',(options.get('fontSize').charCodeAt(0) - 45).toString(10)+'pt');
 					$('#options').append(options.getHTML());
 				});
 				break;

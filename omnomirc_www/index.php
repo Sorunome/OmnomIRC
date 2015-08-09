@@ -58,7 +58,7 @@ function getPage($title,$head,$body,$page){
 			'</html>';
 }
 if(strpos($_SERVER['HTTP_USER_AGENT'],'textmode;')!==false || isset($_GET['textmode'])){
-	header('Location: '.getCheckLoginUrl().'&textmode');
+	header('Location: '.getCheckLoginUrl().'&textmode&network='.($you->getNetwork()));
 }elseif(isset($_GET['options'])){
 /*
 Options:
