@@ -58,7 +58,7 @@ function getPage($title,$head,$body,$page){
 			'</html>';
 }
 if(strpos($_SERVER['HTTP_USER_AGENT'],'textmode;')!==false || isset($_GET['textmode'])){
-	header('Location: '.getCheckLoginUrl().'&textmode');
+	header('Location: '.getCheckLoginUrl().'&textmode&network='.($you->getNetwork()));
 }elseif(isset($_GET['options'])){
 /*
 Options:
@@ -81,40 +81,43 @@ Options:
 17 - show omnomirc join/part messages (oircJoinPart)
 18 - use wysiwyg edtior (wysiwyg)
 19 - use simple text decorations (textDeco)
+20 - font size (fontSize)
 */
 echo getPage('OmnomIRC Options','
 <style type="text/css">
-body,td,tr,pre,table{
-	font-size: 13px;font-family:verdana,sans-serif;line-height:17px;
+body{
+	font-size: 9pt;
+	font-family:verdana,sans-serif;
 }
 td
 {
 	width:auto;
-	height:20px;
+	height:1.2em;
 	white-space: inherit;
 	word-wrap: inherit;
+	line-height:1.2em;
 }
 table
 {
 	height:auto;
 }
 tr td:nth-child(4) {
-	padding-left:10px;
+	padding-left:1em;
 }
 tr td:nth-child(2) {
-	border-right:1px solid;
+	border-right:0.1em solid;
 }
 tr td:nth-child(5) {
-	border-right:1px solid;
+	border-right:0.1em solid;
 }
 #options {
 	overflow-y:auto;
 }
 </style>
 ','
-<div style="font-size:20px;font-weight:bold;margin-top:5px;">OmnomIRC Options</div>
+<div style="font-size:1.8em;font-weight:bold;margin-top:0.3em;">OmnomIRC Options</div>
 <div id="options"></div>
-<div style="top:100%;margin-top:-33pt;position:absolute;"><a href="index.php"><span style="font-size:30pt;">&#8592;</span><span style="font-size:18pt;top:-3pt;position:relative;">Back<span></a></div>
+<div style="top:100%;margin-top:-2.5em;position:absolute;"><a href="index.php"><span style="font-size:3em;">&#8592;</span><span style="font-size:2.1em;top:-0.1em;position:relative;">Back<span></a></div>
 <div id="icons" style="right:5px;">
 	<span id="warnings" style="display:none;">
 	<span class="count">0</span><span class="icon"></span>
