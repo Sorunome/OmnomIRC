@@ -2735,7 +2735,7 @@ oirc = (function(){
 									s = arrayResults[i+1].replace(/^([0-9]{1,2}).*/,'$1:');
 									if(s != arrayResults[i+1]){
 										textDecoration.fg = s.split(':')[0];
-										arrayResults[i+1] = arrayResults[i+1].substr(s.length);
+										arrayResults[i+1] = arrayResults[i+1].substr(s.length-1); // -1 due to added colon
 									}
 								}else{ // we also changed background
 									textDecoration.fg = s.split(':')[0];
