@@ -2728,9 +2728,9 @@ oirc = (function(){
 							case '\x03': // color
 								s = arrayResults[i+1].replace(/^([0-9]{1,2}),([0-9]{1,2})(.*)/,'$1:$2');
 								if(s == arrayResults[i+1]){ // we didn't change background
-									s = arrayResults[i+1].replace(/^([0-9]{1,2}).*/,'$1');
+									s = arrayResults[i+1].replace(/^([0-9]{1,2}).*/,'$1:');
 									if(s != arrayResults[i+1]){
-										textDecoration.fg = s;
+										textDecoration.fg = s.split(':')[0];
 										arrayResults[i+1] = arrayResults[i+1].substr(s.length);
 									}
 								}else{ // we also changed background
