@@ -121,7 +121,9 @@ oirc = (function(){
 				},
 				support = function(){
 					try{
-						return 'localStorage' in window && window['localStorage'] !== null;
+						localStorage.setItem('test',1);
+						localStorage.removeItem('test');
+						return true;
 					}catch(e){
 						return false;
 					}
@@ -2092,7 +2094,9 @@ oirc = (function(){
 					}
 					if(show_scrollbar){
 						var widthOffset = (htmlWidth/100)*mBoxContWidthOffset;
-						$('#mBoxCont').css('width',widthOffset-1.9*em);
+						if(allowHeightChange){
+							$('#mBoxCont').css('width',widthOffset-1.9*em);
+						}
 						$('#scrollBarLine').css('left',widthOffset - 1.4*em);
 						if(allowHeightChange){
 							$('#scrollBarLine').css('height',htmlHeight - headerHeight - 0.1*em);
