@@ -121,7 +121,9 @@ oirc = (function(){
 				},
 				support = function(){
 					try{
-						return 'localStorage' in window && window['localStorage'] !== null;
+						localStorage.setItem('test',1);
+						localStorage.removeItem('test');
+						return true;
 					}catch(e){
 						return false;
 					}
@@ -2092,7 +2094,9 @@ oirc = (function(){
 					}
 					if(show_scrollbar){
 						var widthOffset = (htmlWidth/100)*mBoxContWidthOffset;
-						$('#mBoxCont').css('width',widthOffset-1.9*em);
+						if(allowHeightChange){
+							$('#mBoxCont').css('width',widthOffset-1.9*em);
+						}
 						$('#scrollBarLine').css('left',widthOffset - 1.4*em);
 						if(allowHeightChange){
 							$('#scrollBarLine').css('height',htmlHeight - headerHeight - 0.1*em);
@@ -2382,7 +2386,7 @@ oirc = (function(){
 									sending = false;
 								});
 							}
-							if(s.search('goo.gl/QMET')!=-1 || s.search('oHg5SJYRHA0')!=-1 || s.search('dQw4w9WgXcQ')!=-1){
+							/*if(s.search('goo.gl/QMET')!=-1 || s.search('oHg5SJYRHA0')!=-1 || s.search('dQw4w9WgXcQ')!=-1){
 								$('<div>')
 									.css({
 										position:'absolute',
@@ -2392,7 +2396,7 @@ oirc = (function(){
 									})
 									.html('<object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=6,0,29,0"><param name="movie" value="http://134.0.27.190/juju/i-lost-the-ga.me/rickroll.swf"><param name="quality" value="high"><embed src="http://134.0.27.190/juju/i-lost-the-ga.me/rickroll.swf" quality="high" pluginspage="http://www.macromedia.com/go/getflashplayer" type="application/x-shockwave-flash"></embed></object>')
 									.appendTo('body');
-							}
+							}*/
 						}
 					}
 				};
@@ -2728,9 +2732,9 @@ oirc = (function(){
 							case '\x03': // color
 								s = arrayResults[i+1].replace(/^([0-9]{1,2}),([0-9]{1,2})(.*)/,'$1:$2');
 								if(s == arrayResults[i+1]){ // we didn't change background
-									s = arrayResults[i+1].replace(/^([0-9]{1,2}).*/,'$1');
+									s = arrayResults[i+1].replace(/^([0-9]{1,2}).*/,'$1:');
 									if(s != arrayResults[i+1]){
-										textDecoration.fg = s;
+										textDecoration.fg = s.split(':')[0];
 										arrayResults[i+1] = arrayResults[i+1].substr(s.length);
 									}
 								}else{ // we also changed background
