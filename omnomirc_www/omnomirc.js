@@ -611,8 +611,8 @@ oirc = (function(){
 				getFullOptionsString:function(){
 					var optionsString = (refreshCache?(cache=ls.get('OmnomIRCSettings'+settings.net())):cache),
 						res = '';
-					for(var i = 0;defaults.charAt(i)!='' && optionsString.charAt(i)!='';i++){
-						res += (optionsString.charAt(i)!='-' && optionsString.charAt(i)!=''?optionsString.charAt(i):(defaults.charAt(i)!=''?defaults.charAt(i):'-'));
+					for(var i = 0;optionsString.charAt(i)!='';i++){
+						res += (optionsString.charAt(i)!='-'?optionsString.charAt(i):(defaults.charAt(i)!=''?defaults.charAt(i):'-'));
 					}
 					return res;
 				},
@@ -826,8 +826,13 @@ oirc = (function(){
 				tryFallback = true,
 				fallback = function(){
 					if(tryFallback){
+						try{
+							tryFallback = false;
+							socket.close();
+						}catch(e){}
 						network.getJSON('omnomirc.php?getcurline&noLoginErrors',function(data){
 							request.setCurLine(data.curline);
+							use = false;
 							request.start();
 						});
 					}
@@ -844,6 +849,9 @@ oirc = (function(){
 					try{
 						socket = new WebSocket((ssl?'wss://':'ws://')+host+':'+port.toString(10));
 					}catch(e){
+						console.log(socket);
+						console.log((ssl?'wss://':'ws://')+host+':'+port.toString(10));
+						console.log(e);
 						fallback();
 					}
 					socket.onopen = function(e){

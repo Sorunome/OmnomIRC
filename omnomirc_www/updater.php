@@ -65,7 +65,7 @@ function getPage($title,$head,$body){
 				'<link rel="icon" type="image/png" href="omni.png">'.
 				'<link rel="stylesheet" type="text/css" href="style.css" />'.
 				'<script src="btoa.js"></script>'.
-				'<script type="text/javascript" src="jquery-1.11.0.min.js"></script>'.
+				'<script type="text/javascript" src="jquery-1.11.3.min.js"></script>'.
 				'<title>'.$title.'</title>'.
 				$head.
 			'</head>'.
@@ -308,7 +308,7 @@ if(!isset($_GET['server'])){
 				$sql->query("INSERT INTO `irc_userstuff` (`name`,`network`,`globalOp`) VALUES ('%s',1,1)",strtolower($_POST['defaultOp']));
 			}
 			
-			$config['settings']['hostname'] = $_SERVER['SERVER_NAME'];
+			$config['settings']['hostname'] = (isset($_SERVER['HTTP_HOST'])?$_SERVER['HTTP_HOST']:$_SERVER['SERVER_NAME']);
 			$config['settings']['curidFilePath'] = realpath(dirname(__FILE__)).'/omnomirc_curid';
 			$config['security']['sigKey'] = md5(base64_encode(md5(rand(100,9999).'-'.rand(10000,999999))));
 			$config['security']['ircPwd'] = md5(base64_encode(md5(rand(100,9999).'-'.rand(10000,999999))));

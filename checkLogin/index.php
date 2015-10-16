@@ -29,6 +29,7 @@ exit;
 	}
 }
 $config = getConfig();
+header('Access-Control-Allow-Origin: '.$config['oircUrl']);
 date_default_timezone_set('UTC');
 function base64_url_encode($input) {
 	return strtr(base64_encode($input),'+/=','-_,');

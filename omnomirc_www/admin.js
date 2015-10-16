@@ -140,7 +140,7 @@
 					'<br>',
 					$('<a>').text('add Theme').click(function(e){
 						e.preventDefault();
-						var name = prompt('new hotlink name');
+						var name = prompt('new theme name');
 						if(name!=='' && name!==null){
 							themes.push({
 								name:name,
