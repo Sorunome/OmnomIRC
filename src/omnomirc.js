@@ -2846,7 +2846,7 @@ oirc = (function(){
 					if(line.network == -1){
 						addLine = false;
 					}
-					if((['message','action','pm','pmaction'].indexOf(line.type)>=0) && line.name.toLowerCase() != 'new'){
+					if((['message','action','pm','pmaction'].indexOf(line.type)>=0) && line.name.toLowerCase() != '*'){
 						tdMessage = message = parseHighlight(message,line);
 						if(page.isBlurred()){
 							notification.make('('+channels.getCurrentName()+') <'+line.name+'> '+line.message,line.chan);

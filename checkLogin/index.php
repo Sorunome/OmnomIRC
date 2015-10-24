@@ -38,6 +38,9 @@ function base64_url_encode($input) {
 function base64_url_decode($input){
 	return base64_decode(strtr($input,'-_,','+/=')); 
 }
+if(isset($only_include_oirc) && $only_include_oirc){
+	return;
+}
 if(!isset($_GET['server'])){
 	if(!$config['installed']){
 		die('Installation is still in progress');

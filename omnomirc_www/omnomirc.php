@@ -355,7 +355,7 @@ class Networks{
 		global $config;
 		if(isset($_GET['network'])){
 			if(($n = $this->get((int)$_GET['network'])) != NULL){
-				if($n['type'] == 1){
+				if($n['type'] == 1 || isset($_GET['serverident']) && $n['type']==0){
 					return $n['id'];
 				}
 			}
@@ -453,10 +453,25 @@ class You{
 			}
 			$this->chan = $defaultChan;
 		}
-		$this->globalOps = NULL;
-		$this->ops = NULL;
+		
+		$json->add('network',$this->network);
+		$json->add('network_get',$_GET['network']);
+		if($this->network == 0){ // server network, do aditional validating
+			var_dump($this);
+			if(!isset($_GET['serverident']) || !$security->checkSig($this->sig,$this->nick,$this->id,$this->network)){
+				$json->addError('Login attempt as server');
+				echo $json->get();
+				die();
+			}
+			$this->globalOps = false;
+			$this->ops = false;
+			$this->loggedIn = true;
+		}else{
+			$this->globalOps = NULL;
+			$this->ops = NULL;
+			$this->loggedIn = $security->checkSig($this->sig,$this->nick,$this->id,$this->network);
+		}
 		$this->infoStuff = NULL;
-		$this->loggedIn = $security->checkSig($this->sig,$this->nick,$this->id,$this->network);
 		if(!$this->loggedIn){
 			if(!isset($_GET['noLoginErrors'])){
 				$json->addWarning('Not logged in');
@@ -484,7 +499,7 @@ class You{
 			foreach($config['channels'] as $chan){
 				if($chan['enabled']){
 					foreach($chan['networks'] as $cn){
-						if($cn['id'] == $this->network && (strtolower($cn['name'])==strtolower($channel) || $chan['id']==$channel)){
+						if(($cn['id'] == $this->network && (strtolower($cn['name'])==strtolower($channel) || $chan['id']==$channel)) || $this->network == 0 /* super sneaky server network */){
 							$channel = $chan['id'];
 							$this->chanName = $cn['name'];
 							$foundChan = true;

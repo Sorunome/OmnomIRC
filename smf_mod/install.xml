@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<!DOCTYPE modification SYSTEM "http://www.simplemachines.org/xml/modification">
+<modification xmlns="http://www.simplemachines.org/xml/modification" xmlns:smf="http://www.simplemachines.org/">
+	<id>Sorunome:OmnomIRC</id>
+	<version>0.1</version>
+
+	<file name="$sourcedir/Subs-Post.php">
+		<operation>
+			<search position="before"><![CDATA[		updateStats('topic', true);
+		updateStats('subject', $topicOptions['id'], $msgOptions['subject']);
+]]></search>
+			<add><![CDATA[
+		// Send the new topic to OmnomIRC start
+		sendToOmnomIRC("\x0306New\x0310 topic by \x0303".$posterOptions['name']."\x0304 ".$msgOptions['subject'],0);
+		// Send the new topic to OmnomIRC end
+]]></add>
+		</operation>
+		<operation>
+			<search position="before"><![CDATA[		// One new post has been added today.
+		trackStats(array('posts' => '+'));
+]]></search>
+			<add><![CDATA[
+		// Send the new post to OmnomIRC start
+		sendToOmnomIRC("\x0306New\x0310 post by \x0303".$posterOptions['name']."\x0310 in\x0304 ".$msgOptions['subject'],0);
+		// Send the new post to OmnomIRC end
+]]></add>
+		</operation>
+		<operation>
+			<search position="after"><![CDATA[
+	// Mark the edited post as read.
+	if (!empty($topicOptions['mark_as_read']) && !$user_info['is_guest'])]]></search>
+			<add><![CDATA[
+	// Send the new edit to OmnomIRC start
+	sendToOmnomIRC("\x0306New\x0310 edit by \x0303".$posterOptions['name']."\x0310 on\x0304 ".$msgOptions['subject'],0);
+	// Send the new edit to OmnomIRC end
+]]></add>
+		</operation>
+		<operation>
+			<search position="end" />
+			<add><![CDATA[
+function sendToOmnomIRC($message,$channel){
+	global $config,$only_include_oirc;
+	$only_include_oirc = true;
+	include_once('/home/sorunome/public_html/checkLogin/index.php');
+	$nick = '*';
+	$time = (string)time();
+	$uid = rand();
+	$network = 0;
+	
+	$signature = $time.'|'.hash_hmac('sha512',$nick.$uid,$network.$config['sigKey'].$time);
+	file_get_contents($config['oircUrl'].'/message.php?message='.base64_url_encode($message).'&channel='.$channel.'&nick='.base64_url_encode($nick).'&signature='.base64_url_encode($signature).'&time='.$time.'&network='.$network.'&id='.$uid.'noLoginErrors&serverident');
+}
+]]></add>
+		</operation>
+	</file>
+
+</modification>
