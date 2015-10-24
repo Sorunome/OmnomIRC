@@ -349,7 +349,7 @@ oirc = (function(){
 		admin = (function(){
 			return {
 				init:function(){
-					$.getScript('admin.min.js');
+					$.getScript('admin.js');
 				}
 			}
 		})(),
