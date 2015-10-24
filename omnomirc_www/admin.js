@@ -217,7 +217,7 @@
 								}
 								chans[i].networks.push({
 									'id':netId,
-									'name':'',
+									'name':chan.networks.length > 0?chan.networks[0].name:chan.alias,
 									'hidden':false,
 									'order':maxOrder+1
 								})
@@ -245,7 +245,7 @@
 												'border':'1px solid black'
 											})
 											.append(
-												$('<input>').attr('type','text').val(chan.networks[0].name).change(function(){
+												$('<input>').attr('type','text').val(chan.networks.length > 0?chan.networks[0].name:chan.alias).change(function(){
 														var _this = this;
 														$.each(chan.networks,function(netI){
 															chans[i].networks[netI].name = $(_this).val();
