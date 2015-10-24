@@ -500,28 +500,37 @@
 										break;
 									case 1:
 										var drawOpGroupsSettings = function(elem){
-												$(elem).replaceWith(
-													$('<span>').append(
-														$.map(nets[i].config.opGroups,function(opg,j){
-															return ['<br>'+$('<span>').text(opg).html()+' ',
-																$('<a>').text('x').click(function(e){
-																	e.preventDefault();
-																	nets[i].config.opGroups.splice(j,1);
-																	drawOpGroupsSettings($(this).parent());
-																})];
-														}),
-														'<br>',
-														$('<button>').text('add op group').click(function(e){
-															e.preventDefault();
-															var group = prompt('New Network Name');
-															if(group != ''  && group != null){
-																nets[i].config.opGroups.push(group);
-																drawOpGroupsSettings($(this).parent());
-															}
-														})
-													)
-												);
+												var $button = $('<button>').text('add op group').click(function(e){
+																e.preventDefault();
+													var group = prompt('New OP-Group');
+													if(group != ''  && group != null){
+														if(!nets[i].config.opGroups){
+															nets[i].config.opGroups = [];
+														}
+														nets[i].config.opGroups.push(group);
+														drawOpGroupsSettings($(this).parent());
+													}
+												});
+												if(nets[i].config.opGroups && nets[i].config.opGroups.length > 0){
+													$(elem).replaceWith(
+														$('<span>').append(
+															$.map(nets[i].config.opGroups,function(opg,j){
+																return ['<br>'+$('<span>').text(opg).html()+' ',
+																	$('<a>').text('x').click(function(e){
+																		e.preventDefault();
+																		nets[i].config.opGroups.splice(j,1);
+																		drawOpGroupsSettings($(this).parent());
+																	})];
+															}),
+															'<br>',
+															$button
+														)
+													);
+												}else{
+													$(elem).replaceWith($('<span>').append($button));
+												}
 											};
+										console.log(net);
 										$netSpecific = $('<span>').append(
 												$('<b>').text('OmnomIRC network'),
 												'<br>checkLogin:',
@@ -561,7 +570,7 @@
 																$.map(data.themes,function(v,i){
 																	return $('<option>').val(i).text(v.name);
 																})
-															).val(net.config.theme).change(function(){nets[i].config.theme = parseInt(this.value,10);})
+															).val(net.config.theme?net.config.theme:0).change(function(){nets[i].config.theme = parseInt(this.value,10);})
 														);
 													});
 												}).trigger('now'),
@@ -573,7 +582,7 @@
 												$('<select>').append(
 													$('<option>').val(0).text('Deny Guest Access'),
 													$('<option>').val(1).text('Guests are read-only')
-												).val(net.config.guests).change(function(e){
+												).val(net.config.guests?net.config.guests:0).change(function(e){
 													nets[i].config.guests = parseInt(this.value,10);
 												}),
 												'<br>Extra Channels Message:<br>',
@@ -679,7 +688,9 @@
 											specificConfig = {
 												'checkLogin':'link to checkLogin file',
 												'theme':-1,
-												'defaults':''
+												'defaults':'',
+												'opGroups':[],
+												'guests':0
 											};
 											break;
 										case 2:
