@@ -205,6 +205,20 @@ if($you->isGlobalOp()){
 				$json->add('message','Config saved!');
 				break;
 			case 'networks':
+				if(sizeof($jsonData) > sizeof($config['networks'])){
+					foreach(array_diff_key($jsonData,$config['networks']) as $n){
+						foreach($config['channels'] as $i => &$c){
+							if(sizeof($config['networks']) <= sizeof($c['networks']) + 1 /* plus one due to hidden server network */){
+								$c['networks'][] = array(
+									'id' => $n['id'],
+									'name' => (isset($c['networks'][0])?$c['networks'][0]['name']:$c['alias']),
+									'hidden' => false,
+									'order' => $i
+								);
+							}
+						}
+					}
+				}
 				foreach($jsonData as &$n){
 					if($n['type'] == 1){ // oirc network
 						if(isset($n['config']['extraChanMsg'])){
