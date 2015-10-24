@@ -47,7 +47,7 @@ function getPage($title,$head,$body,$page){
 				($theme!=-1?'<link rel="stylesheet" type="text/css" href="theme.php?theme='.$theme.'" />':'').
 				'<script type="text/javascript" src="btoa.js"></script>'.
 				'<script type="text/javascript" src="jquery-1.11.3.min.js"></script>'.
-				'<script type="text/javascript" src="omnomirc.js"></script>'.
+				'<script type="text/javascript" src="omnomirc.min.js"></script>'.
 				'<title>'.$title.'</title>'.
 				'<script type="text/javascript">document.domain="'.$config['settings']['hostname'].'";</script>'.
 				$head.
