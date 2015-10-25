@@ -8,9 +8,11 @@
 
 	<install for="2.0 - 2.99.99">
 		<modification>install.xml</modification>
+		<require-file name="oirc.english.php" destination="$languagedir" />
 	</install>
 
 	<uninstall for="2.0 - 2.99.99">
 		<modification type="file" reverse="true">install.xml</modification>
+		<remove-file name="$languagedir/oirc.english.php" />
 	</uninstall>
 </package-info>

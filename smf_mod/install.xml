@@ -11,7 +11,17 @@
 ]]></search>
 			<add><![CDATA[
 		// Send the new topic to OmnomIRC start
-		sendToOmnomIRC("\x0306New\x0310 topic by \x0303".$posterOptions['name']."\x0304 ".$msgOptions['subject'],0);
+		if(!empty($modSettings['oirc_topics']) && !empty($modSettings['oirc_topicnotification']))
+		{ // "\x0306New\x0310 topic by \x0303".$posterOptions['name']."\x0304 ".$msgOptions['subject']
+			sendToOmnomIRC(strtr($modSettings['oirc_topicnotification'],array(
+				'{COLOR}' => "\x03",
+				'{NAME}' => $posterOptions['name'],
+				'{TOPIC}' => $msgOptions['subject'],
+				'{SUBJECT}' => $msgOptions['subject'],
+				'{TOPICID}' => $topicOptions['id'],
+				'{POSTID}' => $msgOptions['id']
+			)),0);
+		}
 		// Send the new topic to OmnomIRC end
 ]]></add>
 		</operation>
@@ -21,7 +31,23 @@
 ]]></search>
 			<add><![CDATA[
 		// Send the new post to OmnomIRC start
-		sendToOmnomIRC("\x0306New\x0310 post by \x0303".$posterOptions['name']."\x0310 in\x0304 ".$msgOptions['subject'],0);
+		if(!empty($modSettings['oirc_posts']) && !empty($modSettings['oirc_postnotification']))
+		{
+			//sendToOmnomIRC("\x0306New\x0310 post by \x0303".$posterOptions['name']."\x0310 in\x0304 ".$msgOptions['subject'],0);
+			
+			$topicname = '';
+			if(strpos($modSettings['oirc_postnotification'],'{TOPIC}') !== false){
+				$topicname = getTopicName($topicOptions['id']);
+			}
+			sendToOmnomIRC(strtr($modSettings['oirc_postnotification'],array(
+				'{COLOR}' => "\x03",
+				'{NAME}' => $posterOptions['name'],
+				'{TOPIC}' => $topicname,
+				'{SUBJECT}' => $msgOptions['subject'],
+				'{TOPICID}' => $topicOptions['id'],
+				'{POSTID}' => $msgOptions['id']
+			)),0);
+		}
 		// Send the new post to OmnomIRC end
 ]]></add>
 		</operation>
@@ -31,14 +57,31 @@
 	if (!empty($topicOptions['mark_as_read']) && !$user_info['is_guest'])]]></search>
 			<add><![CDATA[
 	// Send the new edit to OmnomIRC start
-	sendToOmnomIRC("\x0306New\x0310 edit by \x0303".$posterOptions['name']."\x0310 on\x0304 ".$msgOptions['subject'],0);
+	if(!empty($modSettings['oirc_edits']) && !empty($modSettings['oirc_editnotification']))
+	{
+		//sendToOmnomIRC("\x0306New\x0310 edit by \x0303".$posterOptions['name']."\x0310 on\x0304 ".$msgOptions['subject'],0);
+		
+		$topicname = '';
+		if(strpos($modSettings['oirc_editnotification'],'{TOPIC}') !== false){
+			$topicname = getTopicName($topicOptions['id']);
+		}
+		sendToOmnomIRC(strtr($modSettings['oirc_editnotification'],array(
+			'{COLOR}' => "\x03",
+			'{NAME}' => $posterOptions['name'],
+			'{TOPIC}' => $topicname,
+			'{SUBJECT}' => $msgOptions['subject'],
+			'{TOPICID}' => $topicOptions['id'],
+			'{POSTID}' => $msgOptions['id']
+		)),0);
+	}
 	// Send the new edit to OmnomIRC end
 ]]></add>
 		</operation>
 		<operation>
 			<search position="end" />
 			<add><![CDATA[
-function sendToOmnomIRC($message,$channel){
+function sendToOmnomIRC($message,$channel)
+{
 	global $config,$only_include_oirc;
 	$only_include_oirc = true;
 	include_once('/home/sorunome/public_html/checkLogin/index.php');
@@ -49,6 +92,86 @@ function sendToOmnomIRC($message,$channel){
 	
 	$signature = $time.'|'.hash_hmac('sha512',$nick.$uid,$network.$config['sigKey'].$time);
 	file_get_contents($config['oircUrl'].'/message.php?message='.base64_url_encode($message).'&channel='.$channel.'&nick='.base64_url_encode($nick).'&signature='.base64_url_encode($signature).'&time='.$time.'&network='.$network.'&id='.$uid.'noLoginErrors&serverident');
+}
+
+function getTopicName($id)
+{
+	global $smcFunc;
+	$topicName = '';
+	$request = $smcFunc['db_query']('',"SELECT id_first_msg FROM {db_prefix}topics WHERE id_topic = {int:id_topic} LIMIT 1",array('id_topic' => (int)$id));
+	$temp = $smcFunc['db_fetch_assoc']($request);
+	$smcFunc['db_free_result']($request);
+	if(isset($temp['id_first_msg'])){
+		$request = $smcFunc['db_query']('',"SELECT subject FROM {db_prefix}messages WHERE id_msg = {int:id_msg} LIMIT 1",array('id_msg' => (int)$temp['id_first_msg']));
+		$temp = $smcFunc['db_fetch_assoc']($request);
+		$smcFunc['db_free_result']($request);
+		if(isset($temp['subject'])){
+			$topicName = $temp['subject'];
+		}
+	}
+	return $topicName;
+}
+]]></add>
+		</operation>
+	</file>
+	
+	<file name="$sourcedir/Admin.php">
+		<operation>
+			<search position="before"><![CDATA[// Note the comma!! The setting with automatically appear with the first mod to be added.
+]]></search>
+			<add><![CDATA[						'oirc' => array('OmnomIRC'),]]></add>
+		</operation>
+	</file>
+	<file name="$sourcedir/ManageSettings.php">
+		<operation>
+			<search position="before"><![CDATA[// Mod authors, once again, if you have a whole section to add do it AFTER this line, and keep a comma at the end.
+]]></search>
+			<add><![CDATA[		'oirc' => 'OIRC',
+]]></add>
+		</operation>
+		<operation>
+			<search position="end" />
+			<add><![CDATA[
+// OmnomIRC
+function OIRC($return_config = false)
+{
+	global $txt, $scripturl, $context, $settings, $sc, $modSettings;
+	loadLanguage('oirc');
+	$config_vars = array(
+		array('check', 'oirc_topics'),
+		array('check', 'oirc_posts'),
+		array('check', 'oirc_edits'),
+		'',
+		array('message', 'oirc_notification_notice'),
+		array('text', 'oirc_topicnotification'),
+		array('text', 'oirc_postnotification'),
+		array('text', 'oirc_editnotification'),
+	);
+	if ($return_config)
+		return $config_vars;
+	
+	$context['post_url'] = $scripturl . '?action=admin;area=modsettings;save;sa=oirc';
+	$context['settings_title'] = $txt['oirc_admin'];
+	
+	// Saving?
+	if (isset($_GET['save']))
+	{
+		checkSession();
+
+		$save_vars = $config_vars;
+
+		// This line is to help mod authors do a search/add after if you want to add something here. Keyword: FOOT TAPPING SUCKS!
+
+		saveDBSettings($save_vars);
+
+		// This line is to help mod authors do a search/add after if you want to add something here. Keyword: I LOVE TEA!
+
+		redirectexit('action=admin;area=modsettings;sa=oirc');
+	}
+
+	// This line is to help mod authors do a search/add after if you want to add something here. Keyword: RED INK IS FOR TEACHERS AND THOSE WHO LIKE PAIN!
+
+	prepareDBSettingContext($config_vars);
 }
 ]]></add>
 		</operation>
