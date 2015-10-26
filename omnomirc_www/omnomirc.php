@@ -499,7 +499,7 @@ class You{
 			foreach($config['channels'] as $chan){
 				if($chan['enabled']){
 					foreach($chan['networks'] as $cn){
-						if(($cn['id'] == $this->network && (strtolower($cn['name'])==strtolower($channel) || $chan['id']==$channel)) || $this->network == 0 /* super sneaky server network */){
+						if(($cn['id'] == $this->network || $this->network == 0 /* super sneaky server network */) && (strtolower($cn['name'])==strtolower($channel) || $chan['id']==$channel)){
 							$channel = $chan['id'];
 							$this->chanName = $cn['name'];
 							$foundChan = true;

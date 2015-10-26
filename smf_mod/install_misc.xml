@@ -1,0 +1,199 @@
+<?xml version="1.0"?>
+<!DOCTYPE modification SYSTEM "http://www.simplemachines.org/xml/modification">
+<modification xmlns="http://www.simplemachines.org/xml/modification" xmlns:smf="http://www.simplemachines.org/">
+	<id>Sorunome:OmnomIRC</id>
+	<version>0.1</version>
+	
+	<file name="$sourcedir/Admin.php">
+		<operation>
+			<search position="before"><![CDATA[// Note the comma!! The setting with automatically appear with the first mod to be added.
+]]></search>
+			<add><![CDATA[						'oirc' => array('OmnomIRC'),]]></add>
+		</operation>
+	</file>
+	<file name="$sourcedir/ManageSettings.php">
+		<operation>
+			<search position="before"><![CDATA[// Mod authors, once again, if you have a whole section to add do it AFTER this line, and keep a comma at the end.
+]]></search>
+			<add><![CDATA[		'oirc' => 'OIRC',
+]]></add>
+		</operation>
+		<operation>
+			<search position="end" />
+			<add><![CDATA[
+// OmnomIRC
+function OIRC($return_config = false)
+{
+	global $txt, $scripturl, $context, $settings, $sc, $modSettings, $boarddir;
+	loadLanguage('oirc');
+	$config_vars = array(
+		array('desc', 'oirc_permissions_notice'),
+		array('text', 'oirc_title'),
+		array('int', 'oirc_height', 'postinput' => 'px'),
+		'',
+		array('check', 'oirc_topics'),
+		array('check', 'oirc_posts'),
+		array('check', 'oirc_edits'),
+		'',
+		array('message', 'oirc_notification_notice'),
+		array('text', 'oirc_topicnotification'),
+		array('text', 'oirc_postnotification'),
+		array('text', 'oirc_editnotification'),
+	);
+	if ($return_config)
+		return $config_vars;
+	
+	$context['post_url'] = $scripturl . '?action=admin;area=modsettings;save;sa=oirc';
+	$context['settings_title'] = $txt['oirc_admin'];
+	
+	// Saving?
+	if (isset($_GET['save']))
+	{
+		checkSession();
+
+		$save_vars = $config_vars;
+
+		// This line is to help mod authors do a search/add after if you want to add something here. Keyword: FOOT TAPPING SUCKS!
+
+		saveDBSettings($save_vars);
+
+		// This line is to help mod authors do a search/add after if you want to add something here. Keyword: I LOVE TEA!
+
+		redirectexit('action=admin;area=modsettings;sa=oirc');
+	}
+
+	// This line is to help mod authors do a search/add after if you want to add something here. Keyword: RED INK IS FOR TEACHERS AND THOSE WHO LIKE PAIN!
+	
+	global $config,$only_include_oirc;
+	$only_include_oirc = true;
+	include_once($boarddir.'/checkLogin/index.php');
+	updateSettings(array(
+		'oirc_framehtml' => $config['oircUrl'].'/index.php?network='.$config['network']
+	));
+	$context['settings_insert_below'] = '
+	<div class="windowbg">
+		<span class="topslice"><span></span></span>
+		<div class="content">
+			<iframe style="width:100%;height:'.$modSettings['oirc_height'].'px;margin:0;padding:0;border-style:none;" src="'.$modSettings['oirc_framehtml'].'&amp;admin"></iframe>
+		</div>
+		<span class="botslice"><span></span></span>
+	</div>';
+	
+	prepareDBSettingContext($config_vars);
+}
+]]></add>
+		</operation>
+	</file>
+	
+	<file name="$sourcedir/ManagePermissions.php">
+		<operation>
+			<search position="replace"><![CDATA[
+		$context['profile'] = array(
+			'id' => $_REQUEST['pid'],
+			'name' => $context['profiles'][$_REQUEST['pid']]['name'],
+		);]]></search>
+			<add><![CDATA[
+		if(isset($_REQUEST['oirc_chan']))
+		{
+			$channel = $_REQUEST['oirc_chan'];
+			$smcFunc['db_insert']('replace',
+				'{db_prefix}oirc_postchans',
+				array(
+					'id_profile' => 'int', 'channel' => 'string',
+				),
+				array(
+					$_REQUEST['pid'], $channel,
+				),
+				array('id_profile', 'channel')
+			);
+		}
+		else
+		{
+			$request = $smcFunc['db_query']('', '
+				SELECT channel
+				FROM {db_prefix}oirc_postchans
+				WHERE id_profile = {int:current_profile}',
+				array(
+					'current_profile' => $_REQUEST['pid'],
+				)
+			);
+			$channel = $smcFunc['db_fetch_assoc']($request);
+			$smcFunc['db_free_result']($request);
+			
+			if(isset($channel['channel']))
+			{
+				$channel = $channel['channel'];
+			}
+			else
+			{
+				$channel = '';
+			}
+		}
+		
+		$context['profile'] = array(
+			'id' => $_REQUEST['pid'],
+			'name' => $context['profiles'][$_REQUEST['pid']]['name'],
+			'oirc_chan' => $channel,
+		);]]></add>
+		</operation>
+	</file>
+	
+	<file name="$themedir/index.template.php">
+		<operation>
+			<search position="after"><![CDATA[
+	// Show the navigation tree.
+	theme_linktree();]]></search>
+			<add><![CDATA[
+	
+	echo '<div>
+		<div class="cat_bar">
+			<h3 class="catbg">'.$modSettings['oirc_title'].'</h3>
+		</div>
+		<div class="windowbg">
+			<span class="topslice"><span></span></span>
+			<div class="content">
+				<iframe style="width:100%;height:'.$modSettings['oirc_height'].'px;margin:0;padding:0;border-style:none;" src="'.$modSettings['oirc_framehtml'].'"></iframe>
+			</div>
+			<span class="botslice"><span></span></span>
+		</div>
+	</div>';
+]]></add>
+		</operation>
+	</file>
+	
+	<file name="$themedir/ManagePermissions.template.php">
+		<operation>
+			<search position="replace"><![CDATA[		<form action="', $scripturl, '?action=admin;area=permissions;sa=quick" method="post" accept-charset="', $context['character_set'], '" name="permissionForm" id="permissionForm">';
+
+		if (!empty($context['profile']))
+			echo '
+			<div class="title_bar">
+				<h3 class="titlebg">', $txt['permissions_for_profile'], ': &quot;', $context['profile']['name'], '&quot;</h3>
+			</div>';]]></search>
+			<add><![CDATA[		';
+
+		if (!empty($context['profile']))
+		{
+			loadLanguage('oirc');
+			echo '
+			<div class="title_bar">
+				<h3 class="titlebg">', $txt['permissions_for_profile'], ': &quot;', $context['profile']['name'], '&quot;</h3>
+			</div>
+			<div class="windowbg">
+				<span class="topslice"><span></span></span>
+				<div class="content">
+					<form action="', $scripturl, '?action=admin;area=permissions;sa=index" method="post" accept-charset="', $context['character_set'], '" >
+						',$txt['manage_channel'],' <input name="oirc_chan" type="text" value="',htmlspecialchars($context['profile']['oirc_chan']),'" /> <input type="submit" value="', $txt['oirc_set_chan'], '" class="button_submit" />
+						<input type="hidden" name="pid" value="', $context['profile']['id'], '" />
+						<input type="hidden" name="', $context['session_var'], '" value="', $context['session_id'], '" />
+					</form>
+				</div>
+				<span class="botslice"><span></span></span>
+			</div>';
+		}
+		echo '<form action="', $scripturl, '?action=admin;area=permissions;sa=quick" method="post" accept-charset="', $context['character_set'], '" name="permissionForm" id="permissionForm">';
+		]]></add>
+		</operation>
+	</file>
+
+</modification>

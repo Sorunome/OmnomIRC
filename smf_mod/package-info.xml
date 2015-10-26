@@ -7,11 +7,17 @@
 	<type>modification</type>
 
 	<install for="2.0 - 2.99.99">
+		<database>install.php</database>
 		<modification>install.xml</modification>
+		<modification>install_misc.xml</modification>
+		<modification>install_tapatalk.xml</modification>
 		<require-file name="oirc.english.php" destination="$languagedir" />
+		<redirect url="?action=admin;area=modsettings;sa=oirc" type="inline">Redirect to OmnomIRC settings page.</redirect>
 	</install>
 
 	<uninstall for="2.0 - 2.99.99">
+		<modification type="file" reverse="true">install_tapatalk.xml</modification>
+		<modification type="file" reverse="true">install_misc.xml</modification>
 		<modification type="file" reverse="true">install.xml</modification>
 		<remove-file name="$languagedir/oirc.english.php" />
 	</uninstall>

@@ -12,15 +12,19 @@
 			<add><![CDATA[
 		// Send the new topic to OmnomIRC start
 		if(!empty($modSettings['oirc_topics']) && !empty($modSettings['oirc_topicnotification']))
-		{ // "\x0306New\x0310 topic by \x0303".$posterOptions['name']."\x0304 ".$msgOptions['subject']
-			sendToOmnomIRC(strtr($modSettings['oirc_topicnotification'],array(
-				'{COLOR}' => "\x03",
-				'{NAME}' => $posterOptions['name'],
-				'{TOPIC}' => $msgOptions['subject'],
-				'{SUBJECT}' => $msgOptions['subject'],
-				'{TOPICID}' => $topicOptions['id'],
-				'{POSTID}' => $msgOptions['id']
-			)),0);
+		{
+			$chan = getOircSendToChan($topicOptions['board']);
+			if($chan !== false)
+			{
+				sendToOmnomIRC(strtr($modSettings['oirc_topicnotification'],array(
+					'{COLOR}' => "\x03",
+					'{NAME}' => $posterOptions['name'],
+					'{TOPIC}' => $msgOptions['subject'],
+					'{SUBJECT}' => $msgOptions['subject'],
+					'{TOPICID}' => $topicOptions['id'],
+					'{POSTID}' => $msgOptions['id']
+				)),$chan);
+			}
 		}
 		// Send the new topic to OmnomIRC end
 ]]></add>
@@ -33,20 +37,22 @@
 		// Send the new post to OmnomIRC start
 		if(!empty($modSettings['oirc_posts']) && !empty($modSettings['oirc_postnotification']))
 		{
-			//sendToOmnomIRC("\x0306New\x0310 post by \x0303".$posterOptions['name']."\x0310 in\x0304 ".$msgOptions['subject'],0);
-			
-			$topicname = '';
-			if(strpos($modSettings['oirc_postnotification'],'{TOPIC}') !== false){
-				$topicname = getTopicName($topicOptions['id']);
+			$chan = getOircSendToChan($topicOptions['board']);
+			if($chan !== false)
+			{
+				$topicname = '';
+				if(strpos($modSettings['oirc_postnotification'],'{TOPIC}') !== false){
+					$topicname = getTopicName($topicOptions['id']);
+				}
+				sendToOmnomIRC(strtr($modSettings['oirc_postnotification'],array(
+					'{COLOR}' => "\x03",
+					'{NAME}' => $posterOptions['name'],
+					'{TOPIC}' => $topicname,
+					'{SUBJECT}' => $msgOptions['subject'],
+					'{TOPICID}' => $topicOptions['id'],
+					'{POSTID}' => $msgOptions['id']
+				)),$chan);
 			}
-			sendToOmnomIRC(strtr($modSettings['oirc_postnotification'],array(
-				'{COLOR}' => "\x03",
-				'{NAME}' => $posterOptions['name'],
-				'{TOPIC}' => $topicname,
-				'{SUBJECT}' => $msgOptions['subject'],
-				'{TOPICID}' => $topicOptions['id'],
-				'{POSTID}' => $msgOptions['id']
-			)),0);
 		}
 		// Send the new post to OmnomIRC end
 ]]></add>
@@ -59,20 +65,22 @@
 	// Send the new edit to OmnomIRC start
 	if(!empty($modSettings['oirc_edits']) && !empty($modSettings['oirc_editnotification']))
 	{
-		//sendToOmnomIRC("\x0306New\x0310 edit by \x0303".$posterOptions['name']."\x0310 on\x0304 ".$msgOptions['subject'],0);
-		
-		$topicname = '';
-		if(strpos($modSettings['oirc_editnotification'],'{TOPIC}') !== false){
-			$topicname = getTopicName($topicOptions['id']);
+		$chan = getOircSendToChan($topicOptions['board']);
+		if($chan !== false)
+		{
+			$topicname = '';
+			if(strpos($modSettings['oirc_editnotification'],'{TOPIC}') !== false){
+				$topicname = getTopicName($topicOptions['id']);
+			}
+			sendToOmnomIRC(strtr($modSettings['oirc_editnotification'],array(
+				'{COLOR}' => "\x03",
+				'{NAME}' => $posterOptions['name'],
+				'{TOPIC}' => $topicname,
+				'{SUBJECT}' => $msgOptions['subject'],
+				'{TOPICID}' => $topicOptions['id'],
+				'{POSTID}' => $msgOptions['id']
+			)),$chan);
 		}
-		sendToOmnomIRC(strtr($modSettings['oirc_editnotification'],array(
-			'{COLOR}' => "\x03",
-			'{NAME}' => $posterOptions['name'],
-			'{TOPIC}' => $topicname,
-			'{SUBJECT}' => $msgOptions['subject'],
-			'{TOPICID}' => $topicOptions['id'],
-			'{POSTID}' => $msgOptions['id']
-		)),0);
 	}
 	// Send the new edit to OmnomIRC end
 ]]></add>
@@ -82,9 +90,9 @@
 			<add><![CDATA[
 function sendToOmnomIRC($message,$channel)
 {
-	global $config,$only_include_oirc;
+	global $config,$only_include_oirc,$boarddir;
 	$only_include_oirc = true;
-	include_once('/home/sorunome/public_html/checkLogin/index.php');
+	include_once($boarddir.'/checkLogin/index.php');
 	$nick = '*';
 	$time = (string)time();
 	$uid = rand();
@@ -101,77 +109,36 @@ function getTopicName($id)
 	$request = $smcFunc['db_query']('',"SELECT id_first_msg FROM {db_prefix}topics WHERE id_topic = {int:id_topic} LIMIT 1",array('id_topic' => (int)$id));
 	$temp = $smcFunc['db_fetch_assoc']($request);
 	$smcFunc['db_free_result']($request);
-	if(isset($temp['id_first_msg'])){
+	if(isset($temp['id_first_msg']))
+	{
 		$request = $smcFunc['db_query']('',"SELECT subject FROM {db_prefix}messages WHERE id_msg = {int:id_msg} LIMIT 1",array('id_msg' => (int)$temp['id_first_msg']));
 		$temp = $smcFunc['db_fetch_assoc']($request);
 		$smcFunc['db_free_result']($request);
-		if(isset($temp['subject'])){
+		if(isset($temp['subject']))
+		{
 			$topicName = $temp['subject'];
 		}
 	}
 	return $topicName;
 }
-]]></add>
-		</operation>
-	</file>
-	
-	<file name="$sourcedir/Admin.php">
-		<operation>
-			<search position="before"><![CDATA[// Note the comma!! The setting with automatically appear with the first mod to be added.
-]]></search>
-			<add><![CDATA[						'oirc' => array('OmnomIRC'),]]></add>
-		</operation>
-	</file>
-	<file name="$sourcedir/ManageSettings.php">
-		<operation>
-			<search position="before"><![CDATA[// Mod authors, once again, if you have a whole section to add do it AFTER this line, and keep a comma at the end.
-]]></search>
-			<add><![CDATA[		'oirc' => 'OIRC',
-]]></add>
-		</operation>
-		<operation>
-			<search position="end" />
-			<add><![CDATA[
-// OmnomIRC
-function OIRC($return_config = false)
+
+function getOircSendToChan($id_board)
 {
-	global $txt, $scripturl, $context, $settings, $sc, $modSettings;
-	loadLanguage('oirc');
-	$config_vars = array(
-		array('check', 'oirc_topics'),
-		array('check', 'oirc_posts'),
-		array('check', 'oirc_edits'),
-		'',
-		array('message', 'oirc_notification_notice'),
-		array('text', 'oirc_topicnotification'),
-		array('text', 'oirc_postnotification'),
-		array('text', 'oirc_editnotification'),
-	);
-	if ($return_config)
-		return $config_vars;
+	global $smcFunc;
 	
-	$context['post_url'] = $scripturl . '?action=admin;area=modsettings;save;sa=oirc';
-	$context['settings_title'] = $txt['oirc_admin'];
-	
-	// Saving?
-	if (isset($_GET['save']))
+	$request = $smcFunc['db_query']('',"SELECT id_profile FROM {db_prefix}boards WHERE id_board = {int:id_board} LIMIT 1",array('id_board' => $id_board));
+	$temp = $smcFunc['db_fetch_assoc']($request);
+	$smcFunc['db_free_result']($request);
+	if(!empty($temp['id_profile']))
 	{
-		checkSession();
-
-		$save_vars = $config_vars;
-
-		// This line is to help mod authors do a search/add after if you want to add something here. Keyword: FOOT TAPPING SUCKS!
-
-		saveDBSettings($save_vars);
-
-		// This line is to help mod authors do a search/add after if you want to add something here. Keyword: I LOVE TEA!
-
-		redirectexit('action=admin;area=modsettings;sa=oirc');
+		$request = $smcFunc['db_query']('',"SELECT channel FROM {db_prefix}oirc_postchans WHERE id_profile = {int:id_profile} LIMIT 1",array('id_profile' => $temp['id_profile']));
+		$temp = $smcFunc['db_fetch_assoc']($request);
+		$smcFunc['db_free_result']($request);
+		if(!empty($temp['channel'])){
+			return $temp['channel'];
+		}
 	}
-
-	// This line is to help mod authors do a search/add after if you want to add something here. Keyword: RED INK IS FOR TEACHERS AND THOSE WHO LIKE PAIN!
-
-	prepareDBSettingContext($config_vars);
+	return false;
 }
 ]]></add>
 		</operation>

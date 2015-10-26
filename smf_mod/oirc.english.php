@@ -2,6 +2,9 @@
 // OmnomIRC mod language
 
 $txt['oirc_admin'] = 'OmnomIRC Administration';
+$txt['oirc_permissions_notice'] = 'Be sure to check out the permission profiles to configure in which channels the notifications land!';
+$txt['oirc_title'] = 'OmnomIRC frame title';
+$txt['oirc_height'] = 'Height of OmnomIRC frame';
 $txt['oirc_topics'] = 'Notify new topics';
 $txt['oirc_posts'] = 'Notify new posts';
 $txt['oirc_edits'] = 'Notify post edits';
@@ -17,4 +20,7 @@ $txt['oirc_notification_notice'] = 'The following settings all use these replace
 $txt['oirc_topicnotification'] = 'Notification message for new topics';
 $txt['oirc_postnotification'] = 'Notification message for new posts';
 $txt['oirc_editnotification'] = 'Notification message for post edits';
+
+$txt['manage_channel'] = 'OmnomIRC Channel in which the notifications appear:';
+$txt['oirc_set_chan'] = 'Set channel';
 ?>
