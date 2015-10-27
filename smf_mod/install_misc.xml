@@ -87,54 +87,113 @@ function OIRC($return_config = false)
 	
 	<file name="$sourcedir/ManagePermissions.php">
 		<operation>
+			<search position="before"><![CDATA[		'quick' => array('SetQuickGroups', 'manage_permissions'),
+]]></search>
+			<add><![CDATA[		'oirc_chan' => array('SetOIRCChan', 'manage_permissions'),
+]]></add>
+		</operation>
+		<operation>
 			<search position="replace"><![CDATA[
 		$context['profile'] = array(
 			'id' => $_REQUEST['pid'],
 			'name' => $context['profiles'][$_REQUEST['pid']]['name'],
 		);]]></search>
 			<add><![CDATA[
-		if(isset($_REQUEST['oirc_chan']))
+		
+		loadLanguage('oirc');
+		
+		$request = $smcFunc['db_query']('', '
+			SELECT channel
+			FROM {db_prefix}oirc_postchans
+			WHERE id_profile = {int:current_profile}',
+			array(
+				'current_profile' => $_REQUEST['pid'],
+			)
+		);
+		$channel = $smcFunc['db_fetch_assoc']($request);
+		$smcFunc['db_free_result']($request);
+		
+		if(isset($channel['channel']))
 		{
-			$channel = $_REQUEST['oirc_chan'];
-			$smcFunc['db_insert']('replace',
-				'{db_prefix}oirc_postchans',
-				array(
-					'id_profile' => 'int', 'channel' => 'string',
-				),
-				array(
-					$_REQUEST['pid'], $channel,
-				),
-				array('id_profile', 'channel')
-			);
+			$channel = $channel['channel'];
 		}
 		else
 		{
-			$request = $smcFunc['db_query']('', '
-				SELECT channel
-				FROM {db_prefix}oirc_postchans
-				WHERE id_profile = {int:current_profile}',
-				array(
-					'current_profile' => $_REQUEST['pid'],
-				)
-			);
-			$channel = $smcFunc['db_fetch_assoc']($request);
-			$smcFunc['db_free_result']($request);
-			
-			if(isset($channel['channel']))
-			{
-				$channel = $channel['channel'];
-			}
-			else
-			{
-				$channel = '';
-			}
+			$channel = -1;
 		}
 		
 		$context['profile'] = array(
 			'id' => $_REQUEST['pid'],
 			'name' => $context['profiles'][$_REQUEST['pid']]['name'],
 			'oirc_chan' => $channel,
-		);]]></add>
+			'oirc_chanother' => '',
+			'oirc_chanlist' => array(
+				'-1' => $txt['oirc_no_notifications']
+			),
+		);
+		
+		global $config,$only_include_oirc,$boarddir;
+		$only_include_oirc = true;
+		include_once($boarddir.'/checkLogin/index.php');
+		
+		$nick = '*';
+		$time = (string)(time() - 60*60*24 + 60); // the sig key is only valid for one min!
+		$uid = rand();
+		$network = 0;
+		
+		$signature = $time.'|'.hash_hmac('sha512',$nick.$uid,$network.$config['sigKey'].$time);
+		$s = file_get_contents($config['oircUrl'].'/config.php?channels&nick='.base64_url_encode($nick).'&signature='.base64_url_encode($signature).'&time='.$time.'&network='.$network.'&id='.$uid.'&noLoginErrors');
+		
+		$foundChan = $context['profile']['oirc_chan'] == -1;
+		if($s !== '')
+		{
+			$s = json_decode($s,true);
+			if($s !== NULL && !empty($s['channels']))
+			{
+				foreach($s['channels'] as $i => $n)
+				{
+					if((string)$i == $context['profile']['oirc_chan'])
+					{
+						$foundChan = true;
+					}
+					$context['profile']['oirc_chanlist'][$i] = $n;
+				}
+			}
+		}
+		if(!$foundChan)
+		{
+			$context['profile']['oirc_chanother'] = $context['profile']['oirc_chan'];
+			$context['profile']['oirc_chan'] = -2;
+		}
+		$context['profile']['oirc_chanlist']['-2'] = $txt['oirc_chan_other'];
+]]></add>
+		</operation>
+		<operation>
+			<search position="end" />
+			<add><![CDATA[
+function SetOIRCChan(){
+	global $context, $smcFunc;
+	if(empty($_REQUEST['pid']) || !isset($_REQUEST['oirc_chan']))
+		fatal_lang_error('no_access', false);
+	$chan = $_REQUEST['oirc_chan'];
+	if($chan == -2 && isset($_REQUEST['oirc_chanother']))
+	{
+		$chan = $_REQUEST['oirc_chanother'];
+	}
+	
+	$smcFunc['db_insert']('replace',
+		'{db_prefix}oirc_postchans',
+		array(
+			'id_profile' => 'int', 'channel' => 'string',
+		),
+		array(
+			$_REQUEST['pid'], $chan,
+		),
+		array('id_profile', 'channel')
+	);
+	redirectexit('action=admin;area=permissions;pid=' . $_REQUEST['pid']);
+}
+]]></add>
 		</operation>
 	</file>
 	
@@ -174,7 +233,6 @@ function OIRC($return_config = false)
 
 		if (!empty($context['profile']))
 		{
-			loadLanguage('oirc');
 			echo '
 			<div class="title_bar">
 				<h3 class="titlebg">', $txt['permissions_for_profile'], ': &quot;', $context['profile']['name'], '&quot;</h3>
@@ -182,10 +240,23 @@ function OIRC($return_config = false)
 			<div class="windowbg">
 				<span class="topslice"><span></span></span>
 				<div class="content">
-					<form action="', $scripturl, '?action=admin;area=permissions;sa=index" method="post" accept-charset="', $context['character_set'], '" >
-						',$txt['manage_channel'],' <input name="oirc_chan" type="text" value="',htmlspecialchars($context['profile']['oirc_chan']),'" /> <input type="submit" value="', $txt['oirc_set_chan'], '" class="button_submit" />
+					<form action="', $scripturl, '?action=admin;area=permissions;sa=oirc_chan" method="post" accept-charset="', $context['character_set'], '" >
+						',$txt['oirc_manage_channel'],'
+						<select name="oirc_chan" id="oirc_chan">';
+					foreach($context['profile']['oirc_chanlist'] as $i => $c)
+					{
+						echo '<option', $i == $context['profile']['oirc_chan'] ? ' selected="selected"' : '' , ' value="',$i,'">',$c,'</option>';
+					}
+					echo '</select>
+						<input ',$context['profile']['oirc_chan']!=-2 ? 'style="display:none;" ' : '' ,'id="oirc_chanother" name="oirc_chanother" type="text" value="',htmlspecialchars($context['profile']['oirc_chanother']),'" />
+						<input type="submit" value="', $txt['oirc_set_chan'], '" class="button_submit" />
 						<input type="hidden" name="pid" value="', $context['profile']['id'], '" />
 						<input type="hidden" name="', $context['session_var'], '" value="', $context['session_id'], '" />
+						<script type="text/javascript">
+							document.getElementById("oirc_chan").addEventListener("change",function(){
+								document.getElementById("oirc_chanother").style.display = this.value == -2 ? "" : "none";
+							},false);
+						</script>
 					</form>
 				</div>
 				<span class="botslice"><span></span></span>

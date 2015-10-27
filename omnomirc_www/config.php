@@ -58,18 +58,18 @@ if(isset($_GET['js'])){
 	
 	$cl = getCheckLoginUrl();
 	if(isset($_GET['clonly'])){
-		echo json_encode(Array(
+		echo json_encode(array(
 			'checkLoginUrl' => $cl
 		));
 		exit;
 	}
 	
-	$channels = Array();
+	$channels = array();
 	foreach($config['channels'] as $chan){
 		if($chan['enabled']){
 			foreach($chan['networks'] as $cn){
 				if($cn['id'] == $you->getNetwork()){
-					$channels[] = Array(
+					$channels[] = array(
 						'chan' => $cn['name'],
 						'high' => false,
 						'ex' => $cn['hidden'],
@@ -94,7 +94,7 @@ if(isset($_GET['js'])){
 	
 	$extraChanMsg = '';
 	
-	$dispNetworks = Array();
+	$dispNetworks = array();
 	foreach($config['networks'] as $n){
 		$addNet = array(
 			'id' => $n['id'],
@@ -114,7 +114,7 @@ if(isset($_GET['js'])){
 			}
 		}
 	}
-	echo json_encode(Array(
+	echo json_encode(array(
 		'hostname' => $config['settings']['hostname'],
 		'channels' => $channels,
 		'smileys' => $vars->get('smileys'),
@@ -122,7 +122,7 @@ if(isset($_GET['js'])){
 		'network' => $you->getNetwork(),
 		'checkLoginUrl' => $cl,
 		'defaults' => $defaults,
-		'websockets' => Array(
+		'websockets' => array(
 			'use' => $config['websockets']['use'],
 			'host' => $config['websockets']['host'],
 			'port' => $config['websockets']['port'],
@@ -130,5 +130,20 @@ if(isset($_GET['js'])){
 		),
 		'extraChanMsg' => $extraChanMsg
 	));
+}elseif(isset($_GET['channels'])){
+	include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
+	header('Content-type: application/json');
+	if($you->getNetwork()==0 && $you->isLoggedIn()){
+		$dispChans = array();
+		foreach($config['channels'] as $chan){
+			$dispChans[$chan['id']] = $chan['alias'];
+		}
+		echo json_encode(array(
+			'channels' => $dispChans
+		),JSON_FORCE_OBJECT);
+	}else{
+		$json->addError('permission denied');
+		echo $json->get();
+	}
 }
 ?>

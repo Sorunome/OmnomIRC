@@ -455,7 +455,6 @@ class You{
 		}
 		
 		$json->add('network',$this->network);
-		$json->add('network_get',$_GET['network']);
 		if($this->network == 0){ // server network, do aditional validating
 			var_dump($this);
 			if(!isset($_GET['serverident']) || !$security->checkSig($this->sig,$this->nick,$this->id,$this->network)){

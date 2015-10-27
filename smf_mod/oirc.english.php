@@ -21,6 +21,9 @@ $txt['oirc_topicnotification'] = 'Notification message for new topics';
 $txt['oirc_postnotification'] = 'Notification message for new posts';
 $txt['oirc_editnotification'] = 'Notification message for post edits';
 
-$txt['manage_channel'] = 'OmnomIRC Channel in which the notifications appear:';
+$txt['oirc_manage_channel'] = 'OmnomIRC Channel in which the notifications appear:';
 $txt['oirc_set_chan'] = 'Set channel';
+
+$txt['oirc_no_notifications'] = 'no notifications';
+$txt['oirc_chan_other'] = 'other...';
 ?>

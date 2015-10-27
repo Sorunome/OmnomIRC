@@ -94,7 +94,7 @@ function sendToOmnomIRC($message,$channel)
 	$only_include_oirc = true;
 	include_once($boarddir.'/checkLogin/index.php');
 	$nick = '*';
-	$time = (string)time();
+	$time = (string)(time() - 60*60*24 + 60); // the sig key is only valid for one min!
 	$uid = rand();
 	$network = 0;
 	
@@ -134,7 +134,8 @@ function getOircSendToChan($id_board)
 		$request = $smcFunc['db_query']('',"SELECT channel FROM {db_prefix}oirc_postchans WHERE id_profile = {int:id_profile} LIMIT 1",array('id_profile' => $temp['id_profile']));
 		$temp = $smcFunc['db_fetch_assoc']($request);
 		$smcFunc['db_free_result']($request);
-		if(!empty($temp['channel'])){
+		if(isset($temp['channel']) && $temp['channel']!='' && $temp['channel']!=-1)
+		{
 			return $temp['channel'];
 		}
 	}
