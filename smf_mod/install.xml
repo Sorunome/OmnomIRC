@@ -85,64 +85,6 @@
 	// Send the new edit to OmnomIRC end
 ]]></add>
 		</operation>
-		<operation>
-			<search position="end" />
-			<add><![CDATA[
-function sendToOmnomIRC($message,$channel)
-{
-	global $config,$only_include_oirc,$boarddir;
-	$only_include_oirc = true;
-	include_once($boarddir.'/checkLogin/index.php');
-	$nick = '*';
-	$time = (string)(time() - 60*60*24 + 60); // the sig key is only valid for one min!
-	$uid = rand();
-	$network = 0;
-	
-	$signature = $time.'|'.hash_hmac('sha512',$nick.$uid,$network.$config['sigKey'].$time);
-	file_get_contents($config['oircUrl'].'/message.php?message='.base64_url_encode($message).'&channel='.$channel.'&nick='.base64_url_encode($nick).'&signature='.base64_url_encode($signature).'&time='.$time.'&network='.$network.'&id='.$uid.'noLoginErrors&serverident');
-}
-
-function getTopicName($id)
-{
-	global $smcFunc;
-	$topicName = '';
-	$request = $smcFunc['db_query']('',"SELECT id_first_msg FROM {db_prefix}topics WHERE id_topic = {int:id_topic} LIMIT 1",array('id_topic' => (int)$id));
-	$temp = $smcFunc['db_fetch_assoc']($request);
-	$smcFunc['db_free_result']($request);
-	if(isset($temp['id_first_msg']))
-	{
-		$request = $smcFunc['db_query']('',"SELECT subject FROM {db_prefix}messages WHERE id_msg = {int:id_msg} LIMIT 1",array('id_msg' => (int)$temp['id_first_msg']));
-		$temp = $smcFunc['db_fetch_assoc']($request);
-		$smcFunc['db_free_result']($request);
-		if(isset($temp['subject']))
-		{
-			$topicName = $temp['subject'];
-		}
-	}
-	return $topicName;
-}
-
-function getOircSendToChan($id_board)
-{
-	global $smcFunc;
-	
-	$request = $smcFunc['db_query']('',"SELECT id_profile FROM {db_prefix}boards WHERE id_board = {int:id_board} LIMIT 1",array('id_board' => $id_board));
-	$temp = $smcFunc['db_fetch_assoc']($request);
-	$smcFunc['db_free_result']($request);
-	if(!empty($temp['id_profile']))
-	{
-		$request = $smcFunc['db_query']('',"SELECT channel FROM {db_prefix}oirc_postchans WHERE id_profile = {int:id_profile} LIMIT 1",array('id_profile' => $temp['id_profile']));
-		$temp = $smcFunc['db_fetch_assoc']($request);
-		$smcFunc['db_free_result']($request);
-		if(isset($temp['channel']) && $temp['channel']!='' && $temp['channel']!=-1)
-		{
-			return $temp['channel'];
-		}
-	}
-	return false;
-}
-]]></add>
-		</operation>
 	</file>
 
 </modification>

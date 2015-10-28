@@ -1,7 +1,7 @@
 <?php
 if (!defined('SMF'))
 	require_once('SSI.php');
-global $smcFunc, $modSettings, $boardurl;
+global $smcFunc, $modSettings, $boardurl, $sourcedir;
 
 $smcFunc['db_create_table']('{db_prefix}oirc_postchans', array(
 	array('name' => 'id_profile', 'type' => 'int', 'null' => false),
@@ -10,7 +10,12 @@ $smcFunc['db_create_table']('{db_prefix}oirc_postchans', array(
 	array('type' => 'primary', 'columns' => array('id_profile')),
 ));
 
-if(empty($modSettings['oirc_height'])){
+
+
+add_integration_function('integrate_pre_include','$sourcedir/OmnomIRC.php',true);
+add_integration_function('integrate_load_theme','loadOircActions',true);
+
+if(true || empty($modSettings['oirc_height'])){
 	updateSettings(array(
 		'oirc_height' => 280,
 		'oirc_title' => 'OmnomIRC Chat',
@@ -22,5 +27,7 @@ if(empty($modSettings['oirc_height'])){
 		'oirc_editnotification' => '{COLOR}06New {COLOR}10edit by {COLOR}03{NAME} {COLOR}10on {COLOR}04{TOPIC} {COLOR}12'.$boardurl.'/index.php?topic={TOPICID}.msg{POSTID}#msg{POSTID}'
 	));
 }
+include_once($sourcedir.'/OmnomIRC.php');
+OircMaintenance(); // populates the action array
 
 ?>

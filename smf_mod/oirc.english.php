@@ -26,4 +26,6 @@ $txt['oirc_set_chan'] = 'Set channel';
 
 $txt['oirc_no_notifications'] = 'no notifications';
 $txt['oirc_chan_other'] = 'other...';
+
+$txt['oirc_actions_legend'] = 'Actions where to display OmnomIRC';
 ?>

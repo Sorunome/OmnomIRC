@@ -132,17 +132,10 @@ function OIRC($return_config = false)
 			),
 		);
 		
-		global $config,$only_include_oirc,$boarddir;
-		$only_include_oirc = true;
-		include_once($boarddir.'/checkLogin/index.php');
+		$sigurl = generateOircSigURL();
 		
-		$nick = '*';
-		$time = (string)(time() - 60*60*24 + 60); // the sig key is only valid for one min!
-		$uid = rand();
-		$network = 0;
-		
-		$signature = $time.'|'.hash_hmac('sha512',$nick.$uid,$network.$config['sigKey'].$time);
-		$s = file_get_contents($config['oircUrl'].'/config.php?channels&nick='.base64_url_encode($nick).'&signature='.base64_url_encode($signature).'&time='.$time.'&network='.$network.'&id='.$uid.'&noLoginErrors');
+		global $config;
+		$s = file_get_contents($config['oircUrl'].'/config.php?channels&'.$sigurl);
 		
 		$foundChan = $context['profile']['oirc_chan'] == -1;
 		if($s !== '')
@@ -197,6 +190,58 @@ function SetOIRCChan(){
 		</operation>
 	</file>
 	
+	<file name="$sourcedir/Themes.php">
+		<operation>
+			<search position="before"><![CDATA[		$context['theme_options_reset'] = false;
+]]></search>
+			<add><![CDATA[
+		loadOircActions('oirc_options',-1,$_GET['th']);
+]]></add>
+		</operation>
+		<operation>
+			<search position="before"><![CDATA[		$context['theme_options_reset'] = true;
+]]></search>
+			<add><![CDATA[
+		loadOircActions('oirc_options',0,$_GET['th']);
+]]></add>
+		</operation>
+		<operation>
+			<search position="after"><![CDATA[
+		// If we're actually inserting something..
+		if (!empty($setValues))]]></search>
+			<add><![CDATA[
+		if(!empty($_REQUEST['oirc_options_enabledTags']))
+		{
+			$actions = array();
+			foreach(unserialize($modSettings['oirc_actionarray']) as $a)
+			{
+				$actions[$a] = !empty($_REQUEST['oirc_options_enabledTags'][$a]);
+			}
+			$setValues[] = array(-1, $_GET['th'],'oirc_actions',serialize($actions));
+		}
+]]></add>
+		</operation>
+		<operation>
+			<search position="before"><![CDATA[		$_POST['options'] = empty($_POST['options']) ? array() : $_POST['options'];
+		$_POST['options_master'] = empty($_POST['options_master']) ? array() : $_POST['options_master'];
+		$_POST['default_options'] = empty($_POST['default_options']) ? array() : $_POST['default_options'];
+		$_POST['default_options_master'] = empty($_POST['default_options_master']) ? array() : $_POST['default_options_master'];
+]]></search>
+			<add><![CDATA[
+		if(!empty($_REQUEST['oirc_options_enabledTags']))
+		{
+			$actions = array();
+			foreach(unserialize($modSettings['oirc_actionarray']) as $a)
+			{
+				$actions[$a] = !empty($_REQUEST['oirc_options_enabledTags'][$a]);
+			}
+			$_POST['options']['oirc_actions'] = serialize($actions);
+		}
+]]></add>
+		</operation>
+	</file>
+	
+	
 	<file name="$themedir/index.template.php">
 		<operation>
 			<search position="after"><![CDATA[
@@ -204,18 +249,21 @@ function SetOIRCChan(){
 	theme_linktree();]]></search>
 			<add><![CDATA[
 	
-	echo '<div>
-		<div class="cat_bar">
-			<h3 class="catbg">'.$modSettings['oirc_title'].'</h3>
-		</div>
-		<div class="windowbg">
-			<span class="topslice"><span></span></span>
-			<div class="content">
-				<iframe style="width:100%;height:'.$modSettings['oirc_height'].'px;margin:0;padding:0;border-style:none;" src="'.$modSettings['oirc_framehtml'].'"></iframe>
+	if(!empty($context['oirc_actions'][$context['oirc_curaction']]) && $context['oirc_actions'][$context['oirc_curaction']])
+	{
+		echo '<div>
+			<div class="cat_bar">
+				<h3 class="catbg">'.$modSettings['oirc_title'].'</h3>
 			</div>
-			<span class="botslice"><span></span></span>
-		</div>
-	</div>';
+			<div class="windowbg">
+				<span class="topslice"><span></span></span>
+				<div class="content">
+					<iframe style="width:100%;height:'.$modSettings['oirc_height'].'px;margin:0;padding:0;border-style:none;" src="'.$modSettings['oirc_framehtml'].'"></iframe>
+				</div>
+				<span class="botslice"><span></span></span>
+			</div>
+		</div>';
+	}
 ]]></add>
 		</operation>
 	</file>
@@ -266,5 +314,33 @@ function SetOIRCChan(){
 		]]></add>
 		</operation>
 	</file>
+	
+	<file name="$themedir/Themes.template.php">
+		<operation>
+			<search position="after"><![CDATA[					<ul class="theme_options">';
 
+	foreach ($context['options'] as $setting)
+	{
+		echo '
+						<li class="theme_option">';]]></search>
+			<add><![CDATA[';
+		if(!empty($context['oirc_options']))
+		{
+			loadLanguage('oirc');
+			if ($context['theme_options_reset'])
+				echo '<select name="options_master[oirc_actions]">
+						<option value="0" selected="selected">', $txt['themeadmin_reset_options_none'], '</option>
+						<option value="1">', $txt['themeadmin_reset_options_change'], '</option>
+						<option value="2">', $txt['themeadmin_reset_options_remove'], '</option>
+					</select>';
+			echo '<fieldset><legend>',$txt['oirc_actions_legend'],'</legend>';
+			foreach($context['oirc_options'] as $a => $o)
+			{
+				echo '<nobr style="padding-right:0.8em;"><input type="checkbox" name="oirc_options_enabledTags[',$a,']" id="oirc_options_', $a, '" ', $o ? ' checked="checked"' : '', ' class="input_check" /> <label for="oirc_options_', $a, '">', $a, '</label></nobr> ';
+			}
+			echo '</fieldset>';
+		}
+echo ']]></add>
+		</operation>
+	</file>
 </modification>
