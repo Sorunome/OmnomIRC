@@ -210,14 +210,15 @@ function SetOIRCChan(){
 		// If we're actually inserting something..
 		if (!empty($setValues))]]></search>
 			<add><![CDATA[
-		if(!empty($_REQUEST['oirc_options_enabledTags']))
+		if(!empty($_POST['oirc_options_enabledTags']))
 		{
 			$actions = array();
 			foreach(unserialize($modSettings['oirc_actionarray']) as $a)
 			{
-				$actions[$a] = !empty($_REQUEST['oirc_options_enabledTags'][$a]);
+				$actions[$a] = !empty($_POST['oirc_options_enabledTags'][$a]);
 			}
 			$setValues[] = array(-1, $_GET['th'],'oirc_actions',serialize($actions));
+			$old_settings[] = 'oirc_actions';
 		}
 ]]></add>
 		</operation>
@@ -228,15 +229,32 @@ function SetOIRCChan(){
 		$_POST['default_options_master'] = empty($_POST['default_options_master']) ? array() : $_POST['default_options_master'];
 ]]></search>
 			<add><![CDATA[
-		if(!empty($_REQUEST['oirc_options_enabledTags']))
+		if(!empty($_POST['oirc_options_enabledTags']))
 		{
 			$actions = array();
 			foreach(unserialize($modSettings['oirc_actionarray']) as $a)
 			{
-				$actions[$a] = !empty($_REQUEST['oirc_options_enabledTags'][$a]);
+				$actions[$a] = !empty($_POST['oirc_options_enabledTags'][$a]);
 			}
-			$_POST['options']['oirc_actions'] = serialize($actions);
+			$_POST['default_options']['oirc_actions'] = serialize($actions);
 		}
+]]></add>
+		</operation>
+	</file>
+	
+	<file name="$sourcedir/Profile-Modify.php">
+		<operation>
+			<search position="after"><![CDATA[	// Don't allow any overriding of custom fields with default or non-default options.]]></search>
+			<add><![CDATA[
+	if(!empty($_POST['oirc_options_enabledTags']))
+	{
+		$actions = array();
+		foreach(unserialize($modSettings['oirc_actionarray']) as $a)
+		{
+			$actions[$a] = !empty($_POST['oirc_options_enabledTags'][$a]);
+		}
+		$_POST['default_options']['oirc_actions'] = serialize($actions);
+	}
 ]]></add>
 		</operation>
 	</file>
@@ -328,7 +346,7 @@ function SetOIRCChan(){
 		{
 			loadLanguage('oirc');
 			if ($context['theme_options_reset'])
-				echo '<select name="options_master[oirc_actions]">
+				echo '<select name="default_options_master[oirc_actions]">
 						<option value="0" selected="selected">', $txt['themeadmin_reset_options_none'], '</option>
 						<option value="1">', $txt['themeadmin_reset_options_change'], '</option>
 						<option value="2">', $txt['themeadmin_reset_options_remove'], '</option>
@@ -341,6 +359,30 @@ function SetOIRCChan(){
 			echo '</fieldset>';
 		}
 echo ']]></add>
+		</operation>
+	</file>
+	
+	<file name="$themedir/Profile.template.php">
+		<operation>
+			<search position="before"><![CDATA[function template_profile_theme_settings()
+{
+	global $context, $settings, $options, $scripturl, $modSettings, $txt;
+
+	echo '
+							<dd></dd>
+						</dl>]]></search>
+			<add><![CDATA[';
+	if(!empty($context['oirc_actions']))
+	{
+		loadLanguage('oirc');
+		echo '<fieldset><legend>',$txt['oirc_actions_legend'],'</legend>';
+		foreach($context['oirc_actions'] as $a => $o)
+		{
+			echo '<nobr style="padding-right:0.8em;"><input type="checkbox" name="oirc_options_enabledTags[',$a,']" id="oirc_options_', $a, '" ', $o ? ' checked="checked"' : '', ' class="input_check" /> <label for="oirc_options_', $a, '">', $a, '</label></nobr> ';
+		}
+		echo '</fieldset>';
+	}
+	echo ']]></add>
 		</operation>
 	</file>
 </modification>
