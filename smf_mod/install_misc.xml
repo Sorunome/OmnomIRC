@@ -267,7 +267,7 @@ function SetOIRCChan(){
 	theme_linktree();]]></search>
 			<add><![CDATA[
 	
-	if(!empty($context['oirc_actions'][$context['oirc_curaction']]) && $context['oirc_actions'][$context['oirc_curaction']])
+	if($context['oirc_show'])
 	{
 		echo '<div>
 			<div class="cat_bar">
@@ -383,6 +383,19 @@ echo ']]></add>
 		echo '</fieldset>';
 	}
 	echo ']]></add>
+		</operation>
+	</file>
+	
+	
+	<file name="$languagedir/ManagePermissions.english.php">
+		<operation>
+			<search position="end" />
+			<add><![CDATA[
+$txt['permissiongroup_omnomirc'] = 'OmnomIRC';
+$txt['permissiongroup_simple_omnomirc'] = 'OmnomIRC';
+$txt['permissionname_oirc_can_view'] = 'Allowed to view OmnomIRC';
+$txt['permissionname_oirc_is_op'] = 'Is OmnomIRC OP';
+]]></add>
 		</operation>
 	</file>
 </modification>

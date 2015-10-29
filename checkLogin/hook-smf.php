@@ -28,8 +28,7 @@ function hook_get_color_nick($n,$id){
 }
 function hook_may_chat(){
 	// return true/false if the user, based on cookies/forum/etc, may chat
-	global $user_info;
-	return $user_info['name']!='' && !$user_info['is_guest'] && !is_not_banned();
+	return allowedTo('oirc_can_view');
 }
 function hook_get_login(){
 	// return based on forum login the nick and the uid, in an array as shown

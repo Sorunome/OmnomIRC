@@ -12,16 +12,21 @@
 		<modification>install_tapatalk.xml</modification>
 		<require-file name="oirc.english.php" destination="$languagedir" />
 		<require-file name="OmnomIRC.php" destination="$sourcedir" />
+		<create-dir name="checkLogin" destination="$boarddir" />
+		<require-file name="checkLogin/index.php" destination="$boarddir/checkLogin" /> <!-- we absolutely need this file to be already present! -->
+		<!--<require-file name="checkLogin/config.json.php" destination="$boarddir/checkLogin" /> we need to include this one inside of install.php else SMF will re-write it -->
+		<require-file name="checkLogin/hook-smf.php" destination="$boarddir/checkLogin" />
 		<database>install.php</database>
 		<redirect url="?action=admin;area=modsettings;sa=oirc" type="inline">Redirect to OmnomIRC settings page.</redirect>
 	</install>
 
 	<uninstall for="2.0 - 2.0.99">
+		<code>uninstall.php</code>
 		<modification type="file" reverse="true">install_tapatalk.xml</modification>
 		<modification type="file" reverse="true">install_misc.xml</modification>
 		<modification type="file" reverse="true">install.xml</modification>
 		<remove-file name="$languagedir/oirc.english.php" />
 		<remove-file name="$sourcedir/OmnomIRC.php" />
-		<database>uninstall.php</database>
+		<!--<remove-dir name="$boarddir/checkLogin" /> due to order of things we delete this in uninstall.php-->
 	</uninstall>
 </package-info>

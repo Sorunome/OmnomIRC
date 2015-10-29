@@ -125,6 +125,13 @@ function loadOircActions($s = 'oirc_actions',$who = NULL,$theme = NULL)
 		else
 			$context['oirc_curaction'] = 'index';
 	}
+	$context['oirc_show'] = allowedTo('oirc_can_view') && !empty($context['oirc_actions'][$context['oirc_curaction']]) && $context['oirc_actions'][$context['oirc_curaction']];
+}
+
+function loadOircPermissions(&$permissionGroups,&$permissionList,&$leftPermissionGroups,&$hiddenPermissions,&$relabelPermissions)
+{
+	$permissionList['membergroup']['oirc_can_view'] = array(false, 'omnomirc', 'omnomirc');
+	$permissionList['membergroup']['oirc_is_op'] = array(false, 'omnomirc', 'omnomirc');
 }
 
 function OircMaintenance()
