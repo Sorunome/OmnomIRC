@@ -269,7 +269,7 @@ function SetOIRCChan(){
 	
 	if($context['oirc_show'])
 	{
-		echo '<div>
+		echo '<div class="omnomirc_frame">
 			<div class="cat_bar">
 				<h3 class="catbg">'.$modSettings['oirc_title'].'</h3>
 			</div>
@@ -383,6 +383,16 @@ echo ']]></add>
 		echo '</fieldset>';
 	}
 	echo ']]></add>
+		</operation>
+	</file>
+	
+	<file name="$themedir/css/index.css">
+		<operation>
+			<search position="end" />
+			<add><![CDATA[
+.omnomirc_frame {
+	padding-top:2em;
+}]]></add>
 		</operation>
 	</file>
 	
