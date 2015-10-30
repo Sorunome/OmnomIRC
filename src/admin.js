@@ -501,38 +501,6 @@
 										$netSpecific.text('Server Network');
 										break;
 									case 1:
-										var drawOpGroupsSettings = function(elem){
-												var $button = $('<button>').text('add op group').click(function(e){
-																e.preventDefault();
-													var group = prompt('New OP-Group');
-													if(group != ''  && group != null){
-														if(!nets[i].config.opGroups){
-															nets[i].config.opGroups = [];
-														}
-														nets[i].config.opGroups.push(group);
-														drawOpGroupsSettings($(this).parent());
-													}
-												});
-												if(nets[i].config.opGroups && nets[i].config.opGroups.length > 0){
-													$(elem).replaceWith(
-														$('<span>').append(
-															$.map(nets[i].config.opGroups,function(opg,j){
-																return ['<br>'+$('<span>').text(opg).html()+' ',
-																	$('<a>').text('x').click(function(e){
-																		e.preventDefault();
-																		nets[i].config.opGroups.splice(j,1);
-																		drawOpGroupsSettings($(this).parent());
-																	})];
-															}),
-															'<br>',
-															$button
-														)
-													);
-												}else{
-													$(elem).replaceWith($('<span>').append($button));
-												}
-											};
-										console.log(net);
 										$netSpecific = $('<span>').append(
 												$('<b>').text('OmnomIRC network'),
 												'<br>checkLogin:',
@@ -588,12 +556,7 @@
 													nets[i].config.guests = parseInt(this.value,10);
 												}),
 												'<br>Extra Channels Message:<br>',
-												$('<textarea>').text(net.config.extraChanMsg).change(function(){nets[i].config.extraChanMsg = this.value;}),
-												'<br>Op Groups: ',
-												$('<a>').text('show').click(function(e){
-													e.preventDefault();
-													drawOpGroupsSettings(this);
-												})
+												$('<textarea>').text(net.config.extraChanMsg).change(function(){nets[i].config.extraChanMsg = this.value;})
 											);
 										break;
 									case 2:

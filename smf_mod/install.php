@@ -20,6 +20,7 @@ include_once($sourcedir.'/OmnomIRC.php');
 OircMaintenance(); // populates the action array
 
 if(!empty($modSettings['oirc_backup_config'])){ // we have an old config!
+	// keep in mind, we need to "hack" config.json.php file in else it will get over-written again!
 	file_put_contents($boarddir.'/checkLogin/config.json.php',file_get_contents(realpath(dirname(__FILE__)).'/checkLogin/config.json.php'));
 	$only_include_oirc = true;
 	include_once($boarddir.'/checkLogin/index.php');

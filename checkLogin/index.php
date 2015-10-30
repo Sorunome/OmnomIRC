@@ -50,13 +50,13 @@ if(!isset($_GET['server'])){
 
 if(isset($_GET['op'])){
 	header('Content-Type: application/json');
-	$group = '';
+	$op = false;
 	$id = $_GET['op'];
 	if($id == (int)$id){
-		$group = hook_get_group((int)$id);
+		$op = hook_is_op((int)$id);
 	}
 	echo json_encode(array(
-		'group' => $group
+		'op' => $op
 	));
 }elseif(isset($_GET['c'])){
 	header('Content-Type: application/json');
