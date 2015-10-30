@@ -13,5 +13,5 @@ cd smf_mod
 cd ..
 
 shopt -s extglob
-wc *.sh *.py omnomirc_www/*!([.min.js,.min.map,smileys]) smf_mod/*[.xml,.php,.css,.html] src/* checkLogin/* irc/* | awk {'print $4" Lines:"$1" Bytes:"$3'}|grep total
+wc *.sh *.py *.php omnomirc_www/*!([.min.js,.min.map,smileys]) smf_mod/*[.xml,.php,.css,.html] src/* checkLogin/* irc/* | awk {'print $4" Lines:"$1" Bytes:"$3'}|grep total
 shopt -u extglob
