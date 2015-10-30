@@ -29,6 +29,7 @@ exit;
 	}
 }
 $config = getConfig();
+header('Access-Control-Allow-Origin: '.$config['oircUrl']);
 date_default_timezone_set('UTC');
 function base64_url_encode($input) {
 	return strtr(base64_encode($input),'+/=','-_,');
@@ -36,6 +37,9 @@ function base64_url_encode($input) {
 
 function base64_url_decode($input){
 	return base64_decode(strtr($input,'-_,','+/=')); 
+}
+if(isset($only_include_oirc) && $only_include_oirc){
+	return;
 }
 if(!isset($_GET['server'])){
 	if(!$config['installed']){
@@ -46,13 +50,13 @@ if(!isset($_GET['server'])){
 
 if(isset($_GET['op'])){
 	header('Content-Type: application/json');
-	$group = '';
+	$op = false;
 	$id = $_GET['op'];
 	if($id == (int)$id){
-		$group = hook_get_group((int)$id);
+		$op = hook_is_op((int)$id);
 	}
 	echo json_encode(array(
-		'group' => $group
+		'op' => $op
 	));
 }elseif(isset($_GET['c'])){
 	header('Content-Type: application/json');

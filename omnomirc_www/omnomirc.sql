@@ -86,6 +86,7 @@ CREATE TABLE IF NOT EXISTS `irc_userstuff` (
   `kicks` varchar(1024) NOT NULL,
   `globalOp` int(10) NOT NULL,
   `globalBan` int(10) NOT NULL,
+  `uid` int(11) NOT NULL DEFAULT '-1',
   PRIMARY KEY (`usernum`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;
 

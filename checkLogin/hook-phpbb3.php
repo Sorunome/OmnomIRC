@@ -7,14 +7,14 @@ include($phpbb_root_path . 'common.' . $phpEx);
 if(isset($request)){
 	$request->enable_super_globals();
 }
-function hook_get_group($id){
-	// $id is the int of the user, should return a string to identify the group
+function hook_is_op($id){
+	// $id is the int of the user, should return a boolean if this user is a chat op
 	global $db;
 	$sql = 'SELECT group_id FROM '.USERS_TABLE.' WHERE user_id='.(int)$id;
 	$result = $db->sql_query($sql);
 	$row = $db->sql_fetchrow($result);
 	$db->sql_freeresult($result);
-	return $row['group_id'];
+	return $row['group_id']==1;
 }
 function hook_get_color_nick($n,$id){
 	// $n is the nick, $id is the user id, return a string (HTML) how the nick color should look like

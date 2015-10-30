@@ -1,0 +1,401 @@
+<?xml version="1.0"?>
+<!DOCTYPE modification SYSTEM "http://www.simplemachines.org/xml/modification">
+<modification xmlns="http://www.simplemachines.org/xml/modification" xmlns:smf="http://www.simplemachines.org/">
+	<id>Sorunome:OmnomIRC</id>
+	<version>0.1</version>
+	
+	<file name="$sourcedir/Admin.php">
+		<operation>
+			<search position="before"><![CDATA[// Note the comma!! The setting with automatically appear with the first mod to be added.
+]]></search>
+			<add><![CDATA[						'oirc' => array('OmnomIRC'),]]></add>
+		</operation>
+	</file>
+	<file name="$sourcedir/ManageSettings.php">
+		<operation>
+			<search position="before"><![CDATA[// Mod authors, once again, if you have a whole section to add do it AFTER this line, and keep a comma at the end.
+]]></search>
+			<add><![CDATA[		'oirc' => 'OIRC',
+]]></add>
+		</operation>
+		<operation>
+			<search position="end" />
+			<add><![CDATA[
+// OmnomIRC
+function OIRC($return_config = false)
+{
+	global $txt, $scripturl, $context, $settings, $sc, $modSettings, $boarddir;
+	loadLanguage('oirc');
+	$config_vars = array(
+		array('desc', 'oirc_permissions_notice'),
+		array('text', 'oirc_title'),
+		array('int', 'oirc_height', 'postinput' => 'px'),
+		'',
+		array('check', 'oirc_topics'),
+		array('check', 'oirc_posts'),
+		array('check', 'oirc_edits'),
+		'',
+		array('message', 'oirc_notification_notice'),
+		array('text', 'oirc_topicnotification'),
+		array('text', 'oirc_postnotification'),
+		array('text', 'oirc_editnotification'),
+	);
+	if ($return_config)
+		return $config_vars;
+	
+	$context['post_url'] = $scripturl . '?action=admin;area=modsettings;save;sa=oirc';
+	$context['settings_title'] = $txt['oirc_admin'];
+	
+	// Saving?
+	if (isset($_GET['save']))
+	{
+		checkSession();
+
+		$save_vars = $config_vars;
+
+		// This line is to help mod authors do a search/add after if you want to add something here. Keyword: FOOT TAPPING SUCKS!
+
+		saveDBSettings($save_vars);
+
+		// This line is to help mod authors do a search/add after if you want to add something here. Keyword: I LOVE TEA!
+
+		redirectexit('action=admin;area=modsettings;sa=oirc');
+	}
+
+	// This line is to help mod authors do a search/add after if you want to add something here. Keyword: RED INK IS FOR TEACHERS AND THOSE WHO LIKE PAIN!
+	
+	global $config,$only_include_oirc;
+	$only_include_oirc = true;
+	include_once($boarddir.'/checkLogin/index.php');
+	updateSettings(array(
+		'oirc_framehtml' => $config['oircUrl'].'/index.php?network='.$config['network']
+	));
+	$context['settings_insert_below'] = '
+	<div class="windowbg">
+		<span class="topslice"><span></span></span>
+		<div class="content">
+			<iframe style="width:100%;height:'.$modSettings['oirc_height'].'px;margin:0;padding:0;border-style:none;" src="'.$modSettings['oirc_framehtml'].'&amp;admin"></iframe>
+		</div>
+		<span class="botslice"><span></span></span>
+	</div>';
+	
+	prepareDBSettingContext($config_vars);
+}
+]]></add>
+		</operation>
+	</file>
+	
+	<file name="$sourcedir/ManagePermissions.php">
+		<operation>
+			<search position="before"><![CDATA[		'quick' => array('SetQuickGroups', 'manage_permissions'),
+]]></search>
+			<add><![CDATA[		'oirc_chan' => array('SetOIRCChan', 'manage_permissions'),
+]]></add>
+		</operation>
+		<operation>
+			<search position="replace"><![CDATA[
+		$context['profile'] = array(
+			'id' => $_REQUEST['pid'],
+			'name' => $context['profiles'][$_REQUEST['pid']]['name'],
+		);]]></search>
+			<add><![CDATA[
+		
+		loadLanguage('oirc');
+		
+		$request = $smcFunc['db_query']('', '
+			SELECT channel
+			FROM {db_prefix}oirc_postchans
+			WHERE id_profile = {int:current_profile}',
+			array(
+				'current_profile' => $_REQUEST['pid'],
+			)
+		);
+		$channel = $smcFunc['db_fetch_assoc']($request);
+		$smcFunc['db_free_result']($request);
+		
+		if(isset($channel['channel']))
+		{
+			$channel = $channel['channel'];
+		}
+		else
+		{
+			$channel = -1;
+		}
+		
+		$context['profile'] = array(
+			'id' => $_REQUEST['pid'],
+			'name' => $context['profiles'][$_REQUEST['pid']]['name'],
+			'oirc_chan' => $channel,
+			'oirc_chanother' => '',
+			'oirc_chanlist' => array(
+				'-1' => $txt['oirc_no_notifications']
+			),
+		);
+		
+		$sigurl = generateOircSigURL();
+		
+		global $config;
+		$s = file_get_contents($config['oircUrl'].'/config.php?channels&'.$sigurl);
+		
+		$foundChan = $context['profile']['oirc_chan'] == -1;
+		if($s !== '')
+		{
+			$s = json_decode($s,true);
+			if($s !== NULL && !empty($s['channels']))
+			{
+				foreach($s['channels'] as $i => $n)
+				{
+					if((string)$i == $context['profile']['oirc_chan'])
+					{
+						$foundChan = true;
+					}
+					$context['profile']['oirc_chanlist'][$i] = $n;
+				}
+			}
+		}
+		if(!$foundChan)
+		{
+			$context['profile']['oirc_chanother'] = $context['profile']['oirc_chan'];
+			$context['profile']['oirc_chan'] = -2;
+		}
+		$context['profile']['oirc_chanlist']['-2'] = $txt['oirc_chan_other'];
+]]></add>
+		</operation>
+		<operation>
+			<search position="end" />
+			<add><![CDATA[
+function SetOIRCChan(){
+	global $context, $smcFunc;
+	if(empty($_REQUEST['pid']) || !isset($_REQUEST['oirc_chan']))
+		fatal_lang_error('no_access', false);
+	$chan = $_REQUEST['oirc_chan'];
+	if($chan == -2 && isset($_REQUEST['oirc_chanother']))
+	{
+		$chan = $_REQUEST['oirc_chanother'];
+	}
+	
+	$smcFunc['db_insert']('replace',
+		'{db_prefix}oirc_postchans',
+		array(
+			'id_profile' => 'int', 'channel' => 'string',
+		),
+		array(
+			$_REQUEST['pid'], $chan,
+		),
+		array('id_profile', 'channel')
+	);
+	redirectexit('action=admin;area=permissions;pid=' . $_REQUEST['pid']);
+}
+]]></add>
+		</operation>
+	</file>
+	
+	<file name="$sourcedir/Themes.php">
+		<operation>
+			<search position="before"><![CDATA[		$context['theme_options_reset'] = false;
+]]></search>
+			<add><![CDATA[
+		loadOircActions('oirc_options',-1,$_GET['th']);
+]]></add>
+		</operation>
+		<operation>
+			<search position="before"><![CDATA[		$context['theme_options_reset'] = true;
+]]></search>
+			<add><![CDATA[
+		loadOircActions('oirc_options',0,$_GET['th']);
+]]></add>
+		</operation>
+		<operation>
+			<search position="after"><![CDATA[
+		// If we're actually inserting something..
+		if (!empty($setValues))]]></search>
+			<add><![CDATA[
+		if(!empty($_POST['oirc_options_enabledTags']))
+		{
+			$actions = array();
+			foreach(unserialize($modSettings['oirc_actionarray']) as $a)
+			{
+				$actions[$a] = !empty($_POST['oirc_options_enabledTags'][$a]);
+			}
+			$setValues[] = array(-1, $_GET['th'],'oirc_actions',serialize($actions));
+			$old_settings[] = 'oirc_actions';
+		}
+]]></add>
+		</operation>
+		<operation>
+			<search position="before"><![CDATA[		$_POST['options'] = empty($_POST['options']) ? array() : $_POST['options'];
+		$_POST['options_master'] = empty($_POST['options_master']) ? array() : $_POST['options_master'];
+		$_POST['default_options'] = empty($_POST['default_options']) ? array() : $_POST['default_options'];
+		$_POST['default_options_master'] = empty($_POST['default_options_master']) ? array() : $_POST['default_options_master'];
+]]></search>
+			<add><![CDATA[
+		if(!empty($_POST['oirc_options_enabledTags']))
+		{
+			$actions = array();
+			foreach(unserialize($modSettings['oirc_actionarray']) as $a)
+			{
+				$actions[$a] = !empty($_POST['oirc_options_enabledTags'][$a]);
+			}
+			$_POST['default_options']['oirc_actions'] = serialize($actions);
+		}
+]]></add>
+		</operation>
+	</file>
+	
+	<file name="$sourcedir/Profile-Modify.php">
+		<operation>
+			<search position="after"><![CDATA[	// Don't allow any overriding of custom fields with default or non-default options.]]></search>
+			<add><![CDATA[
+	if(!empty($_POST['oirc_options_enabledTags']))
+	{
+		$actions = array();
+		foreach(unserialize($modSettings['oirc_actionarray']) as $a)
+		{
+			$actions[$a] = !empty($_POST['oirc_options_enabledTags'][$a]);
+		}
+		$_POST['default_options']['oirc_actions'] = serialize($actions);
+	}
+]]></add>
+		</operation>
+	</file>
+	
+	
+	<file name="$themedir/index.template.php">
+		<operation>
+			<search position="after"><![CDATA[
+	// Show the navigation tree.
+	theme_linktree();]]></search>
+			<add><![CDATA[
+	
+	if($context['oirc_show'])
+	{
+		echo '<div>
+			<div class="cat_bar">
+				<h3 class="catbg">'.$modSettings['oirc_title'].'</h3>
+			</div>
+			<div class="windowbg">
+				<span class="topslice"><span></span></span>
+				<div class="content">
+					<iframe style="width:100%;height:'.$modSettings['oirc_height'].'px;margin:0;padding:0;border-style:none;" src="'.$modSettings['oirc_framehtml'].'"></iframe>
+				</div>
+				<span class="botslice"><span></span></span>
+			</div>
+		</div>';
+	}
+]]></add>
+		</operation>
+	</file>
+	
+	<file name="$themedir/ManagePermissions.template.php">
+		<operation>
+			<search position="replace"><![CDATA[		<form action="', $scripturl, '?action=admin;area=permissions;sa=quick" method="post" accept-charset="', $context['character_set'], '" name="permissionForm" id="permissionForm">';
+
+		if (!empty($context['profile']))
+			echo '
+			<div class="title_bar">
+				<h3 class="titlebg">', $txt['permissions_for_profile'], ': &quot;', $context['profile']['name'], '&quot;</h3>
+			</div>';]]></search>
+			<add><![CDATA[		';
+
+		if (!empty($context['profile']))
+		{
+			echo '
+			<div class="title_bar">
+				<h3 class="titlebg">', $txt['permissions_for_profile'], ': &quot;', $context['profile']['name'], '&quot;</h3>
+			</div>
+			<div class="windowbg">
+				<span class="topslice"><span></span></span>
+				<div class="content">
+					<form action="', $scripturl, '?action=admin;area=permissions;sa=oirc_chan" method="post" accept-charset="', $context['character_set'], '" >
+						',$txt['oirc_manage_channel'],'
+						<select name="oirc_chan" id="oirc_chan">';
+					foreach($context['profile']['oirc_chanlist'] as $i => $c)
+					{
+						echo '<option', $i == $context['profile']['oirc_chan'] ? ' selected="selected"' : '' , ' value="',$i,'">',$c,'</option>';
+					}
+					echo '</select>
+						<input ',$context['profile']['oirc_chan']!=-2 ? 'style="display:none;" ' : '' ,'id="oirc_chanother" name="oirc_chanother" type="text" value="',htmlspecialchars($context['profile']['oirc_chanother']),'" />
+						<input type="submit" value="', $txt['oirc_set_chan'], '" class="button_submit" />
+						<input type="hidden" name="pid" value="', $context['profile']['id'], '" />
+						<input type="hidden" name="', $context['session_var'], '" value="', $context['session_id'], '" />
+						<script type="text/javascript">
+							document.getElementById("oirc_chan").addEventListener("change",function(){
+								document.getElementById("oirc_chanother").style.display = this.value == -2 ? "" : "none";
+							},false);
+						</script>
+					</form>
+				</div>
+				<span class="botslice"><span></span></span>
+			</div>';
+		}
+		echo '<form action="', $scripturl, '?action=admin;area=permissions;sa=quick" method="post" accept-charset="', $context['character_set'], '" name="permissionForm" id="permissionForm">';
+		]]></add>
+		</operation>
+	</file>
+	
+	<file name="$themedir/Themes.template.php">
+		<operation>
+			<search position="after"><![CDATA[					<ul class="theme_options">';
+
+	foreach ($context['options'] as $setting)
+	{
+		echo '
+						<li class="theme_option">';]]></search>
+			<add><![CDATA[';
+		if(!empty($context['oirc_options']))
+		{
+			loadLanguage('oirc');
+			if ($context['theme_options_reset'])
+				echo '<select name="default_options_master[oirc_actions]">
+						<option value="0" selected="selected">', $txt['themeadmin_reset_options_none'], '</option>
+						<option value="1">', $txt['themeadmin_reset_options_change'], '</option>
+						<option value="2">', $txt['themeadmin_reset_options_remove'], '</option>
+					</select>';
+			echo '<fieldset><legend>',$txt['oirc_actions_legend'],'</legend>';
+			foreach($context['oirc_options'] as $a => $o)
+			{
+				echo '<nobr style="padding-right:0.8em;"><input type="checkbox" name="oirc_options_enabledTags[',$a,']" id="oirc_options_', $a, '" ', $o ? ' checked="checked"' : '', ' class="input_check" /> <label for="oirc_options_', $a, '">', $a, '</label></nobr> ';
+			}
+			echo '</fieldset>';
+		}
+echo ']]></add>
+		</operation>
+	</file>
+	
+	<file name="$themedir/Profile.template.php">
+		<operation>
+			<search position="before"><![CDATA[function template_profile_theme_settings()
+{
+	global $context, $settings, $options, $scripturl, $modSettings, $txt;
+
+	echo '
+							<dd></dd>
+						</dl>]]></search>
+			<add><![CDATA[';
+	if(!empty($context['oirc_actions']))
+	{
+		loadLanguage('oirc');
+		echo '<fieldset><legend>',$txt['oirc_actions_legend'],'</legend>';
+		foreach($context['oirc_actions'] as $a => $o)
+		{
+			echo '<nobr style="padding-right:0.8em;"><input type="checkbox" name="oirc_options_enabledTags[',$a,']" id="oirc_options_', $a, '" ', $o ? ' checked="checked"' : '', ' class="input_check" /> <label for="oirc_options_', $a, '">', $a, '</label></nobr> ';
+		}
+		echo '</fieldset>';
+	}
+	echo ']]></add>
+		</operation>
+	</file>
+	
+	
+	<file name="$languagedir/ManagePermissions.english.php">
+		<operation>
+			<search position="end" />
+			<add><![CDATA[
+$txt['permissiongroup_omnomirc'] = 'OmnomIRC';
+$txt['permissiongroup_simple_omnomirc'] = 'OmnomIRC';
+$txt['permissionname_oirc_can_view'] = 'Allowed to view OmnomIRC';
+$txt['permissionname_oirc_is_op'] = 'Is OmnomIRC OP';
+]]></add>
+		</operation>
+	</file>
+</modification>

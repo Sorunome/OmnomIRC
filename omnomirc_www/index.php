@@ -41,13 +41,14 @@ function getPage($title,$head,$body,$page){
 	return '<!DOCTYPE html>'.
 			'<html>'.
 			'<head>'.
+				'<meta name="viewport" content="width=device-width, initial-scale=1.0">'.
 				'<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />'.
 				'<link rel="icon" type="image/png" href="omni.png">'.
 				'<link rel="stylesheet" type="text/css" href="style.css" />'.
 				($theme!=-1?'<link rel="stylesheet" type="text/css" href="theme.php?theme='.$theme.'" />':'').
 				'<script type="text/javascript" src="btoa.js"></script>'.
 				'<script type="text/javascript" src="jquery-1.11.3.min.js"></script>'.
-				'<script type="text/javascript" src="omnomirc.js"></script>'.
+				'<script type="text/javascript" src="omnomirc.min.js"></script>'.
 				'<title>'.$title.'</title>'.
 				'<script type="text/javascript">document.domain="'.$config['settings']['hostname'].'";</script>'.
 				$head.
@@ -171,7 +172,9 @@ if($i){
 	$hotlinksHTML .= '<td style="display:none;" id="adminLink"><a href="?admin">Admin</a></td>';
 }
 $hotlinksHTML .= '</tr>';
-echo getPage('OmnomIRC','','
+echo getPage('OmnomIRC','
+<noscript><meta http-equiv="refresh" content="0;url=index.php?textmode"></noscript>
+','
 <div id="header">
 	<div id="chattingHeader">
 		<div id="Channels">

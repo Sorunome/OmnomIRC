@@ -1,0 +1,90 @@
+<?xml version="1.0"?>
+<!DOCTYPE modification SYSTEM "http://www.simplemachines.org/xml/modification">
+<modification xmlns="http://www.simplemachines.org/xml/modification" xmlns:smf="http://www.simplemachines.org/">
+	<id>Sorunome:OmnomIRC</id>
+	<version>0.1</version>
+
+	<file name="$sourcedir/Subs-Post.php">
+		<operation>
+			<search position="before"><![CDATA[		updateStats('topic', true);
+		updateStats('subject', $topicOptions['id'], $msgOptions['subject']);
+]]></search>
+			<add><![CDATA[
+		// Send the new topic to OmnomIRC start
+		if(!empty($modSettings['oirc_topics']) && !empty($modSettings['oirc_topicnotification']))
+		{
+			$chan = getOircSendToChan($topicOptions['board']);
+			if($chan !== false)
+			{
+				sendToOmnomIRC(strtr($modSettings['oirc_topicnotification'],array(
+					'{COLOR}' => "\x03",
+					'{NAME}' => $posterOptions['name'],
+					'{TOPIC}' => $msgOptions['subject'],
+					'{SUBJECT}' => $msgOptions['subject'],
+					'{TOPICID}' => $topicOptions['id'],
+					'{POSTID}' => $msgOptions['id']
+				)),$chan);
+			}
+		}
+		// Send the new topic to OmnomIRC end
+]]></add>
+		</operation>
+		<operation>
+			<search position="before"><![CDATA[		// One new post has been added today.
+		trackStats(array('posts' => '+'));
+]]></search>
+			<add><![CDATA[
+		// Send the new post to OmnomIRC start
+		if(!empty($modSettings['oirc_posts']) && !empty($modSettings['oirc_postnotification']))
+		{
+			$chan = getOircSendToChan($topicOptions['board']);
+			if($chan !== false)
+			{
+				$topicname = '';
+				if(strpos($modSettings['oirc_postnotification'],'{TOPIC}') !== false){
+					$topicname = getTopicName($topicOptions['id']);
+				}
+				sendToOmnomIRC(strtr($modSettings['oirc_postnotification'],array(
+					'{COLOR}' => "\x03",
+					'{NAME}' => $posterOptions['name'],
+					'{TOPIC}' => $topicname,
+					'{SUBJECT}' => $msgOptions['subject'],
+					'{TOPICID}' => $topicOptions['id'],
+					'{POSTID}' => $msgOptions['id']
+				)),$chan);
+			}
+		}
+		// Send the new post to OmnomIRC end
+]]></add>
+		</operation>
+		<operation>
+			<search position="after"><![CDATA[
+	// Mark the edited post as read.
+	if (!empty($topicOptions['mark_as_read']) && !$user_info['is_guest'])]]></search>
+			<add><![CDATA[
+	// Send the new edit to OmnomIRC start
+	if(!empty($modSettings['oirc_edits']) && !empty($modSettings['oirc_editnotification']))
+	{
+		$chan = getOircSendToChan($topicOptions['board']);
+		if($chan !== false)
+		{
+			$topicname = '';
+			if(strpos($modSettings['oirc_editnotification'],'{TOPIC}') !== false){
+				$topicname = getTopicName($topicOptions['id']);
+			}
+			sendToOmnomIRC(strtr($modSettings['oirc_editnotification'],array(
+				'{COLOR}' => "\x03",
+				'{NAME}' => $posterOptions['name'],
+				'{TOPIC}' => $topicname,
+				'{SUBJECT}' => $msgOptions['subject'],
+				'{TOPICID}' => $topicOptions['id'],
+				'{POSTID}' => $msgOptions['id']
+			)),$chan);
+		}
+	}
+	// Send the new edit to OmnomIRC end
+]]></add>
+		</operation>
+	</file>
+
+</modification>

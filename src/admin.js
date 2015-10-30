@@ -1,22 +1,24 @@
-/*
-    OmnomIRC COPYRIGHT 2010,2011 Netham45
-                       2012-2015 Sorunome
+/**
+ * @license
+ * OmnomIRC COPYRIGHT 2010,2011 Netham45
+ *                    2012-2015 Sorunome
+ *
+ *  This file is part of OmnomIRC.
+ *
+ *  OmnomIRC is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  OmnomIRC is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
-    This file is part of OmnomIRC.
-
-    OmnomIRC is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    OmnomIRC is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
-*/
 (function(){
 	var sendEdit = function(page,json,fn){
 			oirc.network.post('admin.php?set='+page,{data:JSON.stringify(json)},function(data){
@@ -140,7 +142,7 @@
 					'<br>',
 					$('<a>').text('add Theme').click(function(e){
 						e.preventDefault();
-						var name = prompt('new hotlink name');
+						var name = prompt('new theme name');
 						if(name!=='' && name!==null){
 							themes.push({
 								name:name,
@@ -217,7 +219,7 @@
 								}
 								chans[i].networks.push({
 									'id':netId,
-									'name':'',
+									'name':chan.networks.length > 0?chan.networks[0].name:chan.alias,
 									'hidden':false,
 									'order':maxOrder+1
 								})
@@ -245,7 +247,7 @@
 												'border':'1px solid black'
 											})
 											.append(
-												$('<input>').attr('type','text').val(chan.networks[0].name).change(function(){
+												$('<input>').attr('type','text').val(chan.networks.length > 0?chan.networks[0].name:chan.alias).change(function(){
 														var _this = this;
 														$.each(chan.networks,function(netI){
 															chans[i].networks[netI].name = $(_this).val();
@@ -499,29 +501,6 @@
 										$netSpecific.text('Server Network');
 										break;
 									case 1:
-										var drawOpGroupsSettings = function(elem){
-												$(elem).replaceWith(
-													$('<span>').append(
-														$.map(nets[i].config.opGroups,function(opg,j){
-															return ['<br>'+$('<span>').text(opg).html()+' ',
-																$('<a>').text('x').click(function(e){
-																	e.preventDefault();
-																	nets[i].config.opGroups.splice(j,1);
-																	drawOpGroupsSettings($(this).parent());
-																})];
-														}),
-														'<br>',
-														$('<button>').text('add op group').click(function(e){
-															e.preventDefault();
-															var group = prompt('New Network Name');
-															if(group != ''  && group != null){
-																nets[i].config.opGroups.push(group);
-																drawOpGroupsSettings($(this).parent());
-															}
-														})
-													)
-												);
-											};
 										$netSpecific = $('<span>').append(
 												$('<b>').text('OmnomIRC network'),
 												'<br>checkLogin:',
@@ -561,7 +540,7 @@
 																$.map(data.themes,function(v,i){
 																	return $('<option>').val(i).text(v.name);
 																})
-															).val(net.config.theme).change(function(){nets[i].config.theme = parseInt(this.value,10);})
+															).val(net.config.theme?net.config.theme:0).change(function(){nets[i].config.theme = parseInt(this.value,10);})
 														);
 													});
 												}).trigger('now'),
@@ -573,16 +552,11 @@
 												$('<select>').append(
 													$('<option>').val(0).text('Deny Guest Access'),
 													$('<option>').val(1).text('Guests are read-only')
-												).val(net.config.guests).change(function(e){
+												).val(net.config.guests?net.config.guests:0).change(function(e){
 													nets[i].config.guests = parseInt(this.value,10);
 												}),
 												'<br>Extra Channels Message:<br>',
-												$('<textarea>').text(net.config.extraChanMsg).change(function(){nets[i].config.extraChanMsg = this.value;}),
-												'<br>Op Groups: ',
-												$('<a>').text('show').click(function(e){
-													e.preventDefault();
-													drawOpGroupsSettings(this);
-												})
+												$('<textarea>').text(net.config.extraChanMsg).change(function(){nets[i].config.extraChanMsg = this.value;})
 											);
 										break;
 									case 2:
@@ -679,7 +653,9 @@
 											specificConfig = {
 												'checkLogin':'link to checkLogin file',
 												'theme':-1,
-												'defaults':''
+												'defaults':'',
+												'opGroups':[],
+												'guests':0
 											};
 											break;
 										case 2:

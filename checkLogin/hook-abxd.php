@@ -2,14 +2,9 @@
 // Do initial setup stuff here
 include('../lib/common.php');
 
-function hook_get_group($id){
-	// $id is the int of the user, should return a string to identify the group
-	$group = 'false';
+function hook_is_op($id){
 	$user = Fetch(Query("select * from {users} where id={0}", $id));
-	if($user['powerlevel']>=1){
-		$group = 'true';
-	}
-	return $group;
+	return $user['powerlevel']>=1;
 }
 function hook_get_color_nick($n,$id){
 	// $n is the nick, $id is the user id, return a string (HTML) how the nick color should look like

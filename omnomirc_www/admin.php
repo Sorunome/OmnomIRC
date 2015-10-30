@@ -125,11 +125,14 @@ if($you->isGlobalOp()){
 				$json->add('networks',$config['networks']);
 				break;
 			case 'checkLogin':
+				$success = false;
 				if(isset($_GET['i']) && isset($config['networks'][$_GET['i']]) && $config['networks'][$_GET['i']]['type'] == 1){
-					$json->add('checkLogin',json_decode(file_get_contents($config['networks'][$_GET['i']]['config']['checkLogin'].'?server='.getCheckLoginChallenge().'&action=get'),true));
-				}else{
-					$json->add('success',false);
+					$s = @file_get_contents($config['networks'][$_GET['i']]['config']['checkLogin'].'?server='.getCheckLoginChallenge().'&action=get');
+					if($s != ''){
+						$json->add('checkLogin',json_decode($s,true));
+					}
 				}
+				$json->add('success',$success);
 				break;
 			case 'ws':
 				$json->add('websockets',$config['websockets']);
@@ -205,6 +208,20 @@ if($you->isGlobalOp()){
 				$json->add('message','Config saved!');
 				break;
 			case 'networks':
+				if(sizeof($jsonData) > sizeof($config['networks'])){ // new network!
+					foreach(array_diff_key($jsonData,$config['networks']) as $n){
+						foreach($config['channels'] as $i => &$c){
+							if(sizeof($config['networks']) <= sizeof($c['networks']) + 1 /* plus one due to hidden server network */){
+								$c['networks'][] = array(
+									'id' => $n['id'],
+									'name' => (isset($c['networks'][0])?$c['networks'][0]['name']:$c['alias']),
+									'hidden' => false,
+									'order' => $i
+								);
+							}
+						}
+					}
+				}
 				foreach($jsonData as &$n){
 					if($n['type'] == 1){ // oirc network
 						if(isset($n['config']['extraChanMsg'])){

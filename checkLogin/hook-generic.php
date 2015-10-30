@@ -1,10 +1,10 @@
 <?php
 // Do initial setup stuff here
 
-function hook_get_group($id){
-	// $id is the int of the user, should return a string to identify the group
+function hook_is_op($id){
+	// $id is the int of the user, should return a boolean if this user is a chat op
 	
-	return '';
+	return false;
 }
 function hook_get_color_nick($n,$id){
 	// $n is the nick, $id is the user id, return a string (HTML) how the nick color should look like

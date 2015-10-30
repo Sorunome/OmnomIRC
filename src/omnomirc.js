@@ -1,22 +1,24 @@
-/*
-    OmnomIRC COPYRIGHT 2010,2011 Netham45
-                       2012-2015 Sorunome
+/**
+ * @license
+ * OmnomIRC COPYRIGHT 2010,2011 Netham45
+ *                    2012-2015 Sorunome
+ *
+ *  This file is part of OmnomIRC.
+ *
+ *  OmnomIRC is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  OmnomIRC is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
+ */
 
-    This file is part of OmnomIRC.
-
-    OmnomIRC is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    OmnomIRC is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
-
-    You should have received a copy of the GNU General Public License
-    along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
-*/
 oirc = (function(){
 	var OMNOMIRCSERVER = 'https://omnomirc.omnimaga.org',
 		settings = (function(){
@@ -611,8 +613,8 @@ oirc = (function(){
 				getFullOptionsString:function(){
 					var optionsString = (refreshCache?(cache=ls.get('OmnomIRCSettings'+settings.net())):cache),
 						res = '';
-					for(var i = 0;defaults.charAt(i)!='' && optionsString.charAt(i)!='';i++){
-						res += (optionsString.charAt(i)!='-' && optionsString.charAt(i)!=''?optionsString.charAt(i):(defaults.charAt(i)!=''?defaults.charAt(i):'-'));
+					for(var i = 0;optionsString.charAt(i)!='';i++){
+						res += (optionsString.charAt(i)!='-'?optionsString.charAt(i):(defaults.charAt(i)!=''?defaults.charAt(i):'-'));
 					}
 					return res;
 				},
@@ -826,8 +828,13 @@ oirc = (function(){
 				tryFallback = true,
 				fallback = function(){
 					if(tryFallback){
+						try{
+							tryFallback = false;
+							socket.close();
+						}catch(e){}
 						network.getJSON('omnomirc.php?getcurline&noLoginErrors',function(data){
 							request.setCurLine(data.curline);
+							use = false;
 							request.start();
 						});
 					}
@@ -844,6 +851,9 @@ oirc = (function(){
 					try{
 						socket = new WebSocket((ssl?'wss://':'ws://')+host+':'+port.toString(10));
 					}catch(e){
+						console.log(socket);
+						console.log((ssl?'wss://':'ws://')+host+':'+port.toString(10));
+						console.log(e);
 						fallback();
 					}
 					socket.onopen = function(e){
@@ -2735,7 +2745,7 @@ oirc = (function(){
 									s = arrayResults[i+1].replace(/^([0-9]{1,2}).*/,'$1:');
 									if(s != arrayResults[i+1]){
 										textDecoration.fg = s.split(':')[0];
-										arrayResults[i+1] = arrayResults[i+1].substr(s.length);
+										arrayResults[i+1] = arrayResults[i+1].substr(s.length-1); // -1 due to added colon
 									}
 								}else{ // we also changed background
 									textDecoration.fg = s.split(':')[0];
@@ -2836,7 +2846,7 @@ oirc = (function(){
 					if(line.network == -1){
 						addLine = false;
 					}
-					if((['message','action','pm','pmaction'].indexOf(line.type)>=0) && line.name.toLowerCase() != 'new'){
+					if((['message','action','pm','pmaction'].indexOf(line.type)>=0) && line.name.toLowerCase() != '*'){
 						tdMessage = message = parseHighlight(message,line);
 						if(page.isBlurred()){
 							notification.make('('+channels.getCurrentName()+') <'+line.name+'> '+line.message,line.chan);
