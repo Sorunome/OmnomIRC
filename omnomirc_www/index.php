@@ -172,7 +172,9 @@ if($i){
 	$hotlinksHTML .= '<td style="display:none;" id="adminLink"><a href="?admin">Admin</a></td>';
 }
 $hotlinksHTML .= '</tr>';
-echo getPage('OmnomIRC','','
+echo getPage('OmnomIRC','
+<noscript><meta http-equiv="refresh" content="0;url=index.php?textmode"></noscript>
+','
 <div id="header">
 	<div id="chattingHeader">
 		<div id="Channels">
