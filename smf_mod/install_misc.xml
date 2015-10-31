@@ -271,15 +271,45 @@ function SetOIRCChan(){
 	{
 		echo '<div class="omnomirc_frame">
 			<div class="cat_bar">
-				<h3 class="catbg">'.$modSettings['oirc_title'].'</h3>
+				<h3 class="catbg">',$modSettings['oirc_title'],'
+					<img class="icon" id="upshrink_oirc" src="', $settings['images_url'], '/collapse.gif" alt="*" title="', $txt['upshrink_description'], '" style="display:none;" />
+				</h3>
 			</div>
-			<div class="windowbg">
+			<div class="windowbg" id="upshrinkHeaderOIRC">
 				<span class="topslice"><span></span></span>
 				<div class="content">
 					<iframe style="width:100%;height:'.$modSettings['oirc_height'].'px;margin:0;padding:0;border-style:none;" src="'.$modSettings['oirc_framehtml'].'"></iframe>
 				</div>
 				<span class="botslice"><span></span></span>
 			</div>
+			<script type="text/javascript">
+			var oInfoCenterToggle = new smc_Toggle({
+				bToggleEnabled: true,
+				bCurrentlyCollapsed: ', empty($options['collapse_oirc']) ? 'false' : 'true', ',
+				aSwappableContainers: [
+					\'upshrinkHeaderOIRC\'
+				],
+				aSwapImages: [
+					{
+						sId: \'upshrink_oirc\',
+						srcExpanded: smf_images_url + \'/collapse.gif\',
+						altExpanded: ', JavaScriptEscape($txt['upshrink_description']), ',
+						srcCollapsed: smf_images_url + \'/expand.gif\',
+						altCollapsed: ', JavaScriptEscape($txt['upshrink_description']), '
+					}
+				],
+				oThemeOptions: {
+					bUseThemeSettings: ', $context['user']['is_guest'] ? 'false' : 'true', ',
+					sOptionName: \'collapse_oirc\',
+					sSessionVar: ', JavaScriptEscape($context['session_var']), ',
+					sSessionId: ', JavaScriptEscape($context['session_id']), '
+				},
+				oCookieOptions: {
+					bUseCookie: ', $context['user']['is_guest'] ? 'true' : 'false', ',
+					sCookieName: \'upshrinkOIRC\'
+				}
+			});
+		</script>
 		</div>';
 	}
 ]]></add>
@@ -354,9 +384,23 @@ function SetOIRCChan(){
 			echo '<fieldset><legend>',$txt['oirc_actions_legend'],'</legend>';
 			foreach($context['oirc_options'] as $a => $o)
 			{
-				echo '<nobr style="padding-right:0.8em;"><input type="checkbox" name="oirc_options_enabledTags[',$a,']" id="oirc_options_', $a, '" ', $o ? ' checked="checked"' : '', ' class="input_check" /> <label for="oirc_options_', $a, '">', $a, '</label></nobr> ';
+				echo '<nobr style="padding-right:0.4em;display:inline-block;" class="oirc_actioninput"><input type="checkbox" name="oirc_options_enabledTags[',$a,']" id="oirc_options_', $a, '" ', $o ? ' checked="checked"' : '', ' class="input_check" /> <label for="oirc_options_', $a, '">', $a, '</label></nobr> ';
 			}
-			echo '</fieldset>';
+			echo '</fieldset>
+			<script type="text/javascript">
+				(function(){
+					var tags = document.getElementsByClassName("oirc_actioninput"),
+						max_width = 0,i;
+					for(i = 0;i < tags.length;i++){
+						if(tags[i].offsetWidth > max_width){
+							max_width = tags[i].offsetWidth;
+						}
+					}
+					for(i = 0;i < tags.length;i++){
+						tags[i].style.width = max_width+"px";
+					}
+				})();
+			</script>';
 		}
 echo ']]></add>
 		</operation>
@@ -378,9 +422,23 @@ echo ']]></add>
 		echo '<fieldset><legend>',$txt['oirc_actions_legend'],'</legend>';
 		foreach($context['oirc_actions'] as $a => $o)
 		{
-			echo '<nobr style="padding-right:0.8em;"><input type="checkbox" name="oirc_options_enabledTags[',$a,']" id="oirc_options_', $a, '" ', $o ? ' checked="checked"' : '', ' class="input_check" /> <label for="oirc_options_', $a, '">', $a, '</label></nobr> ';
+			echo '<nobr style="padding-right:0.4em;display:inline-block;" class="oirc_actioninput"><input type="checkbox" name="oirc_options_enabledTags[',$a,']" id="oirc_options_', $a, '" ', $o ? ' checked="checked"' : '', ' class="input_check" /> <label for="oirc_options_', $a, '">', $a, '</label></nobr> ';
 		}
-		echo '</fieldset>';
+		echo '</fieldset>
+		<script type="text/javascript">
+				(function(){
+					var tags = document.getElementsByClassName("oirc_actioninput"),
+						max_width = 0,i;
+					for(i = 0;i < tags.length;i++){
+						if(tags[i].offsetWidth > max_width){
+							max_width = tags[i].offsetWidth;
+						}
+					}
+					for(i = 0;i < tags.length;i++){
+						tags[i].style.width = max_width+"px";
+					}
+				})();
+			</script>';
 	}
 	echo ']]></add>
 		</operation>
@@ -392,7 +450,12 @@ echo ']]></add>
 			<add><![CDATA[
 .omnomirc_frame {
 	padding-top:2em;
-}]]></add>
+}
+img#upshrink_oirc {
+	float:right;
+	margin:10px 5px 0 0;
+}
+]]></add>
 		</operation>
 	</file>
 	
