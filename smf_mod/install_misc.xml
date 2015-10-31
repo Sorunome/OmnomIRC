@@ -39,6 +39,11 @@ function OIRC($return_config = false)
 		array('text', 'oirc_topicnotification'),
 		array('text', 'oirc_postnotification'),
 		array('text', 'oirc_editnotification'),
+		'',
+		array('check', 'oirc_config_installed'),
+		array('text', 'oirc_config_sigKey'),
+		array('int', 'oirc_config_network'),
+		array('text', 'oirc_config_oircUrl'),
 	);
 	if ($return_config)
 		return $config_vars;
@@ -46,12 +51,44 @@ function OIRC($return_config = false)
 	$context['post_url'] = $scripturl . '?action=admin;area=modsettings;save;sa=oirc';
 	$context['settings_title'] = $txt['oirc_admin'];
 	
+	
+	global $config,$only_include_oirc;
+	$only_include_oirc = true;
+	include_once($boarddir.'/checkLogin/index.php');
+	
+	updateSettings(array(
+		'oirc_framehtml' => $config['oircUrl'].'/index.php?network='.$config['network']
+	));
+	
 	// Saving?
 	if (isset($_GET['save']))
 	{
 		checkSession();
-
-		$save_vars = $config_vars;
+		$save_vars = array();
+		foreach($config_vars as $c)
+		{
+			if(!empty($c[1]))
+			{
+				switch($c[1])
+				{
+					case 'oirc_config_installed':
+						$config['installed'] = !empty($_POST['oirc_config_installed']);
+						break;
+					case 'oirc_config_sigKey':
+						$config['sigKey'] = $_POST['oirc_config_sigKey'];
+						break;
+					case 'oirc_config_network':
+						$config['network'] = (int)$_POST['oirc_config_network'];
+						break;
+					case 'oirc_config_oircUrl':
+						$config['oircUrl'] = $_POST['oirc_config_oircUrl'];
+						break;
+					default:
+						$save_vars[] = $c;
+				}
+			}
+		}
+		writeConfig();
 
 		// This line is to help mod authors do a search/add after if you want to add something here. Keyword: FOOT TAPPING SUCKS!
 
@@ -61,15 +98,12 @@ function OIRC($return_config = false)
 
 		redirectexit('action=admin;area=modsettings;sa=oirc');
 	}
-
-	// This line is to help mod authors do a search/add after if you want to add something here. Keyword: RED INK IS FOR TEACHERS AND THOSE WHO LIKE PAIN!
 	
-	global $config,$only_include_oirc;
-	$only_include_oirc = true;
-	include_once($boarddir.'/checkLogin/index.php');
-	updateSettings(array(
-		'oirc_framehtml' => $config['oircUrl'].'/index.php?network='.$config['network']
-	));
+	$modSettings['oirc_config_installed'] = $config['installed'];
+	$modSettings['oirc_config_sigKey'] = $config['sigKey'];
+	$modSettings['oirc_config_network'] = $config['network'];
+	$modSettings['oirc_config_oircUrl'] = $config['oircUrl'];
+	
 	$context['settings_insert_below'] = '
 	<div class="windowbg">
 		<span class="topslice"><span></span></span>

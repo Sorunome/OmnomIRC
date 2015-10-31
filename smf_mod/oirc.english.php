@@ -20,6 +20,10 @@ $txt['oirc_notification_notice'] = 'The following settings all use these replace
 $txt['oirc_topicnotification'] = 'Notification message for new topics';
 $txt['oirc_postnotification'] = 'Notification message for new posts';
 $txt['oirc_editnotification'] = 'Notification message for post edits';
+$txt['oirc_config_installed'] = 'OmnomIRC installed';
+$txt['oirc_config_sigKey'] = 'Signature Key';
+$txt['oirc_config_network'] = 'Network ID';
+$txt['oirc_config_oircUrl'] = 'OmnomIRC URL';
 
 $txt['oirc_manage_channel'] = 'OmnomIRC Channel in which the notifications appear:';
 $txt['oirc_set_chan'] = 'Set channel';
