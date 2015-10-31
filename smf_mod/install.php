@@ -21,9 +21,10 @@ OircMaintenance(); // populates the action array
 
 // keep in mind, we need to "hack" config.json.php file in else it will get over-written again!
 file_put_contents($boarddir.'/checkLogin/config.json.php',file_get_contents(realpath(dirname(__FILE__)).'/checkLogin/config.json.php'));
+$only_include_oirc = true;
+include_once($boarddir.'/checkLogin/index.php');
+
 if(!empty($modSettings['oirc_backup_config'])){ // we have an old config!
-	$only_include_oirc = true;
-	include_once($boarddir.'/checkLogin/index.php');
 	$config = unserialize($modSettings['oirc_backup_config']);
 	writeConfig();
 }
@@ -38,6 +39,7 @@ if(empty($modSettings['oirc_height'])){
 		'oirc_topicnotification' => '{COLOR}06New {COLOR}10topic by {COLOR}03{NAME} {COLOR}04{TOPIC} {COLOR}12'.$boardurl.'/index.php?topic={TOPICID}',
 		'oirc_postnotification' => '{COLOR}06New {COLOR}10post by {COLOR}03{NAME} {COLOR}10in {COLOR}04{TOPIC} {COLOR}'.$boardurl.'/index.php?topic={TOPICID}.msg{POSTID}#msg{POSTID}',
 		'oirc_editnotification' => '{COLOR}06New {COLOR}10edit by {COLOR}03{NAME} {COLOR}10on {COLOR}04{TOPIC} {COLOR}12'.$boardurl.'/index.php?topic={TOPICID}.msg{POSTID}#msg{POSTID}',
+		'oirc_framehtml' => $config['oircUrl'].'/index.php?network='.$config['network']
 	));
 }
 

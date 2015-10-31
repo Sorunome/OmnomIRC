@@ -56,15 +56,12 @@ function OIRC($return_config = false)
 	$only_include_oirc = true;
 	include_once($boarddir.'/checkLogin/index.php');
 	
-	updateSettings(array(
-		'oirc_framehtml' => $config['oircUrl'].'/index.php?network='.$config['network']
-	));
-	
 	// Saving?
 	if (isset($_GET['save']))
 	{
 		checkSession();
 		$save_vars = array();
+		$updateFrame = false;
 		foreach($config_vars as $c)
 		{
 			if(!empty($c[1]))
@@ -79,14 +76,24 @@ function OIRC($return_config = false)
 						break;
 					case 'oirc_config_network':
 						$config['network'] = (int)$_POST['oirc_config_network'];
+						$updateFrame = true;
 						break;
 					case 'oirc_config_oircUrl':
 						$config['oircUrl'] = $_POST['oirc_config_oircUrl'];
+						$updateFrame = true;
 						break;
 					default:
 						$save_vars[] = $c;
 				}
 			}
+		}
+		if($updateFrame)
+		{
+			$save_vars[] = array(
+				'text',
+				'oirc_framehtml'
+			);
+			$_POST['oirc_framehtml'] = $config['oircUrl'].'/index.php?network='.$config['network'];
 		}
 		writeConfig();
 
