@@ -39,6 +39,11 @@ function OIRC($return_config = false)
 		array('text', 'oirc_topicnotification'),
 		array('text', 'oirc_postnotification'),
 		array('text', 'oirc_editnotification'),
+		'',
+		array('check', 'oirc_config_installed'),
+		array('text', 'oirc_config_sigKey'),
+		array('int', 'oirc_config_network'),
+		array('text', 'oirc_config_oircUrl'),
 	);
 	if ($return_config)
 		return $config_vars;
@@ -46,12 +51,51 @@ function OIRC($return_config = false)
 	$context['post_url'] = $scripturl . '?action=admin;area=modsettings;save;sa=oirc';
 	$context['settings_title'] = $txt['oirc_admin'];
 	
+	
+	global $config,$only_include_oirc;
+	$only_include_oirc = true;
+	include_once($boarddir.'/checkLogin/index.php');
+	
 	// Saving?
 	if (isset($_GET['save']))
 	{
 		checkSession();
-
-		$save_vars = $config_vars;
+		$save_vars = array();
+		$updateFrame = false;
+		foreach($config_vars as $c)
+		{
+			if(!empty($c[1]))
+			{
+				switch($c[1])
+				{
+					case 'oirc_config_installed':
+						$config['installed'] = !empty($_POST['oirc_config_installed']);
+						break;
+					case 'oirc_config_sigKey':
+						$config['sigKey'] = $_POST['oirc_config_sigKey'];
+						break;
+					case 'oirc_config_network':
+						$config['network'] = (int)$_POST['oirc_config_network'];
+						$updateFrame = true;
+						break;
+					case 'oirc_config_oircUrl':
+						$config['oircUrl'] = $_POST['oirc_config_oircUrl'];
+						$updateFrame = true;
+						break;
+					default:
+						$save_vars[] = $c;
+				}
+			}
+		}
+		if($updateFrame)
+		{
+			$save_vars[] = array(
+				'text',
+				'oirc_framehtml'
+			);
+			$_POST['oirc_framehtml'] = $config['oircUrl'].'/index.php?network='.$config['network'];
+		}
+		writeConfig();
 
 		// This line is to help mod authors do a search/add after if you want to add something here. Keyword: FOOT TAPPING SUCKS!
 
@@ -61,15 +105,12 @@ function OIRC($return_config = false)
 
 		redirectexit('action=admin;area=modsettings;sa=oirc');
 	}
-
-	// This line is to help mod authors do a search/add after if you want to add something here. Keyword: RED INK IS FOR TEACHERS AND THOSE WHO LIKE PAIN!
 	
-	global $config,$only_include_oirc;
-	$only_include_oirc = true;
-	include_once($boarddir.'/checkLogin/index.php');
-	updateSettings(array(
-		'oirc_framehtml' => $config['oircUrl'].'/index.php?network='.$config['network']
-	));
+	$modSettings['oirc_config_installed'] = $config['installed'];
+	$modSettings['oirc_config_sigKey'] = $config['sigKey'];
+	$modSettings['oirc_config_network'] = $config['network'];
+	$modSettings['oirc_config_oircUrl'] = $config['oircUrl'];
+	
 	$context['settings_insert_below'] = '
 	<div class="windowbg">
 		<span class="topslice"><span></span></span>
@@ -269,17 +310,47 @@ function SetOIRCChan(){
 	
 	if($context['oirc_show'])
 	{
-		echo '<div>
+		echo '<div class="omnomirc_frame">
 			<div class="cat_bar">
-				<h3 class="catbg">'.$modSettings['oirc_title'].'</h3>
+				<h3 class="catbg">',$modSettings['oirc_title'],'
+					<img class="icon" id="upshrink_oirc" src="', $settings['images_url'], '/collapse.gif" alt="*" title="', $txt['upshrink_description'], '" style="display:none;" />
+				</h3>
 			</div>
-			<div class="windowbg">
+			<div class="windowbg" id="upshrinkHeaderOIRC">
 				<span class="topslice"><span></span></span>
 				<div class="content">
 					<iframe style="width:100%;height:'.$modSettings['oirc_height'].'px;margin:0;padding:0;border-style:none;" src="'.$modSettings['oirc_framehtml'].'"></iframe>
 				</div>
 				<span class="botslice"><span></span></span>
 			</div>
+			<script type="text/javascript">
+			var oInfoCenterToggle = new smc_Toggle({
+				bToggleEnabled: true,
+				bCurrentlyCollapsed: ', empty($options['collapse_oirc']) ? 'false' : 'true', ',
+				aSwappableContainers: [
+					\'upshrinkHeaderOIRC\'
+				],
+				aSwapImages: [
+					{
+						sId: \'upshrink_oirc\',
+						srcExpanded: smf_images_url + \'/collapse.gif\',
+						altExpanded: ', JavaScriptEscape($txt['upshrink_description']), ',
+						srcCollapsed: smf_images_url + \'/expand.gif\',
+						altCollapsed: ', JavaScriptEscape($txt['upshrink_description']), '
+					}
+				],
+				oThemeOptions: {
+					bUseThemeSettings: ', $context['user']['is_guest'] ? 'false' : 'true', ',
+					sOptionName: \'collapse_oirc\',
+					sSessionVar: ', JavaScriptEscape($context['session_var']), ',
+					sSessionId: ', JavaScriptEscape($context['session_id']), '
+				},
+				oCookieOptions: {
+					bUseCookie: ', $context['user']['is_guest'] ? 'true' : 'false', ',
+					sCookieName: \'upshrinkOIRC\'
+				}
+			});
+		</script>
 		</div>';
 	}
 ]]></add>
@@ -354,9 +425,23 @@ function SetOIRCChan(){
 			echo '<fieldset><legend>',$txt['oirc_actions_legend'],'</legend>';
 			foreach($context['oirc_options'] as $a => $o)
 			{
-				echo '<nobr style="padding-right:0.8em;"><input type="checkbox" name="oirc_options_enabledTags[',$a,']" id="oirc_options_', $a, '" ', $o ? ' checked="checked"' : '', ' class="input_check" /> <label for="oirc_options_', $a, '">', $a, '</label></nobr> ';
+				echo '<nobr style="padding-right:0.4em;display:inline-block;" class="oirc_actioninput"><input type="checkbox" name="oirc_options_enabledTags[',$a,']" id="oirc_options_', $a, '" ', $o ? ' checked="checked"' : '', ' class="input_check" /> <label for="oirc_options_', $a, '">', $a, '</label></nobr> ';
 			}
-			echo '</fieldset>';
+			echo '</fieldset>
+			<script type="text/javascript">
+				(function(){
+					var tags = document.getElementsByClassName("oirc_actioninput"),
+						max_width = 0,i;
+					for(i = 0;i < tags.length;i++){
+						if(tags[i].offsetWidth > max_width){
+							max_width = tags[i].offsetWidth;
+						}
+					}
+					for(i = 0;i < tags.length;i++){
+						tags[i].style.width = max_width+"px";
+					}
+				})();
+			</script>';
 		}
 echo ']]></add>
 		</operation>
@@ -378,11 +463,40 @@ echo ']]></add>
 		echo '<fieldset><legend>',$txt['oirc_actions_legend'],'</legend>';
 		foreach($context['oirc_actions'] as $a => $o)
 		{
-			echo '<nobr style="padding-right:0.8em;"><input type="checkbox" name="oirc_options_enabledTags[',$a,']" id="oirc_options_', $a, '" ', $o ? ' checked="checked"' : '', ' class="input_check" /> <label for="oirc_options_', $a, '">', $a, '</label></nobr> ';
+			echo '<nobr style="padding-right:0.4em;display:inline-block;" class="oirc_actioninput"><input type="checkbox" name="oirc_options_enabledTags[',$a,']" id="oirc_options_', $a, '" ', $o ? ' checked="checked"' : '', ' class="input_check" /> <label for="oirc_options_', $a, '">', $a, '</label></nobr> ';
 		}
-		echo '</fieldset>';
+		echo '</fieldset>
+		<script type="text/javascript">
+				(function(){
+					var tags = document.getElementsByClassName("oirc_actioninput"),
+						max_width = 0,i;
+					for(i = 0;i < tags.length;i++){
+						if(tags[i].offsetWidth > max_width){
+							max_width = tags[i].offsetWidth;
+						}
+					}
+					for(i = 0;i < tags.length;i++){
+						tags[i].style.width = max_width+"px";
+					}
+				})();
+			</script>';
 	}
 	echo ']]></add>
+		</operation>
+	</file>
+	
+	<file name="$themedir/css/index.css">
+		<operation>
+			<search position="end" />
+			<add><![CDATA[
+.omnomirc_frame {
+	padding-top:2em;
+}
+img#upshrink_oirc {
+	float:right;
+	margin:10px 5px 0 0;
+}
+]]></add>
 		</operation>
 	</file>
 	
