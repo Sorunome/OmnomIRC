@@ -2671,12 +2671,12 @@ oirc = (function(){
 						case '2': //server
 							if(net!==undefined && net.checkLogin!==undefined){
 								addLink = false;
-								if(cacheServerNicks[uid]===undefined){
+								if(cacheServerNicks[o.toString()+':'+uid.toString()]===undefined){
 									network.getJSON(net.checkLogin+'?c='+uid.toString(10)+'&n='+ne,function(data){
-										cacheServerNicks[uid] = data.nick;
+										cacheServerNicks[o.toString()+':'+uid.toString()] = data.nick;
 									},false,false);
 								}
-								cn = cacheServerNicks[uid];
+								cn = cacheServerNicks[o.toString()+':'+uid.toString()];
 							}else{
 								cn = n;
 							}
