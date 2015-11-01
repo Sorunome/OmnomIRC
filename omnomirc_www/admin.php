@@ -129,6 +129,7 @@ if($you->isGlobalOp()){
 				if(isset($_GET['i']) && isset($config['networks'][$_GET['i']]) && $config['networks'][$_GET['i']]['type'] == 1){
 					$s = @file_get_contents($config['networks'][$_GET['i']]['config']['checkLogin'].'?server='.getCheckLoginChallenge().'&action=get');
 					if($s != ''){
+						$success = true;
 						$json->add('checkLogin',json_decode($s,true));
 					}
 				}

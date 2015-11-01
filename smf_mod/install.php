@@ -36,9 +36,9 @@ if(empty($modSettings['oirc_height'])){
 		'oirc_topics' => 1,
 		'oirc_posts' => 1,
 		'oirc_edits' => 1,
-		'oirc_topicnotification' => '{COLOR}06New {COLOR}10topic by {COLOR}03{NAME} {COLOR}04{TOPIC} {COLOR}12'.$boardurl.'/index.php?topic={TOPICID}',
-		'oirc_postnotification' => '{COLOR}06New {COLOR}10post by {COLOR}03{NAME} {COLOR}10in {COLOR}04{TOPIC} {COLOR}'.$boardurl.'/index.php?topic={TOPICID}.msg{POSTID}#msg{POSTID}',
-		'oirc_editnotification' => '{COLOR}06New {COLOR}10edit by {COLOR}03{NAME} {COLOR}10on {COLOR}04{TOPIC} {COLOR}12'.$boardurl.'/index.php?topic={TOPICID}.msg{POSTID}#msg{POSTID}',
+		'oirc_topicnotification' => '{COLOR}10New topic by {COLOR}03{NAME} {COLOR}04{TOPIC} {COLOR}12'.$boardurl.'/index.php?topic={TOPICID}',
+		'oirc_postnotification' => '{COLOR}10New post by {COLOR}03{NAME} {COLOR}10in {COLOR}04{TOPIC} {COLOR}12'.$boardurl.'/index.php?topic={TOPICID}.msg{POSTID}#msg{POSTID}',
+		'oirc_editnotification' => '{COLOR}10Edit by {COLOR}03{NAME} {COLOR}10on {COLOR}04{TOPIC} {COLOR}12'.$boardurl.'/index.php?topic={TOPICID}.msg{POSTID}#msg{POSTID}',
 		'oirc_framehtml' => $config['oircUrl'].'/index.php?network='.$config['network']
 	));
 }

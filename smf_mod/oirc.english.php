@@ -32,4 +32,8 @@ $txt['oirc_no_notifications'] = 'no notifications';
 $txt['oirc_chan_other'] = 'other...';
 
 $txt['oirc_actions_legend'] = 'Actions where to display OmnomIRC';
+$txt['oirc_check_all_actions'] = 'Check all actions:';
+
+$txt['oirc_switch_advanced'] = 'Switch to advanced settings';
+$txt['oirc_switch_simple'] = 'Switch to simple settings';
 ?>

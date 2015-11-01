@@ -251,7 +251,7 @@ function SetOIRCChan(){
 		// If we're actually inserting something..
 		if (!empty($setValues))]]></search>
 			<add><![CDATA[
-		if(!empty($_POST['oirc_options_enabledTags']))
+		if(!empty($_POST['oirc_options_changetags']))
 		{
 			$actions = array();
 			foreach(unserialize($modSettings['oirc_actionarray']) as $a)
@@ -287,7 +287,7 @@ function SetOIRCChan(){
 		<operation>
 			<search position="after"><![CDATA[	// Don't allow any overriding of custom fields with default or non-default options.]]></search>
 			<add><![CDATA[
-	if(!empty($_POST['oirc_options_enabledTags']))
+	if(!empty($_POST['oirc_options_changetags']))
 	{
 		$actions = array();
 		foreach(unserialize($modSettings['oirc_actionarray']) as $a)
@@ -415,33 +415,8 @@ function SetOIRCChan(){
 			<add><![CDATA[';
 		if(!empty($context['oirc_options']))
 		{
-			loadLanguage('oirc');
-			if ($context['theme_options_reset'])
-				echo '<select name="default_options_master[oirc_actions]">
-						<option value="0" selected="selected">', $txt['themeadmin_reset_options_none'], '</option>
-						<option value="1">', $txt['themeadmin_reset_options_change'], '</option>
-						<option value="2">', $txt['themeadmin_reset_options_remove'], '</option>
-					</select>';
-			echo '<fieldset><legend>',$txt['oirc_actions_legend'],'</legend>';
-			foreach($context['oirc_options'] as $a => $o)
-			{
-				echo '<nobr style="padding-right:0.4em;display:inline-block;" class="oirc_actioninput"><input type="checkbox" name="oirc_options_enabledTags[',$a,']" id="oirc_options_', $a, '" ', $o ? ' checked="checked"' : '', ' class="input_check" /> <label for="oirc_options_', $a, '">', $a, '</label></nobr> ';
-			}
-			echo '</fieldset>
-			<script type="text/javascript">
-				(function(){
-					var tags = document.getElementsByClassName("oirc_actioninput"),
-						max_width = 0,i;
-					for(i = 0;i < tags.length;i++){
-						if(tags[i].offsetWidth > max_width){
-							max_width = tags[i].offsetWidth;
-						}
-					}
-					for(i = 0;i < tags.length;i++){
-						tags[i].style.width = max_width+"px";
-					}
-				})();
-			</script>';
+			loadTemplate('OmnomIRC');
+			template_omnomirc_action_settings('oirc_options',$context['theme_options_reset']);
 		}
 echo ']]></add>
 		</operation>
@@ -457,29 +432,10 @@ echo ']]></add>
 							<dd></dd>
 						</dl>]]></search>
 			<add><![CDATA[';
-	if(!empty($context['oirc_actions']))
+	if(!empty($context['oirc_actions']) && allowedTo('oirc_can_view'))
 	{
-		loadLanguage('oirc');
-		echo '<fieldset><legend>',$txt['oirc_actions_legend'],'</legend>';
-		foreach($context['oirc_actions'] as $a => $o)
-		{
-			echo '<nobr style="padding-right:0.4em;display:inline-block;" class="oirc_actioninput"><input type="checkbox" name="oirc_options_enabledTags[',$a,']" id="oirc_options_', $a, '" ', $o ? ' checked="checked"' : '', ' class="input_check" /> <label for="oirc_options_', $a, '">', $a, '</label></nobr> ';
-		}
-		echo '</fieldset>
-		<script type="text/javascript">
-				(function(){
-					var tags = document.getElementsByClassName("oirc_actioninput"),
-						max_width = 0,i;
-					for(i = 0;i < tags.length;i++){
-						if(tags[i].offsetWidth > max_width){
-							max_width = tags[i].offsetWidth;
-						}
-					}
-					for(i = 0;i < tags.length;i++){
-						tags[i].style.width = max_width+"px";
-					}
-				})();
-			</script>';
+		loadTemplate('OmnomIRC');
+		template_omnomirc_action_settings('oirc_actions',false);
 	}
 	echo ']]></add>
 		</operation>

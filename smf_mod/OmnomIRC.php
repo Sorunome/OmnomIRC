@@ -144,7 +144,7 @@ function OircMaintenance()
 
 	$dummy = array();
 	call_integration_hook('integrate_actions', array(&$dummy));
-	$actionArray += array_keys($dummy);
+	$actionArray = array_merge($actionArray,array_keys($dummy));
 	array_unshift($actionArray,'index','board','topic');
 	
 	updateSettings(array(
