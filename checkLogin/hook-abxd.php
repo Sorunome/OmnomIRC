@@ -1,6 +1,7 @@
 <?php
 // Do initial setup stuff here
-include('../lib/common.php');
+chdir('../../..');
+include('lib/common.php');
 
 function hook_is_op($id){
 	$user = Fetch(Query("select * from {users} where id={0}", $id));
