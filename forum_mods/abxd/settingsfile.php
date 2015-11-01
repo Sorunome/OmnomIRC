@@ -1,6 +1,6 @@
 <?php
 // this file will be called always.
-if($title != __("Edit settings")){
+if(!function_exists('generateOircSigURL')){
 	// we only want to run this block once
 	function generateOircSigURL(){
 		global $config,$only_include_oirc;
@@ -23,6 +23,17 @@ if($title != __("Edit settings")){
 	function getTopicName($tid){
 		$t = Fetch(Query("select title from {threads} where id={0}",$tid));
 		return $t['title'];
+	}
+	
+	function getOircSendToChan($tid){
+		$topic = Fetch(Query("select forum from {threads} where id={0}", $tid));
+		if($topic && $topic['forum']){
+			$power = Fetch(Query("select minpower from {forums} where id={0}", $topic['forum']));
+			if($power !== NULL && $power['minpower'] >= 0 && $power['minpower'] <= 3){
+				return Settings::pluginGet('oirc_notify_'.$power['minpower']);
+			}
+		}
+		return -1;
 	}
 }
 
@@ -69,13 +80,33 @@ $settings = array(
 		'name' => 'Notification message for post edits',
 		'default' => '{COLOR}10Edit by {COLOR}03{NAME} {COLOR}10on {COLOR}04{TOPIC} {COLOR}12'.$boardurl.'?page=thread&id={TOPICID}#{POSTID}'
 	),
+	'oirc_notify_0' => array(
+		'type' => 'integer',
+		'name' => 'Notification channel for Regular',
+		'default' => '-1'
+	),
+	'oirc_notify_1' => array(
+		'type' => 'integer',
+		'name' => 'Notification channel for Local Mod',
+		'default' => '-1'
+	),
+	'oirc_notify_2' => array(
+		'type' => 'integer',
+		'name' => 'Notification channel for Full Mod',
+		'default' => '-1'
+	),
+	'oirc_notify_3' => array(
+		'type' => 'integer',
+		'name' => 'Notification channel for Administrator',
+		'default' => '-1'
+	),
 	'oirc_frameurl' => array(
 		'type' => 'text',
 		'name' => 'DO NOT EDIT THIS!!!!',
 		'default' => $config['oircUrl'].'/index.php?network='.$config['network']
 	),
 );
-if($title != __("Edit settings")){
+if($title != __("Edit settings") && !((isset($_GET['id']) && $_GET['id'] == 'OmnomIRC') || (isset($_POST['_plugin']) && $_POST['_plugin'] == 'OmnomIRC'))){
 	return;
 }
 
@@ -84,6 +115,30 @@ if($title != __("Edit settings")){
 global $config,$only_include_oirc;
 $only_include_oirc = true;
 include_once('plugins/OmnomIRC/checkLogin/index.php');
+
+
+$channeloptions = array(
+	-1 => 'No notifications'
+);
+
+$sigurl = generateOircSigURL();
+$s = file_get_contents($config['oircUrl'].'/config.php?channels&'.$sigurl);
+
+if($s != ''){
+	$s = json_decode($s,true);
+	if($s !== NULL && !empty($s['channels'])){
+		foreach($s['channels'] as $i => $n){
+			$channeloptions[$i] = $n;
+		}
+	}
+}
+
+foreach($settings as $k => &$v){
+	if(preg_match('/oirc_notify_\d/',$k)){
+		$v['type'] = 'options';
+		$v['options'] = $channeloptions;
+	}
+}
 
 $settings = array_merge($settings,array(
 	'oirc_config_installed' => array(
@@ -133,5 +188,6 @@ if(isset($_POST['_plugin'])){
 	if(!writeConfig()){
 		Alert(__("Please make sure that the OmnomIRC config file is writable!"));
 	};
+	
 }
 ?>
