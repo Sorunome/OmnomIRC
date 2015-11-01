@@ -1,6 +1,8 @@
 <?php
-if(CURRENT_PAGE!='admin' && $loguser['powerlevel'] >= 0 && $loguserid && !getSetting("disableomnom", true))
-{
+$oirc_userpages = unserialize(getSetting('oirc_disppages_user',false));
+$oirc_globalpages = unserialize(Settings::pluginGet('oirc_disppages'));
+
+if((isset($oirc_userpages[CURRENT_PAGE]) && $oirc_userpages[CURRENT_PAGE]) || (!isset($oirc_userpages[CURRENT_PAGE]) && isset($oirc_globalpages[CURRENT_PAGE]) && $oirc_globalpages[CURRENT_PAGE])){
 	write('
 	<table class="outline margin width100">
 		<tr class="header1">
