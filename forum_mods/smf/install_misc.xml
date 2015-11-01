@@ -270,7 +270,7 @@ function SetOIRCChan(){
 		$_POST['default_options_master'] = empty($_POST['default_options_master']) ? array() : $_POST['default_options_master'];
 ]]></search>
 			<add><![CDATA[
-		if(!empty($_POST['oirc_options_enabledTags']))
+		if(!empty($_POST['oirc_options_changetags']))
 		{
 			$actions = array();
 			foreach(unserialize($modSettings['oirc_actionarray']) as $a)

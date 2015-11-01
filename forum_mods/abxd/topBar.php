@@ -1,7 +1,7 @@
 <?php
-if($loguser['powerlevel'] >= 0 && $loguserid && !getSetting("disableomnom", true))
+if(CURRENT_PAGE!='admin' && $loguser['powerlevel'] >= 0 && $loguserid && !getSetting("disableomnom", true))
 {
-write('
+	write('
 	<table class="outline margin width100">
 		<tr class="header1">
 			<th>'.Settings::pluginGet('oirc_title').'</th>

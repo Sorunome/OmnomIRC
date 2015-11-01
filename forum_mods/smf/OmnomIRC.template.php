@@ -11,9 +11,9 @@ function template_omnomirc_action_settings($context_offset,$r)
 			</select>';
 	echo '<fieldset><legend>',$txt['oirc_actions_legend'],'</legend>';
 	$simpleFields = array(
-		'Index' => array('index',array('index','forum')),
-		'Boards' => array('board',array('board')),
-		'Topics' => array('topic',array('topic')),
+		'Index' => array('index',array('index')),
+		'Boards' => array('board',array('board','forum')),
+		'Threads' => array('thread',array('printthread','thread')),
 		'Profiles' => array('profile',array('profile')),
 		'Moderation' => array('settings',array('admin','moderate'))
 	);
@@ -40,9 +40,8 @@ function template_omnomirc_action_settings($context_offset,$r)
 		echo '<nobr style="padding-right:0.4em;display:inline-block;" class="oirc_actioninput"><input type="checkbox" name="oirc_options_enabledTags[',$a,']" id="oirc_options_', $a, '" ', $o ? ' checked="checked"' : '', ' class="input_check" /> <label for="oirc_options_', $a, '">', $a, '</label></nobr> ';
 	}
 	// $ormask is false if everything is unchecked, of $ormask is true and $andmask is false then the checkall is in the indeterminate state.
-	echo '<br /><label>',$txt['oirc_check_all_actions'],'<input type="checkbox" id="oirc_options_check_all" />
-	</div>
-	</label></fieldset>
+	echo '<br /><label>',$txt['oirc_check_all_actions'],'<input type="checkbox" id="oirc_options_check_all" /></label>
+	</div></fieldset>
 	<input type="hidden" value="1" name="oirc_options_changetags" />
 	<script type="text/javascript">
 		(function(){

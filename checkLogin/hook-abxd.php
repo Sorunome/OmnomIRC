@@ -36,7 +36,8 @@ function hook_get_color_nick($n,$id){
 		);
 		
 		$s = UserLink(getDataPrefix(Fetch($user), "u_"));
-		return '<a target="_top" style="color:'.$colors[substr($s,strpos($s,'class="')+7,4)].';" '.substr($s,2);
+		$c = $colors[substr($s,strpos($s,'class="')+7,4)];
+		return '<a target="_top" style="color:'.$c.';border-color:'.$c.';" '.substr($s,2);
 	}
 	return $n;
 }
