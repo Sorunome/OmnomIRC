@@ -282,6 +282,7 @@ class Bot(threading.Thread):
 		else:
 			add = 'T)'
 		print('Giving signal to quit irc bot... ('+str(self.i)+add)
+		traceback.print_stack()
 		self.s.close()
 		self.stopnow = True
 	def sendTopic(self,s,c):
@@ -475,6 +476,9 @@ class Bot(threading.Thread):
 						self.quitMsg = 'Being very stupid'
 						print('Restarting because connection being reset by peer')
 				time.sleep(0.1)
+				if self.lastPingTime+30 <= time.time():
+					self.send('PING %s' % time.time(),True)
+					self.lastPingTime = time.time()
 				if self.lastLineTime+90 <= time.time(): # allow up to 60 seconds lag
 					self.stopnow = True
 					self.restart = True
