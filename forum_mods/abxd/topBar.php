@@ -1,4 +1,20 @@
 <?php
+if(
+		isIPBanned($_SERVER['REMOTE_ADDR'])
+		||
+		(
+			!Settings::pluginGet('oirc_view_guests')
+			&&
+			(
+				$loguser['name'] == ''
+				||
+				($loguser['powerlevel'] <= 0 && Settings::pluginGet('oirc_view_posts') > $loguser['posts'])
+			)
+		)
+	){
+	return;
+}
+
 $oirc_userpages = unserialize(getSetting('oirc_disppages_user',false));
 $oirc_globalpages = unserialize(Settings::pluginGet('oirc_disppages'));
 

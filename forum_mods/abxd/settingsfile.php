@@ -207,6 +207,16 @@ $settings = array(
 		'name' => 'OmnomIRC frame height',
 		'default' => '280'
 	),
+	'oirc_view_guests' => array(
+		'type' => 'boolean',
+		'name' => 'Show frame to guests',
+		'default' => false
+	),
+	'oirc_view_posts' => array(
+		'type' => 'integer',
+		'name' => 'Minimum posts required to view frame',
+		'default' => 0
+	),
 	'oirc_topics' => array(
 		'type' => 'boolean',
 		'name' => 'Notify of new threads',
