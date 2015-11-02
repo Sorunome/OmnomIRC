@@ -63,7 +63,7 @@
 	if (!empty($topicOptions['mark_as_read']) && !$user_info['is_guest'])]]></search>
 			<add><![CDATA[
 	// Send the new edit to OmnomIRC start
-	if(!empty($modSettings['oirc_edits']) && !empty($modSettings['oirc_editnotification']))
+	if(!empty($msgOptions['modify_time']) && !empty($modSettings['oirc_edits']) && !empty($modSettings['oirc_editnotification']))
 	{
 		$chan = getOircSendToChan($topicOptions['board']);
 		if($chan !== false)
@@ -74,7 +74,7 @@
 			}
 			sendToOmnomIRC(strtr($modSettings['oirc_editnotification'],array(
 				'{COLOR}' => "\x03",
-				'{NAME}' => $posterOptions['name'],
+				'{NAME}' => $update_parameters['var_modified_name'],
 				'{TOPIC}' => $topicname,
 				'{SUBJECT}' => $msgOptions['subject'],
 				'{TOPICID}' => $topicOptions['id'],
