@@ -1,0 +1,23 @@
+{
+	"name": "omnimaga/OmnomIRC",
+	"type": "phpbb-extension",
+	"description": "OmnomIRC Extension for phpBB 3.1",
+	"homepage": "https://omnomirc.omnimaga.org",
+	"version": "0.1.0",
+	"license": "GPL-3.0",
+	"authors": [{
+		"name": "Sorunome",
+		"email": "mail@sorunome.de",
+		"homepage": "http://sorunome.de",
+		"role": "Developer"
+	}],
+	"require": {
+		"php": ">=5.3.3"
+	},
+	"extra": {
+		"display-name": "OmnomIRC Extension",
+		"soft-require" : {
+			"phpbb/phpbb": "3.1.*"
+		}
+	}
+}

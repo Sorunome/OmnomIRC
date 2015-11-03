@@ -283,7 +283,10 @@ class Bot(threading.Thread):
 			add = 'T)'
 		print('Giving signal to quit irc bot... ('+str(self.i)+add)
 		traceback.print_stack()
-		self.s.close()
+		try:
+			self.s.close()
+		except:
+			traceback.print_exc()
 		self.stopnow = True
 	def sendTopic(self,s,c):
 		c = self.idToChan(c)
@@ -502,7 +505,7 @@ class Bot(threading.Thread):
 				self.restart = True
 				self.lastLineTime = time.time()
 				self.quitMsg = 'No pings(3)'
-				return
+				continue
 			if self.lastPingTime+30 <= time.time():
 				self.send('PING %s' % time.time(),True)
 				self.lastPingTime = time.time()
@@ -521,7 +524,7 @@ class Bot(threading.Thread):
 						self.restart = True
 						self.quitMsg = 'Closed link'
 						print('Error when connecting, restarting bot ('+str(self.i)+add)
-						return
+						break
 					fn(line)
 				except Exception as inst:
 					print('('+str(self.i)+') parse Error')
@@ -555,7 +558,7 @@ class Bot(threading.Thread):
 			#ca.append(c)
 		#self.send('JOIN %s' % (','.join(ca)),True)
 	def identServerFn(self,line):
-		if line[1]=='376':
+		if line[1]=='376' or line[1]=='422':
 			self.motdEnd = True
 		if not self.identified and ((line[1] == 'NOTICE' and 'NickServ' in line[0])):
 			if self.identifiedStep==0:

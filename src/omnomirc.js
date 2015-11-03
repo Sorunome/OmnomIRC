@@ -2279,12 +2279,9 @@ oirc = (function(){
 							send.internal('<span style="color:#2A8C2A;">For full help go here: <a href="http://ourl.ca/19926" target="_top">http://ourl.ca/19926</a></span>');
 							return true;
 						case 'ponies':
-							var fs=document.createElement("script");
-							fs.onload=function(){
+							$.getScript('https://juju2143.ca/mousefly.js',function(){
 								Derpy();
-							};
-							fs.src="https://juju2143.ca/mousefly.js";
-							document.head.appendChild(fs);
+							});
 							return true;
 						case 'minty':
 							$.getJSON(OMNOMIRCSERVER+'/minty.php').done(function(data){
