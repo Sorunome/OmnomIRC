@@ -52,7 +52,7 @@ function OIRC($return_config = false)
 	$context['settings_title'] = $txt['oirc_admin'];
 	
 	
-	global $config,$only_include_oirc;
+	global $oirc_config,$only_include_oirc;
 	$only_include_oirc = true;
 	include_once($boarddir.'/checkLogin/index.php');
 	
@@ -69,17 +69,17 @@ function OIRC($return_config = false)
 				switch($c[1])
 				{
 					case 'oirc_config_installed':
-						$config['installed'] = !empty($_POST['oirc_config_installed']);
+						$oirc_config['installed'] = !empty($_POST['oirc_config_installed']);
 						break;
 					case 'oirc_config_sigKey':
-						$config['sigKey'] = $_POST['oirc_config_sigKey'];
+						$oirc_config['sigKey'] = $_POST['oirc_config_sigKey'];
 						break;
 					case 'oirc_config_network':
-						$config['network'] = (int)$_POST['oirc_config_network'];
+						$oirc_config['network'] = (int)$_POST['oirc_config_network'];
 						$updateFrame = true;
 						break;
 					case 'oirc_config_oircUrl':
-						$config['oircUrl'] = $_POST['oirc_config_oircUrl'];
+						$oirc_config['oircUrl'] = $_POST['oirc_config_oircUrl'];
 						$updateFrame = true;
 						break;
 					default:
@@ -93,7 +93,7 @@ function OIRC($return_config = false)
 				'text',
 				'oirc_framehtml'
 			);
-			$_POST['oirc_framehtml'] = $config['oircUrl'].'/index.php?network='.$config['network'];
+			$_POST['oirc_framehtml'] = $oirc_config['oircUrl'].'/index.php?network='.$oirc_config['network'];
 		}
 		writeConfig();
 
@@ -106,10 +106,10 @@ function OIRC($return_config = false)
 		redirectexit('action=admin;area=modsettings;sa=oirc');
 	}
 	
-	$modSettings['oirc_config_installed'] = $config['installed'];
-	$modSettings['oirc_config_sigKey'] = $config['sigKey'];
-	$modSettings['oirc_config_network'] = $config['network'];
-	$modSettings['oirc_config_oircUrl'] = $config['oircUrl'];
+	$modSettings['oirc_config_installed'] = $oirc_config['installed'];
+	$modSettings['oirc_config_sigKey'] = $oirc_config['sigKey'];
+	$modSettings['oirc_config_network'] = $oirc_config['network'];
+	$modSettings['oirc_config_oircUrl'] = $oirc_config['oircUrl'];
 	
 	$context['settings_insert_below'] = '
 	<div class="windowbg">
@@ -175,8 +175,8 @@ function OIRC($return_config = false)
 		
 		$sigurl = generateOircSigURL();
 		
-		global $config;
-		$s = file_get_contents($config['oircUrl'].'/config.php?channels&'.$sigurl);
+		global $oirc_config;
+		$s = file_get_contents($oirc_config['oircUrl'].'/config.php?channels&'.$sigurl);
 		
 		$foundChan = $context['profile']['oirc_chan'] == -1;
 		if($s !== '')

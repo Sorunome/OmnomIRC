@@ -23,22 +23,22 @@ if (!defined('SMF'))
 
 function generateOircSigURL()
 {
-	global $config,$only_include_oirc,$boarddir;
+	global $oirc_config,$only_include_oirc,$boarddir;
 	$only_include_oirc = true;
 	include_once($boarddir.'/checkLogin/index.php');
 	$nick = '*';
 	$time = (string)(time() - 60*60*24 + 60); // the sig key is only valid for one min!
 	$uid = rand();
 	$network = 0;
-	$signature = $time.'|'.hash_hmac('sha512',$nick.$uid,$network.$config['sigKey'].$time);
+	$signature = $time.'|'.hash_hmac('sha512',$nick.$uid,$network.$oirc_config['sigKey'].$time);
 	return 'nick='.base64_url_encode($nick).'&signature='.base64_url_encode($signature).'&time='.$time.'&network='.$network.'&id='.$uid.'&noLoginErrors&serverident';
 }
 
 function sendToOmnomIRC($message,$channel)
 {
-	global $config;
+	global $oirc_config;
 	$sigurl = generateOircSigURL();
-	file_get_contents($config['oircUrl'].'/message.php?message='.base64_url_encode($message).'&channel='.$channel.'&serverident&'.$sigurl);
+	file_get_contents($oirc_config['oircUrl'].'/message.php?message='.base64_url_encode($message).'&channel='.$channel.'&serverident&'.$sigurl);
 }
 
 function getTopicName($id)

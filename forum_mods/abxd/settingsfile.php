@@ -3,21 +3,21 @@
 if(!function_exists('generateOircSigURL')){
 	// we only want to run this block once
 	function generateOircSigURL(){
-		global $config,$only_include_oirc;
+		global $oirc_config,$only_include_oirc;
 		$only_include_oirc = true;
 		include_once(realpath(dirname(__FILE__)).'/checkLogin/index.php');
 		$nick = '*';
 		$time = (string)(time() - 60*60*24 + 60); // the sig key is only valid for one min!
 		$uid = rand();
 		$network = 0;
-		$signature = $time.'|'.hash_hmac('sha512',$nick.$uid,$network.$config['sigKey'].$time);
+		$signature = $time.'|'.hash_hmac('sha512',$nick.$uid,$network.$oirc_config['sigKey'].$time);
 		return 'nick='.base64_url_encode($nick).'&signature='.base64_url_encode($signature).'&time='.$time.'&network='.$network.'&id='.$uid.'&noLoginErrors&serverident';
 	}
 
 	function sendToOmnomIRC($message,$channel){
-		global $config;
+		global $oirc_config;
 		$sigurl = generateOircSigURL();
-		file_get_contents($config['oircUrl'].'/message.php?message='.base64_url_encode($message).'&channel='.$channel.'&serverident&'.$sigurl);
+		file_get_contents($oirc_config['oircUrl'].'/message.php?message='.base64_url_encode($message).'&channel='.$channel.'&serverident&'.$sigurl);
 	}
 	
 	function getTopicName($tid){
@@ -270,7 +270,7 @@ $settings = array(
 	'oirc_frameurl' => array(
 		'type' => 'text',
 		'name' => 'DO NOT EDIT THIS!!!!',
-		'default' => $config['oircUrl'].'/index.php?network='.$config['network']
+		'default' => $oirc_config['oircUrl'].'/index.php?network='.$oirc_config['network']
 	),
 	'oirc_disppages' => array(
 		'type' => 'text',
@@ -285,15 +285,15 @@ if($title != __("Edit settings") && !((isset($_GET['id']) && $_GET['id'] == 'Omn
 
 // starting here are the settings-specific things. It wouldn't hurt to run that always but in theory it's a performance decrease, so we don't.
 
-global $config,$only_include_oirc;
-if(isset($config['installed'])){
+global $oirc_config,$only_include_oirc;
+if(isset($oirc_config['installed'])){
 
 $channeloptions = array(
 	-1 => 'No notifications'
 );
 
 $sigurl = generateOircSigURL();
-$s = file_get_contents($config['oircUrl'].'/config.php?channels&'.$sigurl);
+$s = file_get_contents($oirc_config['oircUrl'].'/config.php?channels&'.$sigurl);
 
 if($s != ''){
 	$s = json_decode($s,true);
@@ -315,22 +315,22 @@ $settings = array_merge($settings,array(
 	'oirc_config_installed' => array(
 		'type' => 'boolean',
 		'name' => 'Installed',
-		'default' => $config['installed']
+		'default' => $oirc_config['installed']
 	),
 	'oirc_config_sigKey' => array(
 		'type' => 'text',
 		'name' => 'Signature key',
-		'default' => $config['sigKey']
+		'default' => $oirc_config['sigKey']
 	),
 	'oirc_config_network' => array(
 		'type' => 'integer',
 		'name' => 'Network ID',
-		'default' => $config['network']
+		'default' => $oirc_config['network']
 	),
 	'oirc_config_oircUrl' => array(
 		'type' => 'text',
 		'name' => 'OmnomIRC url',
-		'default' => $config['oircUrl']
+		'default' => $oirc_config['oircUrl']
 	)
 ));
 
@@ -374,18 +374,18 @@ if(!empty($_POST['oirc_options_changetags'])){
 if(isset($_POST['_plugin'])){
 	// we are saving!
 	if(isset($_POST['oirc_config_installed'])){
-		$config['installed'] = $_POST['oirc_config_installed'] == 1;
+		$oirc_config['installed'] = $_POST['oirc_config_installed'] == 1;
 	}
 	if(isset($_POST['oirc_config_sigKey'])){
-		$config['sigKey'] = $_POST['oirc_config_sigKey'];
+		$oirc_config['sigKey'] = $_POST['oirc_config_sigKey'];
 	}
 	if(isset($_POST['oirc_config_network'])){
-		$config['network'] = (int)$_POST['oirc_config_network'];
+		$oirc_config['network'] = (int)$_POST['oirc_config_network'];
 	}
 	if(isset($_POST['oirc_config_oircUrl'])){
-		$config['oircUrl'] = $_POST['oirc_config_oircUrl'];
+		$oirc_config['oircUrl'] = $_POST['oirc_config_oircUrl'];
 	}
-	$_POST['oirc_frameurl'] = $config['oircUrl'].'/index.php?network='.$config['network'];
+	$_POST['oirc_frameurl'] = $oirc_config['oircUrl'].'/index.php?network='.$oirc_config['network'];
 	if(!writeConfig()){
 		Alert(__("Please make sure that the OmnomIRC config file is writable!"));
 	}

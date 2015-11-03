@@ -1,7 +1,7 @@
 <?php
 if (!defined('SMF'))
 	require_once('SSI.php');
-global $smcFunc, $modSettings, $boardurl, $sourcedir, $boarddir, $config;
+global $smcFunc, $modSettings, $boardurl, $sourcedir, $boarddir, $oirc_config;
 
 $smcFunc['db_create_table']('{db_prefix}oirc_postchans', array(
 	array('name' => 'id_profile', 'type' => 'int', 'null' => false),
@@ -25,7 +25,7 @@ $only_include_oirc = true;
 include_once($boarddir.'/checkLogin/index.php');
 
 if(!empty($modSettings['oirc_backup_config'])){ // we have an old config!
-	$config = unserialize($modSettings['oirc_backup_config']);
+	$oirc_config = unserialize($modSettings['oirc_backup_config']);
 	writeConfig();
 }
 
@@ -39,7 +39,7 @@ if(empty($modSettings['oirc_height'])){
 		'oirc_topicnotification' => '{COLOR}10New topic by {COLOR}03{NAME} {COLOR}04{TOPIC} {COLOR}12'.$boardurl.'/index.php?topic={TOPICID}',
 		'oirc_postnotification' => '{COLOR}10New post by {COLOR}03{NAME} {COLOR}10in {COLOR}04{TOPIC} {COLOR}12'.$boardurl.'/index.php?topic={TOPICID}.msg{POSTID}#msg{POSTID}',
 		'oirc_editnotification' => '{COLOR}10Edit by {COLOR}03{NAME} {COLOR}10on {COLOR}04{TOPIC} {COLOR}12'.$boardurl.'/index.php?topic={TOPICID}.msg{POSTID}#msg{POSTID}',
-		'oirc_framehtml' => $config['oircUrl'].'/index.php?network='.$config['network']
+		'oirc_framehtml' => $oirc_config['oircUrl'].'/index.php?network='.$oirc_config['network']
 	));
 }
 
