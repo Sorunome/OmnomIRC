@@ -3,7 +3,7 @@
 	"type": "phpbb-extension",
 	"description": "OmnomIRC Extension for phpBB 3.1",
 	"homepage": "https://omnomirc.omnimaga.org",
-	"version": "0.1.0",
+	"version": "1.0.0",
 	"license": "GPL-3.0",
 	"authors": [{
 		"name": "Sorunome",
