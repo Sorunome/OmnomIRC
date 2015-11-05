@@ -1,0 +1,42 @@
+<!-- INCLUDE overall_header.html -->
+
+<h1>{L_SETTINGS}</h1>
+
+<form id="acp_board" method="post" action="{U_ACTION}">
+	<fieldset>
+		<dl>
+			<dt>{L_ACP_OIRC_NOTIFICATION_NOTICE}</dt>
+			<dd></dd>
+		</dl>
+		<dl>
+			<dt><label for="oirc_topics">{L_ACP_OIRC_TOPICS}</label></dt>
+			<dd><input type="radio" class="radio" name="oirc_topics" id="oirc_topics_1" value="1" <!-- IF OIRC_TOPICS -->checked="checked"<!-- ENDIF -->/> <label for="oirc_topics_1">{L_YES}</label> &nbsp;
+				<input type="radio" class="radio" name="oirc_topics" id="oirc_topics_0" value="0" <!-- IF not OIRC_TOPICS -->checked="checked"<!-- ENDIF --> /> <label for="oirc_topics_0">{L_NO}</label></dd>
+			<dt><label for="oirc_topicnotification">{L_ACP_OIRC_TOPICNOTIFICATION}</label></dt>
+			<dd><input style="width:100%" type="text" name="oirc_topicnotification" value="{OIRC_TOPICNOTIFICATION}" /></dd>
+		</dl>
+		<dl>
+			<dt><label for="oirc_posts">{L_ACP_OIRC_POSTS}</label></dt>
+			<dd><input type="radio" class="radio" name="oirc_posts" id="oirc_posts_1" value="1" <!-- IF OIRC_POSTS -->checked="checked"<!-- ENDIF -->/> <label for="oirc_posts_1">{L_YES}</label> &nbsp;
+				<input type="radio" class="radio" name="oirc_posts" id="oirc_posts_0" value="0" <!-- IF not OIRC_POSTS -->checked="checked"<!-- ENDIF --> /> <label for="oirc_posts_0">{L_NO}</label></dd>
+			<dt><label for="oirc_topicnotification">{L_ACP_OIRC_POSTNOTIFICATION}</label></dt>
+			<dd><input style="width:100%" type="text" name="oirc_postnotification" value="{OIRC_POSTNOTIFICATION}" /></dd>
+		</dl>
+		<dl>
+			<dt><label for="oirc_edits">{L_ACP_OIRC_EDITS}</label></dt>
+			<dd><input type="radio" class="radio" name="oirc_edits" id="oirc_edits_1" value="1" <!-- IF OIRC_EDITS -->checked="checked"<!-- ENDIF -->/> <label for="oirc_edits_1">{L_YES}</label> &nbsp;
+				<input type="radio" class="radio" name="oirc_edits" id="oirc_edits_0" value="0" <!-- IF not OIRC_EDITS -->checked="checked"<!-- ENDIF --> /> <label for="oirc_edits_0">{L_NO}</label></dd>
+			<dt><label for="oirc_topicnotification">{L_ACP_OIRC_EDITNOTIFICATION}</label></dt>
+			<dd><input style="width:100%" type="text" name="oirc_editnotification" value="{OIRC_EDITNOTIFICATION}" /></dd>
+		</dl>
+
+		<p class="submit-buttons">
+			<input class="button1" type="submit" id="submit" name="submit" value="{L_SUBMIT}" />&nbsp;
+			<input class="button2" type="reset" id="reset" name="reset" value="{L_RESET}" />
+		</p>
+
+		{S_FORM_TOKEN}
+	</fieldset>
+</form>
+<!-- INCLUDE overall_footer.html -->
+
