@@ -19,8 +19,8 @@
 				sendToOmnomIRC(strtr($modSettings['oirc_topicnotification'],array(
 					'{COLOR}' => "\x03",
 					'{NAME}' => $posterOptions['name'],
-					'{TOPIC}' => $msgOptions['subject'],
-					'{SUBJECT}' => $msgOptions['subject'],
+					'{TOPIC}' => html_entity_decode($msgOptions['subject']),
+					'{SUBJECT}' => html_entity_decode($msgOptions['subject']),
 					'{TOPICID}' => $topicOptions['id'],
 					'{POSTID}' => $msgOptions['id']
 				)),$chan);
@@ -47,8 +47,8 @@
 				sendToOmnomIRC(strtr($modSettings['oirc_postnotification'],array(
 					'{COLOR}' => "\x03",
 					'{NAME}' => $posterOptions['name'],
-					'{TOPIC}' => $topicname,
-					'{SUBJECT}' => $msgOptions['subject'],
+					'{TOPIC}' => html_entity_decode($topicname),
+					'{SUBJECT}' => html_entity_decode($msgOptions['subject']),
 					'{TOPICID}' => $topicOptions['id'],
 					'{POSTID}' => $msgOptions['id']
 				)),$chan);
@@ -75,8 +75,8 @@
 			sendToOmnomIRC(strtr($modSettings['oirc_editnotification'],array(
 				'{COLOR}' => "\x03",
 				'{NAME}' => $update_parameters['var_modified_name'],
-				'{TOPIC}' => $topicname,
-				'{SUBJECT}' => $msgOptions['subject'],
+				'{TOPIC}' => html_entity_decode($topicname),
+				'{SUBJECT}' => html_entity_decode($msgOptions['subject']),
 				'{TOPICID}' => $topicOptions['id'],
 				'{POSTID}' => $msgOptions['id']
 			)),$chan);
