@@ -1,11 +1,4 @@
 services:
-    omnimaga.OmnomIRC.controller:
-        class: omnimaga\OmnomIRC\controller\main
-        arguments:
-            - @config
-            - @controller.helper
-            - @template
-            - @user
     omnimaga.OmnomIRC.listener:
         class: omnimaga\OmnomIRC\event\main_listener
         arguments:

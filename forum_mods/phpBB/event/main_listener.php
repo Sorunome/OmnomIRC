@@ -11,6 +11,7 @@ class main_listener implements EventSubscriberInterface
 	{
 		return array(
 			'core.user_setup' => 'load_language_on_setup',
+			'core.permissions' => 'add_permissions',
 			'core.page_header' => 'add_oirc_to_header',
 			'core.posting_modify_submit_post_after' => 'report_post',
 		);
@@ -63,12 +64,30 @@ class main_listener implements EventSubscriberInterface
 		);
 		$event['lang_set_ext'] = $lang_set_ext;
 	}
+	public function add_permissions($event)
+	{
+		$permissions = $event['permissions'];
+		$permissions['u_oirc_view'] = array('lang' => 'ACL_U_OIRC_VIEW', 'cat' => 'misc');
+		$permissions['m_oirc_op'] = array('lang' => 'ACL_M_OIRC_OP', 'cat' => 'misc');
+		$event['permissions'] = $permissions;
+	}
 	public function add_oirc_to_header($event)
 	{
-		global $config;
-		
+		global $config,$auth,$user,$phpbb_container,$request;
+		$show = $auth->acl_get('u_oirc_view');
+		if($show)
+		{
+			$data = unserialize($user->data['oirc_pages']);
+			if(empty($data))
+			{
+				$data = unserialize($phpbb_container->get('config_text')->get('oirc_pages'));
+			}// PHP_SELF SCRIPT_FILENAME
+			header('Content-Type:text/plain');
+			$page = substr(basename($request->variable('PHP_SELF',$request->variable('SCRIPT_FILENAME','index.php',false,\phpbb\request\request_interface::SERVER),false,\phpbb\request\request_interface::SERVER)),0,-4);
+			$show = !isset($data[$page]) || $data[$page];
+		}
 		$this->template->assign_vars(array(
-			'OIRC_SHOW' => true,
+			'OIRC_SHOW' => $show,
 			'OIRC_TITLE' => $config['oirc_title'],
 			'OIRC_HEIGHT' => $config['oirc_height'],
 			'OIRC_FRAMEURL' => $config['oirc_frameurl']

@@ -25,6 +25,11 @@ class main_info
 					'auth' => 'ext_omnimaga/OmnomIRC && acl_a_board',
 					'cat' => array('ACP_OIRC_TITLE')
 				),
+				'oirc_admin' => array(
+					'title' => 'ACP_OIRC_ADMIN',
+					'auth' => 'ext_omnimaga/OmnomIRC && acl_a_board',
+					'cat' => array('ACP_OIRC_TITLE')
+				),
 			),
 		);
 	}
