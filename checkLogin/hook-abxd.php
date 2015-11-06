@@ -9,7 +9,11 @@ function hook_is_op($id){
 }
 function hook_get_color_nick($n,$id){
 	// $n is the nick, $id is the user id, return a string (HTML) how the nick color should look like
+	global $boardroot;
 	$user = Query("SELECT u.(_userfields) FROM {users} u WHERE u.id={0}", $id);
+	$url = isset($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) == 'on' ? 'https://' : 'http://';
+	$url .= empty($_SERVER['HTTP_HOST']) ? $_SERVER['SERVER_NAME'] . (empty($_SERVER['SERVER_PORT']) || $_SERVER['SERVER_PORT'] == '80' ? '' : ':' . $_SERVER['SERVER_PORT']) : $_SERVER['HTTP_HOST'];
+	$url .= dirname(dirname(dirname($boardroot)));
 	if(NumRows($user)){
 		$colors = array(
 			'nc0x' => '#888888',
@@ -34,10 +38,9 @@ function hook_get_color_nick($n,$id){
 			'nc15' => '#FF0000',
 			'nc25' => '#FF0000'
 		);
-		
-		$s = UserLink(getDataPrefix(Fetch($user), "u_"));
+		$user = getDataPrefix(Fetch($user),'u_');
 		$c = $colors[substr($s,strpos($s,'class="')+7,4)];
-		return '<a target="_top" style="color:'.$c.';border-color:'.$c.';" '.substr($s,2);
+		return '<a target="_top" style="color:'.$c.';border-color:'.$c.';" href="'.$url.'/?page=profile&amp;id='.$user['id'].'">'.(empty($user['displayname'])?$user['name']:$user['displayname']).'</a>';
 	}
 	return $n;
 }
