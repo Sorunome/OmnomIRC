@@ -8,7 +8,7 @@ rm src/omnomirc.js.tmp
 echo "minifying admin.js ..."
 uglifyjs $UGLIFYOPTIONS src/admin.js -o omnomirc_www/admin.min.js
 
-cd smf_mod
+cd forum_mods
 ./build.sh
 cd ..
 

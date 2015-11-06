@@ -19,8 +19,8 @@
 				sendToOmnomIRC(strtr($modSettings['oirc_topicnotification'],array(
 					'{COLOR}' => "\x03",
 					'{NAME}' => $posterOptions['name'],
-					'{TOPIC}' => $msgOptions['subject'],
-					'{SUBJECT}' => $msgOptions['subject'],
+					'{TOPIC}' => html_entity_decode($msgOptions['subject']),
+					'{SUBJECT}' => html_entity_decode($msgOptions['subject']),
 					'{TOPICID}' => $topicOptions['id'],
 					'{POSTID}' => $msgOptions['id']
 				)),$chan);
@@ -47,8 +47,8 @@
 				sendToOmnomIRC(strtr($modSettings['oirc_postnotification'],array(
 					'{COLOR}' => "\x03",
 					'{NAME}' => $posterOptions['name'],
-					'{TOPIC}' => $topicname,
-					'{SUBJECT}' => $msgOptions['subject'],
+					'{TOPIC}' => html_entity_decode($topicname),
+					'{SUBJECT}' => html_entity_decode($msgOptions['subject']),
 					'{TOPICID}' => $topicOptions['id'],
 					'{POSTID}' => $msgOptions['id']
 				)),$chan);
@@ -63,7 +63,7 @@
 	if (!empty($topicOptions['mark_as_read']) && !$user_info['is_guest'])]]></search>
 			<add><![CDATA[
 	// Send the new edit to OmnomIRC start
-	if(!empty($modSettings['oirc_edits']) && !empty($modSettings['oirc_editnotification']))
+	if(!empty($msgOptions['modify_time']) && !empty($modSettings['oirc_edits']) && !empty($modSettings['oirc_editnotification']))
 	{
 		$chan = getOircSendToChan($topicOptions['board']);
 		if($chan !== false)
@@ -74,9 +74,9 @@
 			}
 			sendToOmnomIRC(strtr($modSettings['oirc_editnotification'],array(
 				'{COLOR}' => "\x03",
-				'{NAME}' => $posterOptions['name'],
-				'{TOPIC}' => $topicname,
-				'{SUBJECT}' => $msgOptions['subject'],
+				'{NAME}' => $update_parameters['var_modified_name'],
+				'{TOPIC}' => html_entity_decode($topicname),
+				'{SUBJECT}' => html_entity_decode($msgOptions['subject']),
 				'{TOPICID}' => $topicOptions['id'],
 				'{POSTID}' => $msgOptions['id']
 			)),$chan);

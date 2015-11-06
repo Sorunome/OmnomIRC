@@ -2,6 +2,7 @@
 // Do initial setup stuff here
 
 $ssi_guest_access = true;
+$_SERVER['PHP_SELF'] = dirname($_SERVER['PHP_SELF']).'..'; // else $boardurl will be re-written
 require(realpath(dirname(__FILE__)).'/../SSI.php');
 
 function hook_is_op($id){
@@ -42,7 +43,7 @@ function hook_is_op($id){
 }
 function hook_get_color_nick($n,$id){
 	// $n is the nick, $id is the user id, return a string (HTML) how the nick color should look like
-	global $smcFunc,$memberContext;
+	global $smcFunc,$memberContext,$boardurl;
 	$request = $smcFunc['db_query']('',"SELECT id_member FROM {db_prefix}members WHERE id_member = {int:id_member} LIMIT 1",array('id_member' => $id) );
 	$res = $smcFunc['db_fetch_assoc']($request);
 	$smcFunc['db_free_result']($request);
@@ -51,7 +52,7 @@ function hook_get_color_nick($n,$id){
 		$id = (int)$res['id_member'];
 		loadMemberData($id);
 		loadMemberContext($id);
-		$n = '<a style="color:'.$memberContext[$id]['group_color'].';border-color:'.$memberContext[$id]['group_color'].'" target="_top" '.substr($memberContext[$id]['link'],2);
+		return '<a style="color:'.$memberContext[$id]['group_color'].';border-color:'.$memberContext[$id]['group_color'].'" target="_top" href="'.$boardurl.'/index.php?action=profile;u='.$id.'">'.$memberContext[$id]['name'].'</a>';
 	}
 	return $n;
 }
