@@ -31,6 +31,10 @@ $lang = array_merge($lang,array(
 		</ul>',
 	'ACP_OIRC_TITLE' => 'OmnomIRC frame title',
 	'ACP_OIRC_HEIGHT' => 'Height of OmnomIRC frame',
+	'ACP_OIRC_CONFIG_INSTALLED' => 'Installed',
+	'ACP_OIRC_CONFIG_SIGKEY' => 'Signature key',
+	'ACP_OIRC_CONFIG_NETWORK' => 'Network',
+	'ACP_OIRC_CONFIG_OIRCURL' => 'OmnomIRC URL',
 ));
 
 ?>

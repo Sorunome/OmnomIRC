@@ -65,31 +65,65 @@ class main_listener implements EventSubscriberInterface
 	}
 	public function add_oirc_to_header($event)
 	{
+		global $config;
 		
 		$this->template->assign_vars(array(
 			'OIRC_SHOW' => true,
-			'OIRC_TITLE' => 'OmnomIRC Chat',
-			'OIRC_HEIGHT' => 280,
-			'OIRC_FRAMEURL' => 'http://192.168.1.13/oirc'
+			'OIRC_TITLE' => $config['oirc_title'],
+			'OIRC_HEIGHT' => $config['oirc_height'],
+			'OIRC_FRAMEURL' => $config['oirc_frameurl']
 		));
 	}
 	public function report_post($event)
 	{
-		global $user;
+		global $user,$config;
 		
 		$data = $event['data'];
-		
-		header('Content-Type:text/plain');
-		var_dump($event['data']);
-		die();
-		$this->sendToOmnomIRC(strtr($oirc_postnotification,array(
-			'{COLOR}' => "\x03",
-			'{NAME}' => $user->data['username'],
-			'{TOPIC}' => $data['topic_title'],
-			'{SUBJECT}' => $data['post_subject'],
-			'{TOPICID}' => $data['topic_id'],
-			'{POSTID}' => $data['post_id']
-		)),0);
+		if($data['topic_first_post_id'] != 0)
+		{
+			if(!$data['post_edit_user'])
+			{
+				if($config['oirc_posts'])
+				{
+					$this->sendToOmnomIRC(strtr($config['oirc_postnotification'],array(
+						'{COLOR}' => "\x03",
+						'{NAME}' => $user->data['username'],
+						'{TOPIC}' => $data['topic_title'],
+						'{SUBJECT}' => $data['post_subject'],
+						'{TOPICID}' => $data['topic_id'],
+						'{POSTID}' => $data['post_id']
+					)),0);
+				}
+			}
+			else
+			{
+				if($config['oirc_edits'])
+				{
+					$this->sendToOmnomIRC(strtr($config['oirc_editnotification'],array(
+						'{COLOR}' => "\x03",
+						'{NAME}' => $user->data['username'],
+						'{TOPIC}' => $data['topic_title'],
+						'{SUBJECT}' => $data['post_subject'],
+						'{TOPICID}' => $data['topic_id'],
+						'{POSTID}' => $data['post_id']
+					)),0);
+				}
+			}
+		}
+		else
+		{
+			if($config['oirc_topics'])
+			{
+				$this->sendToOmnomIRC(strtr($config['oirc_topicnotification'],array(
+					'{COLOR}' => "\x03",
+					'{NAME}' => $user->data['username'],
+					'{TOPIC}' => $data['topic_title'],
+					'{SUBJECT}' => $data['post_subject'],
+					'{TOPICID}' => $data['topic_id'],
+					'{POSTID}' => $data['post_id']
+				)),0);
+			}
+		}
 	}
 }
 ?>
