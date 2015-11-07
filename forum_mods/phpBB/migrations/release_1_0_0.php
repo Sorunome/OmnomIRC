@@ -83,6 +83,9 @@ class release_1_0_0 extends \phpbb\db\migration\migration
 				$this->table_prefix.'users' => array(
 					'oirc_pages' => array('TEXT',''),
 				),
+				$this->table_prefix.'forums' => array(
+					'oirc_chan' => array('TEXT',''),
+				),
 			),
 		);
 	}
@@ -92,6 +95,9 @@ class release_1_0_0 extends \phpbb\db\migration\migration
 			'drop_columns' => array(
 				$this->table_prefix.'users' => array(
 					'oirc_pages',
+				),
+				$this->table_prefix.'forums' => array(
+					'oirc_chan',
 				),
 			),
 		);

@@ -14,6 +14,8 @@ class main_listener implements EventSubscriberInterface
 			'core.permissions' => 'add_permissions',
 			'core.page_header' => 'add_oirc_to_header',
 			'core.posting_modify_submit_post_after' => 'report_post',
+			'core.acp_manage_forums_display_form' => 'acp_generate_forum_data',
+			'core.acp_manage_forums_validate_data' => 'acp_validate_forum_data',
 		);
 	}
 	
@@ -97,7 +99,19 @@ class main_listener implements EventSubscriberInterface
 	{
 		global $user,$config;
 		
+		$chan = $event->get_data()['post_data']['oirc_chan'];
+		
+		if(!$chan || $chan == '' || $chan == -1)
+		{
+			return;
+		}
+		if($chan == '00')
+		{
+			$chan = 0;
+		}
+		
 		$data = $event['data'];
+		
 		if($data['topic_first_post_id'] != 0)
 		{
 			if(!$data['post_edit_user'])
@@ -111,7 +125,7 @@ class main_listener implements EventSubscriberInterface
 						'{SUBJECT}' => $data['post_subject'],
 						'{TOPICID}' => $data['topic_id'],
 						'{POSTID}' => $data['post_id']
-					)),0);
+					)),$chan);
 				}
 			}
 			else
@@ -125,7 +139,7 @@ class main_listener implements EventSubscriberInterface
 						'{SUBJECT}' => $data['post_subject'],
 						'{TOPICID}' => $data['topic_id'],
 						'{POSTID}' => $data['post_id']
-					)),0);
+					)),$chan);
 				}
 			}
 		}
@@ -140,9 +154,84 @@ class main_listener implements EventSubscriberInterface
 					'{SUBJECT}' => $data['post_subject'],
 					'{TOPICID}' => $data['topic_id'],
 					'{POSTID}' => $data['post_id']
-				)),0);
+				)),$chan);
 			}
 		}
+	}
+	public function acp_generate_forum_data($event)
+	{
+		global $user;
+		
+		$data = $event->get_data();
+		$chan = $data['forum_data']['oirc_chan'];
+		if(empty($chan))
+		{
+			$chan = -1;
+		}
+		
+		global $oirc_config;
+		$sigurl = $this->generateOircSigURL();
+		$s = file_get_contents($oirc_config['oircUrl'].'/config.php?channels&'.$sigurl);
+		$foundChan = $chan == -1;
+		$chanlist = array(
+			-1 => $user->lang('ACP_OIRC_NO_NOT')
+		);
+		if($s != '')
+		{
+			$s = json_decode($s,true);
+			if($s !== NULL && !empty($s['channels']))
+			{
+				foreach($s['channels'] as $i => $n)
+				{
+					if((string)$i == $chan)
+					{
+						$foundChan = true;
+					}
+					$chanlist[$i] = $n;
+				}
+			}
+		}
+		$chanother = '';
+		if(!$foundChan)
+		{
+			$chanother = $chan;
+			$chan = -2;
+		}
+		$chanlist[-2] = $user->lang('ACP_OIRC_OTHER_NOT');
+		
+		$chanpickerhtml = '<select id="oirc_chan" name="oirc_chan">';
+		foreach($chanlist as $i => $n)
+		{
+			$chanpickerhtml .= '<option value="'.$i.'"'.($i == $chan?' selected="selected"':'').'>'.htmlspecialchars($n).'</option>';
+		}
+		$chanpickerhtml .= '</select> <input id="oirc_chan_other" '.($chan != -2?'style="display:none;"':'').' type="text" name="oirc_chan_other" value="'.htmlspecialchars($chanother).'" />';
+		$chanpickerhtml .= '<script type="text/javascript">
+			document.getElementById("oirc_chan").addEventListener("change",function(){
+				document.getElementById("oirc_chan_other").style.display = this.value == -2?"":"none";
+			},false);
+		</script>';
+		
+		$data['template_data']['OIRC_CHANPICKERHTML'] = $chanpickerhtml;
+		$event->set_data($data);
+	}
+	function acp_validate_forum_data($event)
+	{
+		global $request;
+		$data = $event->get_data();
+		
+		$chan = (string)$request->variable('oirc_chan',-1);
+		$otherchan = $request->variable('oirc_chan_other','');
+		if($chan == -2)
+		{
+			$chan = $otherchan;
+		}
+		if($chan == 0)
+		{
+			$chan = '00';
+		}
+		
+		$data['forum_data']['oirc_chan'] = $chan;
+		$event->set_data($data);
 	}
 }
 ?>
