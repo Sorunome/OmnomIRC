@@ -13,7 +13,7 @@ function template_omnomirc_action_settings($context_offset,$r)
 	$simpleFields = array(
 		'Index' => array('index',array('index')),
 		'Boards' => array('board',array('board','forum')),
-		'Threads' => array('thread',array('printthread','thread')),
+		'Topics' => array('thread',array('topic')),
 		'Profiles' => array('profile',array('profile')),
 		'Moderation' => array('settings',array('admin','moderate'))
 	);
@@ -49,7 +49,6 @@ function template_omnomirc_action_settings($context_offset,$r)
 				i,
 				simpleFields = ',json_encode($simpleFields),',
 				getState = function(a,id){
-					console.log(id);
 					var ormask = false,
 						andmask = true;
 					for(i = 0;i < a.length;i++){
@@ -59,8 +58,6 @@ function template_omnomirc_action_settings($context_offset,$r)
 							andmask &= elem.checked;
 						}
 					}
-					console.log(ormask);
-					console.log(andmask);
 					if(ormask && !andmask){
 						document.getElementById(id).indeterminate = true;
 					}else{
