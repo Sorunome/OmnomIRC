@@ -19,7 +19,7 @@
 #
 #	You should have received a copy of the GNU General Public License
 #	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
-import threading,socket,string,time,sys,json,pymysql,traceback,errno,chardet,struct,signal,subprocess,select,asyncio,websockets,re
+import threading,socket,string,time,sys,json,pymysql,traceback,errno,chardet,struct,signal,subprocess,select,re
 from base64 import b64encode
 from hashlib import sha1
 
@@ -1079,14 +1079,14 @@ class WebSocketsHandler(ServerHandler):
 		if len(res)>0: # Update
 			sql.query("UPDATE `irc_users` SET `time`=0,`isOnline`=1 WHERE `usernum` = %s",[int(res[0]['usernum'])])
 			if int(res[0]['isOnline'] == 0):
-				sql.query("INSERT INTO `irc_lines` (name1,type,channel,time,online) VALUES(%s,'join',%s,%s,%s)",[self.nick,self.chan,str(int(time.time())),int(self.network)])
+				sql.query("INSERT INTO `irc_lines` (name1,type,channel,time,online) VALUES(%s,'join',%s,%s,%s)",[self.nick,str(self.chan),str(int(time.time())),int(self.network)])
 		else:
-			sql.query("INSERT INTO `irc_users` (`username`,`channel`,`time`,`online`) VALUES(%s,%s,0,%s)",[self.nick,self.chan,self.network])
-			sql.query("INSERT INTO `irc_lines` (name1,type,channel,time,online,uid) VALUES(%s,'join',%s,%s,%s,%s)",[self.nick,self.chan,str(int(time.time())),int(self.network),self.uid])
+			sql.query("INSERT INTO `irc_users` (`username`,`channel`,`time`,`online`) VALUES(%s,%s,0,%s)",[self.nick,str(self.chan),self.network])
+			sql.query("INSERT INTO `irc_lines` (name1,type,channel,time,online,uid) VALUES(%s,'join',%s,%s,%s,%s)",[self.nick,str(self.chan),str(int(time.time())),int(self.network),self.uid])
 	def part(self):
 		if self.chan!='':
-			sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE `username` = %s AND `channel` = %s AND `online` = %s",[self.nick,self.chan,self.network]);
-			sql.query("INSERT INTO `irc_lines` (name1,type,channel,time,online,uid) VALUES(%s,'part',%s,%s,%s,%s)",[self.nick,self.chan,str(int(time.time())),int(self.network),self.uid])
+			sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE `username` = %s AND `channel` = %s AND `online` = %s",[self.nick,str(self.chan),self.network]);
+			sql.query("INSERT INTO `irc_lines` (name1,type,channel,time,online,uid) VALUES(%s,'part',%s,%s,%s,%s)",[self.nick,str(self.chan),str(int(time.time())),int(self.network),self.uid])
 
 	def sendLine(self,n1,n2,t,m,c,s,uid): #name 1, name 2, type, message, channel, source
 		if self.banned:
