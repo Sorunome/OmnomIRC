@@ -289,7 +289,7 @@ class Bot(threading.Thread):
 	def sendTopic(self,s,c):
 		c = self.idToChan(c)
 		if c != -1 and (self.topicbotExists ^ self.main):
-			self.s.sendall('TOPIC %s :%s\r\n' % (c,s))
+			self.s.sendall(bytes('TOPIC %s :%s\r\n' % (c,s),'utf-8'))
 			print('('+str(self.i)+')'+self.sendStr+' '+c+' '+s)
 	def send(self,s,override = False,overrideRestart = False):
 		try:
