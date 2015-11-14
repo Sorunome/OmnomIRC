@@ -567,7 +567,6 @@ class You{
 			$this->loggedIn = true;
 		}else{
 			$this->globalOps = NULL;
-			$this->ops = NULL;
 			$this->loggedIn = $security->checkSig($this->sig,$this->nick,$this->id,$this->network);
 		}
 		$this->infoStuff = NULL;

@@ -1214,7 +1214,7 @@ oirc = (function(){
 			return {
 				highlight:function(c,doSave){
 					$.each(chans,function(i,ci){
-						if(ci.chan.toLowerCase()==c.toLowerCase() || c == ci.id){
+						if(c == ci.id || ci.chan.toLowerCase()==c.toString().toLowerCase()){
 							$('#chan'+i.toString()).addClass('highlightChan');
 							chans[i].high = true;
 						}
@@ -2845,9 +2845,9 @@ oirc = (function(){
 					}
 					if((['message','action','pm','pmaction'].indexOf(line.type)>=0) && line.name.toLowerCase() != '*'){
 						tdMessage = message = parseHighlight(message,line);
-						if(page.isBlurred()){
+						//if(page.isBlurred()){
 							notification.make('('+channels.getCurrentName()+') <'+line.name+'> '+line.message,line.chan);
-						}
+						//}
 					}
 					switch(line.type){
 						case 'reload':
@@ -2908,7 +2908,7 @@ oirc = (function(){
 									network:line.network
 								});
 							}
-							if(line.network==1){
+							if(addLine && settings.networks()[line.network].type==1 && options.get('oircJoinPart')=='F'){
 								addLine = false;
 							}
 							break;

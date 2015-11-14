@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ####Config####
-SCRIPT="python2 /home/oirc/bot.py"
+SCRIPT="python3 /home/oirc/bot.py"
 RUNAS=oirc
 
 PIDFILE=/var/run/omnomirc.pid

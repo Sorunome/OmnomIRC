@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 ## -*- coding: utf-8 -*-
 
 
@@ -19,15 +19,17 @@
 #
 #	You should have received a copy of the GNU General Public License
 #	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
-import threading,socket,string,time,sys,json,MySQLdb,traceback,errno,chardet,struct,signal,subprocess,select
+import threading,socket,string,time,sys,json,pymysql,traceback,errno,chardet,struct,signal,subprocess,select,asyncio,websockets,re
 from base64 import b64encode
 from hashlib import sha1
-from mimetools import Message
-from StringIO import StringIO
 
 print('Starting OmnomIRC bot...')
 DOCUMENTROOT = '/usr/share/nginx/html/oirc'
 
+
+
+def b64encode_wrap(s):
+	return makeUnicode(b64encode(bytes(s,'utf-8')))
 
 def makeUnicode(s):
 	try:
@@ -43,16 +45,19 @@ def makeUnicode(s):
 
 def execPhp(f,d):
 	s = []
-	for key,value in d.iteritems():
+	for key,value in d.items():
 		s.append(str(key)+'='+str(value))
 	res = subprocess.Popen(['php',DOCUMENTROOT+'/'+f] + s,stdout=subprocess.PIPE).communicate()
 	try:
-		return json.loads(res[0])
+		return json.loads(makeUnicode(res[0]))
 	except:
 		try:
-			return res[0]
+			return makeUnicode(res[0])
 		except:
-			return res
+			try:
+				return res[0]
+			except:
+				return res
 
 #config handler
 class Config:
@@ -81,38 +86,31 @@ class Sql:
 		if data == None:
 			return None
 		desc = cur.description
-		dict = {}
+		ret = {}
 		for (name,value) in zip(desc,data):
-			dict[name[0]] = value
-		return dict
+			ret[name[0]] = value
+		print(ret)
+		return ret
 	def query(self,q,p = []):
 		global config
 		try:
-			db = MySQLdb.connect(config.json['sql']['server'],config.json['sql']['user'],config.json['sql']['passwd'],config.json['sql']['db'],charset='utf8')
+			db = pymysql.connect(
+				host=config.json['sql']['server'],
+				user=config.json['sql']['user'],
+				password=config.json['sql']['passwd'],
+				db=config.json['sql']['db'],
+				charset='utf8',
+				cursorclass=pymysql.cursors.DictCursor)
 			cur = db.cursor()
-			for i in range(len(p)):
-				try:
-					try:
-						p[i] = p[i].decode('utf-8').encode('utf-8')
-					except:
-						if p[i]!='':
-							p[i] = p[i].decode(chardet.detect(p[i])['encoding']).encode('utf-8')
-					p[i] = db.escape_string(p[i])
-				except:
-					if isinstance(p[i],basestring):
-						try:
-							p[i] = db.escape_string(p[i].encode('utf-8'))
-						except:
-							p[i] = db.escape_string(p[i])
-			cur.execute(q % tuple(p))
+			
+			cur.execute(q,tuple(p))
+			db.commit()
 			rows = []
-			while True:
-				row = self.fetchOneAssoc(cur)
+			for row in cur:
 				if row == None:
 					break
 				rows.append(row)
 			cur.close()
-			db.commit()
 			db.close()
 			return rows
 		except Exception as inst:
@@ -263,16 +261,16 @@ class Bot(threading.Thread):
 			self.recieveStr = 'T>'
 			self.sendStr = 'T<'
 	def idToChan(self,i):
-		if self.chans.has_key(i):
+		if i in self.chans:
 			return self.chans[i]
 		try:
-			if self.chans.has_key(int(i)):
+			if int(i) in self.chans:
 				return self.chans[int(i)]
 		except:
 			return -1
 		return -1
 	def chanToId(self,c):
-		for i,ch in self.chans.iteritems():
+		for i,ch in self.chans.items():
 			if c.lower() == ch.lower():
 				return i
 		return -1
@@ -297,10 +295,10 @@ class Bot(threading.Thread):
 		try:
 			if self.main or override:
 				try:
-					self.s.sendall('%s\r\n' % s)
+					self.s.sendall(bytes('%s\r\n' % s,'utf-8'))
 					print('('+str(self.i)+')'+self.sendStr+' '+s)
 				except:
-					self.s.sendall('%s\r\n' % s.encode('utf-8'))
+					self.s.sendall(bytes('%s\r\n' % s.encode('utf-8'),'utf-8'))
 					print('('+str(self.i)+')'+self.sendStr+' '+s.encode('utf-8'))
 		except:
 			traceback.print_exc()
@@ -357,20 +355,20 @@ class Bot(threading.Thread):
 				handle.sendToOther(n1,n2,t,m,c,self.i)
 			c = makeUnicode(str(c))
 			print('(1)<< '+str({'name1':n1,'name2':n2,'type':t,'message':m,'channel':c}))
-			sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`) VALUES ('%s','%s','%s','%s','%s','%s',%d)",[n1,n2,m,t,c,str(int(time.time())),int(self.i)])
+			sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`) VALUES (%s,%s,%s,%s,%s,%s,%s)",[n1,n2,m,t,c,str(int(time.time())),int(self.i)])
 			if t=='topic':
-				temp = sql.query("SELECT channum FROM `irc_channels` WHERE chan='%s'",[c.lower()])
+				temp = sql.query("SELECT channum FROM `irc_channels` WHERE chan=%s",[c.lower()])
 				if len(temp)==0:
-					sql.query("INSERT INTO `irc_channels` (chan,topic) VALUES('%s','%s')",[c.lower(),m])
+					sql.query("INSERT INTO `irc_channels` (chan,topic) VALUES(%s,%s)",[c.lower(),m])
 				else:
-					sql.query("UPDATE `irc_channels` SET topic='%s' WHERE chan='%s'",[m,c.lower()])
+					sql.query("UPDATE `irc_channels` SET topic=%s WHERE chan=%s",[m,c.lower()])
 			if t=='action' or t=='message':
-				sql.query("UPDATE `irc_users` SET lastMsg='%s' WHERE username='%s' AND channel='%s' AND online=%d",[str(int(time.time())),n1,c,int(self.i)])
+				sql.query("UPDATE `irc_users` SET lastMsg=%s WHERE username=%s AND channel=%s AND online=%s",[str(int(time.time())),n1,c,int(self.i)])
 			handle.updateCurline()
 	def addUser(self,u,c):
 		c = self.chanToId(c)
 		if c != -1:
-			if self.userlist.has_key(c):
+			if c in self.userlist:
 				self.userlist[c].append(u)
 			else:
 				self.userlist[c] = [u]
@@ -379,12 +377,12 @@ class Bot(threading.Thread):
 		global sql
 		c = self.chanToId(c)
 		if c != -1:
-			if self.userlist.has_key(c):
+			if c in self.userlist:
 				self.userlist[c].remove(u)
 			handle.removeUser(u,c,self.i)
 	def handleQuit(self,n,m):
 		global handle
-		for c,us in self.userlist.iteritems():
+		for c,us in self.userlist.items():
 			removedUsers = []
 			for u in us:
 				if u==n:
@@ -396,7 +394,7 @@ class Bot(threading.Thread):
 							removedUsers.append(n);
 	def handleNickChange(self,old,new):
 		global handle
-		for c,us in self.userlist.iteritems():
+		for c,us in self.userlist.items():
 			changedNicks = []
 			for u in us:
 				if u==old:
@@ -465,7 +463,7 @@ class Bot(threading.Thread):
 		self.quitLoop = False
 		while not self.stopnow and not self.quitLoop:
 			try:
-				self.readbuffer += self.s.recv(1024)
+				self.readbuffer += makeUnicode(self.s.recv(1024))
 			except socket.error as e:
 				if isinstance(e.args,tuple):
 					if e == errno.EPIPE:
@@ -498,7 +496,7 @@ class Bot(threading.Thread):
 					self.lastLineTime = time.time()
 					self.quitMsg = 'No pings (2)'
 					print('Restarting due to no pings ('+str(self.i)+add)
-			temp=string.split(self.readbuffer,'\n')
+			temp=self.readbuffer.split('\n')
 			self.readbuffer = temp.pop()
 			if self.lastPingTime+90 <= time.time(): # allow up to 60 seconds lag
 				self.stopnow = True
@@ -511,8 +509,8 @@ class Bot(threading.Thread):
 				self.lastPingTime = time.time()
 			for line in temp:
 				print('('+str(self.i)+')'+self.recieveStr+' '+line)
-				line=string.rstrip(line)
-				line=string.split(line)
+				line=line.rstrip()
+				line=line.split()
 				try:
 					self.lastLineTime = time.time()
 					if(line[0]=='PING'):
@@ -535,7 +533,7 @@ class Bot(threading.Thread):
 				self.send('QUIT :%s' % self.quitMsg,True,False)
 				self.handleQuit(self.nick,self.quitMsg)
 			if self.main:
-				sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE online = %d",[int(self.i)])
+				sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE online = %s",[int(self.i)])
 				handle.updateCurline() # others do this automatically
 			try:
 				self.s.close()
@@ -547,13 +545,13 @@ class Bot(threading.Thread):
 	def delUsersInChan(self,c):
 		c = self.chanToId(c)
 		if c != -1:
-			sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE `online` = %d AND `channel` = '%s'",[int(self.i),c])
+			sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE `online` = %s AND `channel` = %s",[int(self.i),c])
 	def getUsersInChan(self,c):
 		self.delUsersInChan(c)
 		self.send('WHO %s' % c)
 	def joinChans(self):
 		#ca = []
-		for i,c in self.chans.iteritems():
+		for i,c in self.chans.items():
 			self.send('JOIN %s' % c,True)
 			#ca.append(c)
 		#self.send('JOIN %s' % (','.join(ca)),True)
@@ -586,7 +584,7 @@ class Bot(threading.Thread):
 				add = 'T)'
 			print('Starting bot... ('+str(self.i)+add)
 			if self.main:
-				sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE online = %d",[int(self.i)])
+				sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE online = %s",[int(self.i)])
 			self.connectToIRC()
 			self.readbuffer = ''
 			
@@ -639,7 +637,7 @@ class OIRCLink(threading.Thread):
 								print(inst)
 								traceback.print_exc()
 							lastline = row['prikey']
-						sql.query('DELETE FROM `irc_outgoing_messages` WHERE prikey < %d',[int(lastline)+1])
+						sql.query('DELETE FROM `irc_outgoing_messages` WHERE prikey < %s',[int(lastline)+1])
 			except Exception as inst:
 				print(inst)
 				traceback.print_exc()
@@ -684,7 +682,7 @@ class CalculatorHandler(ServerHandler):
 		c = self.chanToId(self.chan)
 		if c!=-1:
 			handle.sendToOther(self.calcName,'',t,m,c,self.i)
-			sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`) VALUES ('%s','%s','%s','%s','%s','%s',%d)",[self.calcName,'',m,t,c,str(int(time.time())),int(self.i)])
+			sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`) VALUES (%s,%s,%s,%s,%s,%s,%s)",[self.calcName,'',m,t,c,str(int(time.time())),int(self.i)])
 			handle.updateCurline()
 	def sendLine(self,n1,n2,t,m,c,s): #name 1, name 2, type, message, channel, source
 		c = self.idToChan(c)
@@ -722,12 +720,12 @@ class CalculatorHandler(ServerHandler):
 			return self.chans[i]
 		return -1
 	def chanToId(self,c):
-		for i,ch in self.chans.iteritems():
+		for i,ch in self.chans.items():
 			if c.lower() == ch.lower():
 				return i
 		return -1
 	def findchan(self,chan):
-		for key,value in self.chans.iteritems():
+		for key,value in self.chans.items():
 			if chan.lower() == value.lower():
 				return True
 				break
@@ -832,13 +830,13 @@ class Main():
 			print(inst)
 			traceback.print_exc()
 	def addUser(self,u,c,i):
-		temp = sql.query("SELECT usernum FROM irc_users WHERE username='%s' AND channel='%s' AND online=%d",[u,c,int(i)])
+		temp = sql.query("SELECT usernum FROM irc_users WHERE username=%s AND channel=%s AND online=%s",[u,c,int(i)])
 		if(len(temp)==0):
-			sql.query("INSERT INTO `irc_users` (`username`,`channel`,`online`) VALUES ('%s','%s',%d)",[u,c,int(i)])
+			sql.query("INSERT INTO `irc_users` (`username`,`channel`,`online`) VALUES (%s,%s,%s)",[u,c,int(i)])
 		else:
-			sql.query("UPDATE `irc_users` SET `isOnline`=1 WHERE `usernum`=%d",[int(temp[0]['usernum'])])
+			sql.query("UPDATE `irc_users` SET `isOnline`=1 WHERE `usernum`=%s",[int(temp[0]['usernum'])])
 	def removeUser(self,u,c,i):
-		sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE `username` = '%s' AND `channel` = '%s' AND online=%d",[u,c,int(i)])
+		sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE `username` = %s AND `channel` = %s AND online=%s",[u,c,int(i)])
 	def getCurline(self):
 		global config
 		f = open(config.json['settings']['curidFilePath'])
@@ -959,7 +957,7 @@ class Main():
 					self.websocketserver = Server(config.json['websockets']['host'],config.json['websockets']['port'],WebSocketsHandler)
 				self.websocketserver.start()
 			if self.calcNetwork!=-1:
-				sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE online = %d",[self.calcNetwork['id']])
+				sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE online = %s",[self.calcNetwork['id']])
 				self.gCn_server = Server(self.calcNetwork['config']['server'],self.calcNetwork['config']['port'],CalculatorHandler)
 				self.gCn_server.start()
 			while True:
@@ -1011,34 +1009,47 @@ class WebSocketsHandler(ServerHandler):
 		else:
 			return self.read_next_message()
 	def read_next_message(self):
-		length = ord(self.socket.recv(2)[1]) & 127
+		b1,b2 = self.socket.recv(2)
+		if not b1 & 0x80:
+			print('Client closed connection')
+			return False
+		if b1 & 0x0F == 0x8:
+			print('Client asked to close connection')
+			return False
+		if not b1 & 0x80:
+			print('Client must always be masked')
+			return False
+		length = b2 & 127
 		if length == 126:
 			length = struct.unpack(">H", self.socket.recv(2))[0]
 		elif length == 127:
 			length = struct.unpack(">Q", self.socket.recv(8))[0]
-		masks = [ord(byte) for byte in self.socket.recv(4)]
+		masks = self.socket.recv(4)
 		decoded = ""
 		for char in self.socket.recv(length):
-			decoded += chr(ord(char) ^ masks[len(decoded) % 4])
+			decoded += chr(char ^ masks[len(decoded) % 4])
 		try:
-			return self.on_message(json.loads(decoded))
+			return self.on_message(json.loads(makeUnicode(decoded)))
 		except Exception as inst:
 			traceback.print_exc()
 			return True
 	def send_message(self, message):
 		try:
-			self.socket.send(chr(129))
+			header = bytearray()
+			message = makeUnicode(message)
+			
 			length = len(message)
+			self.socket.send(bytes([129]))
 			if length <= 125:
-				self.socket.send(chr(length))
+				self.socket.send(bytes([length]))
 			elif length >= 126 and length <= 65535:
-				self.socket.send(chr(126))
-				self.socket.send(struct.pack(">H", length))
+				self.socket.send(bytes([126]))
+				self.socket.send(struct.pack(">H",length))
 			else:
-				self.socket.send(chr(127))
-				self.socket.send(struct.pack(">Q", length))
-			self.socket.send(message)
-		except IOError, e:
+				self.socket.send(bytes([127]))
+				self.socket.send(struct.pack(">Q",length))
+			self.socket.send(bytes(message,'utf-8'))
+		except IOError as e:
 			traceback.print_exc()
 			if e.errno == errno.EPIPE:
 				return self.close()
@@ -1046,7 +1057,7 @@ class WebSocketsHandler(ServerHandler):
 	def addLine(self,t,m):
 		global handle,sql
 		c = self.chan
-		if isinstance(c,basestring) and len(c) > 0 and c[0]=='*':
+		if isinstance(c,str) and len(c) > 0 and c[0]=='*':
 			c = c[1:]
 			if t=='message':
 				t = 'pm'
@@ -1057,25 +1068,25 @@ class WebSocketsHandler(ServerHandler):
 		if c!='':
 			print('('+str(self.network)+')>> '+str({'chan':c,'nick':self.nick,'message':m,'type':t}))
 			handle.sendToOther(self.nick,'',t,m,c,self.network,self.uid)
-			sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`,`uid`) VALUES ('%s','%s','%s','%s','%s','%s',%d,%d)",[self.nick,'',m,t,c,str(int(time.time())),int(self.network),self.uid])
-			sql.query("UPDATE `irc_users` SET lastMsg='%s' WHERE username='%s' AND channel='%s' AND online=%d",[str(int(time.time())),self.nick,self.chan,int(self.network)])
+			sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`,`uid`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",[self.nick,'',m,t,c,str(int(time.time())),int(self.network),self.uid])
+			sql.query("UPDATE `irc_users` SET lastMsg=%s WHERE username=%s AND channel=%s AND online=%s",[str(int(time.time())),self.nick,str(self.chan),int(self.network)])
 			handle.updateCurline()
 	def join(self): # updates nick in userlist
 		global sql
-		if isinstance(self.chan,basestring) and len(self.chan) > 0 and self.chan[0]=='*': # no userlist on PMs
+		if isinstance(self.chan,str) and len(self.chan) > 0 and self.chan[0]=='*': # no userlist on PMs
 			return
-		res = sql.query("SELECT usernum,time,isOnline FROM `irc_users` WHERE `username` = '%s' AND `channel` = '%s' AND `online` = %d",[self.nick,self.chan,self.network])
+		res = sql.query("SELECT usernum,time,isOnline FROM `irc_users` WHERE `username` = %s AND `channel` = %s AND `online` = %s",[self.nick,str(self.chan),self.network])
 		if len(res)>0: # Update
-			sql.query("UPDATE `irc_users` SET `time`=0,`isOnline`=1 WHERE `usernum` = %d",[int(res[0]['usernum'])])
+			sql.query("UPDATE `irc_users` SET `time`=0,`isOnline`=1 WHERE `usernum` = %s",[int(res[0]['usernum'])])
 			if int(res[0]['isOnline'] == 0):
-				sql.query("INSERT INTO `irc_lines` (name1,type,channel,time,online) VALUES('%s','join','%s','%s',%d)",[self.nick,self.chan,str(int(time.time())),int(self.network)])
+				sql.query("INSERT INTO `irc_lines` (name1,type,channel,time,online) VALUES(%s,'join',%s,%s,%s)",[self.nick,self.chan,str(int(time.time())),int(self.network)])
 		else:
-			sql.query("INSERT INTO `irc_users` (`username`,`channel`,`time`,`online`) VALUES('%s','%s',0,%d)",[self.nick,self.chan,self.network])
-			sql.query("INSERT INTO `irc_lines` (name1,type,channel,time,online,uid) VALUES('%s','join','%s','%s',%d,%d)",[self.nick,self.chan,str(int(time.time())),int(self.network),self.uid])
+			sql.query("INSERT INTO `irc_users` (`username`,`channel`,`time`,`online`) VALUES(%s,%s,0,%s)",[self.nick,self.chan,self.network])
+			sql.query("INSERT INTO `irc_lines` (name1,type,channel,time,online,uid) VALUES(%s,'join',%s,%s,%s,%s)",[self.nick,self.chan,str(int(time.time())),int(self.network),self.uid])
 	def part(self):
 		if self.chan!='':
-			sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE `username` = '%s' AND `channel` = '%s' AND `online` = %d",[self.nick,self.chan,self.network]);
-			sql.query("INSERT INTO `irc_lines` (name1,type,channel,time,online,uid) VALUES('%s','part','%s','%s',%d,%d)",[self.nick,self.chan,str(int(time.time())),int(self.network),self.uid])
+			sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE `username` = %s AND `channel` = %s AND `online` = %s",[self.nick,self.chan,self.network]);
+			sql.query("INSERT INTO `irc_lines` (name1,type,channel,time,online,uid) VALUES(%s,'part',%s,%s,%s,%s)",[self.nick,self.chan,str(int(time.time())),int(self.network),self.uid])
 
 	def sendLine(self,n1,n2,t,m,c,s,uid): #name 1, name 2, type, message, channel, source
 		if self.banned:
@@ -1085,49 +1096,55 @@ class WebSocketsHandler(ServerHandler):
 			'type':t,
 			'network':s,
 			'time':int(time.time()),
-			'name':n1.encode('utf-8'),
-			'message':m.encode('utf-8'),
-			'name2':n2.encode('utf-8'),
+			'name':n1,
+			'message':m,
+			'name2':n2,
 			'chan':c,
 			'uid':uid
 		}})
 		self.send_message(s)
 	def handshake(self):
-		data = self.socket.recv(1024).strip()
-		headers = Message(StringIO(data.split('\r\n', 1)[1]))
-		if headers.get("Upgrade", None) != "websocket":
+		data = makeUnicode(self.socket.recv(1024)).strip()
+		upgrade = re.search('\nupgrade[\s]*:[\s]*websocket',data.lower())
+		if not upgrade:
 			return False
 		print('Handshaking...')
-		key = headers['Sec-WebSocket-Key']
-		digest = b64encode(sha1(key + self.magic).hexdigest().decode('hex'))
+		key = re.search('\n[sS]ec-[wW]eb[sS]ocket-[kK]ey[\s]*:[\s]*(.*)\r\n',data)
+		if key:
+			key = key.group(1)
+		else:
+			print('Missing Key!')
+			return False
+		digest = b64encode(sha1((key + self.magic).encode('utf-8')).digest()).strip().decode('utf-8')
 		response = 'HTTP/1.1 101 Switching Protocols\r\n'
 		response += 'Upgrade: websocket\r\n'
 		response += 'Connection: Upgrade\r\n'
 		response += 'Sec-WebSocket-Accept: %s\r\n\r\n' % digest
-		self.handshake_done = self.socket.send(response)
+		self.handshake_done = self.socket.send(bytes(response,'utf-8'))
 		return True
 	def checkRelog(self,r,m):
-		if r.has_key('relog'):
+		if 'relog' in r:
 			self.send_message(json.dumps({'relog':r['relog']}))
 			if r['relog']==2:
 				self.msgStack.append(m)
 	def on_message(self,m):
 		try:
-			if m.has_key('action'):
+			if 'action' in m:
 				if m['action'] == 'ident':
 					try:
 						r = execPhp('omnomirc.php',{
 							'ident':'',
-							'nick':b64encode(m['nick']),
-							'signature':b64encode(m['signature']),
+							'nick':b64encode_wrap(m['nick']),
+							'signature':b64encode_wrap(m['signature']),
 							'time':m['time'],
 							'id':m['id'],
 							'network':m['network']
 						})
 					except:
+						traceback.print_exc()
 						self.identified = False
 						self.send_message(json.dumps({'relog':3}))
-						return
+						return True
 					try:
 						self.banned = r['isbanned']
 						if r['loggedin']:
@@ -1142,7 +1159,7 @@ class WebSocketsHandler(ServerHandler):
 						else:
 							self.identified = False
 							self.nick = ''
-						if r.has_key('relog'):
+						if 'relog' in r:
 							self.send_message(json.dumps({'relog':r['relog']}))
 					except:
 						self.identified = False
@@ -1153,11 +1170,11 @@ class WebSocketsHandler(ServerHandler):
 					try:
 						c = str(int(self.chan))
 					except:
-						c = b64encode(self.chan)
+						c = b64encode_wrap(self.chan)
 					r = execPhp('omnomirc.php',{
 						'ident':'',
-						'nick':b64encode(self.nick),
-						'signature':b64encode(self.sig),
+						'nick':b64encode_wrap(self.nick),
+						'signature':b64encode_wrap(self.sig),
 						'time':str(int(time.time())),
 						'id':self.uid,
 						'network':self.network,
@@ -1182,13 +1199,13 @@ class WebSocketsHandler(ServerHandler):
 										try:
 											c = str(int(c))
 										except:
-											c = b64encode(c)
+											c = b64encode_wrap(c)
 										
 										r = execPhp('message.php',{
-											'message':b64encode(msg),
+											'message':b64encode_wrap(msg),
 											'channel':c,
-											'nick':b64encode(self.nick),
-											'signature':b64encode(self.sig),
+											'nick':b64encode_wrap(self.nick),
+											'signature':b64encode_wrap(self.sig),
 											'time':str(int(time.time())),
 											'id':self.uid,
 											'network':self.network
