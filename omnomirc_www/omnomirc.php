@@ -1,22 +1,22 @@
 <?php
 /*
-    OmnomIRC COPYRIGHT 2010,2011 Netham45
-                       2012-2015 Sorunome
+	OmnomIRC COPYRIGHT 2010,2011 Netham45
+					   2012-2015 Sorunome
 
-    This file is part of OmnomIRC.
+	This file is part of OmnomIRC.
 
-    OmnomIRC is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	OmnomIRC is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    OmnomIRC is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	OmnomIRC is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 if(isset($argv)){
@@ -108,8 +108,19 @@ function base64_url_encode($input){
 function base64_url_decode($input){
 	return base64_decode(strtr($input,'-_,','+/=')); 
 }
+function refValues($arr){
+	if (strnatcmp(phpversion(),'5.3') >= 0){  //Reference is required for PHP 5.3+
+		$refs = array();
+		foreach($arr as $key => $value){
+			$refs[$key] = &$arr[$key];
+		}
+		return $refs;
+	}
+	return $arr;
+}
 class Sqli{
 	private $mysqliConnection;
+	private $stmt;
 	private function connectSql(){
 		global $config,$json;
 		if(isset($this->mysqliConnection)){
@@ -125,29 +136,25 @@ class Sqli{
 		$this->mysqliConnection = $mysqli;
 		return $mysqli;
 	}
-	public function query(){
+	private function reportError($type,$a = array(),$stack = 1,$prep = false){
 		global $json;
-		//ini_set('memory_limit','-1');
-		$mysqli = $this->connectSql();
-		$params = func_get_args();
-		$query = $params[0];
-		$args = array();
-		for($i=1;$i<count($params);$i++)
-			$args[$i-1] = $mysqli->real_escape_string($params[$i]);
-		$result = $mysqli->query(vsprintf($query,$args));
-		if($mysqli->errno==1065){ //empty
-			return array();
+		if($prep){
+			$mysqli = $this->stmt;
+		}else{
+			$mysqli = $this->connectSql();
 		}
-		if($mysqli->errno!=0){
-			$trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS,1);
-			$json->addError(array(
-				'type' => 'mysql',
-				'line' => $trace[0]['line']
-				'method' => 'query',
-				'errno' => $mysqli->errno,
-				'error' => $mysqli->error,
-				'query' => vsprintf($query,$args),
-			));
+		$trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS,$stack+1);
+		$json->addError(array_merge(array(
+			'type' => 'mysql',
+			'line' => $trace[$stack]['line'],
+			'method' => $type,
+			'errno' => $mysqli->errno,
+			'error' => $mysqli->error,
+		),$a));
+	}
+	private function parseResults($result,$stack = 1){
+		if($result===false){
+			$this->reportError('misc',array(),$stack+1);
 			return array();
 		}
 		if($result===true){ //nothing returned
@@ -169,7 +176,87 @@ class Sqli{
 		$result->free();
 		return $res;
 	}
-	public function insertId(){
+	public function prepare($query, $stack = 0){
+		$mysqli = $this->connectSql();
+		if(!$this->stmt = $mysqli->prepare($query)){
+			$this->reportError('prepare',array('query' => $query),$stack+1);
+			return false;
+		}
+		return true;
+	}
+	public function bind_param($params,$stack = 0){
+		if(is_array($params)){
+			$s = '';
+			foreach($params as $p){
+				switch(gettype($p)){
+					case 'boolean':
+					case 'integer':
+						$s .= 'i';
+						break;
+					case 'double':
+						$s .= 'd';
+						break;
+					default:
+						$s .= 's';
+				}
+			}
+			array_unshift($params,$s);
+		}else{
+			$params = func_get_args();
+		}
+		if(!call_user_func_array(array($this->stmt,'bind_param'),refValues($params))){
+			$this->reportError('bind_param',array(),$stack+1,true);
+			return false;
+		}
+		return true;
+	}
+	public function execute($stack = 0){
+		if(!$this->stmt->execute()){
+			$this->reportError('execute',array(),$stack+1,true);
+			return false;
+		}
+		return true;
+	}
+	public function close_prepare(){
+		$this->stmt->close();
+	}
+	public function query_prepare($query,$params,$stack = 0){
+		if($this->prepare($query,$stack+1) && $this->bind_param($params,$stack+1) && $this->execute($stack +1)){
+			$result = $this->stmt->get_result();
+			if($result === false && $this->stmt->errno == 0){ // bug prevention
+				$result = true;
+			}
+			$res = $this->parseResults($result,$stack + 1);
+			$this->close_prepare();
+			return $res;
+		}
+		return array();
+	}
+	public function query(){
+		//ini_set('memory_limit','-1');
+		$mysqli = $this->connectSql();
+		$params = func_get_args();
+		$query = $params[0];
+		$args = array();
+		for($i=1;$i<count($params);$i++)
+			$args[$i-1] = $mysqli->real_escape_string($params[$i]);
+		
+		if($mysqli->errno==1065){ //empty
+			return array();
+		}
+		if($mysqli->errno!=0){
+			$this->reportError('query',array('query' => vsprintf($query,$args)));
+			return array();
+		}
+		
+		$result = $mysqli->query(vsprintf($query,$args));
+		$res = $this->parseResults($result);
+		return $res;
+	}
+	public function insertId($stmt = false){
+		if($stmt){
+			return $this->stmt->insert_id;
+		}
 		$mysqli = $this->connectSql();
 		return $mysqli->insert_id;
 	}
@@ -267,18 +354,18 @@ class GlobalVars{
 		if($type===NULL){ //if we couldn't set a type return false
 			return false;
 		}
-		$r = $sql->query("SELECT id,type FROM irc_vars WHERE name='%s'",$s);
+		$r = $sql->query_prepare("SELECT id,type FROM irc_vars WHERE name=?",array($s));
 		$r = $r[0];
 		if(isset($r['id'])){ //check if we need to update or add a new
-			$sql->query("UPDATE irc_vars SET value='%s',type='%s' WHERE name='%s'",$c,$type,$s);
+			$sql->query_prepare("UPDATE irc_vars SET value=?,type=? WHERE name=?",array($c,$type,$s));
 		}else{
-			$sql->query("INSERT INTO irc_vars (name,value,type) VALUES ('%s','%s',%d)",$s,$c,(int)$type);
+			$sql->query_prepare("INSERT INTO irc_vars (name,value,type) VALUES (?,?,?)",array($s,$c,(int)$type));
 		}
 		return true;
 	}
 	public function get($s){
 		global $sql;
-		$res = $sql->query("SELECT value,type FROM irc_vars WHERE name='%s'",$s);
+		$res = $sql->query_prepare("SELECT value,type FROM irc_vars WHERE name=?",array($s));
 		$res = $res[0];
 		switch((int)$res['type']){ //convert to types, else return false
 			case 0:
