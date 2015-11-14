@@ -116,7 +116,7 @@ if(substr($parts[0],0,1)=='/'){
 			$userSql = $you->info();
 			if(strpos($userSql['ignores'],$ignoreuser."\n")===false){
 				$userSql['ignores'].=$ignoreuser."\n";
-				$sql->query("UPDATE `irc_userstuff` SET ignores='%s' WHERE name='%s'",$userSql["ignores"],strtolower($nick));
+				$sql->query_prepare("UPDATE `irc_userstuff` SET ignores=? WHERE name=LOWER(?)",array($userSql["ignores"],$nick));
 				$returnmessage = "\x033Now ignoring $ignoreuser.";
 				$reload = true;
 			}else{
@@ -149,7 +149,7 @@ if(substr($parts[0],0,1)=='/'){
 				if($ignoreuser=='*'){
 					$returnmessage = "\x033You are no longer ignoring anybody.";
 				}
-				$sql->query("UPDATE `irc_userstuff` SET ignores='%s' WHERE name='%s'",$userSql["ignores"],strtolower($nick));
+				$sql->query_prepare("UPDATE `irc_userstuff` SET ignores=? WHERE name=LOWER(?)",array($userSql["ignores"],$nick));
 				$reload = true;
 			}else{
 				$returnmessage = "\x034ERROR: You weren't ignoring $ignoreuser";
@@ -178,8 +178,8 @@ if(substr($parts[0],0,1)=='/'){
 				unset($parts[0]);
 				$newTopic = implode(' ',$parts);
 				$channels->setTopic($channel,$newTopic);
-				$sql->query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES ('%s','%s','%s',%d,%d,'%s')",$newTopic,$nick,$channel,0,$you->getNetwork(),'topic');
-				$sql->query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES ('%s','%s','%s','%s','%s',%d)",$nick,$newTopic,"topic",$channel,time(),$you->getNetwork());
+				$sql->query_prepare("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES (?,?,?,?,?,?)",array($newTopic,$nick,$channel,0,$you->getNetwork(),'topic'));
+				$sql->query_prepare("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES (?,?,?,?,?,?)",array($nick,$newTopic,"topic",$channel,time(),$you->getNetwork()));
 			}else{
 				$returnmessage = "You aren't op";
 				$sendPm = true;
@@ -191,8 +191,8 @@ if(substr($parts[0],0,1)=='/'){
 				unset($parts[0]);
 				$modeStr = trim(implode(' ',$parts));
 				$channels->setMode($channel,$modeStr);
-				$sql->query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES ('%s','%s','%s',%d,%d,'%s')",$modeStr,$nick,$channel,0,$you->getNetwork(),'mode');
-					$sql->query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES ('%s','%s','%s','%s','%s',%d)",$nick,$modeStr,"mode",$channel,time(),$you->getNetwork());
+				$sql->query_prepare("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES (?,?,?,?,?,?)",array($modeStr,$nick,$channel,0,$you->getNetwork(),'mode'));
+				$sql->query_prepare("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES (?,?,?,?,?,?)",array($nick,$modeStr,"mode",$channel,time(),$you->getNetwork()));
 			}else{
 				$returnmessage = "You aren't op";
 				$sendPm = true;
@@ -204,8 +204,8 @@ if(substr($parts[0],0,1)=='/'){
 				unset($parts[0]);
 				$userToOp = trim(implode(' ',$parts));
 				if($channels->addOp($channel,$userToOp,$you->getNetwork())){
-					$sql->query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES ('%s','%s','%s',%d,%d,'%s')","+o $userToOp",$nick,$channel,0,$you->getNetwork(),'mode');
-					$sql->query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES ('%s','%s','%s','%s','%s',%d)",$nick,"+o $userToOp","mode",$channel,time(),$you->getNetwork());
+					$sql->query_prepare("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES (?,?,?,?,?,?)",array("+o $userToOp",$nick,$channel,0,$you->getNetwork(),'mode'));
+					$sql->query_prepare("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES (?,?,?,?,?,?)",array($nick,"+o $userToOp","mode",$channel,time(),$you->getNetwork()));
 				}else{
 					$returnmessage = "\x034ERROR: couldn't op $userToOp: already op or user not found.";
 					$sendPm = true;
@@ -221,8 +221,8 @@ if(substr($parts[0],0,1)=='/'){
 				unset($parts[0]);
 				$userToOp = trim(implode(" ",$parts));
 				if($channels->remOp($channel,$userToOp,$you->getNetwork())){
-					$sql->query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES ('%s','%s','%s',%d,%d,'%s')","-o $userToOp",$nick,$channel,0,$you->getNetwork(),'mode');
-					$sql->query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES ('%s','%s','%s','%s','%s',%d)",$nick,"-o $userToOp","mode",$channel,time(),$you->getNetwork());
+					$sql->query_prepare("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES (?,?,?,?,?,?)",array("-o $userToOp",$nick,$channel,0,$you->getNetwork(),'mode'));
+					$sql->query_prepare("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES (?,?,?,?,?,?)",array($nick,"-o $userToOp","mode",$channel,time(),$you->getNetwork()));
 				}else{
 					$returnmessage = "\x034ERROR: couldn't deop $userToOp: no op or user not found.";
 					$sendPm = true;
@@ -238,8 +238,8 @@ if(substr($parts[0],0,1)=='/'){
 				unset($parts[0]);
 				$userToOp = trim(implode(' ',$parts));
 				if($channels->addBan($channel,$userToOp,$you->getNetwork())){
-					$sql->query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES ('%s','%s','%s',%d,%d,'%s')","+b $userToOp",$nick,$channel,0,$you->getNetwork(),'mode');
-					$sql->query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES ('%s','%s','%s','%s','%s',%d)",$nick,"+b $userToOp","mode",$channel,time(),$you->getNetwork());
+					$sql->query_prepare("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES (?,?,?,?,?,?)",array("+b $userToOp",$nick,$channel,0,$you->getNetwork(),'mode'));
+					$sql->query_prepare("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES (?,?,?,?,?,?)",array($nick,"+b $userToOp","mode",$channel,time(),$you->getNetwork()));
 				}else{
 					$returnmessage = "\x034ERROR: couldn't ban $userToOp: already banned or user not found.";
 					$sendPm = true;
@@ -256,8 +256,8 @@ if(substr($parts[0],0,1)=='/'){
 				unset($parts[0]);
 				$userToOp = trim(implode(' ',$parts));
 				if($channels->remBan($channel,$userToOp,$you->getNetwork())){
-					$sql->query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES ('%s','%s','%s',%d,%d,'%s')","-b $userToOp",$nick,$channel,0,$you->getNetwork(),'mode');
-					$sql->query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES ('%s','%s','%s','%s','%s',%d)",$nick,"-b $userToOp","mode",$channel,time(),$you->getNetwork());
+					$sql->query_prepare("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES (?,?,?,?,?,?)",array("-b $userToOp",$nick,$channel,0,$you->getNetwork(),'mode'));
+					$sql->query_prepare("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES (?,?,?,?,?,?)",array($nick,"-b $userToOp","mode",$channel,time(),$you->getNetwork()));
 				}else{
 					$returnmessage = "\x034ERROR: couldn't deban $userToOp: no ban or user not found.";
 					$sendPm = true;
@@ -289,20 +289,20 @@ if($channel[0] == '*'){
 }
 
 if($sendNormal){
-	$sql->query("UPDATE `irc_users` SET lastMsg='%s' WHERE username='%s' AND channel='%s' AND online=%d",time(),$nick,$channel,$you->getNetwork());
-	$sql->query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type,uid) VALUES ('%s','%s','%s',%d,%d,'%s',%d)",$message,$nick,$channel,($type=="action")?1:0,$you->getNetwork(),$type,$you->getUid());
-	$sql->query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online,uid) VALUES ('%s','%s','%s','%s','%s',%d,%d)",$nick,$message,$type,$channel,time(),$you->getNetwork(),$you->getUid());
+	$sql->query_prepare("UPDATE `irc_users` SET lastMsg=? WHERE username=? AND channel=? AND online=?",array(time(),$nick,$channel,$you->getNetwork()));
+	$sql->query_prepare("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type,uid) VALUES (?,?,?,?,?,?,?)",array($message,$nick,$channel,($type=="action")?1:0,$you->getNetwork(),$type,$you->getUid()));
+	$sql->query_prepare("INSERT INTO `irc_lines` (name1,message,type,channel,time,online,uid) VALUES (?,?,?,?,?,?,?)",array($nick,$message,$type,$channel,time(),$you->getNetwork(),$you->getUid()));
 }
 if($sendPm){
-	$sql->query("INSERT INTO `irc_lines` (name1,message,type,channel,time,name2,online,uid) VALUES ('%s','%s','%s','%s','%s','%s',%d,%d)","OmnomIRC",$returnmessage,"server",$nick,time(),$channel,$you->getNetwork(),$you->getUid());
+	$sql->query_prepare("INSERT INTO `irc_lines` (name1,message,type,channel,time,name2,online,uid) VALUES (?,?,?,?,?,?,?,?)",array("OmnomIRC",$returnmessage,"server",$nick,time(),$channel,$you->getNetwork(),$you->getUid()));
 	if($config['websockets']['use']){
-		$sql->query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type,uid) VALUES ('%s','%s','%s',%d,%d,'%s',%d)",$returnmessage,$channel,$nick,($type=="action")?1:0,$you->getNetwork(),'server',$you->getUid());
+		$sql->query_prepare("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type,uid) VALUES (?,?,?,?,?,?,?)",array($returnmessage,$channel,$nick,($type=="action")?1:0,$you->getNetwork(),'server',$you->getUid()));
 	}
 }
 if($reload){
-	$sql->query("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES ('%s','%s','%s','%s','%s',%d)","OmnomIRC","THE GAME","reload",$nick,time(),$you->getNetwork());
+	$sql->query_prepare("INSERT INTO `irc_lines` (name1,message,type,channel,time,online) VALUES (?,?,?,?,?,?)",array("OmnomIRC","THE GAME","reload",$nick,time(),$you->getNetwork()));
 	if($config['websockets']['use']){
-		$sql->query("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES ('%s','%s','%s',%d,%d,'%s')",'THE GAME','OmnomIRC',$channel,0,$you->getNetwork(),'reload');
+		$sql->query_prepare("INSERT INTO `irc_outgoing_messages` (message,nick,channel,action,fromSource,type) VALUES (?,?,?,?,?,?)",array('THE GAME','OmnomIRC',$channel,0,$you->getNetwork(),'reload'));
 	}
 }
 if(isset($_GET['textmode'])){
@@ -312,6 +312,6 @@ if(isset($_GET['textmode'])){
 	$json->add('success',true);
 	echo $json->get();
 }
-$temp = $sql->query("SELECT MAX(line_number) AS max FROM irc_lines");
+$temp = $sql->query_prepare("SELECT MAX(line_number) AS max FROM irc_lines");
 file_put_contents($config['settings']['curidFilePath'],$temp[0]['max']);
 ?>

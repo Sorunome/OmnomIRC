@@ -77,26 +77,25 @@ while(true){
 	}
 	$you->update();
 	if($nick){
-		$query = $sql->query("SELECT * FROM `irc_lines`
+		$query = $sql->query_prepare("SELECT * FROM `irc_lines`
 			WHERE
-				`line_number` > %d
+				`line_number` > ?
 			AND
 			(
 				(
 					(
-						`channel` = '%s'
+						`channel` = ?
 						OR
 						(
-							`channel` = '%s'
+							`channel` = ?
 							AND
-							`Online` = %d
+							`Online` = ?
 						)
 						OR
 						(
-							
-							`name1` = '%s'
+							`name1` = ?
 							AND
-							`Online` = %d
+							`Online` = ?
 						)
 					)
 					AND
@@ -106,13 +105,13 @@ while(true){
 				(
 					`type` = 'server'
 					AND
-					channel='%s'
+					channel=?
 					AND
-					name2='%s'
+					name2=?
 				)
-		)",$curline,$channel,$nick,$you->getNetwork(),$nick,$you->getNetwork(),$nick,$channel);
+		)",array($curline,$channel,$nick,$you->getNetwork(),$nick,$you->getNetwork(),$nick,$channel));
 	}else{
-		$query = $sql->query("SELECT * FROM `irc_lines` WHERE `line_number` > %d AND (`channel` = '%s')",$curline,$channel);
+		$query = $sql->query_prepare("SELECT * FROM `irc_lines` WHERE `line_number` > ? AND (`channel` = '?')",array($curline,$channel));
 	}
 	$result = $query[0];
 	$userSql = $you->info();
@@ -135,10 +134,10 @@ while(true){
 		);
 	}
 	if($result['line_number'] === NULL){
-		$temp = $sql->query("SELECT * FROM `irc_lines` WHERE `line_number` > %d AND locate('%s',`message`) != 0 AND NOT (((`type` = 'pm' OR `type` = 'pmaction') AND `name1` <> '%s' AND `online` = %d) OR (`type` = 'server'))",$curline,substr($nick,0,4),$nick,$you->getNetwork());
+		$temp = $sql->query_prepare("SELECT * FROM `irc_lines` WHERE `line_number` > ? AND locate(?,`message`) != 0 AND NOT (((`type` = 'pm' OR `type` = 'pmaction') AND `name1` <> ? AND `online` = ?) OR (`type` = 'server'))",array($curline,substr($nick,0,4),$nick,$you->getNetwork()));
 		$result = $temp[0];
 		if($result['line_number'] === NULL){
-			$temp = $sql->query("SELECT MAX(line_number) AS max FROM `irc_lines`");
+			$temp = $sql->query_prepare("SELECT MAX(line_number) AS max FROM `irc_lines`");
 			$curline = (int)$temp[0]['max'];
 			usleep(500000);
 			continue;
