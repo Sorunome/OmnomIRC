@@ -126,6 +126,7 @@ class Sqli{
 		return $mysqli;
 	}
 	public function query(){
+		global $json;
 		//ini_set('memory_limit','-1');
 		$mysqli = $this->connectSql();
 		$params = func_get_args();
@@ -138,7 +139,16 @@ class Sqli{
 			return array();
 		}
 		if($mysqli->errno!=0){
-			die($mysqli->error.' Query: '.vsprintf($query,$args));
+			$trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS,1);
+			$json->addError(array(
+				'type' => 'mysql',
+				'line' => $trace[0]['line']
+				'method' => 'query',
+				'errno' => $mysqli->errno,
+				'error' => $mysqli->error,
+				'query' => vsprintf($query,$args),
+			));
+			return array();
 		}
 		if($result===true){ //nothing returned
 			return array();
