@@ -659,6 +659,7 @@ class CalculatorHandler(ServerHandler):
 		if c!=-1:
 			handle.removeUser(self.calcName,c,self.i)
 	def close(self):
+		traceback.print_stack()
 		print('Giving signal to quit calculator...')
 		connectedCalcs.remove(self)
 		try:
@@ -667,7 +668,7 @@ class CalculatorHandler(ServerHandler):
 		except:
 			pass
 		try:
-			self.send('\xAD'+('**** Server going down! ****').encode('ASCII'))
+			self.send(b'\xAD**** Server going down! ****')
 		except:
 			pass
 		try:
@@ -687,34 +688,35 @@ class CalculatorHandler(ServerHandler):
 	def sendLine(self,n1,n2,t,m,c,s): #name 1, name 2, type, message, channel, source
 		c = self.idToChan(c)
 		if c!=-1:
-			n1 = n1.encode('ASCII')
-			n2 = n2.encode('ASCII')
-			t = t.encode('ASCII')
-			m = m.encode('ASCII')
-			c = c.encode('ASCII')
-			
 			if t=='message':
-				self.send('\xAD'+'%s:%s' % (n1,m))
+				self.send(b'\xAD'+bytes('%s:%s' % (n1,m),'utf-8'))
 			elif t=='action':
-				self.send('\xAD'+'*%s %s' % (n1,m))
+				self.send(b'\xAD'+bytes('*%s %s' % (n1,m),'utf-8'))
 			elif t=='join':
-				self.send('\xAD'+'*%s has joined %s' % (n1,c))
+				self.send(b'\xAD'+bytes('*%s has joined %s' % (n1,c),'utf-8'))
 			elif t=='part':
-				self.send('\xAD'+'*%s has left %s (%s)' % (n1,c,m))
+				self.send(b'\xAD'+bytes('*%s has left %s (%s)' % (n1,c,m),'utf-8'))
 			elif t=='quit':
-				self.send('\xAD'+'*%s has quit %s (%s)' % (n1,c,m))
+				self.send(b'\xAD'+bytes('*%s has quit %s (%s)' % (n1,c,m),'utf-8'))
 			elif t=='mode':
-				self.send('\xAD'+'*%s set %s mode %s' % (n1,c,m))
+				self.send(b'\xAD'+bytes('*%s set %s mode %s' % (n1,c,m),'utf-8'))
 			elif t=='kick':
-				self.send('\xAD'+'*%s has kicked %s from %s (%s)' % (n1,n2,c,m))
+				self.send(b'\xAD'+bytes('*%s has kicked %s from %s (%s)' % (n1,n2,c,m),'utf-8'))
 			elif t=='topic':
-				self.send('\xAD'+'*%s has changed the topic to %s' % (n1,m))
+				self.send(b'\xAD'+bytes('*%s has changed the topic to %s' % (n1,m),'utf-8'))
 			elif t=='nick':
-				self.send('\xAD'+'*%s has changed nicks to %s' % (n1,n2))
+				self.send(b'\xAD'+bytes('*%s has changed nicks to %s' % (n1,n2),'utf-8'))
 	def send(self,message):
-		message = '\xFF\x89\x00\x00\x00\x00\x00'+('Omnom').encode('ASCII')+struct.pack('<H',len(message))+message
-		message = struct.pack('<H',len(message)+1)+('b').encode('ASCII')+message+('*').encode('ASCII')
-		self.socket.sendall(message)
+		try:
+			try:
+				message = bytes(message,'utf-8')
+			except:
+				pass
+			message = b'\xFF\x89\x00\x00\x00\x00\x00Omnom'+struct.pack('<H',len(message))+message
+			message = struct.pack('<H',len(message)+1)+b'b'+message+b'*'
+			self.socket.sendall(message)
+		except Exception as inst:
+			traceback.print_exc()
 	def idToChan(self,i):
 		if i in self.chans:
 			return self.chans[i]
@@ -747,19 +749,21 @@ class CalculatorHandler(ServerHandler):
 						break
 	def recieve(self):
 		try:
-			data = self.socket.recv(1024)
+			r_bytes = self.socket.recv(1024)
 		except socket.timeout:
 			return True
 		except Exception as err:
 			print('Error:')
 			print(err)
 			return False
-		if not data:  # EOF
+		data = makeUnicode(r_bytes)
+		if len(r_bytes) == 0: # eof
+			print('EOF recieved')
 			return False
 		try:
 			printString = '';
 			sendMessage = False
-			if (data[2]=='j'):
+			if (r_bytes[2]==ord('j')):
 				self.calcName=''
 				self.chan=''
 				for i in range(4, int(ord(data[3]))+4):
@@ -771,25 +775,25 @@ class CalculatorHandler(ServerHandler):
 				if not(self.findchan(self.chan)):
 					printString+='Invalid channel, defaulting to '+self.defaultChan+'\n'
 					self.chan=self.defaultChan
-			if (data[2]=='c'):
-				calcId=data[3:]
+			if (r_bytes[2]==ord('c')):
+				calcId=makeUnicode(r_bytes[3:])
 				printString+='Calc-message recieved. Calc-ID:'+calcId+'\n'
-			if (data[2]=='b' or data[2]=='f'):
-				if ord(data[17])==171:
-					self.send('\xAB'+('OmnomIRC').encode('ASCII'))
+			if (r_bytes[2]==ord('b') or r_bytes[2]==ord('f')):
+				if r_bytes[17]==171:
+					self.send(b'\xABOmnomIRC')
 					if not self.connectedToIRC:
 						printString+=self.calcName+' has joined\n'
 						self.connectedToIRC=True
-						self.send('\xAD'+('**Now speeking in channel '+self.chan).encode('ASCII'))
+						self.send(b'\xAD**Now speeking in channel '+bytes(self.chan,'utf-8'))
 						self.sendToIRC('join','')
 						self.userJoin()
-				elif ord(data[17])==172:
+				elif r_bytes[17]==172:
 					if self.connectedToIRC:
 						printString+=self.calcName+' has quit\n'
 						self.connectedToIRC=False
 						self.userPart()
 						self.sendToIRC('quit','')
-				elif ord(data[17])==173 and data[5:10]=='Omnom':
+				elif r_bytes[17]==173 and data[5:10]=='Omnom':
 					printString+='msg ('+self.calcName+') '+data[data.find(':',18)+1:-1]+'\n'
 					message=data[data.find(":",18)+1:-1]
 					if message.split(' ')[0].lower()=='/join':
@@ -797,11 +801,11 @@ class CalculatorHandler(ServerHandler):
 							self.sendToIRC('part','')
 							self.userPart()
 							self.chan=message[message.find(' ')+1:].lower()
-							self.send('\xAD'+('**Now speeking in channel '+self.chan).encode('ASCII'))
+							self.send(b'\xAD**Now speeking in channel '+bytes(self.chan,'utf-8'))
 							self.sendToIRC('join','')
 							self.userJoin()
 						else:
-							self.send('\xAD'+('**Channel '+message[message.find(' ')+1:]+' doesn\'t exist!').encode('ASCII'))
+							self.send(b'\xAD**Channel '+bytes(message[message.find(' ')+1:],'utf-8')+b' doesn\'t exist!')
 					elif message.split(' ')[0].lower()=='/me':
 						self.sendToIRC('action',message[message.find(' ')+1:])
 					else:
