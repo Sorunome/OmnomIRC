@@ -129,7 +129,10 @@ class ServerHandler:
 		data = self.socket.recv(1024)
 		return True
 	def close(self):
-		return
+		try:
+			self.socket.close()
+		except:
+			pass
 	def isHandler(self,s):
 		return s == self.socket
 	def getSocket(self):
@@ -1071,6 +1074,7 @@ class CalculatorHandler(ServerHandler):
 						if self.defaultChan == '':
 							self.defaultChan = c['name']
 						break
+		return True
 	def recieve(self):
 		try:
 			r_bytes = self.socket.recv(1024)
