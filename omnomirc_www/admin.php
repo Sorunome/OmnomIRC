@@ -104,9 +104,11 @@ if($you->isGlobalOp()){
 				$json->add('hotlinks',$vars->get('hotlinks'));
 				break;
 			case 'sql':
-				$json->add('server',$config['sql']['server']);
-				$json->add('db',$config['sql']['db']);
-				$json->add('user',$config['sql']['user']);
+				$json->add('sql',array(
+					'server' => $config['sql']['server'],
+					'db' => $config['sql']['db'],
+					'user' => $config['sql']['user']
+				));
 				break;
 			case 'smileys':
 				$json->add('smileys',$vars->get('smileys'));
@@ -139,10 +141,14 @@ if($you->isGlobalOp()){
 				$json->add('websockets',$config['websockets']);
 				break;
 			case 'misc':
-				$json->add('hostname',$config['settings']['hostname']);
-				$json->add('curidFilePath',$config['settings']['curidFilePath']);
-				$json->add('signatureKey',$config['security']['sigKey']);
-				$json->add('ircPasswd',$config['security']['ircPwd']);
+				$json->add('misc',array(
+					'useBot' => $config['settings']['useBot'],
+					'botPort' => $config['settings']['botPort'],
+					'hostname' => $config['settings']['hostname'],
+					'curidFilePath' => $config['settings']['curidFilePath'],
+					'signatureKey' => $config['security']['sigKey'],
+					'ircPasswd' => $config['security']['ircPwd']
+				));
 				break;
 			case 'releaseNotes':
 				$json->add('version',$config['info']['version']);
@@ -246,6 +252,8 @@ if($you->isGlobalOp()){
 				writeConfig();
 				break;
 			case 'misc':
+				$config['settings']['useBot'] = $jsonData['useBot'];
+				$config['settings']['botPort'] = $jsonData['botPort'];
 				$config['settings']['hostname'] = $jsonData['hostname'];
 				$config['settings']['curidFilePath'] = $jsonData['curidFilePath'];
 				$config['security']['sigKey'] = $jsonData['signatureKey'];

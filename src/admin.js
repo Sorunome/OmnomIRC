@@ -798,16 +798,16 @@
 						makeNetworksPage(data.networks);
 						break;
 					case 'sql':
-						$.extend(data,{
+						$.extend(data.sql,{
 							passwd:''
 						});
-						getInputBoxSettings(p,'SQL',data);
+						getInputBoxSettings(p,'SQL',data.sql);
 						break;
 					case 'ws':
 						getInputBoxSettings(p,'WebSockets',data.websockets);
 						break;
 					case 'misc':
-						getInputBoxSettings(p,'Misc',data);
+						getInputBoxSettings(p,'Misc',data.misc);
 						break;
 					case 'releaseNotes':
 						$('#adminContent').append(

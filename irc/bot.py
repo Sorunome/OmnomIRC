@@ -124,7 +124,7 @@ class ServerHandler:
 		self.socket = s
 		self.client_address = address
 	def setup(self):
-		return
+		return True
 	def recieve(self):
 		data = self.socket.recv(1024)
 		return True
@@ -169,9 +169,11 @@ class Server(threading.Thread):
 					client, address = server.accept()
 					client.settimeout(0.1)
 					handler = self.getHandler(client,address)
-					handler.setup()
-					self.inputHandlers.append(handler)
-					input.append(client)
+					if handler.setup():
+						self.inputHandlers.append(handler)
+						input.append(client)
+					else:
+						handler.close()
 				else:
 					# handle other socket connections
 					i = self.getInputHandler(s)
@@ -220,7 +222,7 @@ class Server(threading.Thread):
 	def stop(self):
 		self.stopnow = True
 
-class SSLServer:
+class SSLServer(Server):
 	def getSocket(self):
 		dir = os.path.dirname(__file__)
 		key_file = os.path.join(dir,'server.key')
@@ -680,8 +682,8 @@ class WebSocketsHandler(ServerHandler):
 		print("connection established"+str(self.client_address))
 		self.handshake_done = False
 		print('New Web-Client\n')
+		return True
 	def recieve(self):
-		
 		if not self.handshake_done:
 			return self.handshake()
 		else:
@@ -1161,14 +1163,30 @@ class RelayCalcnet(OircRelay):
 
 
 #fetch lines off of OIRC
-class OIRCLink(threading.Thread):
-	def __init__(self):
-		threading.Thread.__init__(self)
-		self.stopnow = False
-	def stopThread(self):
-		print('Giving signal to quit OmnomIRC link...')
-		self.stopnow = True
-	def run(self):
+class OIRCLink(ServerHandler):
+	readbuffer = ''
+	def setup(self):
+		return socket.gethostbyname('localhost') == self.client_address[0]
+	def recieve(self):
+		try:
+			data = makeUnicode(self.socket.recv(1024))
+			if not data: # EOF
+				return False
+			self.readbuffer += data
+		except:
+			traceback.print_exc()
+			return False
+		temp = self.readbuffer.split('\n')
+		self.readbuffer = temp.pop()
+		for line in temp:
+			try:
+				data = json.loads(line)
+				handle.sendToOther(data['n1'],data['n2'],data['t'],data['m'],data['c'],data['s'],data['uid'])
+				print('(oirc)>> '+str(data))
+			except:
+				traceback.print_exc()
+		return True
+	def run_old(self):
 		global sql,handle,config
 		curline = 0
 		while not self.stopnow:
@@ -1176,7 +1194,7 @@ class OIRCLink(threading.Thread):
 				temp = handle.getCurline()
 				if temp>curline:
 					curline = temp
-					res = sql.query('SELECT fromSource,channel,type,action,prikey,nick,message,uid FROM irc_outgoing_messages')
+					res = sql.query('SELECT fromSource,channel,type,prikey,nick,message,uid FROM irc_outgoing_messages')
 					if len(res) > 0:
 						print('(1)>> '+str(res))
 						lastline = 0
@@ -1277,7 +1295,7 @@ class Main():
 				'config':config.json['websockets']
 			}));
 		
-		self.oircLink = OIRCLink()
+		self.oircLink = Server('localhost',config.json['settings']['botPort'],OIRCLink)
 		self.oircLink.start()
 		
 		try:
@@ -1295,7 +1313,7 @@ class Main():
 		global config
 		for r in self.relays:
 			r.stopRelay_wrap()
-		self.oircLink.stopThread()
+		self.oircLink.stop()
 		
 		sys.exit(code)
 
