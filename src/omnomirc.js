@@ -1393,6 +1393,18 @@ oirc = (function(){
 						});
 					}
 				},
+				reloadUserlist:function(i){
+					if(chans[i]!==undefined){
+						network.getJSON('Load.php?userlist&channel='+getHandler(i,true),function(data){
+							if(!data.banned){
+								users.setUsers(data.users);
+								users.draw();
+							}else{
+								send.internal('<span style="color:#C73232;"><b>ERROR:</b> banned</span>');
+							}
+						});
+					}
+				},
 				getCurrent:function(override,b64){
 					if(requestHandler===false || override){
 						return (b64?currentb64:current);
@@ -2864,6 +2876,19 @@ oirc = (function(){
 								return false;
 							}
 							break;
+						case 'reload_userlist':
+							addLine = false;
+							if(logMode!==true && channels.getCurrent()!==''){
+								var num;
+								$.each(channels.getChans(),function(i,c){
+									if(c.chan==channels.getCurrent() || c.id==channels.getCurrent()){
+										num = i;
+										return false;
+									}
+								});
+								channels.reloadUserlist(num);
+								return false;
+							}
 						case 'relog':
 							addLine = false;
 							if(logMode!==true && channels.getCurrent()!==''){

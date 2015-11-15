@@ -757,6 +757,9 @@ class OmnomIRC{
 	}
 	public function loadChannel($count){
 		global $you,$sql;
+		if($count < 1){ // nothing to do here
+			return array();
+		}
 		$table = 'irc_lines';
 		$linesExtra = array();
 		// $table is NEVER user-defined, only possible values are irc_lines and irc_lines_old!!!!!

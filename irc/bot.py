@@ -119,7 +119,7 @@ class Sql:
 			traceback.print_exc()
 			return False
 
-class ServerHandler():
+class ServerHandler:
 	def __init__(self,s,address):
 		self.socket = s
 		self.client_address = address
@@ -220,8 +220,7 @@ class Server(threading.Thread):
 	def stop(self):
 		self.stopnow = True
 
-
-class SSLServer(Server):
+class SSLServer:
 	def getSocket(self):
 		dir = os.path.dirname(__file__)
 		key_file = os.path.join(dir,'server.key')
@@ -229,6 +228,31 @@ class SSLServer(Server):
 		import ssl
 		s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 		return ssl.wrap_socket(s, keyfile=key_file, certfile=cert_file, cert_reqs=ssl.CERT_NONE)
+
+class OircRelay:
+	relayType = -1
+	id = -1
+	def __init__(self,n):
+		self.id = int(n['id'])
+		self.initRelay(n['config'])
+	def initRelay(self,cfg):
+		return
+	def startRelay_wrap(self):
+		sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE online = %s",[self.id])
+		self.startRelay()
+	def startRelay(self):
+		return
+	def stopRelay_wrap(self):
+		sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE online = %s",[self.id])
+		self.stopRelay()
+	def stopRelay(self):
+		return
+	def relayMessage(self,n1,n2,t,m,c,s,uid):
+		return
+	def relayTopic(self,s,c,i):
+		return
+
+
 #irc bot
 class Bot(threading.Thread):
 	def __init__(self,server,port,nick,ns,main,passwd,i,tbe,mn,tn,dssl):
@@ -280,11 +304,11 @@ class Bot(threading.Thread):
 		else:
 			add = 'T)'
 		print('Giving signal to quit irc bot... ('+str(self.i)+add)
-		traceback.print_stack()
-		try:
-			self.s.close()
-		except:
-			traceback.print_exc()
+		self.quitMsg = 'Got signal to quit'
+		#try:
+		#	self.s.close()
+		#except:
+		#	traceback.print_exc()
 		self.stopnow = True
 	def sendTopic(self,s,c):
 		c = self.idToChan(c)
@@ -452,8 +476,7 @@ class Bot(threading.Thread):
 		elif line[1]=='352':
 			self.addUser(line[7],line[3])
 		elif line[1]=='315':
-			self.addLine('OmnomIRC','','reload','THE GAME',line[3],False)
-			handle.updateCurline() # others do this automatically
+			self.addLine('OmnomIRC','','reload_userlist','THE GAME',line[3],True)
 	def ircloop(self,fn):
 		global sql
 		if self.main:
@@ -536,6 +559,7 @@ class Bot(threading.Thread):
 				sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE online = %s",[int(self.i)])
 				handle.updateCurline() # others do this automatically
 			try:
+				time.sleep(1) # give the server one second time to close the connection on us
 				self.s.close()
 			except:
 				pass
@@ -601,394 +625,46 @@ class Bot(threading.Thread):
 				time.sleep(15)
 		print('Good bye from bot ('+str(self.i)+add)
 
-#fetch lines off of OIRC
-class OIRCLink(threading.Thread):
-	def __init__(self):
-		threading.Thread.__init__(self)
-		self.stopnow = False
-	def stopThread(self):
-		print('Giving signal to quit OmnomIRC link...')
-		self.stopnow = True
-	def run(self):
-		global sql,handle,config
-		curline = 0
-		while not self.stopnow:
-			try:
-				temp = handle.getCurline()
-				if temp>curline:
-					curline = temp
-					res = sql.query('SELECT fromSource,channel,type,action,prikey,nick,message,uid FROM irc_outgoing_messages')
-					if len(res) > 0:
-						print('(1)>> '+str(res))
-						lastline = 0
-						for row in res:
-							try:
-								for i in ['nick','type','message','channel']:
-									row[i] = makeUnicode(row[i])
-								
-								if row['type']=='server':
-									handle.sendToOther('OmnomIRC',row['nick'],row['type'],row['message'],row['channel'],row['fromSource'])
-								else:
-									handle.sendToOther(row['nick'],'',row['type'],row['message'],row['channel'],row['fromSource'],int(row['uid']))
-								
-								if row['type']=='topic':
-									handle.sendTopicToOther(row['message'],row['channel'],row['fromSource'])
-							except Exception as inst:
-								print(inst)
-								traceback.print_exc()
-							lastline = row['prikey']
-						sql.query('DELETE FROM `irc_outgoing_messages` WHERE prikey < %s',[int(lastline)+1])
-			except Exception as inst:
-				print(inst)
-				traceback.print_exc()
-			time.sleep(0.2)
-
-#gCn bridge
-connectedCalcs = []
-class CalculatorHandler(ServerHandler):
-	connectedToIRC=False
-	chan=''
-	calcName=''
-	stopnow=False
-	def userJoin(self):
-		c = self.chanToId(self.chan)
-		if c!=-1:
-			handle.addUser(self.calcName,c,self.i)
-	def userPart(self):
-		c = self.chanToId(self.chan)
-		if c!=-1:
-			handle.removeUser(self.calcName,c,self.i)
-	def close(self):
-		traceback.print_stack()
-		print('Giving signal to quit calculator...')
-		connectedCalcs.remove(self)
-		try:
-			self.sendToIRC('quit','')
-			self.userPart()
-		except:
-			pass
-		try:
-			self.send(b'\xAD**** Server going down! ****')
-		except:
-			pass
-		try:
-			self.socket.close()
-		except:
-			pass
-	def checkExit(self):
-		if self.stopnow:
-			print('exiting...')
-			exit()
-	def sendToIRC(self,t,m):
-		c = self.chanToId(self.chan)
-		if c!=-1:
-			handle.sendToOther(self.calcName,'',t,m,c,self.i)
-			sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`) VALUES (%s,%s,%s,%s,%s,%s,%s)",[self.calcName,'',m,t,c,str(int(time.time())),int(self.i)])
-			handle.updateCurline()
-	def sendLine(self,n1,n2,t,m,c,s): #name 1, name 2, type, message, channel, source
-		c = self.idToChan(c)
-		if c!=-1:
-			if t=='message':
-				self.send(b'\xAD'+bytes('%s:%s' % (n1,m),'utf-8'))
-			elif t=='action':
-				self.send(b'\xAD'+bytes('*%s %s' % (n1,m),'utf-8'))
-			elif t=='join':
-				self.send(b'\xAD'+bytes('*%s has joined %s' % (n1,c),'utf-8'))
-			elif t=='part':
-				self.send(b'\xAD'+bytes('*%s has left %s (%s)' % (n1,c,m),'utf-8'))
-			elif t=='quit':
-				self.send(b'\xAD'+bytes('*%s has quit %s (%s)' % (n1,c,m),'utf-8'))
-			elif t=='mode':
-				self.send(b'\xAD'+bytes('*%s set %s mode %s' % (n1,c,m),'utf-8'))
-			elif t=='kick':
-				self.send(b'\xAD'+bytes('*%s has kicked %s from %s (%s)' % (n1,n2,c,m),'utf-8'))
-			elif t=='topic':
-				self.send(b'\xAD'+bytes('*%s has changed the topic to %s' % (n1,m),'utf-8'))
-			elif t=='nick':
-				self.send(b'\xAD'+bytes('*%s has changed nicks to %s' % (n1,n2),'utf-8'))
-	def send(self,message):
-		try:
-			try:
-				message = bytes(message,'utf-8')
-			except:
-				pass
-			message = b'\xFF\x89\x00\x00\x00\x00\x00Omnom'+struct.pack('<H',len(message))+message
-			message = struct.pack('<H',len(message)+1)+b'b'+message+b'*'
-			self.socket.sendall(message)
-		except Exception as inst:
-			traceback.print_exc()
-	def idToChan(self,i):
-		if i in self.chans:
-			return self.chans[i]
-		return -1
-	def chanToId(self,c):
-		for i,ch in self.chans.items():
-			if c.lower() == ch.lower():
-				return i
-		return -1
-	def findchan(self,chan):
-		for key,value in self.chans.items():
-			if chan.lower() == value.lower():
-				return True
+class RelayIRC(OircRelay):
+	relayType = 3
+	bot = False
+	topicBot = False
+	def initRelay(self,cfg):
+		self.haveTopicBot = cfg['topic']['nick'] != ''
+		for t in ['main','topic']:
+			main = t=='main'
+			if not main and not self.haveTopicBot:
 				break
-		return False
-	def setup(self):
-		global config
-		print('New calculator\n')
-		connectedCalcs.append(self)
-		self.i = handle.getCalcNetworkId()
-		self.chans = {}
-		self.defaultChan = ''
-		for ch in config.json['channels']:
-			if ch['enabled']:
-				for c in ch['networks']:
-					if c['id'] == self.i:
-						self.chans[ch['id']] = c['name']
-						if self.defaultChan == '':
-							self.defaultChan = c['name']
-						break
-	def recieve(self):
+			bot = Bot(cfg[t]['server'],cfg[t]['port'],cfg[t]['nick'],cfg[t]['nickserv'],main,config.json['security']['ircPwd'],self.id,self.haveTopicBot,cfg['main']['nick'],cfg['topic']['nick'],cfg[t]['ssl'])
+			if main:
+				self.bot = bot
+			else:
+				self.topicBot = bot
+	def startRelay(self):
+		self.bot.start()
+		if self.haveTopicBot:
+			self.topicBot.start()
+	def stopRelay(self):
+		self.bot.stopThread()
+		if self.haveTopicBot:
+			self.topicBot.stopThread()
+	def relayMessage(self,n1,n2,t,m,c,s,uid):
 		try:
-			r_bytes = self.socket.recv(1024)
-		except socket.timeout:
-			return True
-		except Exception as err:
-			print('Error:')
-			print(err)
-			return False
-		data = makeUnicode(r_bytes)
-		if len(r_bytes) == 0: # eof
-			print('EOF recieved')
-			return False
-		try:
-			printString = '';
-			sendMessage = False
-			if (r_bytes[2]==ord('j')):
-				self.calcName=''
-				self.chan=''
-				for i in range(4, int(ord(data[3]))+4):
-					self.chan=self.chan+data[i]
-				for i in range(int(ord(data[3]))+5, int(ord(data[int(ord(data[3]))+4]))+int(ord(data[3]))+5):
-					self.calcName=self.calcName+data[i]
-				self.chan = self.chan.lower()
-				printString+='Join-message recieved. Calc-Name:'+self.calcName+' Channel:'+self.chan+'\n'
-				if not(self.findchan(self.chan)):
-					printString+='Invalid channel, defaulting to '+self.defaultChan+'\n'
-					self.chan=self.defaultChan
-			if (r_bytes[2]==ord('c')):
-				calcId=makeUnicode(r_bytes[3:])
-				printString+='Calc-message recieved. Calc-ID:'+calcId+'\n'
-			if (r_bytes[2]==ord('b') or r_bytes[2]==ord('f')):
-				if r_bytes[17]==171:
-					self.send(b'\xABOmnomIRC')
-					if not self.connectedToIRC:
-						printString+=self.calcName+' has joined\n'
-						self.connectedToIRC=True
-						self.send(b'\xAD**Now speeking in channel '+bytes(self.chan,'utf-8'))
-						self.sendToIRC('join','')
-						self.userJoin()
-				elif r_bytes[17]==172:
-					if self.connectedToIRC:
-						printString+=self.calcName+' has quit\n'
-						self.connectedToIRC=False
-						self.userPart()
-						self.sendToIRC('quit','')
-				elif r_bytes[17]==173 and data[5:10]=='Omnom':
-					printString+='msg ('+self.calcName+') '+data[data.find(':',18)+1:-1]+'\n'
-					message=data[data.find(":",18)+1:-1]
-					if message.split(' ')[0].lower()=='/join':
-						if self.findchan(message[message.find(' ')+1:].lower()):
-							self.sendToIRC('part','')
-							self.userPart()
-							self.chan=message[message.find(' ')+1:].lower()
-							self.send(b'\xAD**Now speeking in channel '+bytes(self.chan,'utf-8'))
-							self.sendToIRC('join','')
-							self.userJoin()
-						else:
-							self.send(b'\xAD**Channel '+bytes(message[message.find(' ')+1:],'utf-8')+b' doesn\'t exist!')
-					elif message.split(' ')[0].lower()=='/me':
-						self.sendToIRC('action',message[message.find(' ')+1:])
-					else:
-						self.sendToIRC('message',message)
-					
-			if printString!='':
-				print(printString)
+			if s != self.id:
+				self.bot.sendLine(n1,n2,t,m,c,s)
 		except Exception as inst:
 			print(inst)
 			traceback.print_exc()
-		return True
+	def relayTopic(self,s,c,i):
+		if i != self.id:
+			if self.haveTopicBot:
+				self.topicBot.sendTopic(s,c)
+			else:
+				self.bot.sendTopic(s,c)
 
-#main handler
-class Main():
-	def __init__(self):
-		global config
-		self.bots = []
-	def updateCurline(self):
-		global config,sql
-		try:
-			f = open(config.json['settings']['curidFilePath'],'w')
-			f.write(str(sql.query("SELECT MAX(line_number) AS max FROM irc_lines")[0]['max']))
-			f.close()
-		except Exception as inst:
-			print('curline error')
-			print(inst)
-			traceback.print_exc()
-	def addUser(self,u,c,i):
-		temp = sql.query("SELECT usernum FROM irc_users WHERE username=%s AND channel=%s AND online=%s",[u,c,int(i)])
-		if(len(temp)==0):
-			sql.query("INSERT INTO `irc_users` (`username`,`channel`,`online`) VALUES (%s,%s,%s)",[u,c,int(i)])
-		else:
-			sql.query("UPDATE `irc_users` SET `isOnline`=1 WHERE `usernum`=%s",[int(temp[0]['usernum'])])
-	def removeUser(self,u,c,i):
-		sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE `username` = %s AND `channel` = %s AND online=%s",[u,c,int(i)])
-	def getCurline(self):
-		global config
-		f = open(config.json['settings']['curidFilePath'])
-		lines = f.readlines()
-		f.close()
-		if len(lines)>=1:
-			return int(lines[0])
-		return 0
-	def getCalcNetworkId(self):
-		return self.calcNetwork['id']
-	def sendTopicToOther(self,s,c,i):
-		oircOnly = False
-		try:
-			int(c)
-		except:
-			oircOnly = True
-		if not oircOnly:
-			for b in self.bots:
-				if i != b.i:
-					if b.topicbotExists ^ b.main:
-						b.sendTopic(s,c)
-	def sendToOtherRaw(self,s,ib):
-		for b in self.bots:
-			if ib != b.i and b.main:
-				b.send(s)
-	def sendToOther(self,n1,n2,t,m,c,s,uid = -1):
-		oircOnly = False
-		try:
-			c = int(c)
-		except:
-			oircOnly = True
-		if not oircOnly:
-			for b in self.bots:
-				try:
-					if s != b.i and b.main:
-						b.sendLine(n1,n2,t,m,c,s)
-				except Exception as inst:
-					print(inst)
-					traceback.print_exc()
-			if self.calcNetwork != -1:
-				for calc in connectedCalcs:
-					try:
-						if calc.connectedToIRC and (not (s==self.calcNetwork['id'] and n1==calc.calcName)) and calc.idToChan(c).lower()==calc.chan.lower():
-							calc.sendLine(n1,n2,t,m,c,s)
-					except Exception as inst:
-						print(inst)
-						traceback.print_exc()
-		if config.json['websockets']['use']:
-			for client in connectedClients:
-				try:
-					if ((not client.banned) and
-						(
-							(
-								(
-									(
-										(
-											(not oircOnly) or c[0]=='@'
-										)
-										and
-										c == client.chan
-									)
-									or
-									(
-										client.network == s
-										and
-										(
-											c==client.nick
-											or
-											n1==client.nick
-										)
-										and
-										client.identified
-									)
-								)
-								and t!='server'
-							)
-							or
-							(
-								t=='server'
-								and
-								c==client.nick
-								and
-								n2==str(client.chan)
-								and
-								client.identified
-							)
-						)):
-						client.sendLine(n1,n2,t,m,c,s,uid)
-				except Exception as inst:
-					print(inst)
-					traceback.print_exc()
-		
-	def sigquit(self,e,s):
-		print('sigquit')
-		self.quit()
-	def serve(self):
-		signal.signal(signal.SIGQUIT,self.sigquit)
-		self.calcNetwork = -1
-		for n in config.json['networks']:
-			if n['enabled']:
-				if n['type']==3: # irc
-					haveTopicBot = n['config']['topic']['nick'] != ''
-					self.bots.append(Bot(n['config']['main']['server'],n['config']['main']['port'],n['config']['main']['nick'],n['config']['main']['nickserv'],True,config.json['security']['ircPwd'],int(n['id']),haveTopicBot,n['config']['main']['nick'],n['config']['topic']['nick'],n['config']['main']['ssl']))
-					self.bots[len(self.bots)-1].start()
-					if haveTopicBot:
-						self.bots.append(Bot(n['config']['topic']['server'],n['config']['topic']['port'],n['config']['topic']['nick'],n['config']['topic']['nickserv'],False,config.json['security']['ircPwd'],int(n['id']),haveTopicBot,n['config']['main']['nick'],n['config']['topic']['nick'],n['config']['topic']['ssl']))
-						self.bots[len(self.bots)-1].start()
-				elif n['type']==2: # calc
-					self.calcNetwork = n
-		self.oircLink = OIRCLink()
-		self.oircLink.start()
-		
-		try:
-			if config.json['websockets']['use']:
-				if config.json['websockets']['ssl']:
-					self.websocketserver = SSLServer(config.json['websockets']['host'],config.json['websockets']['port'],WebSocketsHandler)
-				else:
-					self.websocketserver = Server(config.json['websockets']['host'],config.json['websockets']['port'],WebSocketsHandler)
-				self.websocketserver.start()
-			if self.calcNetwork!=-1:
-				sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE online = %s",[self.calcNetwork['id']])
-				self.gCn_server = Server(self.calcNetwork['config']['server'],self.calcNetwork['config']['port'],CalculatorHandler)
-				self.gCn_server.start()
-			while True:
-				time.sleep(30)
-		except KeyboardInterrupt:
-			print('KeyboardInterrupt, exiting...')
-			self.quit()
-		except:
-			traceback.print_exc()
-	def quit(self,code=1):
-		global connectedCalcs,connectedClients,config
-		for b in self.bots:
-			b.stopThread()
-		self.oircLink.stopThread()
-		if self.calcNetwork != -1:
-			print('stopping calculator server...')
-			self.gCn_server.stop()
-		
-		if config.json['websockets']['use']:
-			print('stopping websocket server...')
-			self.websocketserver.stop()
-		
-		sys.exit(code)
 
 
 # websockethandler skeleton from https://gist.github.com/jkp/3136208
-connectedClients = []
 class WebSocketsHandler(ServerHandler):
 	magic = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
 	sig = ''
@@ -1000,12 +676,10 @@ class WebSocketsHandler(ServerHandler):
 	banned = True
 	chan = ''
 	msgStack = []
-	
 	def setup(self):
 		print("connection established"+str(self.client_address))
 		self.handshake_done = False
 		print('New Web-Client\n')
-		connectedClients.append(self)
 	def recieve(self):
 		
 		if not self.handshake_done:
@@ -1091,7 +765,6 @@ class WebSocketsHandler(ServerHandler):
 		if self.chan!='':
 			sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE `username` = %s AND `channel` = %s AND `online` = %s",[self.nick,str(self.chan),self.network]);
 			sql.query("INSERT INTO `irc_lines` (name1,type,channel,time,online,uid) VALUES(%s,'part',%s,%s,%s,%s)",[self.nick,str(self.chan),str(int(time.time())),int(self.network),self.uid])
-
 	def sendLine(self,n1,n2,t,m,c,s,uid): #name 1, name 2, type, message, channel, source
 		if self.banned:
 			return False
@@ -1227,8 +900,405 @@ class WebSocketsHandler(ServerHandler):
 			self.socket.close()
 		except:
 			pass
-		connectedClients.remove(self)
 		return False
+
+class RelayWebsockets(OircRelay):
+	relayType = 1
+	def initRelay(self,cfg):
+		if config.json['websockets']['ssl']:
+			self.server = SSLServer(cfg['host'],cfg['port'],WebSocketsHandler)
+		else:
+			self.server = Server(cfg['host'],cfg['port'],WebSocketsHandler)
+	def startRelay(self):
+		self.server.start()
+	def stopRelay(self):
+		for client in self.server.inputHandlers:
+			client.sendLine('OmnomIRC','','reload_userlist','THE GAME',client.nick,0,-1)
+		self.server.stop()
+	def relayMessage(self,n1,n2,t,m,c,s,uid): #self.server.inputHandlers
+		oircOnly = False
+		try:
+			c = int(c)
+		except:
+			oircOnly = True
+		for client in self.server.inputHandlers:
+			try:
+				if ((not client.banned) and
+					(
+						(
+							(
+								(
+									(
+										(not oircOnly) or c[0]=='@'
+									)
+									and
+									c == client.chan
+								)
+								or
+								(
+									client.network == s
+									and
+									(
+										c==client.nick
+										or
+										n1==client.nick
+									)
+									and
+									client.identified
+								)
+							)
+							and t!='server'
+						)
+						or
+						(
+							t=='server'
+							and
+							c==client.nick
+							and
+							n2==str(client.chan)
+							and
+							client.identified
+						)
+					)):
+					client.sendLine(n1,n2,t,m,c,s,uid)
+			except Exception as inst:
+				print(inst)
+				traceback.print_exc()
+
+
+
+
+#gCn bridge
+class CalculatorHandler(ServerHandler):
+	connectedToIRC=False
+	chan=''
+	calcName=''
+	stopnow=False
+	def userJoin(self):
+		c = self.chanToId(self.chan)
+		if c!=-1:
+			handle.addUser(self.calcName,c,self.i)
+	def userPart(self):
+		c = self.chanToId(self.chan)
+		if c!=-1:
+			handle.removeUser(self.calcName,c,self.i)
+	def close(self):
+		traceback.print_stack()
+		print('Giving signal to quit calculator...')
+		try:
+			self.sendToIRC('quit','')
+			self.userPart()
+		except:
+			pass
+		try:
+			self.send(b'\xAD**** Server going down! ****')
+		except:
+			pass
+		try:
+			self.socket.close()
+		except:
+			pass
+	def checkExit(self):
+		if self.stopnow:
+			print('exiting...')
+			exit()
+	def sendToIRC(self,t,m):
+		c = self.chanToId(self.chan)
+		if c!=-1:
+			handle.sendToOther(self.calcName,'',t,m,c,self.i)
+			sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`) VALUES (%s,%s,%s,%s,%s,%s,%s)",[self.calcName,'',m,t,c,str(int(time.time())),int(self.i)])
+			handle.updateCurline()
+	def sendLine(self,n1,n2,t,m,c,s): #name 1, name 2, type, message, channel, source
+		c = self.idToChan(c)
+		if c!=-1:
+			if t=='message':
+				self.send(b'\xAD'+bytes('%s:%s' % (n1,m),'utf-8'))
+			elif t=='action':
+				self.send(b'\xAD'+bytes('*%s %s' % (n1,m),'utf-8'))
+			elif t=='join':
+				self.send(b'\xAD'+bytes('*%s has joined %s' % (n1,c),'utf-8'))
+			elif t=='part':
+				self.send(b'\xAD'+bytes('*%s has left %s (%s)' % (n1,c,m),'utf-8'))
+			elif t=='quit':
+				self.send(b'\xAD'+bytes('*%s has quit %s (%s)' % (n1,c,m),'utf-8'))
+			elif t=='mode':
+				self.send(b'\xAD'+bytes('*%s set %s mode %s' % (n1,c,m),'utf-8'))
+			elif t=='kick':
+				self.send(b'\xAD'+bytes('*%s has kicked %s from %s (%s)' % (n1,n2,c,m),'utf-8'))
+			elif t=='topic':
+				self.send(b'\xAD'+bytes('*%s has changed the topic to %s' % (n1,m),'utf-8'))
+			elif t=='nick':
+				self.send(b'\xAD'+bytes('*%s has changed nicks to %s' % (n1,n2),'utf-8'))
+	def send(self,message):
+		try:
+			try:
+				message = bytes(message,'utf-8')
+			except:
+				pass
+			message = b'\xFF\x89\x00\x00\x00\x00\x00Omnom'+struct.pack('<H',len(message))+message
+			message = struct.pack('<H',len(message)+1)+b'b'+message+b'*'
+			self.socket.sendall(message)
+		except Exception as inst:
+			traceback.print_exc()
+	def idToChan(self,i):
+		if i in self.chans:
+			return self.chans[i]
+		return -1
+	def chanToId(self,c):
+		for i,ch in self.chans.items():
+			if c.lower() == ch.lower():
+				return i
+		return -1
+	def findchan(self,chan):
+		for key,value in self.chans.items():
+			if chan.lower() == value.lower():
+				return True
+				break
+		return False
+	def setup(self):
+		global config
+		print('New calculator\n')
+		self.chans = {}
+		self.defaultChan = ''
+		print(self.i)
+		for ch in config.json['channels']:
+			if ch['enabled']:
+				for c in ch['networks']:
+					if c['id'] == self.i:
+						self.chans[ch['id']] = c['name']
+						if self.defaultChan == '':
+							self.defaultChan = c['name']
+						break
+	def recieve(self):
+		try:
+			r_bytes = self.socket.recv(1024)
+		except socket.timeout:
+			return True
+		except Exception as err:
+			print('Error:')
+			print(err)
+			return False
+		data = makeUnicode(r_bytes)
+		if len(r_bytes) == 0: # eof
+			print('EOF recieved')
+			return False
+		try:
+			printString = '';
+			sendMessage = False
+			if (r_bytes[2]==ord('j')):
+				self.calcName=''
+				self.chan=''
+				for i in range(4, int(ord(data[3]))+4):
+					self.chan=self.chan+data[i]
+				for i in range(int(ord(data[3]))+5, int(ord(data[int(ord(data[3]))+4]))+int(ord(data[3]))+5):
+					self.calcName=self.calcName+data[i]
+				self.chan = self.chan.lower()
+				printString+='Join-message recieved. Calc-Name:'+self.calcName+' Channel:'+self.chan+'\n'
+				if not(self.findchan(self.chan)):
+					printString+='Invalid channel, defaulting to '+self.defaultChan+'\n'
+					self.chan=self.defaultChan
+			if (r_bytes[2]==ord('c')):
+				calcId=makeUnicode(r_bytes[3:])
+				printString+='Calc-message recieved. Calc-ID:'+calcId+'\n'
+			if (r_bytes[2]==ord('b') or r_bytes[2]==ord('f')):
+				if r_bytes[17]==171:
+					self.send(b'\xABOmnomIRC')
+					if not self.connectedToIRC:
+						printString+=self.calcName+' has joined\n'
+						self.connectedToIRC=True
+						self.send(b'\xAD**Now speeking in channel '+bytes(self.chan,'utf-8'))
+						self.sendToIRC('join','')
+						self.userJoin()
+				elif r_bytes[17]==172:
+					if self.connectedToIRC:
+						printString+=self.calcName+' has quit\n'
+						self.connectedToIRC=False
+						self.userPart()
+						self.sendToIRC('quit','')
+				elif r_bytes[17]==173 and data[5:10]=='Omnom':
+					printString+='msg ('+self.calcName+') '+data[data.find(':',18)+1:-1]+'\n'
+					message=data[data.find(":",18)+1:-1]
+					if message.split(' ')[0].lower()=='/join':
+						if self.findchan(message[message.find(' ')+1:].lower()):
+							self.sendToIRC('part','')
+							self.userPart()
+							self.chan=message[message.find(' ')+1:].lower()
+							self.send(b'\xAD**Now speeking in channel '+bytes(self.chan,'utf-8'))
+							self.sendToIRC('join','')
+							self.userJoin()
+						else:
+							self.send(b'\xAD**Channel '+bytes(message[message.find(' ')+1:],'utf-8')+b' doesn\'t exist!')
+					elif message.split(' ')[0].lower()=='/me':
+						self.sendToIRC('action',message[message.find(' ')+1:])
+					else:
+						self.sendToIRC('message',message)
+					
+			if printString!='':
+				print(printString)
+		except Exception as inst:
+			print(inst)
+			traceback.print_exc()
+		return True
+
+class RelayCalcnet(OircRelay):
+	relayType = 2
+	def initRelay(self,cfg):
+		self.server = Server(cfg['server'],cfg['port'],type('CalculatorHandler_anon',(CalculatorHandler,),{'i':self.id}))
+	def startRelay(self):
+		self.server.start()
+	def stopRelay(self):
+		self.server.stop()
+	def relayMessage(self,n1,n2,t,m,c,s,uid = -1):
+		for calc in self.server.inputHandlers:
+			try:
+				if calc.connectedToIRC and (not (s==self.id and n1==calc.calcName)) and calc.idToChan(c).lower()==calc.chan.lower():
+					calc.sendLine(n1,n2,t,m,c,s)
+			except Exception as inst:
+				print(inst)
+				traceback.print_exc()
+
+
+
+
+#fetch lines off of OIRC
+class OIRCLink(threading.Thread):
+	def __init__(self):
+		threading.Thread.__init__(self)
+		self.stopnow = False
+	def stopThread(self):
+		print('Giving signal to quit OmnomIRC link...')
+		self.stopnow = True
+	def run(self):
+		global sql,handle,config
+		curline = 0
+		while not self.stopnow:
+			try:
+				temp = handle.getCurline()
+				if temp>curline:
+					curline = temp
+					res = sql.query('SELECT fromSource,channel,type,action,prikey,nick,message,uid FROM irc_outgoing_messages')
+					if len(res) > 0:
+						print('(1)>> '+str(res))
+						lastline = 0
+						for row in res:
+							try:
+								for i in ['nick','type','message','channel']:
+									row[i] = makeUnicode(row[i])
+								
+								if row['type']=='server':
+									handle.sendToOther('OmnomIRC',row['nick'],row['type'],row['message'],row['channel'],row['fromSource'])
+								else:
+									handle.sendToOther(row['nick'],'',row['type'],row['message'],row['channel'],row['fromSource'],int(row['uid']))
+								
+								if row['type']=='topic':
+									handle.sendTopicToOther(row['message'],row['channel'],row['fromSource'])
+							except Exception as inst:
+								print(inst)
+								traceback.print_exc()
+							lastline = row['prikey']
+						sql.query('DELETE FROM `irc_outgoing_messages` WHERE prikey < %s',[int(lastline)+1])
+			except Exception as inst:
+				print(inst)
+				traceback.print_exc()
+			time.sleep(0.2)
+
+
+#main handler
+class Main():
+	relays = []
+	def __init__(self):
+		global config
+		self.bots = []
+	def updateCurline(self):
+		global config,sql
+		try:
+			f = open(config.json['settings']['curidFilePath'],'w')
+			f.write(str(sql.query("SELECT MAX(line_number) AS max FROM irc_lines")[0]['max']))
+			f.close()
+		except Exception as inst:
+			print('curline error')
+			print(inst)
+			traceback.print_exc()
+	def addUser(self,u,c,i):
+		temp = sql.query("SELECT usernum FROM irc_users WHERE username=%s AND channel=%s AND online=%s",[u,c,int(i)])
+		if(len(temp)==0):
+			sql.query("INSERT INTO `irc_users` (`username`,`channel`,`online`) VALUES (%s,%s,%s)",[u,c,int(i)])
+		else:
+			sql.query("UPDATE `irc_users` SET `isOnline`=1 WHERE `usernum`=%s",[int(temp[0]['usernum'])])
+	def removeUser(self,u,c,i):
+		sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE `username` = %s AND `channel` = %s AND online=%s",[u,c,int(i)])
+	def getCurline(self):
+		global config
+		f = open(config.json['settings']['curidFilePath'])
+		lines = f.readlines()
+		f.close()
+		if len(lines)>=1:
+			return int(lines[0])
+		return 0
+	def sendTopicToOther(self,s,c,i):
+		oircOnly = False
+		try:
+			int(c)
+		except:
+			oircOnly = True
+		for r in self.relays:
+			if (oircOnly and r.relayType==1) or not oircOnly:
+				r.relayTopic(s,c,i)
+	def sendToOther(self,n1,n2,t,m,c,s,uid = -1):
+		oircOnly = False
+		try:
+			c = int(c)
+		except:
+			oircOnly = True
+		for r in self.relays:
+			if (oircOnly and r.relayType==1) or not oircOnly:
+				try:
+					r.relayMessage(n1,n2,t,m,c,s,uid)
+				except:
+					traceback.print_exc()
+		
+	def sigquit(self,e,s):
+		print('sigquit')
+		self.quit()
+	def serve(self):
+		signal.signal(signal.SIGQUIT,self.sigquit)
+		self.calcNetwork = -1
+		
+		for n in config.json['networks']:
+			if n['enabled']:
+				if n['type']==3: # irc
+					self.relays.append(RelayIRC(n))
+				elif n['type']==2: # calc
+					self.relays.append(RelayCalcnet(n))
+		
+		if config.json['websockets']['use']:
+			self.relays.append(RelayWebsockets({
+				'id':-1,
+				'config':config.json['websockets']
+			}));
+		
+		self.oircLink = OIRCLink()
+		self.oircLink.start()
+		
+		try:
+			for r in self.relays:
+				r.startRelay_wrap()
+			
+			while True:
+				time.sleep(30)
+		except KeyboardInterrupt:
+			print('KeyboardInterrupt, exiting...')
+			self.quit()
+		except:
+			traceback.print_exc()
+	def quit(self,code=1):
+		global config
+		for r in self.relays:
+			r.stopRelay_wrap()
+		self.oircLink.stopThread()
+		
+		sys.exit(code)
+
 
 config = Config()
 sql = Sql()
