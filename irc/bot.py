@@ -1186,39 +1186,6 @@ class OIRCLink(ServerHandler):
 			except:
 				traceback.print_exc()
 		return True
-	def run_old(self):
-		global sql,handle,config
-		curline = 0
-		while not self.stopnow:
-			try:
-				temp = handle.getCurline()
-				if temp>curline:
-					curline = temp
-					res = sql.query('SELECT fromSource,channel,type,prikey,nick,message,uid FROM irc_outgoing_messages')
-					if len(res) > 0:
-						print('(1)>> '+str(res))
-						lastline = 0
-						for row in res:
-							try:
-								for i in ['nick','type','message','channel']:
-									row[i] = makeUnicode(row[i])
-								
-								if row['type']=='server':
-									handle.sendToOther('OmnomIRC',row['nick'],row['type'],row['message'],row['channel'],row['fromSource'])
-								else:
-									handle.sendToOther(row['nick'],'',row['type'],row['message'],row['channel'],row['fromSource'],int(row['uid']))
-								
-								if row['type']=='topic':
-									handle.sendTopicToOther(row['message'],row['channel'],row['fromSource'])
-							except Exception as inst:
-								print(inst)
-								traceback.print_exc()
-							lastline = row['prikey']
-						sql.query('DELETE FROM `irc_outgoing_messages` WHERE prikey < %s',[int(lastline)+1])
-			except Exception as inst:
-				print(inst)
-				traceback.print_exc()
-			time.sleep(0.2)
 
 
 #main handler
