@@ -81,6 +81,9 @@ $json = new Json();
 
 function errorHandler($errno,$errstr,$errfile,$errline){
 	global $json;
+	if(0 === error_reporting()){
+		return false;
+	}
 	switch($errno){
 		case E_USER_WARNING:
 		case E_USER_NOTICE:

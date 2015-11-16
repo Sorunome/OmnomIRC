@@ -239,14 +239,22 @@ class OircRelay:
 	id = -1
 	def __init__(self,n):
 		self.id = int(n['id'])
-		self.initRelay(n['config'])
-	def initRelay(self,cfg):
+		self.config = n['config']
+		self.initRelay()
+	def initRelay(self):
 		return
 	def startRelay_wrap(self):
 		sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE online = %s",[self.id])
 		self.startRelay()
 	def startRelay(self):
 		return
+	def updateRelay_wrap(self,cfg):
+		if self.id == int(cfg['id']):
+			self.updateRelay(cfg['config'])
+	def updateRelay(self,cfg):
+		self.stopRelay_wrap()
+		self.config = cfg
+		self.startRelay_wrap()
 	def stopRelay_wrap(self):
 		sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE online = %s",[self.id])
 		self.stopRelay()
@@ -260,7 +268,7 @@ class OircRelay:
 
 #irc bot
 class Bot(threading.Thread):
-	def __init__(self,server,port,nick,ns,main,passwd,i,tbe,mn,tn,dssl):
+	def __init__(self,server,port,nick,ns,main,i,tbe,mn,tn,dssl):
 		threading.Thread.__init__(self)
 		self.stopnow = False
 		self.restart = False
@@ -268,15 +276,17 @@ class Bot(threading.Thread):
 		self.server = server
 		self.port = port
 		self.nick = nick
+		self.nick_want = nick
 		self.ns = ns
 		self.main = main
-		self.passwd = passwd
 		self.i = i
 		self.userlist = {}
 		self.chans = {}
 		self.mainNick = mn
 		self.topicNick = tn
 		self.ssl = dssl
+		
+		self.lastTriedNick = time.time()
 		for ch in config.json['channels']:
 			if ch['enabled']:
 				for c in ch['networks']:
@@ -289,6 +299,52 @@ class Bot(threading.Thread):
 		else:
 			self.recieveStr = 'T>'
 			self.sendStr = 'T<'
+	def updateConfig(self,nick,ns,tbe,mn,tn):
+		self.topicbotExists = tbe
+		self.mainNick = mn
+		self.topicNick = tn
+		
+		if self.ns != ns:
+			self.ns = ns
+			if ns == '':
+				self.send('PRIVMSG NickServ :LOGOUT',True)
+			else:
+				self.send('PRIVMSG NickServ :IDENTIFY %s' % (ns),True)
+		
+		if self.nick != nick:
+			self.nick = nick
+			self.nick_want = nick
+			self.send('NICK %s' % (nick),True)
+		
+		self.updateChans()
+	def updateChans(self):
+		updateChans = {}
+		for ch in config.json['channels']:
+			if ch['enabled']:
+				for c in ch['networks']:
+					if c['id'] == self.i and not (ch['id'] in self.chans):
+						updateChans[ch['id']] = c['name']
+		removeChans = []
+		for i,n in self.chans.items():
+			found = False
+			for ch in config.json['channels']:
+				if not ch['enabled'] and i in self.chans:
+					break
+				if ch['enabled']:
+					for c in ch['networks']:
+						if ch['id'] == i and c['id'] == self.i:
+							found = True
+			if not found:
+				removeChans.append(i)
+		for ch in removeChans:
+			c = self.idToChan(ch)
+			self.send('PART %s' % c,True)
+			self.userlist.pop(c,False)
+			self.addLine('OmnomIRC','','reload_userlist','THE GAME',c,True)
+			self.chans.pop(ch)
+		for i,c in updateChans.items():
+			self.chans[i] = c
+			self.send('JOIN %s' % c,True)
 	def idToChan(self,i):
 		if i in self.chans:
 			return self.chans[i]
@@ -448,7 +504,7 @@ class Bot(threading.Thread):
 		if chan[0]!='#':
 			chan = chan[1:]
 		if line[1]=='PRIVMSG':
-			if line[2][0]!='#' and line[3] == ':DOTHIS' and line[4] == self.passwd:
+			if line[2][0]!='#' and line[3] == ':DOTHIS' and line[4] == config.json['security']['ircPwd']:
 				self.send(' '.join(line[5:]))
 			elif line[2][0]=='#':
 				if line[3]==':\x01ACTION' and message[-1:]=='\x01':
@@ -482,6 +538,15 @@ class Bot(threading.Thread):
 			self.addUser(line[7],line[3])
 		elif line[1]=='315':
 			self.addLine('OmnomIRC','','reload_userlist','THE GAME',line[3],True)
+	def handleNickTaken(self,line):
+		for i in range(len(line)):
+			line[i] = makeUnicode(line[i])
+		if line[1]=='433':
+			self.nick += '_'
+			self.send('NICK %s' % (self.nick),True)
+		if self.nick != self.nick_want and self.lastTriedNick + 90 <= time.time(): # only try every now and then
+			self.nick = self.nick_want
+			self.send('NICK %s' % (self.nick),True)
 	def ircloop(self,fn):
 		global sql
 		if self.main:
@@ -552,6 +617,7 @@ class Bot(threading.Thread):
 						print('Error when connecting, restarting bot ('+str(self.i)+add)
 						break
 					fn(line)
+					self.handleNickTaken(line)
 				except Exception as inst:
 					print('('+str(self.i)+') parse Error')
 					print(inst)
@@ -634,21 +700,40 @@ class RelayIRC(OircRelay):
 	relayType = 3
 	bot = False
 	topicBot = False
-	def initRelay(self,cfg):
-		self.haveTopicBot = cfg['topic']['nick'] != ''
-		for t in ['main','topic']:
-			main = t=='main'
-			if not main and not self.haveTopicBot:
-				break
-			bot = Bot(cfg[t]['server'],cfg[t]['port'],cfg[t]['nick'],cfg[t]['nickserv'],main,config.json['security']['ircPwd'],self.id,self.haveTopicBot,cfg['main']['nick'],cfg['topic']['nick'],cfg[t]['ssl'])
-			if main:
-				self.bot = bot
-			else:
-				self.topicBot = bot
+	def newBot(self,t,cfg):
+		return Bot(cfg[t]['server'],cfg[t]['port'],cfg[t]['nick'],cfg[t]['nickserv'],t=='main',self.id,self.haveTopicBot,
+						cfg['main']['nick'],cfg['topic']['nick'],cfg[t]['ssl'])
+	def initRelay(self):
+		self.haveTopicBot = self.config['topic']['nick'] != ''
+		self.bot = self.newBot('main',self.config)
+		if self.haveTopicBot:
+			self.topicBot = self.newBot('topic',self.config)
 	def startRelay(self):
 		self.bot.start()
 		if self.haveTopicBot:
 			self.topicBot.start()
+	def updateRelay(self,cfg):
+		haveTopicBot = cfg['topic']['nick'] != ''
+		haveTopicBot_old = self.haveTopicBot
+		self.haveTopicBot = haveTopicBot
+		for bot_ref,t in [['bot','main'],['topicBot','topic']]:
+			bot = getattr(self,bot_ref)
+			if bot:
+				if bot.ssl != cfg[t]['ssl'] or bot.server != cfg[t]['server'] or bot.port != cfg[t]['port']:
+					bot.stopThread()
+					setattr(self,bot_ref,self.newBot(t,cfg))
+					getattr(self,bot_ref).start()
+					continue
+				bot.updateConfig(cfg[t]['nick'],cfg[t]['nickserv'],self.haveTopicBot,cfg['main']['nick'],cfg['topic']['nick'])
+		if haveTopicBot_old != haveTopicBot:
+			self.bot.topicbotExists = self.haveTopicBot
+			if self.haveTopicBot: # we need to generate a new bot!
+				self.topicBot = self.newBot('topic',cfg)
+				self.topicBot.start()
+			else: # we need to remove a bot!
+				self.topicBot.stopThread()
+				self.topicBot = False
+		self.config = cfg
 	def stopRelay(self):
 		self.bot.stopThread()
 		if self.haveTopicBot:
@@ -666,7 +751,6 @@ class RelayIRC(OircRelay):
 				self.topicBot.sendTopic(s,c)
 			else:
 				self.bot.sendTopic(s,c)
-
 
 
 # websockethandler skeleton from https://gist.github.com/jkp/3136208
@@ -909,11 +993,11 @@ class WebSocketsHandler(ServerHandler):
 
 class RelayWebsockets(OircRelay):
 	relayType = 1
-	def initRelay(self,cfg):
+	def initRelay(self):
 		if config.json['websockets']['ssl']:
-			self.server = SSLServer(cfg['host'],cfg['port'],WebSocketsHandler)
+			self.server = SSLServer(self.config['host'],self.config['port'],WebSocketsHandler)
 		else:
-			self.server = Server(cfg['host'],cfg['port'],WebSocketsHandler)
+			self.server = Server(self.config['host'],self.config['port'],WebSocketsHandler)
 	def startRelay(self):
 		self.server.start()
 	def stopRelay(self):
@@ -1148,8 +1232,8 @@ class CalculatorHandler(ServerHandler):
 
 class RelayCalcnet(OircRelay):
 	relayType = 2
-	def initRelay(self,cfg):
-		self.server = Server(cfg['server'],cfg['port'],type('CalculatorHandler_anon',(CalculatorHandler,),{'i':self.id}))
+	def initRelay(self):
+		self.server = Server(self.config['server'],self.config['port'],type('CalculatorHandler_anon',(CalculatorHandler,),{'i':self.id}))
 	def startRelay(self):
 		self.server.start()
 	def stopRelay(self):
@@ -1185,8 +1269,11 @@ class OIRCLink(ServerHandler):
 		for line in temp:
 			try:
 				data = json.loads(line)
-				handle.sendToOther(data['n1'],data['n2'],data['t'],data['m'],data['c'],data['s'],data['uid'])
-				print('(oirc)>> '+str(data))
+				if data['t'] == 'server_updateconfig':
+					handle.updateConfig()
+				else:
+					handle.sendToOther(data['n1'],data['n2'],data['t'],data['m'],data['c'],data['s'],data['uid'])
+					print('(oirc)>> '+str(data))
 			except:
 				traceback.print_exc()
 		return True
@@ -1245,7 +1332,33 @@ class Main():
 					r.relayMessage(n1,n2,t,m,c,s,uid)
 				except:
 					traceback.print_exc()
-		
+	def findRelay(self,id):
+		for r in self.relays:
+			if id == r.id:
+				return r
+		return False
+	def addRelay(self,n):
+		if n['type']==3: # irc
+			self.relays.append(RelayIRC(n))
+		elif n['type']==2: # calc
+			self.relays.append(RelayCalcnet(n))
+	def updateConfig(self):
+		print('(oirc) Got signal to update config!')
+		config.readFile()
+		for n in config.json['networks']:
+			r = self.findRelay(n['id'])
+			if not n['enabled'] and r:
+				r.stopRelay_wrap()
+				self.relays.remove(r)
+				continue
+			if n['enabled']:
+				if r:
+					r.updateRelay_wrap(n)
+				else:
+					size_before = len(self.relays)
+					self.addRelay(n)
+					if size_before < len(self.relays):
+						self.relays[len(self.relays)-1].startRelay_wrap() # start it straigt away!
 	def sigquit(self,e,s):
 		print('sigquit')
 		self.quit()
@@ -1255,10 +1368,7 @@ class Main():
 		
 		for n in config.json['networks']:
 			if n['enabled']:
-				if n['type']==3: # irc
-					self.relays.append(RelayIRC(n))
-				elif n['type']==2: # calc
-					self.relays.append(RelayCalcnet(n))
+				self.addRelay(n)
 		
 		if config.json['websockets']['use']:
 			self.relays.append(RelayWebsockets({

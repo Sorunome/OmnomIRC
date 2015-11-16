@@ -298,6 +298,7 @@ if(substr($parts[0],0,1)=='/'){
 			break;
 	}
 }
+
 if($channel[0] == '*'){
 	if($type=='action'){
 		$type = 'pmaction';
@@ -317,13 +318,12 @@ if($sendPm){
 if($reload){
 	sendLine('OmnomIRC','','reload','THE GAME');
 }
-if($sendToBotBuffer != '' && $config['settings']['useBot']){
-	if(($socket = @socket_create(AF_INET,SOCK_STREAM,SOL_TCP)) && ($result = socket_connect($socket,'localhost',$config['settings']['botPort']))){
-		socket_write($socket,$sendToBotBuffer,strlen($sendToBotBuffer));
-		socket_close($socket);
-		$json->add('botBuffer',$sendToBotBuffer);
-	}
+
+if($sendToBotBuffer != '' && $config['settings']['useBot'] && ($socket = @socket_create(AF_INET,SOCK_STREAM,SOL_TCP)) && @socket_connect($socket,'localhost',$config['settings']['botPort'])){
+	socket_write($socket,$sendToBotBuffer,strlen($sendToBotBuffer));
+	socket_close($socket);
 }
+
 
 if(isset($_GET['textmode'])){
 	session_start();
