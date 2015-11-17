@@ -94,13 +94,23 @@ class Sql:
 	def query(self,q,p = []):
 		global config
 		try:
-			db = pymysql.connect(
-				host=config.json['sql']['server'],
-				user=config.json['sql']['user'],
-				password=config.json['sql']['passwd'],
-				db=config.json['sql']['db'],
-				charset='utf8',
-				cursorclass=pymysql.cursors.DictCursor)
+			try:
+				db = pymysql.connect(
+					host=config.json['sql']['server'],
+					user=config.json['sql']['user'],
+					password=config.json['sql']['passwd'],
+					db=config.json['sql']['db'],
+					charset='utf8',
+					cursorclass=pymysql.cursors.DictCursor)
+			except:
+				db = pymysql.connect(
+					host=config.json['sql']['server'],
+					user=config.json['sql']['user'],
+					password=config.json['sql']['passwd'],
+					db=config.json['sql']['db'],
+					unix_socket='/var/run/mysqld/mysqld.sock',
+					charset='utf8',
+					cursorclass=pymysql.cursors.DictCursor)
 			cur = db.cursor()
 			
 			cur.execute(q,tuple(p))
@@ -114,8 +124,8 @@ class Sql:
 			db.close()
 			return rows
 		except Exception as inst:
-			print('(sql) Error')
-			print(inst)
+			print(config.json['sql'])
+			print('(sql) Error',inst)
 			traceback.print_exc()
 			return False
 
@@ -514,7 +524,7 @@ class Bot(threading.Thread):
 			self.removeUser(nick,chan)
 			if nick.lower()==self.nick.lower():
 				self.delUsersInChan(chan)
-		elif line[1]=='QUIT':
+		elif line[1]=='QUIT' and nick.lower().rstrip('_')!=self.topicNick.lower().rstrip('_'): # topicbot has its own quit messages
 			self.handleQuit(nick,' '.join(line[2:])[1:])
 		elif line[1]=='MODE':
 			self.addLine(nick,'','mode',' '.join(line[3:]),chan)
@@ -1296,7 +1306,7 @@ class OIRCLink(ServerHandler):
 				if data['t'] == 'server_updateconfig':
 					handle.updateConfig()
 				else:
-					handle.sendToOther(data['n1'],data['n2'],data['t'],data['m'],data['c'],data['s'],data['uid'])
+					handle.sendToOther(data['n1'],data['n2'],data['t'],data['m'],data['c'],data['s'],data['uid'],False)
 					print('(oirc)>> '+str(data))
 			except:
 				traceback.print_exc()
@@ -1349,7 +1359,7 @@ class Main():
 		for r in self.relays:
 			if (oircOnly and r.relayType==1) or not oircOnly:
 				r.relayTopic(s,c,i)
-	def sendToOther(self,n1,n2,t,m,c,s,uid = -1):
+	def sendToOther(self,n1,n2,t,m,c,s,uid = -1,do_sql = True):
 		oircOnly = (t in ('join','part','quit') and uid!=-1)
 		try:
 			c = int(c)
@@ -1363,16 +1373,17 @@ class Main():
 					traceback.print_exc()
 		
 		print('(handle) (relay) '+str({'name1':n1,'name2':n2,'type':t,'message':m,'channel':c,'source':s,'uid':uid}))
-		c = makeUnicode(str(c))
-		sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`,`uid`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",[n1,n2,m,t,c,str(int(time.time())),int(s),uid])
-		if t=='topic':
-			temp = sql.query("SELECT channum FROM `irc_channels` WHERE chan=%s",[c.lower()])
-			if len(temp)==0:
-				sql.query("INSERT INTO `irc_channels` (chan,topic) VALUES(%s,%s)",[c.lower(),m])
-			else:
-				sql.query("UPDATE `irc_channels` SET topic=%s WHERE chan=%s",[m,c.lower()])
-		if t=='action' or t=='message':
-			sql.query("UPDATE `irc_users` SET lastMsg=%s WHERE username=%s AND channel=%s AND online=%s",[str(int(time.time())),n1,c,int(s)])
+		if do_sql:
+			c = makeUnicode(str(c))
+			sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`,`uid`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",[n1,n2,m,t,c,str(int(time.time())),int(s),uid])
+			if t=='topic':
+				temp = sql.query("SELECT channum FROM `irc_channels` WHERE chan=%s",[c.lower()])
+				if len(temp)==0:
+					sql.query("INSERT INTO `irc_channels` (chan,topic) VALUES(%s,%s)",[c.lower(),m])
+				else:
+					sql.query("UPDATE `irc_channels` SET topic=%s WHERE chan=%s",[m,c.lower()])
+			if t=='action' or t=='message':
+				sql.query("UPDATE `irc_users` SET lastMsg=%s WHERE username=%s AND channel=%s AND online=%s",[str(int(time.time())),n1,c,int(s)])
 		self.updateCurline()
 	def findRelay(self,id):
 		for r in self.relays:
@@ -1393,7 +1404,7 @@ class Main():
 			if not found:
 				self.relays.append(RelayWebsockets(n))
 	def get_net_cheat(self):
-		net_cheat = config.json['networks']
+		net_cheat = config.json['networks'][:]
 		net_cheat[-1] = {
 			'id':-1,
 			'type':-1,

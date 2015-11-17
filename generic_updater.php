@@ -4,7 +4,7 @@ error_reporting(0);
 $NEWVERSION='2.9.2';
 $DOWNLOADDIR = 'https://omnomirc.omnimaga.org/'.$NEWVERSION;
 
-$files = Array('',/* now files to updater, first element must be empty */);
+$files = array('',/* now files to updater, first element must be empty */);
 $clfiles = array(/* list of files for checkLogin to update */);
 $updateHooks = false; // do we need to update hooks? true for all, array for specific hooks
 $updateBot = false; // do we need to update the bot?
@@ -145,12 +145,24 @@ exit;
 }
 function getPage($title,$head,$body){
 	global $config;
+	$theme = -1;
+	if(isset($_GET['network'])){
+		foreach($config['networks'] as $n){
+			if($n['id'] == $_GET['network']){
+				if(isset($n['config']['theme'])){
+					$theme = $n['config']['theme'];
+				}
+				break;
+			}
+		}
+	}
 	return '<!DOCTYPE html>'.
 			'<html>'.
 			'<head>'.
 				'<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />'.
 				'<link rel="icon" type="image/png" href="omni.png">'.
 				'<link rel="stylesheet" type="text/css" href="style.css" />'.
+				($theme!=-1?'<link rel="stylesheet" type="text/css" href="theme.php?theme='.$theme.'" />':'').
 				'<script src="btoa.js"></script>'.
 				'<script type="text/javascript" src="jquery-1.11.3.min.js"></script>'.
 				'<title>'.$title.'</title>'.
@@ -173,10 +185,16 @@ if(!isset($_GET['server'])){
 				},
 				downloadFileFailed = function(step){
 					$("#container").append(
+						$("<button>").text("retry").click(function(e){
+							e.preventDefault();
+							getStep(step-2,{});
+						}),
+						"&nbsp;",
 						$("<button>").text("continue").click(function(e){
 							e.preventDefault();
 							getStep(step,{});
 						})
+						
 					);
 				},
 				files = '.json_encode($files).',
@@ -212,7 +230,7 @@ if(!isset($_GET['server'])){
 							'.($updateBot?'"Please update your IRC bot file, you can download the new version <a href=\''.$DOWNLOADDIR.'/bot.py\'>here</a><br>",':'').'
 							"To finish the update hit the button below.",
 							"<br>",
-							$("<a>").attr("href","admin.php?finishUpdate&'.$_GET['params'].'").append(
+							$("<a>").attr("href","admin.php?finishUpdate'.(isset($_GET['network'])?'&network='.$_GET['network']:'').'").append(
 								$("<button>").text("Finish")
 							)
 						);
@@ -250,7 +268,7 @@ if(!isset($_GET['server'])){
 		if(!file_put_contents(realpath(dirname(__FILE__)).'/'.$files[$step/2],$file)){
 			echo json_encode(Array(
 				'errors' => Array(
-						'Unable to write to '.$files[$step/2].', please download <a href="'.$DOWNLOADDIR.'/'.$files[$step/2].'.s">the file</a> manually.'
+						'Unable to write to '.$files[$step/2].', please download <a href="'.$DOWNLOADDIR.'/'.$files[$step/2].'.s">the file</a> manually or change permissions and retry.'
 					),
 				'step' => $step+1
 			));
