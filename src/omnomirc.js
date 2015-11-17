@@ -833,6 +833,7 @@ oirc = (function(){
 							socket.close();
 						}catch(e){}
 						network.getJSON('omnomirc.php?getcurline&noLoginErrors',function(data){
+							users.reload(); // this is usually a good idea.
 							request.setCurLine(data.curline);
 							use = false;
 							request.start();
@@ -1214,7 +1215,7 @@ oirc = (function(){
 			return {
 				highlight:function(c,doSave){
 					$.each(chans,function(i,ci){
-						if(ci.chan.toLowerCase()==c.toLowerCase() || c == ci.id){
+						if(c == ci.id || ci.chan.toLowerCase()==c.toString().toLowerCase()){
 							$('#chan'+i.toString()).addClass('highlightChan');
 							chans[i].high = true;
 						}
@@ -1390,6 +1391,18 @@ oirc = (function(){
 								$('#message').removeAttr('disabled');
 							}
 							indicator.stop();
+						});
+					}
+				},
+				reloadUserlist:function(i){
+					if(chans[i]!==undefined){
+						network.getJSON('Load.php?userlist&channel='+getHandler(i,true),function(data){
+							if(!data.banned){
+								users.setUsers(data.users);
+								users.draw();
+							}else{
+								send.internal('<span style="color:#C73232;"><b>ERROR:</b> banned</span>');
+							}
 						});
 					}
 				},
@@ -1596,6 +1609,18 @@ oirc = (function(){
 					return $.map(usrs,function(u){
 						return u.nick;
 					});
+				},
+				reload:function(){
+					var num = false;
+					$.each(channels.getChans(),function(i,c){
+						if(c.chan==channels.getCurrent() || c.id==channels.getCurrent()){
+							num = i;
+							return false;
+						}
+					});
+					if(num!==false){
+						channels.reloadUserlist(num);
+					}
 				}
 			};
 		})(),
@@ -2830,7 +2855,7 @@ oirc = (function(){
 					if(line.curLine > request.getCurLine()){
 						request.setCurLine(line.curLine);
 					}
-					if(line.name === null || line.name === undefined || line.type === null || ignores.indexOf(line.name.toLowerCase()) > -1 || (line.chan!=channels.getCurrent(true) && line.chan[0]!='*')){
+					if(line.name === null || line.name === undefined || line.type === null || ignores.indexOf(line.name.toLowerCase()) > -1 || (line.chan!=channels.getCurrent(true) && line.chan[0]!='*' && line.chan.toLowerCase()!=settings.nick().toLowerCase())){
 						return true; // invalid line but we don't want to stop the new requests
 					}
 					var $mBox = $('#MessageBox'),
@@ -2845,9 +2870,9 @@ oirc = (function(){
 					}
 					if((['message','action','pm','pmaction'].indexOf(line.type)>=0) && line.name.toLowerCase() != '*'){
 						tdMessage = message = parseHighlight(message,line);
-						if(page.isBlurred()){
+						//if(page.isBlurred()){
 							notification.make('('+channels.getCurrentName()+') <'+line.name+'> '+line.message,line.chan);
-						}
+						//}
 					}
 					switch(line.type){
 						case 'reload':
@@ -2864,6 +2889,12 @@ oirc = (function(){
 								return false;
 							}
 							break;
+						case 'reload_userlist':
+							addLine = false;
+							if(logMode!==true && channels.getCurrent()!==''){
+								users.reload();
+								return true;
+							}
 						case 'relog':
 							addLine = false;
 							if(logMode!==true && channels.getCurrent()!==''){
@@ -2908,7 +2939,7 @@ oirc = (function(){
 									network:line.network
 								});
 							}
-							if(line.network==1){
+							if(addLine && settings.networks()[line.network].type==1 && options.get('oircJoinPart')=='F'){
 								addLine = false;
 							}
 							break;

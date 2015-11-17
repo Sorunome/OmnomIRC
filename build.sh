@@ -8,8 +8,10 @@ rm src/omnomirc.js.tmp
 echo "minifying admin.js ..."
 uglifyjs $UGLIFYOPTIONS src/admin.js -o omnomirc_www/admin.min.js
 
-cd forum_mods
-./build.sh
-cd ..
+if [ "$1" = "all" ]; then
+	cd forum_mods
+	./build.sh
+	cd ..
+fi
 
 find . \( -name '*.php' -o -name '*.xml' -o -name '*.css' -o -name '*.html' -o -name '*.py' -o -name '*.sh' -o -name '*.js' -o -name '*.sql' \) \! \( -name '*.min.*' -o -name '\.*' \) -exec wc {} \+ | awk {'print $4" Lines:"$1" Bytes:"$3'} | grep total

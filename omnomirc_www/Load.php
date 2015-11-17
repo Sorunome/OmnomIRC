@@ -22,7 +22,7 @@ include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 if(isset($_GET['userinfo'])){
 	$json->clear();
 	if(isset($_GET['name']) && isset($_GET['chan']) && isset($_GET['online'])){
-		$temp = $sql->query("SELECT `lastMsg` FROM `irc_users` WHERE username='%s' AND channel='%s' AND online=%d",base64_url_decode($_GET['name']),(preg_match('/^[0-9]+$/',$_GET['chan'])?$_GET['chan']:base64_url_decode($_GET['chan'])),(int)$_GET['online']);
+		$temp = $sql->query_prepare("SELECT `lastMsg` FROM `irc_users` WHERE username=? AND channel=? AND online=?",array(base64_url_decode($_GET['name']),(preg_match('/^[0-9]+$/',$_GET['chan'])?$_GET['chan']:base64_url_decode($_GET['chan'])),(int)$_GET['online']));
 		$json->add('last',(int)$temp[0]['lastMsg']);
 		echo $json->get();
 	}else{
@@ -39,8 +39,9 @@ if(!$you->isLoggedIn() && $net['config']['guests'] == 0){
 	exit;
 }
 
-
-if(isset($_GET['count'])){
+if(isset($_GET['userlist'])){
+	$count = 0;
+}elseif(isset($_GET['count'])){
 	$count = (int)$_GET['count'];
 	if($count > 200){
 		$count = 200;
@@ -63,20 +64,21 @@ $json->add('banned',false);
 $json->add('admin',$you->isGlobalOp());
 
 $lines = $omnomirc->loadChannel($count);
-
-array_push($lines,array(
-	'curLine' => (int)$sql->query("SELECT MAX(`line_number`) AS `max` FROM `irc_lines`")[0]['max'],
-	'type' => 'topic',
-	'network' => -1,
-	'time' => time(),
-	'name' => '',
-	'message' => $channels->getTopic($channel),
-	'name2' => '',
-	'chan' => $channel,
-	'uid' => -1
-));
+if(!isset($_GET['userlist'])){
+	array_push($lines,array(
+		'curLine' => (int)$sql->query_prepare("SELECT MAX(`line_number`) AS `max` FROM `irc_lines`")[0]['max'],
+		'type' => 'topic',
+		'network' => -1,
+		'time' => time(),
+		'name' => '',
+		'message' => $channels->getTopic($channel),
+		'name2' => '',
+		'chan' => $channel,
+		'uid' => -1
+	));
+}
 $json->add('lines',$lines);
-$users = $sql->query("SELECT `username` AS `nick`,`online` AS `network` FROM `irc_users` WHERE `channel`='%s' AND `isOnline`=1 AND `username` IS NOT NULL ORDER BY `username`",$channel);
+$users = $sql->query_prepare("SELECT `username` AS `nick`,`online` AS `network` FROM `irc_users` WHERE `channel`=? AND `isOnline`=1 AND `username` IS NOT NULL ORDER BY `username`",array($channel));
 if($users[0]['nick'] == NULL){
 	$users = Array();
 }

@@ -1,22 +1,22 @@
 <?php
 /*
-    OmnomIRC COPYRIGHT 2010,2011 Netham45
-                       2012-2015 Sorunome
+	OmnomIRC COPYRIGHT 2010,2011 Netham45
+					   2012-2015 Sorunome
 
-    This file is part of OmnomIRC.
+	This file is part of OmnomIRC.
 
-    OmnomIRC is free software: you can redistribute it and/or modify
-    it under the terms of the GNU General Public License as published by
-    the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
+	OmnomIRC is free software: you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation, either version 3 of the License, or
+	(at your option) any later version.
 
-    OmnomIRC is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU General Public License for more details.
+	OmnomIRC is distributed in the hope that it will be useful,
+	but WITHOUT ANY WARRANTY; without even the implied warranty of
+	MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+	GNU General Public License for more details.
 
-    You should have received a copy of the GNU General Public License
-    along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
+	You should have received a copy of the GNU General Public License
+	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 if(isset($argv)){
@@ -81,6 +81,9 @@ $json = new Json();
 
 function errorHandler($errno,$errstr,$errfile,$errline){
 	global $json;
+	if(0 === error_reporting()){
+		return false;
+	}
 	switch($errno){
 		case E_USER_WARNING:
 		case E_USER_NOTICE:
@@ -108,8 +111,19 @@ function base64_url_encode($input){
 function base64_url_decode($input){
 	return base64_decode(strtr($input,'-_,','+/=')); 
 }
+function refValues($arr){
+	if (strnatcmp(phpversion(),'5.3') >= 0){  //Reference is required for PHP 5.3+
+		$refs = array();
+		foreach($arr as $key => $value){
+			$refs[$key] = &$arr[$key];
+		}
+		return $refs;
+	}
+	return $arr;
+}
 class Sqli{
 	private $mysqliConnection;
+	private $stmt;
 	private function connectSql(){
 		global $config,$json;
 		if(isset($this->mysqliConnection)){
@@ -125,20 +139,27 @@ class Sqli{
 		$this->mysqliConnection = $mysqli;
 		return $mysqli;
 	}
-	public function query(){
-		//ini_set('memory_limit','-1');
-		$mysqli = $this->connectSql();
-		$params = func_get_args();
-		$query = $params[0];
-		$args = array();
-		for($i=1;$i<count($params);$i++)
-			$args[$i-1] = $mysqli->real_escape_string($params[$i]);
-		$result = $mysqli->query(vsprintf($query,$args));
-		if($mysqli->errno==1065){ //empty
-			return array();
+	private function reportError($type,$a = array(),$stack = 1,$prep = false){
+		global $json;
+		if($prep){
+			$mysqli = $this->stmt;
+		}else{
+			$mysqli = $this->connectSql();
 		}
-		if($mysqli->errno!=0){
-			die($mysqli->error.' Query: '.vsprintf($query,$args));
+		$trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS,$stack+1);
+		$json->addError(array_merge(array(
+			'type' => 'mysql',
+			'file' => $trace[$stack]['file'],
+			'line' => $trace[$stack]['line'],
+			'method' => $type,
+			'errno' => $mysqli->errno,
+			'error' => $mysqli->error,
+		),$a));
+	}
+	private function parseResults($result,$stack = 1){
+		if($result===false){
+			$this->reportError('misc',array(),$stack+1);
+			return array();
 		}
 		if($result===true){ //nothing returned
 			return array();
@@ -159,7 +180,90 @@ class Sqli{
 		$result->free();
 		return $res;
 	}
-	public function insertId(){
+	public function prepare($query, $stack = 0){
+		$mysqli = $this->connectSql();
+		if(!$this->stmt = $mysqli->prepare($query)){
+			$this->reportError('prepare',array('query' => $query),$stack+1);
+			return false;
+		}
+		return true;
+	}
+	public function bind_param($params,$stack = 0){
+		if(is_array($params)){
+			if(empty($params)){
+				return true; // nothing to do here!
+			}
+			$s = '';
+			foreach($params as $p){
+				switch(gettype($p)){
+					case 'boolean':
+					case 'integer':
+						$s .= 'i';
+						break;
+					case 'double':
+						$s .= 'd';
+						break;
+					default:
+						$s .= 's';
+				}
+			}
+			array_unshift($params,$s);
+		}else{
+			$params = func_get_args();
+		}
+		if(!call_user_func_array(array($this->stmt,'bind_param'),refValues($params))){
+			$this->reportError('bind_param',array(),$stack+1,true);
+			return false;
+		}
+		return true;
+	}
+	public function execute($stack = 0){
+		if(!$this->stmt->execute()){
+			$this->reportError('execute',array(),$stack+1,true);
+			return false;
+		}
+		return true;
+	}
+	public function close_prepare(){
+		$this->stmt->close();
+	}
+	public function query_prepare($query,$params = array(),$stack = 0){
+		if($this->prepare($query,$stack+1) && $this->bind_param($params,$stack+1) && $this->execute($stack +1)){
+			$result = $this->stmt->get_result();
+			if($result === false && $this->stmt->errno == 0){ // bug prevention
+				$result = true;
+			}
+			$res = $this->parseResults($result,$stack + 1);
+			$this->close_prepare();
+			return $res;
+		}
+		return array();
+	}
+	public function query(){
+		//ini_set('memory_limit','-1');
+		$mysqli = $this->connectSql();
+		$params = func_get_args();
+		$query = $params[0];
+		$args = array();
+		for($i=1;$i<count($params);$i++)
+			$args[$i-1] = $mysqli->real_escape_string($params[$i]);
+		
+		if($mysqli->errno==1065){ //empty
+			return array();
+		}
+		if($mysqli->errno!=0){
+			$this->reportError('query',array('query' => vsprintf($query,$args)));
+			return array();
+		}
+		
+		$result = $mysqli->query(vsprintf($query,$args));
+		$res = $this->parseResults($result);
+		return $res;
+	}
+	public function insertId($stmt = false){
+		if($stmt){
+			return $this->stmt->insert_id;
+		}
 		$mysqli = $this->connectSql();
 		return $mysqli->insert_id;
 	}
@@ -257,18 +361,18 @@ class GlobalVars{
 		if($type===NULL){ //if we couldn't set a type return false
 			return false;
 		}
-		$r = $sql->query("SELECT id,type FROM irc_vars WHERE name='%s'",$s);
+		$r = $sql->query_prepare("SELECT id,type FROM irc_vars WHERE name=?",array($s));
 		$r = $r[0];
 		if(isset($r['id'])){ //check if we need to update or add a new
-			$sql->query("UPDATE irc_vars SET value='%s',type='%s' WHERE name='%s'",$c,$type,$s);
+			$sql->query_prepare("UPDATE irc_vars SET value=?,type=? WHERE name=?",array($c,$type,$s));
 		}else{
-			$sql->query("INSERT INTO irc_vars (name,value,type) VALUES ('%s','%s',%d)",$s,$c,(int)$type);
+			$sql->query_prepare("INSERT INTO irc_vars (name,value,type) VALUES (?,?,?)",array($s,$c,(int)$type));
 		}
 		return true;
 	}
 	public function get($s){
 		global $sql;
-		$res = $sql->query("SELECT value,type FROM irc_vars WHERE name='%s'",$s);
+		$res = $sql->query_prepare("SELECT value,type FROM irc_vars WHERE name=?",array($s));
 		$res = $res[0];
 		switch((int)$res['type']){ //convert to types, else return false
 			case 0:
@@ -368,21 +472,21 @@ class Users{
 	public function notifyJoin($nick,$channel,$net){
 		global $sql;
 		if($nick){
-			$sql->query("INSERT INTO `irc_lines` (name1,type,channel,time,online) VALUES ('%s','join','%s','%s',%d)",$nick,$channel,time(),(int)$net);
+			$sql->query_prepare("INSERT INTO `irc_lines` (name1,type,channel,time,online) VALUES (?,'join',?,?,?)",array($nick,$channel,time(),(int)$net));
 		}
 	}
 	public function notifyPart($nick,$channel,$net){
 		global $sql;
 		if($nick){
-			$sql->query("INSERT INTO `irc_lines` (name1,type,channel,time,online) VALUES ('%s','part','%s','%s',%d)",$nick,$channel,time(),(int)$net);
+			$sql->query_prepare("INSERT INTO `irc_lines` (name1,type,channel,time,online) VALUES (?,'part',?,?,?)",array($nick,$channel,time(),(int)$net));
 		}
 	}
 	public function clean(){
 		global $sql,$config;
 		foreach($config['networks'] as $n){
 			if($n['type'] == 1){
-				$result = $sql->query("SELECT `username`,`channel` FROM `irc_users` WHERE (`time` < %s AND `time`!=0)  AND `online`=%d AND `isOnline`='1'",strtotime('-1 minute'),$n['id']);
-				$sql->query("UPDATE `irc_users` SET `isOnline`='0' WHERE `time` < %s  AND `online`='%d' AND `isOnline`='1'",strtotime('-1 minute'),$n['id']);
+				$result = $sql->query_prepare("SELECT `username`,`channel` FROM `irc_users` WHERE (`time` < ? AND `time`!=0)  AND `online`=? AND `isOnline`=1",array(strtotime('-1 minute'),$n['id']));
+				$sql->query_prepare("UPDATE `irc_users` SET `isOnline`=0 WHERE `time` < ?  AND `online`=? AND `isOnline`=1",array(strtotime('-1 minute'),$n['id']));
 				foreach($result as $row){
 					$this->notifyPart($row['username'],$row['channel'],$n['id']);
 				}
@@ -466,7 +570,6 @@ class You{
 			$this->loggedIn = true;
 		}else{
 			$this->globalOps = NULL;
-			$this->ops = NULL;
 			$this->loggedIn = $security->checkSig($this->sig,$this->nick,$this->id,$this->network);
 		}
 		$this->infoStuff = NULL;
@@ -528,14 +631,14 @@ class You{
 		if($this->chan[0]=='*' || $this->chan=='0'){
 			return;
 		}
-		$result = $sql->query("SELECT usernum,time,isOnline FROM `irc_users` WHERE `username` = '%s' AND `channel` = '%s' AND `online` = %d",$this->nick,$this->chan,$this->getNetwork());
+		$result = $sql->query_prepare("SELECT usernum,time,isOnline FROM `irc_users` WHERE `username`=? AND `channel`=? AND `online`=?",array($this->nick,$this->chan,$this->getNetwork()));
 		if($result[0]['usernum']!==NULL){ //Update  
-			$sql->query("UPDATE `irc_users` SET `time`='%s',`isOnline`='1' WHERE `usernum` = %d",time(),(int)$result[0]['usernum']);
+			$sql->query_prepare("UPDATE `irc_users` SET `time`=?,`isOnline`=1 WHERE `usernum`=?",array(time(),(int)$result[0]['usernum']));
 			if((int)$result[0]['isOnline'] == 0){
 				$users->notifyJoin($this->nick,$this->chan,$this->getNetwork());
 			}
 		}else{
-			$sql->query("INSERT INTO `irc_users` (`username`,`channel`,`time`,`online`) VALUES ('%s','%s','%s',%d)",$this->nick,$this->chan,time(),$this->getNetwork());
+			$sql->query_prepare("INSERT INTO `irc_users` (`username`,`channel`,`time`,`online`) VALUES (?,?,?,?)",array($this->nick,$this->chan,time(),$this->getNetwork()));
 			$users->notifyJoin($this->nick,$this->chan,$this->getNetwork());
 		}
 		$users->clean();
@@ -545,16 +648,16 @@ class You{
 		if($this->infoStuff !== NULL){
 			return $this->infoStuff;
 		}
-		$temp = $sql->query("SELECT usernum,name,ignores,kicks,globalOp,globalBan,network,uid FROM `irc_userstuff` WHERE uid=%d AND network=%d",$this->id,$this->network);
+		$temp = $sql->query_prepare("SELECT usernum,name,ignores,kicks,globalOp,globalBan,network,uid FROM `irc_userstuff` WHERE uid=? AND network=?",array($this->id,$this->network));
 		$userSql = $temp[0];
 		if($this->loggedIn){
 			if($userSql['uid']===NULL){
-				$sql->query("INSERT INTO `irc_userstuff` (name,uid,network) VALUES ('%s',%d,%d)",$this->nick,$this->id,$this->network);
-				$temp = $sql->query("SELECT usernum,name,ignores,kicks,globalOp,globalBan,network,uid FROM `irc_userstuff` WHERE usernum=%d",$sql->insertId());
+				$sql->query_prepare("INSERT INTO `irc_userstuff` (name,uid,network) VALUES (?,?,?)",array($this->nick,$this->id,$this->network));
+				$temp = $sql->query_prepare("SELECT usernum,name,ignores,kicks,globalOp,globalBan,network,uid FROM `irc_userstuff` WHERE usernum=?",array($sql->insertId()));
 				$userSql = $temp[0];
 			}
 			if($userSql['name'] != $this->nick){
-				$sql->query("UPDATE `irc_userstuff` SET `name`='%s' WHERE uid=%d AND network=%d",$this->nick,$this->id,$this->network);
+				$sql->query_prepare("UPDATE `irc_userstuff` SET `name`=? WHERE uid=? AND network=?",array($this->nick,$this->id,$this->network));
 				$userSql['name'] = $this->nick;
 			}
 		}
@@ -657,38 +760,41 @@ class OmnomIRC{
 	}
 	public function loadChannel($count){
 		global $you,$sql;
+		if($count < 1){ // nothing to do here
+			return array();
+		}
 		$table = 'irc_lines';
 		$linesExtra = array();
-		
+		// $table is NEVER user-defined, only possible values are irc_lines and irc_lines_old!!!!!
 		while(true){
 			if($you->chan[0] == '*' && $you->nick){ // PM
-				$res = $sql->query("
-					SELECT x.* FROM (
-						SELECT * FROM `%s` 
+				$res = $sql->query_prepare("SELECT x.* FROM
+					(
+						SELECT * FROM `$table` 
 						WHERE
 						(
 							(
-								LOWER(`channel`) = LOWER('%s')
+								LOWER(`channel`) = LOWER(?)
 								AND
-								LOWER(`name1`) = LOWER('%s')
+								LOWER(`name1`) = LOWER(?)
 							)
 							OR
 							(
-								LOWER(`channel`) = LOWER('%s')
+								LOWER(`channel`) = LOWER(?)
 								AND
-								LOWER(`name1`) = LOWER('%s')
+								LOWER(`name1`) = LOWER(?)
 							)
 						)
-						AND `online` = %d
+						AND `online` = ?
 						ORDER BY `line_number` DESC
-						LIMIT %d
+						LIMIT ?
 					) AS x
 					ORDER BY `line_number` ASC
-					",$table,substr($you->chan,1),$you->nick,$you->nick,substr($you->chan,1),$you->getNetwork(),(int)$count);
+					",array(substr($you->chan,1),$you->nick,$you->nick,substr($you->chan,1),$you->getNetwork(),(int)$count));
 			}else{
-				$res = $sql->query("
-					SELECT x.* FROM (
-						SELECT * FROM `%s`
+				$res = $sql->query_prepare("SELECT x.* FROM
+					(
+						SELECT * FROM `$table`
 						WHERE
 						(
 							`type` != 'server'
@@ -697,29 +803,29 @@ class OmnomIRC{
 							AND
 							(
 								(
-									LOWER(`channel`) = LOWER('%s')
+									LOWER(`channel`) = LOWER(?)
 									OR
-									LOWER(`channel`) = LOWER('%s')
+									LOWER(`channel`) = LOWER(?)
 								)
 							)
 							AND NOT
 							(
-								(`type` = 'join' OR `type` = 'part') AND `Online` = %d
+								(`type` = 'join' OR `type` = 'part') AND `Online` = ?
 							)
 						)
 						OR
 						(
 							`type` = 'server'
 							AND
-							LOWER(`channel`)=LOWER('%s')
+							LOWER(`channel`)=LOWER(?)
 							AND
-							LOWER(`name2`)=LOWER('%s')
+							LOWER(`name2`)=LOWER(?)
 						)
 						ORDER BY `line_number` DESC
-						LIMIT %d
+						LIMIT ?
 					) AS x
 					ORDER BY `line_number` ASC
-					",$table,$you->chan,$you->nick,$you->getNetwork(),$you->nick,$you->chan,(int)$count);
+					",array($you->chan,$you->nick,$you->getNetwork(),$you->nick,$you->chan,(int)$count));
 			}
 			
 			$lines = $this->getLines($res,$table);
@@ -736,25 +842,26 @@ class OmnomIRC{
 	}
 	public function getNick($uid,$net){
 		global $sql;
-		$res = $sql->query("SELECT `name` FROM `irc_userstuff` WHERE `uid`=%d AND `network`=%d",(int)$uid,(int)$net);
+		$res = $sql->query_prepare("SELECT `name` FROM `irc_userstuff` WHERE `uid`=? AND `network`=?",array((int)$uid,(int)$net));
 		return $res[0]['name'];
 	}
 	public function getUid($nick,$net){
 		global $sql;
-		$res = $sql->query("SELECT `uid` FROM `irc_userstuff` WHERE LOWER(`name`)=LOWER('%s') AND `network`=%d",$nick,(int)$net);
+		$res = $sql->query_prepare("SELECT `uid` FROM `irc_userstuff` WHERE LOWER(`name`)=LOWER(?) AND `network`=?",array($nick,(int)$net));
 		return ($res[0]['uid'] === NULL ? NULL : (int)$res[0]['uid']);
 	}
 }
 $omnomirc = new OmnomIRC();
 class Channels{
 	private $lastFetchType;
+	private $allowed_types = array('ops','bans');
 	private function getChanId($chan,$create = false){
 		global $sql;
-		$tmp = $sql->query("SELECT `channum` FROM `irc_channels` WHERE chan='%s'",strtolower($chan));
+		$tmp = $sql->query_prepare("SELECT `channum` FROM `irc_channels` WHERE chan=LOWER(?)",array($chan));
 		$tmp = $tmp[0];
 		if($tmp['channum']==NULL){
 			if($create){
-				$sql->query("INSERT INTO `irc_channels` (`chan`) VALUES ('%s')",strtolower($chan));
+				$sql->query_prepare("INSERT INTO `irc_channels` (`chan`) VALUES (LOWER(?))",array($chan));
 				return (int)$sql->insertId();
 			}else{
 				return -1;
@@ -768,7 +875,11 @@ class Channels{
 		if($uid === NULL){
 			return false;
 		}
-		$res = $sql->query("SELECT `%s` FROM `irc_channels` WHERE `channum`=%d",$type,$id);
+		// $type is NEVER user-defined, only possible values 'ops' and 'bans'
+		if(!in_array($type,$this->allowed_types)){
+			return false;
+		}
+		$res = $sql->query_prepare("SELECT `$type` FROM `irc_channels` WHERE `channum`=?",array($id));
 		$res = json_decode($res[0][$type],true);
 		if(json_last_error() || !isset($res[0])){
 			return false;
@@ -797,7 +908,11 @@ class Channels{
 			'uid' => (int)$uid,
 			'net' => (int)$network
 		);
-		$sql->query("UPDATE `irc_channels` SET `%s`='%s' WHERE `channum`=%d",$type,json_encode($res),$id);
+		// $type is NEVER user-defined, only possible values 'ops' and 'bans'
+		if(!in_array($type,$this->allowed_types)){
+			return false;
+		}
+		$sql->query_prepare("UPDATE `irc_channels` SET `$type`=? WHERE `channum`=?",array(json_encode($res),$id));
 		return true;
 	}
 	private function remType($type,$chan,$nick,$network){
@@ -812,7 +927,11 @@ class Channels{
 		}
 		$res = $this->lastFetchType;
 		unset($res[$offset]);
-		$sql->query("UPDATE `irc_channels` SET `%s`='%s' WHERE `channum`=%d",$type,json_encode($res),$id);
+		// $type is NEVER user-defined, only possible values 'ops' and 'bans'
+		if(!in_array($type,$this->allowed_types)){
+			return false;
+		}
+		$sql->query_prepare("UPDATE `irc_channels` SET `$type`=? WHERE `channum`=?",array(json_encode($res),$id));
 		return true;
 	}
 	private function isType($type,$chan,$nick,$network){
@@ -825,7 +944,7 @@ class Channels{
 	}
 	public function setTopic($chan,$topic){
 		global $sql;
-		$sql->query("UPDATE `irc_channels` SET `topic`='%s' WHERE `channum`=%d",$topic,$this->getChanId($chan,true));
+		$sql->query_prepare("UPDATE `irc_channels` SET `topic`=? WHERE `channum`=?",array($topic,$this->getChanId($chan,true)));
 	}
 	public function getTopic($chan){
 		global $sql;
@@ -833,7 +952,7 @@ class Channels{
 		if($id == -1){
 			return '';
 		}
-		$res = $sql->query("SELECT `topic` FROM `irc_channels` WHERE `channum`=%d",$id);
+		$res = $sql->query_prepare("SELECT `topic` FROM `irc_channels` WHERE `channum`=?",array($id));
 		$res = $res[0]['topic'];
 		if($res===NULL){
 			return '';
@@ -861,7 +980,7 @@ class Channels{
 	public function setMode($chan,$s){
 		global $sql,$you;
 		$id = $this->getChanId($chan,true);
-		$oldModes = $sql->query("SELECT `modes` FROM `irc_channels` WHERE `channum`=%d",$id);
+		$oldModes = $sql->query_prepare("SELECT `modes` FROM `irc_channels` WHERE `channum`=?",array($id));
 		$oldModes = $oldModes[0]['modes'];
 		if($oldModes===NULL){
 			$oldModes = '';
@@ -951,7 +1070,7 @@ class Channels{
 		foreach($modes['-'] as $m => $t){
 			$newModes .= $m;
 		}
-		$sql->query("UPDATE `irc_channels` SET `modes`='%s' WHERE `channum`=%d",$newModes,$id);
+		$sql->query_prepare("UPDATE `irc_channels` SET `modes`=? WHERE `channum`=?",array($newModes,$id));
 		return true;
 	}
 }

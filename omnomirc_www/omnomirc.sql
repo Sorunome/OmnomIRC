@@ -31,19 +31,6 @@ CREATE TABLE IF NOT EXISTS `irc_lines_old` (
   KEY `time` (`time`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;
 
-DROP TABLE IF EXISTS `irc_outgoing_messages`;
-CREATE TABLE IF NOT EXISTS `irc_outgoing_messages` (
-  `prikey` int(11) NOT NULL AUTO_INCREMENT,
-  `message` varchar(1024) NOT NULL,
-  `nick` varchar(45) NOT NULL,
-  `channel` varchar(45) NOT NULL,
-  `action` tinyint(1) NOT NULL DEFAULT '0',
-  `fromSource` int(11) NOT NULL DEFAULT '0',
-  `type` varchar(45) NOT NULL DEFAULT 'msg',
-  `uid` int(11) NOT NULL DEFAULT '-1',
-  PRIMARY KEY (`prikey`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;
-
 DROP TABLE IF EXISTS `irc_permissions`;
 CREATE TABLE IF NOT EXISTS `irc_permissions` (
   `generic_autoincrementing_prikey` int(11) NOT NULL AUTO_INCREMENT,

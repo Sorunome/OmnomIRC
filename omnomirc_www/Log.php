@@ -60,38 +60,39 @@ if(isset($_GET['day'])){
 $t_high = $t_low + (3600 * 24);
 $lines = Array();
 $table = 'irc_lines_old';
+// $table is NEVER user-defined, it is only irc_lines_old or irc_lines!!
 while(true){
 	if($channel[0] == "*"){ // PM
-		$res = $sql->query("SELECT * FROM `%s` 
+		$res = $sql->query_prepare("SELECT * FROM `$table` 
 								WHERE (
-									((`channel` = '%s'
-									AND `name1` = '%s')
+									((`channel` = ?
+									AND `name1` = ?)
 									OR
-									(`channel` = '%s'
-									AND `name1` = '%s'))
+									(`channel` = ?
+									AND `name1` = ?))
 								) AND
-									`time` >= %d
+									`time` >= ?
 										AND
-									`time` <= %d
+									`time` <= ?
 										AND
-									`online` = %d
+									`online` = ?
 								ORDER BY `line_number` ASC 
-								LIMIT %d,1000
-							",$table,substr($channel,1),$you->nick,$you->nick,substr($channel,1),$t_low,$t_high,$you->getNetwork(),$offset);
+								LIMIT ?,1000
+							",array(substr($channel,1),$you->nick,$you->nick,substr($channel,1),$t_low,$t_high,$you->getNetwork(),(int)$offset));
 	}else{
-		$res = $sql->query("SELECT * FROM `%s` 
+		$res = $sql->query_prepare("SELECT * FROM `$table` 
 									WHERE (
-											(`type` != 'server' AND ((`channel` = '%s' OR `channel` = '%s')
+											(`type` != 'server' AND ((`channel` = ? OR `channel` = ?)
 											)
 											)
-											OR (`type` = 'server' AND channel='%s' AND name2='%s')
+											OR (`type` = 'server' AND channel=? AND name2=?)
 										) AND
-											`time` >= %d
+											`time` >= ?
 										AND
-											`time` <= %d
+											`time` <= ?
 									ORDER BY `line_number` ASC 
-									LIMIT %d,1000
-										",$table,$channel,$you->nick,$you->nick,$channel,$t_low,$t_high,$offset);
+									LIMIT ?,1000
+										",array($channel,$you->nick,$you->nick,$channel,$t_low,$t_high,(int)$offset));
 	}
 	
 	foreach($res as $result){

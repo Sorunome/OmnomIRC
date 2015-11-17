@@ -4,7 +4,7 @@ if (!defined('SMF'))
 global $smcFunc, $modSettings, $boardurl, $sourcedir, $boarddir, $oirc_config;
 
 remove_integration_function('integrate_pre_include','$sourcedir/OmnomIRC.php');
-remove_integration_function('integrate_menu_buttons','loadOircActions');
+remove_integration_function('integrate_load_theme','loadOircActions');
 remove_integration_function('integrate_load_permissions','loadOircPermissions');
 
 // save the config as we may be just updating the package
