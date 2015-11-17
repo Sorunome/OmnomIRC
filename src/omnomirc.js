@@ -2855,7 +2855,7 @@ oirc = (function(){
 					if(line.curLine > request.getCurLine()){
 						request.setCurLine(line.curLine);
 					}
-					if(line.name === null || line.name === undefined || line.type === null || ignores.indexOf(line.name.toLowerCase()) > -1 || (line.chan!=channels.getCurrent(true) && line.chan[0]!='*' && line.chan.toLowerCase()!=settings.nick().toLowerCase())){
+					if(line.name === null || line.name === undefined || line.type === null || ignores.indexOf(line.name.toLowerCase()) > -1 || ('*'+line.chan.toLowerCase()!=channels.getCurrent(true).toLowerCase() && line.chan[0]!='*' && line.chan.toLowerCase()!=settings.nick().toLowerCase())){
 						return true; // invalid line but we don't want to stop the new requests
 					}
 					var $mBox = $('#MessageBox'),
@@ -2870,9 +2870,9 @@ oirc = (function(){
 					}
 					if((['message','action','pm','pmaction'].indexOf(line.type)>=0) && line.name.toLowerCase() != '*'){
 						tdMessage = message = parseHighlight(message,line);
-						//if(page.isBlurred()){
+						if(page.isBlurred()){
 							notification.make('('+channels.getCurrentName()+') <'+line.name+'> '+line.message,line.chan);
-						//}
+						}
 					}
 					switch(line.type){
 						case 'reload':
