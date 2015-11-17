@@ -833,6 +833,7 @@ oirc = (function(){
 							socket.close();
 						}catch(e){}
 						network.getJSON('omnomirc.php?getcurline&noLoginErrors',function(data){
+							users.reload(); // this is usually a good idea.
 							request.setCurLine(data.curline);
 							use = false;
 							request.start();
@@ -1608,6 +1609,18 @@ oirc = (function(){
 					return $.map(usrs,function(u){
 						return u.nick;
 					});
+				},
+				reload:function(){
+					var num = false;
+					$.each(channels.getChans(),function(i,c){
+						if(c.chan==channels.getCurrent() || c.id==channels.getCurrent()){
+							num = i;
+							return false;
+						}
+					});
+					if(num!==false){
+						channels.reloadUserlist(num);
+					}
 				}
 			};
 		})(),
@@ -2879,15 +2892,8 @@ oirc = (function(){
 						case 'reload_userlist':
 							addLine = false;
 							if(logMode!==true && channels.getCurrent()!==''){
-								var num;
-								$.each(channels.getChans(),function(i,c){
-									if(c.chan==channels.getCurrent() || c.id==channels.getCurrent()){
-										num = i;
-										return false;
-									}
-								});
-								channels.reloadUserlist(num);
-								return false;
+								users.reload();
+								return true;
 							}
 						case 'relog':
 							addLine = false;
