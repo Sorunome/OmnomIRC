@@ -334,13 +334,13 @@ class Bot(threading.Thread):
 		for ch in config.json['channels']:
 			if ch['enabled']:
 				for c in ch['networks']:
-					if c['id'] == self.i and not (ch['id'] in self.chans):
+					if c['id'] == self.i and self.idToChan(ch['id']) == -1:
 						updateChans[ch['id']] = c['name']
 		removeChans = []
 		for i,n in self.chans.items():
 			found = False
 			for ch in config.json['channels']:
-				if not ch['enabled'] and i in self.chans:
+				if not ch['enabled'] and self.idToChan(ch['id']) != -1:
 					break
 				if ch['enabled']:
 					for c in ch['networks']:
