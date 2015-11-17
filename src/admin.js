@@ -571,6 +571,9 @@
 									case 3:
 										$netSpecific = $('<span>').append(
 												$('<b>').text('IRC network'),
+												'<br>Color Nicks:',
+												$('<input>').attr('type','checkbox').attr((net.config.colornicks?'checked':'false'),'checked').change(function(){nets[i].config.colornicks = this.checked;}),
+												'<br>',
 												'<br>Nick:',
 												$('<input>').attr('type','text').val(net.config.main.nick).change(function(){nets[i].config.main.nick = this.value;}),
 												'<br>Server:',

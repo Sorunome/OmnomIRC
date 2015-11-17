@@ -33,7 +33,7 @@ def b64encode_wrap(s):
 
 def makeUnicode(s):
 	try:
-			return s.decode('utf-8')
+		return s.decode('utf-8')
 	except:
 		if s!='':
 			try:
@@ -61,6 +61,7 @@ def execPhp(f,d):
 
 #config handler
 class Config:
+	can_postload=False
 	def __init__(self):
 		self.readFile()
 	def readFile(self):
@@ -76,6 +77,12 @@ class Config:
 			else:
 				jsons += l + "\n"
 		self.json = json.loads(jsons[:-1])
+		if self.can_postload:
+			self.postLoad()
+	def postLoad(self):
+		for i in range(len(self.json['networks'])):
+			if self.json['networks'][i]['config'] == True:
+				self.json['networks'][i]['config'] = sql.getVar('net_config_'+str(self.json['networks'][i]['id']))
 
 #sql handler
 class Sql:
@@ -127,6 +134,29 @@ class Sql:
 			print(config.json['sql'])
 			print('(sql) Error',inst)
 			traceback.print_exc()
+			return False
+	def getVar(self,var):
+		res = self.query('SELECT value,type FROM irc_vars WHERE name=%s',[var])
+		if isinstance(res,list) and len(res) > 0:
+			res = res[0]
+			if res['type'] == 0:
+				return str(res['value'])
+			if res['type'] == 1:
+				return int(res['value'])
+			if res['type'] == 2:
+				return float(res['value'])
+			if res['type'] == 3:
+				try:
+					return json.loads(res['value'])
+				except:
+					return False
+			if res['type'] == 4:
+				return bool(res['value'])
+			if res['type'] == 5:
+				try:
+					return json.loads(res['value'])
+				except:
+					return False
 			return False
 
 class ServerHandler:
@@ -276,9 +306,11 @@ class OircRelay:
 		return
 
 
+
+
 #irc bot
 class Bot(threading.Thread):
-	def __init__(self,server,port,nick,ns,main,i,tbe,tn,dssl):
+	def __init__(self,server,port,nick,ns,main,i,tbe,tn,dssl,colornicks):
 		threading.Thread.__init__(self)
 		self.stopnow = False
 		self.restart = False
@@ -295,6 +327,7 @@ class Bot(threading.Thread):
 		self.colorAddingCache = {}
 		self.topicNick = tn
 		self.ssl = dssl
+		self.colornicks = colornicks
 		
 		self.updateColorAddingCache()
 		
@@ -311,9 +344,10 @@ class Bot(threading.Thread):
 		else:
 			self.recieveStr = 'T>'
 			self.sendStr = 'T<'
-	def updateConfig(self,nick,ns,tbe,tn):
+	def updateConfig(self,nick,ns,tbe,tn,colornicks):
 		self.topicbotExists = tbe
 		self.topicNick = tn
+		self.colornicks = colornicks
 		
 		if self.ns != ns:
 			self.ns = ns
@@ -423,12 +457,23 @@ class Bot(threading.Thread):
 		self.s.connect((self.server,self.port))
 		self.send('USER %s %s %s :%s' % ('OmnomIRC','host','server',self.nick),True)
 		self.send('NICK %s' % (self.nick),True)
+	def colorizeNick(self,n):
+		rcolors = ['19','20','22','24','25','26','27','28','29']
+		i = 0
+		for c in n:
+			i += ord(c)
+		return '\x03'+rcolors[i % 9]+n+'\x0F'
 	def sendLine(self,n1,n2,t,m,c,s): #name 1, name 2, type, message, channel, source
 		c = self.idToChan(c)
 		if c != -1:
 			colorAdding = ''
 			if s in self.colorAddingCache:
 				colorAdding = self.colorAddingCache[s]
+			if self.colornicks:
+				if n1 != '':
+					n1 = self.colorizeNick(n1)
+				if n2 != '':
+					n2 = self.colorizeNick(n2)
 			if colorAdding!='':
 				if t=='message':
 					self.send('PRIVMSG %s :%s<%s> %s' % (c,colorAdding,n1,m))
@@ -711,7 +756,7 @@ class RelayIRC(OircRelay):
 	topicBot = False
 	def newBot(self,t,cfg):
 		return Bot(cfg[t]['server'],cfg[t]['port'],cfg[t]['nick'],cfg[t]['nickserv'],t=='main',self.id,
-						self.haveTopicBot,cfg['topic']['nick'],cfg[t]['ssl'])
+						self.haveTopicBot,cfg['topic']['nick'],cfg[t]['ssl'],cfg['colornicks'])
 	def initRelay(self):
 		self.haveTopicBot = self.config['topic']['nick'] != ''
 		self.bot = self.newBot('main',self.config)
@@ -733,7 +778,7 @@ class RelayIRC(OircRelay):
 					setattr(self,bot_ref,self.newBot(t,cfg))
 					getattr(self,bot_ref).start()
 					continue
-				bot.updateConfig(cfg[t]['nick'],cfg[t]['nickserv'],self.haveTopicBot,cfg['topic']['nick'])
+				bot.updateConfig(cfg[t]['nick'],cfg[t]['nickserv'],self.haveTopicBot,cfg['topic']['nick'],cfg['colornicks'])
 		if haveTopicBot_old != haveTopicBot:
 			self.bot.topicbotExists = self.haveTopicBot
 			if self.haveTopicBot: # we need to generate a new bot!
@@ -760,6 +805,8 @@ class RelayIRC(OircRelay):
 				self.topicBot.sendTopic(s,c)
 			else:
 				self.bot.sendTopic(s,c)
+
+
 
 
 # websockethandler skeleton from https://gist.github.com/jkp/3136208
@@ -1468,5 +1515,7 @@ class Main():
 
 config = Config()
 sql = Sql()
+config.can_postload = True
+config.postLoad()
 handle = Main()
 handle.serve()
