@@ -52,6 +52,9 @@ function sendLine($n1,$n2,$t,$m,$c = NULL,$s = NULL,$uid = NULL){
 		)))."\n";
 	}
 }
+function strip_irc_colors($s){
+	return preg_replace("/(\x02|\x0F|\x16|\x1D|\x1F|\x03(\d{1,2}(,\d{1,2})?)?)/",'',$s);
+}
 $message = (isset($_GET['message'])?$_GET['message']:'');
 if(strlen($message) < 4){
 	$json->addError('Bad message');
@@ -215,11 +218,20 @@ if(substr($parts[0],0,1)=='/'){
 				unset($parts[0]);
 				$modeStr = trim(implode(' ',$parts));
 				$channels->setMode($channel,$modeStr);
+				$sendToBotBuffer .= trim(json_encode(array(
+					't' => 'server_delete_modebuffer',
+					'c' => $channel,
+				)))."\n";
 				sendLine($nick,'','mode',$modeStr);
 			}else{
 				$returnmessage = "You aren't op";
 				$sendPm = true;
 			}
+			break;
+		case 'modes':
+			$sendNormal = false;
+			$sendPm = true;
+			$returnmessage = "\x033Channel modes:".$channels->getModes($channel);
 			break;
 		case 'op':
 			$sendNormal = false;
@@ -310,6 +322,9 @@ if($channel[0] == '*'){
 
 if($sendNormal){
 	$sql->query_prepare("UPDATE `irc_users` SET lastMsg=? WHERE username=? AND channel=? AND online=?",array(time(),$nick,$channel,$you->getNetwork()));
+	if($channels->isMode($channel,'c')){
+		$message = strip_irc_colors($message);
+	}
 	sendLine($nick,'',$type,$message);
 }
 if($sendPm){

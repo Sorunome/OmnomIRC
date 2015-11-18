@@ -859,7 +859,7 @@ class Channels{
 		global $sql;
 		$tmp = $sql->query_prepare("SELECT `channum` FROM `irc_channels` WHERE chan=LOWER(?)",array($chan));
 		$tmp = $tmp[0];
-		if($tmp['channum']==NULL){
+		if($tmp['channum']===NULL){
 			if($create){
 				$sql->query_prepare("INSERT INTO `irc_channels` (`chan`) VALUES (LOWER(?))",array($chan));
 				return (int)$sql->insertId();
@@ -977,15 +977,52 @@ class Channels{
 	public function isBanned($chan,$nick,$network){
 		return $this->isType('bans',$chan,$nick,$network);
 	}
+	private function getModesArray($chan){
+		$modes = array(
+			'+' => array(),
+			'-' => array()
+		);
+		$modestring = $this->getModes($chan);
+		$add = NULL;
+		for($i=0;$i<strlen($modestring);$i++){
+			$c = $modestring[$i];
+			switch($c){
+				case '+':
+					$add = true;
+					break;
+				case '-':
+					$add = false;
+					break;
+				default:
+					if($add===true){
+						$modes['+'][$c] = true;
+					}elseif($add===false){
+						$modes['-'][$c] = true;
+					}
+			}
+		}
+		return $modes;
+	}
+	public function isMode($chan,$c,$default = false){
+		$modestring = $this->getModes($chan);
+		$char = strpos($modestring,$c);
+		if($char===false){
+			return $default;
+		}
+		$minus = strpos($modestring,'-');
+		return $char < $minus;
+	}
+	public function getModes($chan){
+		global $sql;
+		$modestring = $sql->query_prepare("SELECT `modes` FROM `irc_channels` WHERE chan=LOWER(?)",array($chan));
+		$modestring = $modestring[0]['modes'];
+		if($modestring === NULL){
+			return '+-';
+		}
+		return $modestring;
+	}
 	public function setMode($chan,$s){
 		global $sql,$you;
-		$id = $this->getChanId($chan,true);
-		$oldModes = $sql->query_prepare("SELECT `modes` FROM `irc_channels` WHERE `channum`=?",array($id));
-		$oldModes = $oldModes[0]['modes'];
-		if($oldModes===NULL){
-			$oldModes = '';
-		}
-		$s = $oldModes."\n".$s;
 		
 		$network = $you->getNetwork();
 		$space = strpos($s,' ');
@@ -1009,10 +1046,8 @@ class Channels{
 			}
 			$args = array_reverse($args);
 		}
-		$modes = array(
-			'+' => array(),
-			'-' => array()
-		);
+		$modes = $this->getModesArray($chan);
+		
 		$add = NULL;
 		for($i=0;$i<strlen($modestring);$i++){
 			$c = $modestring[$i];
@@ -1070,7 +1105,7 @@ class Channels{
 		foreach($modes['-'] as $m => $t){
 			$newModes .= $m;
 		}
-		$sql->query_prepare("UPDATE `irc_channels` SET `modes`=? WHERE `channum`=?",array($newModes,$id));
+		$sql->query_prepare("UPDATE `irc_channels` SET `modes`=? WHERE `channum`=?",array($newModes,$this->getChanId($chan,true)));
 		return true;
 	}
 }

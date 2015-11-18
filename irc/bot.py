@@ -158,6 +158,7 @@ class Sql:
 				except:
 					return False
 			return False
+		return False
 
 class ServerHandler:
 	def __init__(self,s,address):
@@ -1352,6 +1353,8 @@ class OIRCLink(ServerHandler):
 				data = json.loads(line)
 				if data['t'] == 'server_updateconfig':
 					handle.updateConfig()
+				elif data['t'] == 'server_delete_modebuffer':
+					handle.deleteModeBuffer(data['c'])
 				else:
 					handle.sendToOther(data['n1'],data['n2'],data['t'],data['m'],data['c'],data['s'],data['uid'],False)
 					print('(oirc)>> '+str(data))
@@ -1363,9 +1366,8 @@ class OIRCLink(ServerHandler):
 #main handler
 class Main():
 	relays = []
-	def __init__(self):
-		global config
-		self.bots = []
+	bots = []
+	modeBuffer = {}
 	def updateCurline(self):
 		global config,sql
 		try:
@@ -1397,6 +1399,27 @@ class Main():
 		if len(lines)>=1:
 			return int(lines[0])
 		return 0
+	def stripIrcColors(self,s):
+		return re.sub(r"(\x02|\x0F|\x16|\x1D|\x1F|\x03(\d{1,2}(,\d{1,2})?)?)",'',s)
+	def deleteModeBuffer(self,chan):
+		self.modeBuffer.pop(chan,False)
+	def getModeString(self,chan):
+		if chan in self.modeBuffer:
+			return self.modeBuffer[chan]
+		res = sql.query("SELECT `modes` FROM `irc_channels` WHERE chan=LOWER(%s)",[makeUnicode(chan)])
+		if len(res)==0:
+			self.modeBuffer[chan] = '+-'
+			return '+-'
+		self.modeBuffer[chan] = res[0]['modes']
+		return res[0]['modes']
+	def isChanOfMode(self,chan,char,default = False):
+		res = self.getModeString(chan)
+		try:
+			char = res.index(char)
+			minus = res.index('-')
+		except:
+			return default
+		return char < minus
 	def sendTopicToOther(self,s,c,i):
 		oircOnly = False
 		try:
@@ -1407,6 +1430,9 @@ class Main():
 			if (oircOnly and r.relayType==1) or not oircOnly:
 				r.relayTopic(s,c,i)
 	def sendToOther(self,n1,n2,t,m,c,s,uid = -1,do_sql = True):
+		if self.isChanOfMode(c,'c'):
+			m = self.stripIrcColors(m)
+		
 		oircOnly = (t in ('join','part','quit') and uid!=-1)
 		try:
 			c = int(c)
