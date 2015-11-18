@@ -326,6 +326,28 @@ if($sendNormal){
 		$message = strip_irc_colors($message);
 	}
 	sendLine($nick,'',$type,$message);
+	if($cache = $memcached->get('oirc_lines_'.$channel)){
+		$lines_cached = json_decode($cache,true);
+		if(json_last_error()===0){
+			if(count($lines_cached > 200)){
+				array_shift($lines_cached);
+			}
+			$lines_cached[] = array(
+				'curLine' => 0,
+				'type' => $type,
+				'network' => $you->getNetwork(),
+				'time' => (int)time(),
+				'name' => $nick,
+				'message' => $message,
+				'name2' => '',
+				'chan' => $channel,
+				'uid' => (int)$you->getUid()
+			);
+			$memcached->set('oirc_lines_'.$channel,json_encode($lines_cached));
+		}else{
+			$memcached->set('oirc_lines_'.$channel,false,1);
+		}
+	}
 }
 if($sendPm){
 	sendLine('OmnomIRC',$channel,'server',$returnmessage,$nick);

@@ -23,6 +23,19 @@ import threading,socket,string,time,sys,json,pymysql,traceback,errno,chardet,str
 from base64 import b64encode
 from hashlib import sha1
 
+try:
+	import memcache
+	memcached = memcache.Client(['127.0.0.1:11211'],debug=0)
+except:
+	class Memcached_fake:
+		def get(self,str):
+			return False
+		def set(self,str,val,time=0):
+			return False
+		def delete(self,str):
+			return False
+	memcached = Memcached_fake()
+
 print('Starting OmnomIRC bot...')
 DOCUMENTROOT = '/usr/share/nginx/html/oirc'
 
@@ -42,6 +55,8 @@ def makeUnicode(s):
 				return s
 		return ''
 
+def stripIrcColors(s):
+	return re.sub(r"(\x02|\x0F|\x16|\x1D|\x1F|\x03(\d{1,2}(,\d{1,2})?)?)",'',s)
 
 def execPhp(f,d):
 	s = []
@@ -1149,6 +1164,7 @@ class CalculatorHandler(ServerHandler):
 	def sendLine(self,n1,n2,t,m,c,s): #name 1, name 2, type, message, channel, source
 		c = self.idToChan(c)
 		if c!=-1:
+			m = stripIrcColors(m) # these will be glitched on the calc
 			if t=='message':
 				self.send(b'\xAD'+bytes('%s:%s' % (n1,m),'utf-8'))
 			elif t=='action':
@@ -1399,8 +1415,6 @@ class Main():
 		if len(lines)>=1:
 			return int(lines[0])
 		return 0
-	def stripIrcColors(self,s):
-		return re.sub(r"(\x02|\x0F|\x16|\x1D|\x1F|\x03(\d{1,2}(,\d{1,2})?)?)",'',s)
 	def deleteModeBuffer(self,chan):
 		self.modeBuffer.pop(chan,False)
 	def getModeString(self,chan):
@@ -1431,7 +1445,7 @@ class Main():
 				r.relayTopic(s,c,i)
 	def sendToOther(self,n1,n2,t,m,c,s,uid = -1,do_sql = True):
 		if self.isChanOfMode(c,'c'):
-			m = self.stripIrcColors(m)
+			m = stripIrcColors(m)
 		
 		oircOnly = (t in ('join','part','quit') and uid!=-1)
 		try:
@@ -1449,7 +1463,29 @@ class Main():
 		if do_sql:
 			c = makeUnicode(str(c))
 			sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`,`uid`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",[n1,n2,m,t,c,str(int(time.time())),int(s),uid])
+			lines_cached = memcached.get('oirc_lines_'+c)
+			if lines_cached:
+				try:
+					lines_cached = json.loads(lines_cached)
+					if len(lines_cached) > 200:
+						lines_cached.pop(0)
+					lines_cached.append({
+						'curLine': 0,
+						'type': t,
+						'network': int(s),
+						'time': int(time.time()),
+						'name': n1,
+						'message': m,
+						'name2': n2,
+						'chan': c,
+						'uid': uid
+					})
+					memcached.set('oirc_lines_'+c,json.dumps(lines_cached,separators=(',',':')))
+				except:
+					traceback.print_exc()
+					memcached.delete('oirc_lines_'+c)
 			if t=='topic':
+				memcached.set('oirc_topic_'+c,m)
 				temp = sql.query("SELECT channum FROM `irc_channels` WHERE chan=%s",[c.lower()])
 				if len(temp)==0:
 					sql.query("INSERT INTO `irc_channels` (chan,topic) VALUES(%s,%s)",[c.lower(),m])
