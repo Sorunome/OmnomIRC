@@ -1463,27 +1463,30 @@ class Main():
 		if do_sql:
 			c = makeUnicode(str(c))
 			sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`,`uid`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",[n1,n2,m,t,c,str(int(time.time())),int(s),uid])
-			lines_cached = memcached.get('oirc_lines_'+c)
-			if lines_cached:
-				try:
-					lines_cached = json.loads(lines_cached)
-					if len(lines_cached) > 200:
-						lines_cached.pop(0)
-					lines_cached.append({
-						'curLine': 0,
-						'type': t,
-						'network': int(s),
-						'time': int(time.time()),
-						'name': n1,
-						'message': m,
-						'name2': n2,
-						'chan': c,
-						'uid': uid
-					})
-					memcached.set('oirc_lines_'+c,json.dumps(lines_cached,separators=(',',':')))
-				except:
-					traceback.print_exc()
-					memcached.delete('oirc_lines_'+c)
+			try:
+				lines_cached = memcached.get('oirc_lines_'+c)
+				if lines_cached:
+					try:
+						lines_cached = json.loads(lines_cached)
+						if len(lines_cached) > 200:
+							lines_cached.pop(0)
+						lines_cached.append({
+							'curLine': 0,
+							'type': t,
+							'network': int(s),
+							'time': int(time.time()),
+							'name': n1,
+							'message': m,
+							'name2': n2,
+							'chan': c,
+							'uid': uid
+						})
+						memcached.set('oirc_lines_'+c,json.dumps(lines_cached,separators=(',',':')))
+					except:
+						traceback.print_exc()
+						memcached.delete('oirc_lines_'+c)
+			except Exception as inst:
+				print('(handle) (relay) ERROR: couldn\'t update memcached: ',inst)
 			if t=='topic':
 				memcached.set('oirc_topic_'+c,m)
 				temp = sql.query("SELECT channum FROM `irc_channels` WHERE chan=%s",[c.lower()])
