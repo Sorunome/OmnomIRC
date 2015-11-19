@@ -23,6 +23,19 @@ import threading,socket,string,time,sys,json,pymysql,traceback,errno,chardet,str
 from base64 import b64encode
 from hashlib import sha1
 
+try:
+	import memcache
+	memcached = memcache.Client(['127.0.0.1:11211'],debug=0)
+except:
+	class Memcached_fake:
+		def get(self,str):
+			return False
+		def set(self,str,val,time=0):
+			return False
+		def delete(self,str):
+			return False
+	memcached = Memcached_fake()
+
 print('Starting OmnomIRC bot...')
 DOCUMENTROOT = '/usr/share/nginx/html/oirc'
 
@@ -33,7 +46,7 @@ def b64encode_wrap(s):
 
 def makeUnicode(s):
 	try:
-			return s.decode('utf-8')
+		return s.decode('utf-8')
 	except:
 		if s!='':
 			try:
@@ -42,6 +55,8 @@ def makeUnicode(s):
 				return s
 		return ''
 
+def stripIrcColors(s):
+	return re.sub(r"(\x02|\x0F|\x16|\x1D|\x1F|\x03(\d{1,2}(,\d{1,2})?)?)",'',s)
 
 def execPhp(f,d):
 	s = []
@@ -61,6 +76,7 @@ def execPhp(f,d):
 
 #config handler
 class Config:
+	can_postload=False
 	def __init__(self):
 		self.readFile()
 	def readFile(self):
@@ -76,6 +92,12 @@ class Config:
 			else:
 				jsons += l + "\n"
 		self.json = json.loads(jsons[:-1])
+		if self.can_postload:
+			self.postLoad()
+	def postLoad(self):
+		for i in range(len(self.json['networks'])):
+			if self.json['networks'][i]['config'] == True:
+				self.json['networks'][i]['config'] = sql.getVar('net_config_'+str(self.json['networks'][i]['id']))
 
 #sql handler
 class Sql:
@@ -128,6 +150,30 @@ class Sql:
 			print('(sql) Error',inst)
 			traceback.print_exc()
 			return False
+	def getVar(self,var):
+		res = self.query('SELECT value,type FROM irc_vars WHERE name=%s',[var])
+		if isinstance(res,list) and len(res) > 0:
+			res = res[0]
+			if res['type'] == 0:
+				return str(res['value'])
+			if res['type'] == 1:
+				return int(res['value'])
+			if res['type'] == 2:
+				return float(res['value'])
+			if res['type'] == 3:
+				try:
+					return json.loads(res['value'])
+				except:
+					return False
+			if res['type'] == 4:
+				return bool(res['value'])
+			if res['type'] == 5:
+				try:
+					return json.loads(res['value'])
+				except:
+					return False
+			return False
+		return False
 
 class ServerHandler:
 	def __init__(self,s,address):
@@ -276,9 +322,11 @@ class OircRelay:
 		return
 
 
+
+
 #irc bot
 class Bot(threading.Thread):
-	def __init__(self,server,port,nick,ns,main,i,tbe,tn,dssl):
+	def __init__(self,server,port,nick,ns,main,i,tbe,tn,dssl,colornicks):
 		threading.Thread.__init__(self)
 		self.stopnow = False
 		self.restart = False
@@ -295,6 +343,7 @@ class Bot(threading.Thread):
 		self.colorAddingCache = {}
 		self.topicNick = tn
 		self.ssl = dssl
+		self.colornicks = colornicks
 		
 		self.updateColorAddingCache()
 		
@@ -311,9 +360,10 @@ class Bot(threading.Thread):
 		else:
 			self.recieveStr = 'T>'
 			self.sendStr = 'T<'
-	def updateConfig(self,nick,ns,tbe,tn):
+	def updateConfig(self,nick,ns,tbe,tn,colornicks):
 		self.topicbotExists = tbe
 		self.topicNick = tn
+		self.colornicks = colornicks
 		
 		if self.ns != ns:
 			self.ns = ns
@@ -334,13 +384,13 @@ class Bot(threading.Thread):
 		for ch in config.json['channels']:
 			if ch['enabled']:
 				for c in ch['networks']:
-					if c['id'] == self.i and not (ch['id'] in self.chans):
+					if c['id'] == self.i and self.idToChan(ch['id']) == -1:
 						updateChans[ch['id']] = c['name']
 		removeChans = []
 		for i,n in self.chans.items():
 			found = False
 			for ch in config.json['channels']:
-				if not ch['enabled'] and i in self.chans:
+				if not ch['enabled'] and self.idToChan(ch['id']) != -1:
 					break
 				if ch['enabled']:
 					for c in ch['networks']:
@@ -423,12 +473,23 @@ class Bot(threading.Thread):
 		self.s.connect((self.server,self.port))
 		self.send('USER %s %s %s :%s' % ('OmnomIRC','host','server',self.nick),True)
 		self.send('NICK %s' % (self.nick),True)
+	def colorizeNick(self,n):
+		rcolors = ['19','20','22','24','25','26','27','28','29']
+		i = 0
+		for c in n:
+			i += ord(c)
+		return '\x03'+rcolors[i % 9]+n+'\x0F'
 	def sendLine(self,n1,n2,t,m,c,s): #name 1, name 2, type, message, channel, source
 		c = self.idToChan(c)
 		if c != -1:
 			colorAdding = ''
 			if s in self.colorAddingCache:
 				colorAdding = self.colorAddingCache[s]
+			if self.colornicks:
+				if n1 != '':
+					n1 = self.colorizeNick(n1)
+				if n2 != '':
+					n2 = self.colorizeNick(n2)
 			if colorAdding!='':
 				if t=='message':
 					self.send('PRIVMSG %s :%s<%s> %s' % (c,colorAdding,n1,m))
@@ -711,7 +772,7 @@ class RelayIRC(OircRelay):
 	topicBot = False
 	def newBot(self,t,cfg):
 		return Bot(cfg[t]['server'],cfg[t]['port'],cfg[t]['nick'],cfg[t]['nickserv'],t=='main',self.id,
-						self.haveTopicBot,cfg['topic']['nick'],cfg[t]['ssl'])
+						self.haveTopicBot,cfg['topic']['nick'],cfg[t]['ssl'],cfg['colornicks'])
 	def initRelay(self):
 		self.haveTopicBot = self.config['topic']['nick'] != ''
 		self.bot = self.newBot('main',self.config)
@@ -733,7 +794,7 @@ class RelayIRC(OircRelay):
 					setattr(self,bot_ref,self.newBot(t,cfg))
 					getattr(self,bot_ref).start()
 					continue
-				bot.updateConfig(cfg[t]['nick'],cfg[t]['nickserv'],self.haveTopicBot,cfg['topic']['nick'])
+				bot.updateConfig(cfg[t]['nick'],cfg[t]['nickserv'],self.haveTopicBot,cfg['topic']['nick'],cfg['colornicks'])
 		if haveTopicBot_old != haveTopicBot:
 			self.bot.topicbotExists = self.haveTopicBot
 			if self.haveTopicBot: # we need to generate a new bot!
@@ -760,6 +821,8 @@ class RelayIRC(OircRelay):
 				self.topicBot.sendTopic(s,c)
 			else:
 				self.bot.sendTopic(s,c)
+
+
 
 
 # websockethandler skeleton from https://gist.github.com/jkp/3136208
@@ -1101,6 +1164,7 @@ class CalculatorHandler(ServerHandler):
 	def sendLine(self,n1,n2,t,m,c,s): #name 1, name 2, type, message, channel, source
 		c = self.idToChan(c)
 		if c!=-1:
+			m = stripIrcColors(m) # these will be glitched on the calc
 			if t=='message':
 				self.send(b'\xAD'+bytes('%s:%s' % (n1,m),'utf-8'))
 			elif t=='action':
@@ -1305,6 +1369,8 @@ class OIRCLink(ServerHandler):
 				data = json.loads(line)
 				if data['t'] == 'server_updateconfig':
 					handle.updateConfig()
+				elif data['t'] == 'server_delete_modebuffer':
+					handle.deleteModeBuffer(data['c'])
 				else:
 					handle.sendToOther(data['n1'],data['n2'],data['t'],data['m'],data['c'],data['s'],data['uid'],False)
 					print('(oirc)>> '+str(data))
@@ -1316,9 +1382,8 @@ class OIRCLink(ServerHandler):
 #main handler
 class Main():
 	relays = []
-	def __init__(self):
-		global config
-		self.bots = []
+	bots = []
+	modeBuffer = {}
 	def updateCurline(self):
 		global config,sql
 		try:
@@ -1350,6 +1415,25 @@ class Main():
 		if len(lines)>=1:
 			return int(lines[0])
 		return 0
+	def deleteModeBuffer(self,chan):
+		self.modeBuffer.pop(chan,False)
+	def getModeString(self,chan):
+		if chan in self.modeBuffer:
+			return self.modeBuffer[chan]
+		res = sql.query("SELECT `modes` FROM `irc_channels` WHERE chan=LOWER(%s)",[makeUnicode(chan)])
+		if len(res)==0:
+			self.modeBuffer[chan] = '+-'
+			return '+-'
+		self.modeBuffer[chan] = res[0]['modes']
+		return res[0]['modes']
+	def isChanOfMode(self,chan,char,default = False):
+		res = self.getModeString(chan)
+		try:
+			char = res.index(char)
+			minus = res.index('-')
+		except:
+			return default
+		return char < minus
 	def sendTopicToOther(self,s,c,i):
 		oircOnly = False
 		try:
@@ -1360,6 +1444,9 @@ class Main():
 			if (oircOnly and r.relayType==1) or not oircOnly:
 				r.relayTopic(s,c,i)
 	def sendToOther(self,n1,n2,t,m,c,s,uid = -1,do_sql = True):
+		if self.isChanOfMode(c,'c'):
+			m = stripIrcColors(m)
+		
 		oircOnly = (t in ('join','part','quit') and uid!=-1)
 		try:
 			c = int(c)
@@ -1376,7 +1463,32 @@ class Main():
 		if do_sql:
 			c = makeUnicode(str(c))
 			sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`,`uid`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",[n1,n2,m,t,c,str(int(time.time())),int(s),uid])
+			try:
+				lines_cached = memcached.get('oirc_lines_'+c)
+				if lines_cached:
+					try:
+						lines_cached = json.loads(lines_cached)
+						if len(lines_cached) > 200:
+							lines_cached.pop(0)
+						lines_cached.append({
+							'curLine': 0,
+							'type': t,
+							'network': int(s),
+							'time': int(time.time()),
+							'name': n1,
+							'message': m,
+							'name2': n2,
+							'chan': c,
+							'uid': uid
+						})
+						memcached.set('oirc_lines_'+c,json.dumps(lines_cached,separators=(',',':')))
+					except:
+						traceback.print_exc()
+						memcached.delete('oirc_lines_'+c)
+			except Exception as inst:
+				print('(handle) (relay) ERROR: couldn\'t update memcached: ',inst)
 			if t=='topic':
+				memcached.set('oirc_topic_'+c,m)
 				temp = sql.query("SELECT channum FROM `irc_channels` WHERE chan=%s",[c.lower()])
 				if len(temp)==0:
 					sql.query("INSERT INTO `irc_channels` (chan,topic) VALUES(%s,%s)",[c.lower(),m])
@@ -1468,5 +1580,7 @@ class Main():
 
 config = Config()
 sql = Sql()
+config.can_postload = True
+config.postLoad()
 handle = Main()
 handle.serve()

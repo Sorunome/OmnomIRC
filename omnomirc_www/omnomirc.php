@@ -105,6 +105,41 @@ header('Pragma: no-cache');
 date_default_timezone_set('UTC');
 
 include_once(realpath(dirname(__FILE__)).'/config.php');
+
+class Cache{
+	private $mode = 0;
+	private $handle = false;
+	public function __construct($host = 'localhost',$port = 11211){
+		if(class_exists('Memcached')){
+			$this->handle = new Memcached;
+			$this->handle->addServer($host,$port);
+			$this->handle->setOption(Memcached::OPT_COMPRESSION,false); // else python won't be able to do anything
+			$this->mode = 1;
+		}elseif(class_exists('Memcache')){
+			$this->handle = new Memcache;
+			$this->handle->connect($host,$port);
+			$this->mode = 2;
+		}
+	}
+	public function get($var){
+		switch($this->mode){
+			case 1:
+			case 2:
+				return $this->handle->get($var);
+		}
+		return false;
+	}
+	public function set($var,$val,$time = 0){
+		switch($this->mode){
+			case 1:
+				return $this->handle->set($var,$val,$time);
+			case 2:
+				return $this->handle->set($var,$val,0,$time);
+		}
+	}
+}
+$memcached = new Cache;
+
 function base64_url_encode($input){
 	return strtr(base64_encode($input),'+/=','-_,');
 }
@@ -759,12 +794,25 @@ class OmnomIRC{
 		return $lines;
 	}
 	public function loadChannel($count){
-		global $you,$sql;
+		global $you,$sql,$memcached;
 		if($count < 1){ // nothing to do here
 			return array();
 		}
+		$lines_cached = array();
+		if($cache = $memcached->get('oirc_lines_'.$you->chan)){
+			$lines_cached = json_decode($cache,true);
+			if(json_last_error()!==0){
+				$lines_cached = array();
+			}
+		}
+		if(($len = count($lines_cached)) >= $count){
+			return array_splice($lines_cached,$len-$count,$len);
+		}
 		$table = 'irc_lines';
 		$linesExtra = array();
+		$offset = count($lines_cached);
+		
+		$count -= $offset;
 		// $table is NEVER user-defined, only possible values are irc_lines and irc_lines_old!!!!!
 		while(true){
 			if($you->chan[0] == '*' && $you->nick){ // PM
@@ -787,7 +835,7 @@ class OmnomIRC{
 						)
 						AND `online` = ?
 						ORDER BY `line_number` DESC
-						LIMIT ?
+						LIMIT ?,?
 					) AS x
 					ORDER BY `line_number` ASC
 					",array(substr($you->chan,1),$you->nick,$you->nick,substr($you->chan,1),$you->getNetwork(),(int)$count));
@@ -801,34 +849,20 @@ class OmnomIRC{
 							AND
 							`type` != 'pm'
 							AND
-							(
-								(
-									LOWER(`channel`) = LOWER(?)
-									OR
-									LOWER(`channel`) = LOWER(?)
-								)
-							)
+							LOWER(`channel`) = LOWER(?)
 							AND NOT
 							(
 								(`type` = 'join' OR `type` = 'part') AND `Online` = ?
 							)
 						)
-						OR
-						(
-							`type` = 'server'
-							AND
-							LOWER(`channel`)=LOWER(?)
-							AND
-							LOWER(`name2`)=LOWER(?)
-						)
 						ORDER BY `line_number` DESC
-						LIMIT ?
+						LIMIT ?,?
 					) AS x
 					ORDER BY `line_number` ASC
-					",array($you->chan,$you->nick,$you->getNetwork(),$you->nick,$you->chan,(int)$count));
+					",array($you->chan,$you->getNetwork(),(int)$offset,(int)$count));
 			}
 			
-			$lines = $this->getLines($res,$table);
+			$lines = $this->getLines($res,$table,true); // we don't want ignores to land in cache, thus override them!
 			
 			if(count($lines)<$count && $table=='irc_lines'){
 				$count -= count($lines);
@@ -838,7 +872,9 @@ class OmnomIRC{
 			}
 			break;
 		}
-		return array_merge($lines,$linesExtra);
+		$lines_cached = array_merge($lines_cached,$lines,$linesExtra);
+		$memcached->set('oirc_lines_'.$you->chan,json_encode($lines_cached));
+		return $lines_cached;
 	}
 	public function getNick($uid,$net){
 		global $sql;
@@ -859,7 +895,7 @@ class Channels{
 		global $sql;
 		$tmp = $sql->query_prepare("SELECT `channum` FROM `irc_channels` WHERE chan=LOWER(?)",array($chan));
 		$tmp = $tmp[0];
-		if($tmp['channum']==NULL){
+		if($tmp['channum']===NULL){
 			if($create){
 				$sql->query_prepare("INSERT INTO `irc_channels` (`chan`) VALUES (LOWER(?))",array($chan));
 				return (int)$sql->insertId();
@@ -943,21 +979,29 @@ class Channels{
 		return $this->isTypeById($type,$id,$nick,$network)!==false;
 	}
 	public function setTopic($chan,$topic){
-		global $sql;
+		global $sql,$memcached;
+		$memcached->set('oirc_topic_'.$chan,$topic);
 		$sql->query_prepare("UPDATE `irc_channels` SET `topic`=? WHERE `channum`=?",array($topic,$this->getChanId($chan,true)));
 	}
 	public function getTopic($chan){
-		global $sql;
+		global $sql,$memcached;
+		if($cache = $memcached->get('oirc_topic_'.$chan)){
+			return $cache;
+		}
 		$id = $this->getChanId($chan);
 		if($id == -1){
-			return '';
+			$cache = '';
+		}else{
+			$res = $sql->query_prepare("SELECT `topic` FROM `irc_channels` WHERE `channum`=?",array($id));
+			$res = $res[0]['topic'];
+			if($res===NULL){
+				$cache = '';
+			}else{
+				$cache = $res;
+			}
 		}
-		$res = $sql->query_prepare("SELECT `topic` FROM `irc_channels` WHERE `channum`=?",array($id));
-		$res = $res[0]['topic'];
-		if($res===NULL){
-			return '';
-		}
-		return $res;
+		$memcached->set('oirc_topic_'.$chan,$cache);
+		return $cache;
 	}
 	public function addOp($chan,$nick,$network){
 		return $this->addType('ops',$chan,$nick,$network);
@@ -977,15 +1021,58 @@ class Channels{
 	public function isBanned($chan,$nick,$network){
 		return $this->isType('bans',$chan,$nick,$network);
 	}
-	public function setMode($chan,$s){
-		global $sql,$you;
-		$id = $this->getChanId($chan,true);
-		$oldModes = $sql->query_prepare("SELECT `modes` FROM `irc_channels` WHERE `channum`=?",array($id));
-		$oldModes = $oldModes[0]['modes'];
-		if($oldModes===NULL){
-			$oldModes = '';
+	private function getModesArray($chan){
+		$modes = array(
+			'+' => array(),
+			'-' => array()
+		);
+		$modestring = $this->getModes($chan);
+		$add = NULL;
+		for($i=0;$i<strlen($modestring);$i++){
+			$c = $modestring[$i];
+			switch($c){
+				case '+':
+					$add = true;
+					break;
+				case '-':
+					$add = false;
+					break;
+				default:
+					if($add===true){
+						$modes['+'][$c] = true;
+					}elseif($add===false){
+						$modes['-'][$c] = true;
+					}
+			}
 		}
-		$s = $oldModes."\n".$s;
+		return $modes;
+	}
+	public function isMode($chan,$c,$default = false){
+		$modestring = $this->getModes($chan);
+		$char = strpos($modestring,$c);
+		if($char===false){
+			return $default;
+		}
+		$minus = strpos($modestring,'-');
+		return $char < $minus;
+	}
+	public function getModes($chan){
+		global $sql,$memcached;
+		if($cache = $memcached->get('oirc_chanmodes_'.$chan)){
+			return $cache;
+		}
+		$modestring = $sql->query_prepare("SELECT `modes` FROM `irc_channels` WHERE chan=LOWER(?)",array($chan));
+		$modestring = $modestring[0]['modes'];
+		if($modestring === NULL){
+			$cache = '+-';
+		}else{
+			$cache = $modestring;
+		}
+		$memcached->set('oirc_chanmodes_'.$chan,$cache);
+		return $cache;
+	}
+	public function setMode($chan,$s){
+		global $sql,$you,$memcached;
 		
 		$network = $you->getNetwork();
 		$space = strpos($s,' ');
@@ -1009,10 +1096,8 @@ class Channels{
 			}
 			$args = array_reverse($args);
 		}
-		$modes = array(
-			'+' => array(),
-			'-' => array()
-		);
+		$modes = $this->getModesArray($chan);
+		
 		$add = NULL;
 		for($i=0;$i<strlen($modestring);$i++){
 			$c = $modestring[$i];
@@ -1070,7 +1155,8 @@ class Channels{
 		foreach($modes['-'] as $m => $t){
 			$newModes .= $m;
 		}
-		$sql->query_prepare("UPDATE `irc_channels` SET `modes`=? WHERE `channum`=?",array($newModes,$id));
+		$memcached->set('oirc_chanmodes_'.$chan,$newModes);
+		$sql->query_prepare("UPDATE `irc_channels` SET `modes`=? WHERE `channum`=?",array($newModes,$this->getChanId($chan,true)));
 		return true;
 	}
 }

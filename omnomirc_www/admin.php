@@ -129,6 +129,8 @@ if($you->isGlobalOp()){
 						}else{
 							$n['config']['extraChanMsg'] = '';
 						}
+					}elseif($n['config'] === true){
+						$n['config'] = $vars->get('net_config_'.(string)$n['id']);
 					}
 				}
 				$json->add('networks',$config['networks']);
@@ -249,6 +251,9 @@ if($you->isGlobalOp()){
 							}
 							unset($n['config']['checkLoginHook']);
 						}
+					}elseif(is_array($n['config'])){
+						$vars->set('net_config_'.(string)$n['id'],$n['config']);
+						$n['config'] = true;
 					}
 				}
 				$config['networks'] = $jsonData;
