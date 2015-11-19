@@ -106,21 +106,39 @@ date_default_timezone_set('UTC');
 
 include_once(realpath(dirname(__FILE__)).'/config.php');
 
-if(!class_exists('Memcached')){
-	class Memcached{
-		public function get(){
-			return false;
-		}
-		public function set(){
-			return false;
+class Cache{
+	private $mode = 0;
+	private $handle = false;
+	public function __construct($host = 'localhost',$port = 11211){
+		if(class_exists('Memcached')){
+			$this->handle = new Memcached;
+			$this->handle->addServer($host,$port);
+			$this->handle->setOption(Memcached::OPT_COMPRESSION,false); // else python won't be able to do anything
+			$this->mode = 1;
+		}elseif(class_exists('Memcache')){
+			$this->handle = new Memcache;
+			$this->handle->connect($host,$port);
+			$this->mode = 2;
 		}
 	}
-	$memcached = new Memcached();
-}else{
-	$memcached = new Memcached();
-	$memcached->addServer('localhost', 11211);
-	$memcached->setOption(Memcached::OPT_COMPRESSION,false); // else python won't be able to do anything
+	public function get($var){
+		switch($this->mode){
+			case 1:
+			case 2:
+				return $this->handle->get($var);
+		}
+		return false;
+	}
+	public function set($var,$val,$time = 0){
+		switch($this->mode){
+			case 1:
+				return $this->handle->set($var,$val,$time);
+			case 2:
+				return $this->handle->set($var,$val,0,$time);
+		}
+	}
 }
+$memcached = new Cache;
 
 function base64_url_encode($input){
 	return strtr(base64_encode($input),'+/=','-_,');
