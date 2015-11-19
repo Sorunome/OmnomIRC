@@ -1,6 +1,6 @@
 <?php
 error_reporting(0);
-$installScriptVersion = '2.9.2.1';
+$installScriptVersion = '2.9.2.2';
 include_once(realpath(dirname(__FILE__)).'/config.php');
 // IMPORTANT!!!! sqli object ONLY FOR INSTALLATION SCRIPT
 class Sqli{
@@ -192,11 +192,6 @@ if(!isset($_GET['server'])){
 									"type":"text",
 									"id":"defaultChan"
 								}).val("#"),
-								"<br>Default OP Group (you can later on add more via the admin pannel):",
-								$("<input>").attr({
-									"type":"text",
-									"id":"defaultOpGroup"
-								}),
 								"<br>Default OP User (You can leave this blank, it is a good idea though, as it makes you op even if the op group doens\'t match):",
 								$("<input>").attr({
 									"type":"text",
@@ -303,7 +298,7 @@ if(!isset($_GET['server'])){
 		case 7:
 			$config['networks'][1]['config']['checkLogin'] = $_POST['checkLogin'];
 			$config['channels'][0]['networks'][0]['name'] = $_POST['chan'];
-			$config['networks'][1]['config']['opGroups'] = Array($_POST['group']);
+			
 			if($_POST['defaultOp'] !== ''){
 				$sql->query("INSERT INTO `irc_userstuff` (`name`,`network`,`globalOp`) VALUES ('%s',1,1)",strtolower($_POST['defaultOp']));
 			}
