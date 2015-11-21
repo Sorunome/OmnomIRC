@@ -560,10 +560,11 @@ class Bot(threading.Thread):
 			cid = self.chanToId(chan)
 			if cid == -1:
 				return
+			if not (cid in self.userlist and nick in self.userlist[cid]):
+				return
 			users = sql.query("SELECT `username` FROM `irc_users` WHERE `channel`=%s AND `isOnline`=1 AND `online`<>%s AND `username` IS NOT NULL",[cid,self.i])
 			userchunks = []
 			chunk = []
-			print(users)
 			for u in users:
 				chunk.append(u['username'])
 				if len(chunk) >= 5:
