@@ -51,8 +51,10 @@ class Json{
 		$this->json[$key] = $value;
 	}
 	public function get(){
+		global $sql;
 		$this->json['warnings'] = $this->warnings;
 		$this->json['errors'] = $this->errors;
+		$this->json['sql_queries'] = $sql->getNumQueries();
 		if($this->relog!=0){
 			$this->json['relog'] = $this->relog;
 		}
@@ -96,7 +98,7 @@ function errorHandler($errno,$errstr,$errfile,$errline){
 }
 if(!(isset($textmode) && $textmode===true)){
 	set_error_handler('errorHandler',E_ALL);
-	header('Content-Type: text/json');
+	header('Content-Type: application/json');
 }
 header('Last-Modified: Thu, 01-Jan-1970 00:00:01 GMT');
 header('Cache-Control: no-store, no-cache, must-revalidate');
@@ -160,6 +162,7 @@ function refValues($arr){
 class Sqli{
 	private $mysqliConnection;
 	private $stmt;
+	private $numQueries = 0;
 	private function connectSql(){
 		global $config,$json;
 		if(isset($this->mysqliConnection)){
@@ -264,6 +267,7 @@ class Sqli{
 		$this->stmt->close();
 	}
 	public function query_prepare($query,$params = array(),$stack = 0){
+		$this->numQueries++;
 		if($this->prepare($query,$stack+1) && $this->bind_param($params,$stack+1) && $this->execute($stack +1)){
 			$result = $this->stmt->get_result();
 			if($result === false && $this->stmt->errno == 0){ // bug prevention
@@ -276,7 +280,7 @@ class Sqli{
 		return array();
 	}
 	public function query(){
-		//ini_set('memory_limit','-1');
+		$this->numQueries++;
 		$mysqli = $this->connectSql();
 		$params = func_get_args();
 		$query = $params[0];
@@ -302,6 +306,9 @@ class Sqli{
 		}
 		$mysqli = $this->connectSql();
 		return $mysqli->insert_id;
+	}
+	public function getNumQueries(){
+		return $this->numQueries;
 	}
 }
 $sql = new Sqli();
@@ -533,7 +540,7 @@ class Relay{
 			$values = '';
 			$valArray = array();
 			foreach($this->sendBuffer as $line){
-				$values .= '(?,?,?,?,?,?,?,?),';
+				$values .= '(?,?,?,?,?,?,?,CURRENT_TIMESTAMP),';
 				$valArray = array_merge($valArray,array(
 					$line['n1'],
 					$line['n2'],
@@ -541,8 +548,7 @@ class Relay{
 					$line['m'],
 					$line['c'],
 					$line['s'],
-					$line['uid'],
-					time()
+					$line['uid']
 				));
 			}
 			$values = rtrim($values,',');
@@ -577,15 +583,11 @@ class Users{
 		}
 	}
 	public function clean(){
-		global $sql,$config;
-		foreach($config['networks'] as $n){
-			if($n['type'] == 1){
-				$result = $sql->query_prepare("SELECT `username`,`channel` FROM `irc_users` WHERE (`time` < ? AND `time`!=0)  AND `online`=? AND `isOnline`=1",array(strtotime('-1 minute'),$n['id']));
-				$sql->query_prepare("UPDATE `irc_users` SET `isOnline`=0 WHERE `time` < ?  AND `online`=? AND `isOnline`=1",array(strtotime('-1 minute'),$n['id']));
-				foreach($result as $row){
-					$this->notifyPart($row['username'],$row['channel'],$n['id']);
-				}
-			}
+		global $sql;
+		$result = $sql->query_prepare("SELECT `username`,`channel`,`online` FROM `irc_users` WHERE (`time` < ? and `time`!=0) AND `isOnline`=1",array(strtotime('-1 minute')));
+		$sql->query_prepare("UPDATE `irc_users` SET `isOnline`=0 WHERE (`time` < ? and `time`!=0) AND `isOnline`=1",array(strtotime('-1 minute')));
+		foreach($result as $row){
+			$this->notifyPart($row['username'],$row['channel'],(int)$row['online']);
 		}
 	}
 }
@@ -725,7 +727,7 @@ class You{
 		global $sql,$users,$relay;
 		if($this->chan[0]=='*'){
 			return;
-		}
+		} // INSERT INTO `irc_users` (`username`,`channel`,`online`,`time`) VALUES ('Sorunome',0,1,9001) ON DUPLICATE KEY UPDATE `time`=CURRENT_TIMESTAMP
 		$result = $sql->query_prepare("SELECT usernum,time,isOnline FROM `irc_users` WHERE `username`=? AND `channel`=? AND `online`=?",array($this->nick,$this->chan,$this->getNetwork()));
 		if($result[0]['usernum']!==NULL){ //Update  
 			$sql->query_prepare("UPDATE `irc_users` SET `time`=?,`isOnline`=1 WHERE `usernum`=?",array(time(),(int)$result[0]['usernum']));
@@ -779,9 +781,9 @@ class You{
 		}
 		$net = $networks->get($this->getNetwork());
 		$cl = $net['config']['checkLogin'];
-		$returnPosition = json_decode(trim(file_get_contents($cl.'?op='.$this->id)));
+		$returnPosition = json_decode(trim(file_get_contents($cl.'?op='.$this->id)),true);
 		
-		if($returnPosition->op){
+		if(isset($returnPosition['op']) && $returnPosition['op']){
 			$this->globalOps = true;
 			return true;
 		}
@@ -949,19 +951,23 @@ $omnomirc = new OmnomIRC();
 class Channels{
 	private $lastFetchType;
 	private $allowed_types = array('ops','bans');
+	private $chanIdCache = array();
 	private function getChanId($chan,$create = false){
 		global $sql;
+		if(isset($this->chanIdCache[$chan])){
+			return $this->chanIdCache[$chan];
+		}
 		$tmp = $sql->query_prepare("SELECT `channum` FROM `irc_channels` WHERE chan=LOWER(?)",array($chan));
 		$tmp = $tmp[0];
 		if($tmp['channum']===NULL){
 			if($create){
 				$sql->query_prepare("INSERT INTO `irc_channels` (`chan`) VALUES (LOWER(?))",array($chan));
-				return (int)$sql->insertId();
+				return $this->chanIdCache[$chan] = (int)$sql->insertId();
 			}else{
 				return -1;
 			}
 		}
-		return (int)$tmp['channum'];
+		return $this->chanIdCache[$chan] = (int)$tmp['channum'];
 	}
 	private function isTypeById($type,$id,$nick,$network){
 		global $sql,$omnomirc;
