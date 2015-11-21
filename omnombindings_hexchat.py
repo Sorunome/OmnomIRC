@@ -121,7 +121,7 @@ def modifyRawData(word,word_eol,userdata):
 				if res: # kick
 					textEvent = 'Kick'
 					args = [res.group(2)+'@'+OMNOMIDENTSTR,res.group(3),res.group(4)]
-					cmd = 'KICK '+chan+' '+hexchat.strip(res.group(2))+' :'+res.group(4)
+					cmd = 'KICK '+chan+' '+hexchat.strip(res.group(2))+'\xA0 :'+res.group(4)
 					nick = res.group(1)
 					break
 				res = re.match(r'^\x033\* ([^ ]+) has changed the topic to (.*)',msg)
@@ -135,11 +135,12 @@ def modifyRawData(word,word_eol,userdata):
 				if res: # nick
 					textEvent = 'Change Nick'
 					args = [getNick(nick_prefix,res.group(2))]
-					cmd = 'NICK :'+res.group(2)
+					cmd = res.group(2)
 					nick = res.group(1)
 					break
 				
 				break
+			
 			
 			if textEvent!='':
 				if(len(word)>2):
@@ -152,10 +153,20 @@ def modifyRawData(word,word_eol,userdata):
 						nick = '\x02'+nick+'\x02'
 					else:
 						nick = getNick(nick_prefix,nick)
-				elif hexchat.nickcmp(nick,hexchat.get_info('nick'))==0:
-					hexchat.emit_print(textEvent,getNick(nick_prefix,nick),*args)
+				if hexchat.nickcmp(nick_notext,hexchat.get_info('nick'))==0 and textEvent in ['Part','Part with Reason','Quit','Join','Kick']:
+					hexchat.emit_print(textEvent,getNick(nick_prefix,nick_notext),*args)
+					if textEvent=='Kick':
+						kicknick = args[0][:-len('@'+OMNOMIDENTSTR)].replace(' ','\xA0')
+						if hexchat.nickcmp(kicknick,hexchat.get_info('nick'))!=0:
+							hexchat.command('RECV :'+kicknick+'!'+getNick(nick_prefix,kicknick)+'@'+OMNOMJOINIGNORE+' PART '+chan)
 					return hexchat.EAT_ALL
-				hexchat.command('RECV :'+nick+'!'+getNick(nick_prefix,nick_notext)+'@'+OMNOMIDENTSTR+' '+cmd)
+				if textEvent=='Change Nick':
+					hexchat.emit_print(textEvent,getNick(nick_prefix,nick_notext),*args)
+					hexchat.command('RECV :'+nick_notext+'!'+getNick(nick_prefix,nick_notext)+'@'+OMNOMJOINIGNORE+' PART '+chan)
+					cmd = cmd.replace(' ','\xA0')
+					hexchat.command('RECV :'+cmd+'!'+getNick(nick_prefix,cmd)+'@'+OMNOMJOINIGNORE+' JOIN :'+chan)
+				else:
+					hexchat.command('RECV :'+nick+'!'+getNick(nick_prefix,nick_notext)+'@'+OMNOMIDENTSTR+' '+cmd)
 				return hexchat.EAT_ALL
 		
 		
@@ -165,12 +176,16 @@ def modifyRawData(word,word_eol,userdata):
 	elif hexchat.strip(word[0]) in TOPICBOTNICK:
 		return hexchat.EAT_ALL
 	return hexchat.EAT_NONE
-def addExtraNicks(word,word_eol,userdata):
+def addExtraNicks_352(word,word_eol,userdata):
 	chan = word[3]
 	nick = word[7]
 	if nick in OMNOMIRCNICK:
 		hexchat.command('RAW PRIVMSG '+nick+' :GETUSERLIST '+chan)
-
+def addExtraNicks_354(word,word_eol,userdata):
+	chan = word[4]
+	nick = word[8]
+	if nick in OMNOMIRCNICK:
+		hexchat.command('RAW PRIVMSG '+nick+' :GETUSERLIST '+chan)
 
 def modifyJoinData(word,word_eol,userdata):
 	if '\xA0' in word_eol[2]: # we need to modify this!
@@ -180,6 +195,8 @@ def modifyJoinData(word,word_eol,userdata):
 		return hexchat.EAT_ALL
 def modifyPartData(word,word_eol,userdata):
 	if '\xA0' in word_eol[1]: # we need to modify this!
+		if word[1][-len(OMNOMJOINIGNORE):] == OMNOMJOINIGNORE:
+			return hexchat.EAT_ALL
 		reason = ''
 		if len(word) > 3:
 			p_type = 'Part with Reason'
@@ -188,11 +205,28 @@ def modifyPartData(word,word_eol,userdata):
 			p_type = 'Part'
 		hexchat.emit_print(p_type,word[1][:-len('@'+OMNOMIDENTSTR)],word[0]+'@'+OMNOMIDENTSTR,word[2],reason)
 		return hexchat.EAT_ALL
+def modifyKickData(word,word_eol,userdata):
+	if word[1][-1:] == '\xA0': # we need to modify this!
+		kicknick = word[1][:-1]
+		hexchat.emit_print('Kick',word[0],kicknick+'@'+OMNOMIDENTSTR,word[2],word_eol[3])
+		if hexchat.nickcmp(kicknick,hexchat.get_info('nick'))!=0:
+			hexchat.command('RECV :'+kicknick+'!()\xA0'+kicknick+'@'+OMNOMJOINIGNORE+' PART '+word[2])
+		return hexchat.EAT_ALL
+def modifyQuitData(word,word_eol,userdata):
+	if len(word) > 2 and '\xA0' in word[2]: # we need to modify this!
+		if word[2][-len(OMNOMJOINIGNORE):] == OMNOMJOINIGNORE:
+			return hexchat.EAT_ALL
+		hexchat.emit_print('Quit',word[2][:-len('@'+OMNOMIDENTSTR)],word[1])
+		return hexchat.EAT_ALL
 
-hexchat.hook_server('352',addExtraNicks,priority=hexchat.PRI_HIGHEST)
+hexchat.hook_server('352',addExtraNicks_352,priority=hexchat.PRI_HIGHEST)
+hexchat.hook_server('354',addExtraNicks_354,priority=hexchat.PRI_HIGHEST)
 hexchat.hook_server('PRIVMSG',modifyRawData,priority=hexchat.PRI_HIGHEST)
 hexchat.hook_print('Join',modifyJoinData,priority=hexchat.PRI_HIGHEST)
 hexchat.hook_print('Part',modifyPartData,priority=hexchat.PRI_HIGHEST)
 hexchat.hook_print('Part with Reason',modifyPartData,priority=hexchat.PRI_HIGHEST)
+hexchat.hook_print('Kick',modifyKickData,priority=hexchat.PRI_HIGHEST)
+hexchat.hook_print('Quit',modifyQuitData,priority=hexchat.PRI_HIGHEST)
+hexchat.hook_print('Topic',topicBinding,priority=hexchat.PRI_HIGHEST)
 
 print(__module_name__, 'version', __module_version__, 'loaded.')
