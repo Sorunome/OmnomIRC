@@ -582,10 +582,10 @@ class Users{
 	}
 	public function clean(){
 		global $sql;
-		$result = $sql->query_prepare("SELECT `username`,`channel`,`online` FROM `irc_users` WHERE (`time` < ? and `time`!=0) AND `isOnline`=1",array(strtotime('-1 minute')));
+		$result = $sql->query_prepare("SELECT `username`,`channel`,`online`,`uid` FROM `irc_users` WHERE (`time` < ? and `time`!=0) AND `isOnline`=1",array(strtotime('-1 minute')));
 		$sql->query_prepare("UPDATE `irc_users` SET `isOnline`=0 WHERE (`time` < ? and `time`!=0) AND `isOnline`=1",array(strtotime('-1 minute')));
 		foreach($result as $row){
-			$this->notifyPart($row['username'],$row['channel'],(int)$row['online']);
+			$this->notifyPart($row['username'],$row['channel'],(int)$row['online'],(int)$row['uid']);
 		}
 	}
 }
@@ -726,15 +726,15 @@ class You{
 		if($this->chan[0]=='*'){
 			return;
 		} // INSERT INTO `irc_users` (`username`,`channel`,`online`,`time`) VALUES ('Sorunome',0,1,9001) ON DUPLICATE KEY UPDATE `time`=UNIX_TIMESTAMP(CURRENT_TIMESTAMP)
-		$result = $sql->query_prepare("SELECT usernum,time,isOnline FROM `irc_users` WHERE `username`=? AND `channel`=? AND `online`=?",array($this->nick,$this->chan,$this->getNetwork()));
+		$result = $sql->query_prepare("SELECT usernum,time,isOnline,uid FROM `irc_users` WHERE `username`=? AND `channel`=? AND `online`=?",array($this->nick,$this->chan,$this->getNetwork()));
 		if($result[0]['usernum']!==NULL){ //Update  
-			$sql->query_prepare("UPDATE `irc_users` SET `time`=?,`isOnline`=1 WHERE `usernum`=?",array(time(),(int)$result[0]['usernum']));
+			$sql->query_prepare("UPDATE `irc_users` SET `time`=UNIX_TIMESTAMP(CURRENT_TIMESTAMP),`isOnline`=1,`uid`=? WHERE `usernum`=?",array($this->getUid(),(int)$result[0]['usernum']));
 			if((int)$result[0]['isOnline'] == 0){
-				$users->notifyJoin($this->nick,$this->chan,$this->getNetwork());
+				$users->notifyJoin($this->nick,$this->chan,$this->getNetwork(),$this->getUid());
 			}
 		}else{
-			$sql->query_prepare("INSERT INTO `irc_users` (`username`,`channel`,`time`,`online`) VALUES (?,?,?,?)",array($this->nick,$this->chan,time(),$this->getNetwork()));
-			$users->notifyJoin($this->nick,$this->chan,$this->getNetwork());
+			$sql->query_prepare("INSERT INTO `irc_users` (`username`,`channel`,`time`,`online`,`uid`) VALUES (?,?,UNIX_TIMESTAMP(CURRENT_TIMESTAMP),?,?)",array($this->nick,$this->chan,$this->getNetwork(),$this->getUid()));
+			$users->notifyJoin($this->nick,$this->chan,$this->getNetwork(),$this->getUid());
 		}
 		$users->clean();
 		$relay->commitBuffer();

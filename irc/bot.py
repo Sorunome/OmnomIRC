@@ -935,7 +935,7 @@ class WebSocketsHandler(ServerHandler):
 		global sql
 		if isinstance(self.chan,str) and len(self.chan) > 0 and self.chan[0]=='*': # no userlist on PMs
 			return
-		if handle.addUser(self.nick,str(self.chan),self.network):
+		if handle.addUser(self.nick,str(self.chan),self.network,self.uid):
 			handle.sendToOther(self.nick,'','join','',str(self.chan),self.network,self.uid)
 	def part(self):
 		if self.chan!='':
@@ -1417,13 +1417,13 @@ class Main():
 		except Exception as inst:
 			print('(handle) curline error',inst)
 			traceback.print_exc()
-	def addUser(self,u,c,i):
+	def addUser(self,u,c,i,uid=-1):
 		temp = sql.query("SELECT usernum,isOnline FROM irc_users WHERE username=%s AND channel=%s AND online=%s",[u,c,int(i)])
 		if(len(temp)==0):
-			sql.query("INSERT INTO `irc_users` (`username`,`channel`,`online`) VALUES (%s,%s,%s)",[u,c,int(i)])
+			sql.query("INSERT INTO `irc_users` (`username`,`channel`,`online`,`uid`) VALUES (%s,%s,%s,%s)",[u,c,int(i),int(uid)])
 			return True
 		else:
-			sql.query("UPDATE `irc_users` SET `isOnline`=1 WHERE `usernum`=%s",[int(temp[0]['usernum'])])
+			sql.query("UPDATE `irc_users` SET `isOnline`=1,`uid`=%s,`time`=0 WHERE `usernum`=%s",[int(uid),int(temp[0]['usernum'])])
 			return temp[0]['isOnline'] == 0
 	def removeUser(self,u,c,i):
 		sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE `username` = %s AND `channel` = %s AND online=%s",[u,c,int(i)])
