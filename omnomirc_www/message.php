@@ -319,7 +319,7 @@ if($sendNormal){
 				'chan' => $channel,
 				'uid' => (int)$you->getUid()
 			);
-			$memcached->set('oirc_lines_'.$channel,json_encode($lines_cached));
+			$memcached->set('oirc_lines_'.$channel,json_encode($lines_cached),time()+(60*60*24*3));
 		}else{
 			$memcached->set('oirc_lines_'.$channel,false,1);
 		}

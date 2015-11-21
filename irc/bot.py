@@ -555,6 +555,27 @@ class Bot(threading.Thread):
 							self.addLine(old,new,'nick','',c)
 							changedNicks.append(new)
 		return False
+	def sendUserList(self,nick,chan):
+		try:
+			cid = self.chanToId(chan)
+			if cid == -1:
+				return
+			users = sql.query("SELECT `username` FROM `irc_users` WHERE `channel`=%s AND `isOnline`=1 AND `online`<>%s AND `username` IS NOT NULL",[cid,self.i])
+			userchunks = []
+			chunk = []
+			print(users)
+			for u in users:
+				chunk.append(u['username'])
+				if len(chunk) >= 5:
+					userchunks.append(json.dumps(chunk,separators=(',',':')))
+					chunk = []
+			if len(chunk) > 0:
+				userchunks.append(json.dumps(chunk,separators=(',',':')))
+			for c in userchunks:
+				self.send('PRIVMSG '+nick+' :OIRCUSERS '+chan+' '+c)
+		except:
+			traceback.print_exc()
+			return
 	def doMain(self,line):
 		global handle,config
 		
@@ -568,8 +589,11 @@ class Bot(threading.Thread):
 		if chan[0]!='#':
 			chan = chan[1:]
 		if line[1]=='PRIVMSG':
-			if line[2][0]!='#' and line[3] == ':DOTHIS' and line[4] == config.json['security']['ircPwd']:
-				self.send(' '.join(line[5:]))
+			if line[2][0]!='#':
+				if line[3] == ':DOTHIS' and line[4] == config.json['security']['ircPwd']:
+					self.send(' '.join(line[5:]))
+				elif line[3] == ':GETUSERLIST' and len(line) > 4:
+					self.sendUserList(nick,line[4])
 			elif line[2][0]=='#':
 				if line[3]==':\x01ACTION' and message[-1:]=='\x01':
 					self.addLine(nick,'','action',message[8:-1],chan)
@@ -1481,7 +1505,7 @@ class Main():
 							'chan': c,
 							'uid': uid
 						})
-						memcached.set('oirc_lines_'+c,json.dumps(lines_cached,separators=(',',':')))
+						memcached.set('oirc_lines_'+c,json.dumps(lines_cached,separators=(',',':')),int(time.time())+(60*60*24*3))
 					except:
 						traceback.print_exc()
 						memcached.delete('oirc_lines_'+c)
@@ -1517,12 +1541,12 @@ class Main():
 				self.relays.append(RelayWebsockets(n))
 	def get_net_cheat(self):
 		net_cheat = config.json['networks'][:]
-		net_cheat[-1] = {
+		net_cheat = [{
 			'id':-1,
 			'type':-1,
 			'enabled':config.json['websockets']['use'],
 			'config':config.json['websockets']
-		}
+		}] + net_cheat
 		return net_cheat
 	def updateConfig(self):
 		print('(handle) Got signal to update config!')

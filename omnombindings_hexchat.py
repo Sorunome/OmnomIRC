@@ -1,11 +1,15 @@
-import hexchat,re
+import hexchat,re,json
 
 __module_name__ = 'OmnomIRC Bindings'
-__module_version__ = '0.9'
+__module_version__ = '1.0'
 __module_description__ = 'OmnomIRC Bindings for Hexchat'
 
-OMNOMIRCNICK = ['^','OmnomIRC']
+OMNOMIRCNICK = ['^','OmnomIRC','SoruTestIRC']
 TOPICBOTNICK = ['TopicBot']
+
+
+OMNOMIDENTSTR = 'OmnomIRC'
+OMNOMJOINIGNORE = 'OmnomIRC_ignore_join'
 
 def addColor(s):
 	s = hexchat.strip(s)
@@ -17,7 +21,9 @@ def addColor(s):
 def getNick(prefix,nick):
 	if bool(hexchat.get_prefs('text_color_nicks')):
 		nick = addColor(nick)
-	return '\x0F'+prefix+'\x0F '+nick
+	else: # as omnomirc can color nicks on itself
+		nick = hexchat.strip(nick)
+	return '\x0F'+prefix+'\x0F\xA0'+nick
 def doHighlight(msg):
 	return hexchat.get_info('nick') in msg
 def topicBinding(word,word_eol,userdata):
@@ -25,76 +31,132 @@ def topicBinding(word,word_eol,userdata):
 	if (s in TOPICBOTNICK) or (s in TOPICBOTNICK):
 		return hexchat.EAT_ALL
 	return hexchat.EAT_NONE
-def binding(word,word_eol,userdata):
-	if hexchat.strip(word[0]) in OMNOMIRCNICK:
-		msg = word[1]
-		res = re.match(r'^(\x03[0-9]{1,2}\([a-zA-Z]+\)\x0F|\(#\)|\x02\(!\)\x02)<([^>]+)> (.*)',msg)
-		textEvent = ''
-		args = []
-		while True:
-			if res: # normal msg
-				if doHighlight(res.group(3)):
-					textEvent = 'Channel Msg Hilight'
-				else:
-					textEvent = 'Channel Message'
-				args = [res.group(3)]
-				break
-			res = re.match(r'^(\x03[0-9]{1,2}\([a-zA-Z]+\)\x0F|\(#\)|\x02\(!\)\x02)\x036\* ([^ ]+) (.*)',msg)
-			if res: # action
-				if doHighlight(res.group(3)):
-					textEvent = 'Channel Action Hilight'
-				else:
-					textEvent = 'Channel Action'
-				args = [res.group(3)]
-				break
-			res = re.match(r'^(\x03[0-9]{1,2}\([a-zA-Z]+\)\x0F|\(#\)|\x02\(!\)\x02)\x032\* ([^ ]+) has left ([^ ]*) \((.*)\)',msg)
-			if res: # part
-				if res.group(4)!='':
-					textEvent = 'Part with Reason'
-				else:
-					textEvent = 'Part'
-				args = [res.group(2)+'@OmnomIRC',res.group(3),res.group(4)]
-				break
-			res = re.match(r'^(\x03[0-9]{1,2}\([a-zA-Z]+\)\x0F|\(#\)|\x02\(!\)\x02)\x033\* ([^ ]+) has joined ([^ ]*)',msg)
-			if res: # join
-				textEvent = 'Join'
-				args = [res.group(3),res.group(2)+'@OmnomIRC','']
-				break
-			res = re.match(r'^(\x03[0-9]{1,2}\([a-zA-Z]+\)\x0F|\(#\)|\x02\(!\)\x02)\x032\* ([^ ]+) has quit [^ ]* \((.*)\)',msg)
-			if res: # quit
-				textEvent = 'Quit'
-				args = [res.group(3)]
-				break
-			res = re.match(r'^(\x03[0-9]{1,2}\([a-zA-Z]+\)\x0F|\(#\)|\x02\(!\)\x02)\x033\* ([^ ]+) set ([^ ]*) mode (.*)',msg)
-			if res: # mode
-				textEvent = 'Channel Mode Generic'
-				args = ['',res.group(4),res.group(3)]
-				break
-			res = re.match(r'^(\x03[0-9]{1,2}\([a-zA-Z]+\)\x0F|\(#\)|\x02\(!\)\x02)\x034\* ([^ ]+) has kicked ([^ ]*) from ([^ ]*) \((.*)\)',msg)
-			if res: # kick
-				textEvent = 'Kick'
-				args = [res.group(3)+'@OmnomIRC'+res.group(1),res.group(4),res.group(5)]
-				break
-			res = re.match(r'^(\x03[0-9]{1,2}\([a-zA-Z]+\)\x0F|\(#\)|\x02\(!\)\x02)\x033\* ([^ ]+) has changed the topic to (.*)',msg)
-			if res: # topic
-				textEvent = 'Topic Change'
-				args = [res.group(3)]
-				break
-			res = re.match(r'^(\x03[0-9]{1,2}\([a-zA-Z]+\)\x0F|\(#\)|\x02\(!\)\x02)\x033\* (.+) has changed nicks to (.*)',msg)
-			if res: # nick
-				textEvent = 'Change Nick'
-				args = [getNick(res.group(1),res.group(3))]
+
+def modifyRawData(word,word_eol,userdata):
+	try:
+		nick = hexchat.strip(word[0].split(':')[1].split('!')[0])
+	except:
+		nick = ''
+	if nick in OMNOMIRCNICK:
+		try:
+			msg = ' '.join(word[3:])[1:]
+			chan = word[2]
+		except:
+			return hexchat.EAT_NONE
+		if hexchat.nickcmp(chan,hexchat.get_info('nick'))==0:
+			cmd = msg.split(' ')
+			try:
+				if cmd[0] == 'OIRCUSERS':
+					chan = cmd[1]
+					for nick in json.loads(' '.join(cmd[2:])):
+						if hexchat.nickcmp(nick,hexchat.get_info('nick'))!=0:
+							hexchat.command('RECV :'+nick+'!()\xA0'+nick+'@'+OMNOMJOINIGNORE+' JOIN :'+chan)
+			except Exception as inst:
+				print(__module_name__,': something unexpected happend, please report the following')
+				print('Oirc PM exeption')
+				print(inst)
+			return hexchat.EAT_ALL
+		res = re.match(r'^((\x03[0-9]{1,2}|\x02)?\([a-zA-Z0-9#!]+\)[\x0F\x02]?)',msg)
+		if res:
+			nick_prefix = res.group(1)
+			nick = ''
+			msg = msg[len(res.group(1)):]
+			cmd = ''
+			textEvent = ''
+			args = []
+			
+			while True:
+				res = re.match(r'<([^>]+)> (.*)',msg)
+				if res: # normal msg
+					if doHighlight(res.group(2)):
+						textEvent = 'Channel Msg Hilight'
+					else:
+						textEvent = 'Channel Message'
+					args = [res.group(2)]
+					cmd = 'PRIVMSG '+chan+' :'+res.group(2)
+					nick = res.group(1)
+					break
+				res = re.match(r'^\x036\* ([^ ]+) (.*)',msg)
+				if res: # action
+					if doHighlight(res.group(2)):
+						textEvent = 'Channel Action Hilight'
+					else:
+						textEvent = 'Channel Action'
+					args = [res.group(2)]
+					cmd = 'PRIVMSG '+chan+' :\x01ACTION '+res.group(2)+'\x01'
+					nick = res.group(1)
+					break
+				res = re.match(r'^\x032\* ([^ ]+) has left ([^ ]*) \((.*)\)',msg)
+				if res: # part
+					if res.group(3)!='':
+						textEvent = 'Part with Reason'
+					else:
+						textEvent = 'Part'
+					args = [res.group(1)+'@OmnomIRC',res.group(2),res.group(3)]
+					cmd = 'PART '+chan+' :'+res.group(3)
+					nick = res.group(1)
+					break
+				res = re.match(r'^\x033\* ([^ ]+) has joined ([^ ]*)',msg)
+				if res: # join
+					textEvent = 'Join'
+					args = [res.group(2),res.group(1)+'@'+OMNOMIDENTSTR,'']
+					cmd = 'JOIN :'+chan
+					nick = res.group(1)
+					break
+				res = re.match(r'^\x032\* ([^ ]+) has quit [^ ]* \((.*)\)',msg)
+				if res: # quit
+					textEvent = 'Quit'
+					args = [res.group(2)]
+					cmd = 'QUIT :'+res.group(2)
+					nick = res.group(1)
+					break
+				res = re.match(r'^\x033\* ([^ ]+) set ([^ ]*) mode (.*)',msg)
+				if res: # mode
+					textEvent = 'Channel Mode Generic'
+					args = ['',res.group(3),res.group(2)]
+					cmd = 'MODE '+chan+' '+res.group(3)
+					nick = res.group(1)
+					break
+				res = re.match(r'^\x034\* ([^ ]+) has kicked ([^ ]*) from ([^ ]*) \((.*)\)',msg)
+				if res: # kick
+					textEvent = 'Kick'
+					args = [res.group(2)+'@'+OMNOMIDENTSTR,res.group(3),res.group(4)]
+					cmd = 'KICK '+chan+' '+hexchat.strip(res.group(2))+' :'+res.group(4)
+					nick = res.group(1)
+					break
+				res = re.match(r'^\x033\* ([^ ]+) has changed the topic to (.*)',msg)
+				if res: # topic
+					textEvent = 'Topic Change'
+					args = [res.group(2)]
+					cmd = 'TOPIC '+chan+' :'+res.group(2)
+					nick = res.group(1)
+					break
+				res = re.match(r'^\x033\* (.+) has changed nicks to (.*)',msg)
+				if res: # nick
+					textEvent = 'Change Nick'
+					args = [getNick(nick_prefix,res.group(2))]
+					cmd = 'NICK :'+res.group(2)
+					nick = res.group(1)
+					break
+				
 				break
 			
-			break
-		
-		if textEvent!='':
-			if(len(word)>2):
-				args.append(word[2])
-			else:
-				args.append('')
-			hexchat.emit_print(textEvent,getNick(res.group(1),res.group(2)),*args)
-			return hexchat.EAT_ALL
+			if textEvent!='':
+				if(len(word)>2):
+					args.append(word[2])
+				else:
+					args.append('')
+				nick_notext = nick = nick.replace(' ','\xA0')
+				if not (textEvent in ['Part','Part with Reason','Quit','Join']):
+					if '!' in nick_prefix:
+						nick = '\x02'+nick+'\x02'
+					else:
+						nick = getNick(nick_prefix,nick)
+				elif hexchat.nickcmp(nick,hexchat.get_info('nick'))==0:
+					hexchat.emit_print(textEvent,getNick(nick_prefix,nick),*args)
+					return hexchat.EAT_ALL
+				hexchat.command('RECV :'+nick+'!'+getNick(nick_prefix,nick_notext)+'@'+OMNOMIDENTSTR+' '+cmd)
+				return hexchat.EAT_ALL
 		
 		
 		print(__module_name__,': something unexpected happend, please report the following')
@@ -103,8 +165,34 @@ def binding(word,word_eol,userdata):
 	elif hexchat.strip(word[0]) in TOPICBOTNICK:
 		return hexchat.EAT_ALL
 	return hexchat.EAT_NONE
-hexchat.hook_print('Channel Message',binding)
-hexchat.hook_print('Channel Msg Hilight',binding)
-#hexchat.hook_print('Topic Change',topicBinding)
+def addExtraNicks(word,word_eol,userdata):
+	chan = word[3]
+	nick = word[7]
+	if nick in OMNOMIRCNICK:
+		hexchat.command('RAW PRIVMSG '+nick+' :GETUSERLIST '+chan)
+
+
+def modifyJoinData(word,word_eol,userdata):
+	if '\xA0' in word_eol[2]: # we need to modify this!
+		if word[2][-len(OMNOMJOINIGNORE):] == OMNOMJOINIGNORE:
+			return hexchat.EAT_ALL
+		hexchat.emit_print('Join',word[2][:-len('@'+OMNOMIDENTSTR)],word[1],word[0]+'@'+OMNOMIDENTSTR)
+		return hexchat.EAT_ALL
+def modifyPartData(word,word_eol,userdata):
+	if '\xA0' in word_eol[1]: # we need to modify this!
+		reason = ''
+		if len(word) > 3:
+			p_type = 'Part with Reason'
+			reason = word[3]
+		else:
+			p_type = 'Part'
+		hexchat.emit_print(p_type,word[1][:-len('@'+OMNOMIDENTSTR)],word[0]+'@'+OMNOMIDENTSTR,word[2],reason)
+		return hexchat.EAT_ALL
+
+hexchat.hook_server('352',addExtraNicks,priority=hexchat.PRI_HIGHEST)
+hexchat.hook_server('PRIVMSG',modifyRawData,priority=hexchat.PRI_HIGHEST)
+hexchat.hook_print('Join',modifyJoinData,priority=hexchat.PRI_HIGHEST)
+hexchat.hook_print('Part',modifyPartData,priority=hexchat.PRI_HIGHEST)
+hexchat.hook_print('Part with Reason',modifyPartData,priority=hexchat.PRI_HIGHEST)
 
 print(__module_name__, 'version', __module_version__, 'loaded.')

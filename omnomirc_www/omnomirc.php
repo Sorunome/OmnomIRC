@@ -562,10 +562,8 @@ class Relay{
 				socket_close($socket);
 			}
 			$this->sendBuffer = array();
+			file_put_contents($config['settings']['curidFilePath'],$sql->insertId());
 		}
-		
-		$temp = $sql->query_prepare("SELECT MAX(line_number) AS max FROM irc_lines");
-		file_put_contents($config['settings']['curidFilePath'],$temp[0]['max']);
 	}
 }
 $relay = new Relay();
@@ -933,7 +931,7 @@ class OmnomIRC{
 			break;
 		}
 		$lines_cached = array_merge($lines_cached,$lines,$linesExtra);
-		$memcached->set('oirc_lines_'.$you->chan,json_encode($lines_cached));
+		$memcached->set('oirc_lines_'.$you->chan,json_encode($lines_cached),time()+(60*60*24*3));
 		return $lines_cached;
 	}
 	public function getNick($uid,$net){
