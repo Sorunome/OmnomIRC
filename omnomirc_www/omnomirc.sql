@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS `irc_users` (
   `time` int(11) DEFAULT NULL,
   `lastMsg` int(11) DEFAULT NULL,
   `isOnline` tinyint(2) NOT NULL DEFAULT '1',
+  `uid` INT NOT NULL DEFAULT '-1',
   PRIMARY KEY (`usernum`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;
 
