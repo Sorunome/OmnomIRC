@@ -27,31 +27,7 @@ include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 function removeLinebrakes($s){
 	return str_replace(Array("\0","\r","\n"),'',$s);
 }
-$sendToBotBuffer = '';
-function sendLine($n1,$n2,$t,$m,$c = NULL,$s = NULL,$uid = NULL){
-	global $channel,$you,$sql,$config,$sendToBotBuffer;
-	if($c === NULL){
-		$c = $channel;
-	}
-	if($s === NULL){
-		$s = $you->getNetwork();
-	}
-	if($uid === NULL){
-		$uid = $you->getUid();
-	}
-	$sql->query_prepare("INSERT INTO `irc_lines` (name1,name2,message,type,channel,time,online,uid) VALUES (?,?,?,?,?,?,?,?)",array($n1,$n2,$m,$t,$c,time(),$s,$uid));
-	if($config['settings']['useBot']){
-		$sendToBotBuffer .= trim(json_encode(array(
-			'n1' => $n1,
-			'n2' => $n2,
-			't' => $t,
-			'm' => $m,
-			'c' => $c,
-			's' => $s,
-			'uid' => $uid
-		)))."\n";
-	}
-}
+
 function strip_irc_colors($s){
 	return preg_replace("/(\x02|\x0F|\x16|\x1D|\x1F|\x03(\d{1,2}(,\d{1,2})?)?)/",'',$s);
 }
@@ -206,7 +182,7 @@ if(substr($parts[0],0,1)=='/'){
 				unset($parts[0]);
 				$newTopic = implode(' ',$parts);
 				$channels->setTopic($channel,$newTopic);
-				sendLine($nick,'','topic',$newTopic);
+				$relay->sendLine($nick,'','topic',$newTopic);
 			}else{
 				$returnmessage = "You aren't op";
 				$sendPm = true;
@@ -222,7 +198,7 @@ if(substr($parts[0],0,1)=='/'){
 					't' => 'server_delete_modebuffer',
 					'c' => $channel,
 				)))."\n";
-				sendLine($nick,'','mode',$modeStr);
+				$relay->sendLine($nick,'','mode',$modeStr);
 			}else{
 				$returnmessage = "You aren't op";
 				$sendPm = true;
@@ -239,7 +215,7 @@ if(substr($parts[0],0,1)=='/'){
 				unset($parts[0]);
 				$userToOp = trim(implode(' ',$parts));
 				if($channels->addOp($channel,$userToOp,$you->getNetwork())){
-					sendLine($nick,'','mode',"+o $userToOp");
+					$relay->sendLine($nick,'','mode',"+o $userToOp");
 				}else{
 					$returnmessage = "\x034ERROR: couldn't op $userToOp: already op or user not found.";
 					$sendPm = true;
@@ -255,7 +231,7 @@ if(substr($parts[0],0,1)=='/'){
 				unset($parts[0]);
 				$userToOp = trim(implode(" ",$parts));
 				if($channels->remOp($channel,$userToOp,$you->getNetwork())){
-					sendLine($nick,'','mode',"-o $userToOp");
+					$relay->sendLine($nick,'','mode',"-o $userToOp");
 				}else{
 					$returnmessage = "\x034ERROR: couldn't deop $userToOp: no op or user not found.";
 					$sendPm = true;
@@ -271,7 +247,7 @@ if(substr($parts[0],0,1)=='/'){
 				unset($parts[0]);
 				$userToOp = trim(implode(' ',$parts));
 				if($channels->addBan($channel,$userToOp,$you->getNetwork())){
-					sendLine($nick,'','mode',"+b $userToOp");
+					$relay->sendLine($nick,'','mode',"+b $userToOp");
 				}else{
 					$returnmessage = "\x034ERROR: couldn't ban $userToOp: already banned or user not found.";
 					$sendPm = true;
@@ -288,7 +264,7 @@ if(substr($parts[0],0,1)=='/'){
 				unset($parts[0]);
 				$userToOp = trim(implode(' ',$parts));
 				if($channels->remBan($channel,$userToOp,$you->getNetwork())){
-					sendLine($nick,'','mode',"-b $userToOp");
+					$relay->sendLine($nick,'','mode',"-b $userToOp");
 				}else{
 					$returnmessage = "\x034ERROR: couldn't deban $userToOp: no ban or user not found.";
 					$sendPm = true;
@@ -325,7 +301,7 @@ if($sendNormal){
 	if($channels->isMode($channel,'c')){
 		$message = strip_irc_colors($message);
 	}
-	sendLine($nick,'',$type,$message);
+	$relay->sendLine($nick,'',$type,$message);
 	if($cache = $memcached->get('oirc_lines_'.$channel)){
 		$lines_cached = json_decode($cache,true);
 		if(json_last_error()===0){
@@ -350,17 +326,13 @@ if($sendNormal){
 	}
 }
 if($sendPm){
-	sendLine('OmnomIRC',$channel,'server',$returnmessage,$nick);
+	$relay->sendLine('OmnomIRC',$channel,'server',$returnmessage,$nick);
 }
 if($reload){
-	sendLine('OmnomIRC','','reload','THE GAME');
+	$relay->sendLine('OmnomIRC','','reload','THE GAME');
 }
 
-if($sendToBotBuffer != '' && $config['settings']['useBot'] && ($socket = @socket_create(AF_INET,SOCK_STREAM,SOL_TCP)) && @socket_connect($socket,'localhost',$config['settings']['botPort'])){
-	socket_write($socket,$sendToBotBuffer,strlen($sendToBotBuffer));
-	socket_close($socket);
-}
-
+$relay->commitBuffer();
 
 if(isset($_GET['textmode'])){
 	session_start();
@@ -369,6 +341,4 @@ if(isset($_GET['textmode'])){
 	$json->add('success',true);
 	echo $json->get();
 }
-$temp = $sql->query_prepare("SELECT MAX(line_number) AS max FROM irc_lines");
-file_put_contents($config['settings']['curidFilePath'],$temp[0]['max']);
 ?>
