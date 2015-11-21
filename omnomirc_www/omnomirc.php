@@ -505,7 +505,7 @@ class Networks{
 }
 $networks = new Networks();
 class Relay{
-	private $sendBuffer = '';
+	private $sendBuffer = array();
 	public function sendLine($n1,$n2,$t,$m,$c = NULL,$s = NULL,$uid = NULL){
 		global $you,$sql,$config;
 		if($c === NULL){
@@ -517,25 +517,45 @@ class Relay{
 		if($uid === NULL){
 			$uid = $you->getUid();
 		}
-		$sql->query_prepare("INSERT INTO `irc_lines` (name1,name2,message,type,channel,time,online,uid) VALUES (?,?,?,?,?,?,?,?)",array($n1,$n2,$m,$t,$c,time(),$s,$uid));
-		if($config['settings']['useBot']){
-			$this->sendBuffer .= trim(json_encode(array(
-				'n1' => $n1,
-				'n2' => $n2,
-				't' => $t,
-				'm' => $m,
-				'c' => $c,
-				's' => $s,
-				'uid' => $uid
-			)))."\n";
-		}
+		$this->sendBuffer[] = array(
+			'n1' => $n1,
+			'n2' => $n2,
+			't' => $t,
+			'm' => $m,
+			'c' => $c,
+			's' => $s,
+			'uid' => $uid
+		);
 	}
 	public function commitBuffer(){
 		global $config,$sql;
-		if($this->sendBuffer != '' && $config['settings']['useBot'] && ($socket = @socket_create(AF_INET,SOCK_STREAM,SOL_TCP)) && @socket_connect($socket,'localhost',$config['settings']['botPort'])){
-			socket_write($socket,$this->sendBuffer,strlen($this->sendBuffer));
-			socket_close($socket);
-			$this->sendBuffer = '';
+		if(sizeof($this->sendBuffer)>0){
+			$values = '';
+			$valArray = array();
+			foreach($this->sendBuffer as $line){
+				$values .= '(?,?,?,?,?,?,?,?),';
+				$valArray = array_merge($valArray,array(
+					$line['n1'],
+					$line['n2'],
+					$line['t'],
+					$line['m'],
+					$line['c'],
+					$line['s'],
+					$line['uid'],
+					time()
+				));
+			}
+			$values = rtrim($values,',');
+			$sql->query_prepare("INSERT INTO `irc_lines` (name1,name2,type,message,channel,online,uid,time) VALUES $values",$valArray);
+			if($config['settings']['useBot'] && ($socket = @socket_create(AF_INET,SOCK_STREAM,SOL_TCP)) && @socket_connect($socket,'localhost',$config['settings']['botPort'])){
+				$socketBuf = '';
+				foreach($this->sendBuffer as $line){
+					$socketBuf .= trim(json_encode($line))."\n";
+				}
+				socket_write($socket,$socketBuf,strlen($socketBuf));
+				socket_close($socket);
+			}
+			$this->sendBuffer = array();
 		}
 		
 		$temp = $sql->query_prepare("SELECT MAX(line_number) AS max FROM irc_lines");
