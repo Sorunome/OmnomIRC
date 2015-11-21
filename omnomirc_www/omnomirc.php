@@ -118,6 +118,7 @@ class Cache{
 		}elseif(class_exists('Memcache')){
 			$this->handle = new Memcache;
 			$this->handle->connect($host,$port);
+			$this->handle->setCompressThreshold(0,1); // disable compression
 			$this->mode = 2;
 		}
 	}
@@ -771,25 +772,22 @@ $you = new You();
 class OmnomIRC{
 	public function getLines($res,$table = 'irc_lines',$overrideIgnores = false){
 		global $you;
-		$userSql = $you->info();
-		if($userSql['name']!=NULL){
-			$ignorelist = $userSql['ignores'];
-		}
 		$lines = array();
 		foreach($res as $result){
-			if((strpos($userSql['ignores'],strtolower($result['name1'])."\n")===false) || $overrideIgnores){
-				$lines[] = array(
-					'curLine' => ($table=='irc_lines'?(int)$result['line_number']:0),
-					'type' => $result['type'],
-					'network' => (int)$result['Online'],
-					'time' => (int)$result['time'],
-					'name' => $result['name1'],
-					'message' => $result['message'],
-					'name2' => $result['name2'],
-					'chan' => $result['channel'],
-					'uid' => (int)$result['uid']
-				);
+			if($result['type']===NULL){
+				continue;
 			}
+			$lines[] = array(
+				'curLine' => ($table=='irc_lines'?(int)$result['line_number']:0),
+				'type' => $result['type'],
+				'network' => (int)$result['Online'],
+				'time' => (int)$result['time'],
+				'name' => $result['name1'],
+				'message' => $result['message'],
+				'name2' => $result['name2'],
+				'chan' => $result['channel'],
+				'uid' => (int)$result['uid']
+			);
 		}
 		return $lines;
 	}
@@ -838,7 +836,7 @@ class OmnomIRC{
 						LIMIT ?,?
 					) AS x
 					ORDER BY `line_number` ASC
-					",array(substr($you->chan,1),$you->nick,$you->nick,substr($you->chan,1),$you->getNetwork(),(int)$count));
+					",array(substr($you->chan,1),$you->nick,$you->nick,substr($you->chan,1),$you->getNetwork(),(int)$offset,(int)$count));
 			}else{
 				$res = $sql->query_prepare("SELECT x.* FROM
 					(

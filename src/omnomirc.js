@@ -2855,7 +2855,17 @@ oirc = (function(){
 					if(line.curLine > request.getCurLine()){
 						request.setCurLine(line.curLine);
 					}
-					if(line.name === null || line.name === undefined || line.type === null || ignores.indexOf(line.name.toLowerCase()) > -1 || ('*'+line.chan.toLowerCase()!=channels.getCurrent(true).toLowerCase() && line.chan[0]!='*' && line.chan.toLowerCase()!=settings.nick().toLowerCase())){
+					console.log('====');
+					console.log(line);
+					console.log(channels.getCurrent(true));
+					if(
+						line.name === null || line.name === undefined || line.type === null || ignores.indexOf(line.name.toLowerCase()) > -1
+						|| (
+							line.chan.toString().toLowerCase()!=channels.getCurrent(true).toString().toLowerCase()
+							&& ('*'+line.chan).toLowerCase()!=channels.getCurrent(true).toString().toLowerCase()
+							&& line.chan.toString()[0]!='*' && line.chan.toString().toLowerCase()!=settings.nick().toLowerCase()
+						)
+						){
 						return true; // invalid line but we don't want to stop the new requests
 					}
 					var $mBox = $('#MessageBox'),
