@@ -94,7 +94,7 @@ ALTER TABLE `irc_lines_old`
  ADD KEY `name1` (`name1`), ADD KEY `name2` (`name2`), ADD KEY `channel` (`channel`);
 
 ALTER TABLE `irc_users`
- ADD KEY `channel` (`channel`), ADD KEY `isOnline` (`isOnline`), ADD KEY `username` (`username`), ADD KEY `online` (`online`);
+ ADD KEY `channel` (`channel`), ADD KEY `isOnline` (`isOnline`), ADD KEY `username` (`username`), ADD KEY `online` (`online`), UNIQUE `unique_trigger` ( `username` , `channel` , `online` ) COMMENT '';
 
 ALTER TABLE `irc_userstuff` ADD UNIQUE (`uid` ,`network`) COMMENT '';
 
@@ -120,7 +120,7 @@ CREATE EVENT `Flush Logs Nightly` ON SCHEDULE EVERY 1 DAY STARTS '2013-10-31 00:
 	SET @time := (select max(`time`) from `irc_lines`);
 	INSERT INTO `irc_lines_old` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`Online`,`uid`)
 	SELECT `name1`,`name2`,`message`,`type`,`channel`,`time`,`Online`,`uid`
-	FROM `irc_lines` ORDER BY `line_number` ASC;
+	FROM `irc_lines` WHERE `time` < @time ORDER BY `line_number` ASC;
 	DELETE FROM `irc_lines` WHERE `time` < @time;
 END$$
 DELIMITER ;

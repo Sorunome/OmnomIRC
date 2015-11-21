@@ -540,7 +540,7 @@ class Relay{
 			$values = '';
 			$valArray = array();
 			foreach($this->sendBuffer as $line){
-				$values .= '(?,?,?,?,?,?,?,CURRENT_TIMESTAMP),';
+				$values .= '(?,?,?,?,?,?,?,UNIX_TIMESTAMP(CURRENT_TIMESTAMP)),';
 				$valArray = array_merge($valArray,array(
 					$line['n1'],
 					$line['n2'],
@@ -727,7 +727,7 @@ class You{
 		global $sql,$users,$relay;
 		if($this->chan[0]=='*'){
 			return;
-		} // INSERT INTO `irc_users` (`username`,`channel`,`online`,`time`) VALUES ('Sorunome',0,1,9001) ON DUPLICATE KEY UPDATE `time`=CURRENT_TIMESTAMP
+		} // INSERT INTO `irc_users` (`username`,`channel`,`online`,`time`) VALUES ('Sorunome',0,1,9001) ON DUPLICATE KEY UPDATE `time`=UNIX_TIMESTAMP(CURRENT_TIMESTAMP)
 		$result = $sql->query_prepare("SELECT usernum,time,isOnline FROM `irc_users` WHERE `username`=? AND `channel`=? AND `online`=?",array($this->nick,$this->chan,$this->getNetwork()));
 		if($result[0]['usernum']!==NULL){ //Update  
 			$sql->query_prepare("UPDATE `irc_users` SET `time`=?,`isOnline`=1 WHERE `usernum`=?",array(time(),(int)$result[0]['usernum']));
