@@ -822,21 +822,24 @@
 						});
 						break;
 				}
+				window.location.hash = '#'+p;
 				oirc.indicator.stop();
 			});
 		};
 		
 		$('#adminNav a').click(function(e){
 			e.preventDefault();
-			loadPage($(this).attr('page'));
+			loadPage($(this).data('page'));
 		});
 		oirc.settings.fetch(function(){
-			oirc.page.changeLinks();
-			if(document.URL.split('#')[1] !== undefined){
-				loadPage(document.URL.split('#')[1]);
-			}else{
-				loadPage('index');
+			var hash = window.location.hash;
+			if(hash.split('#')[1] !== undefined){
+				hash = hash.split('#')[1];
+			}else if(hash == ''){
+				hash = 'index';
 			}
+			oirc.page.changeLinks();
+			loadPage(hash);
 		});
 		$('#adminContent').height($(window).height() - 50);
 		$(window).resize(function(){

@@ -66,7 +66,7 @@ $json->add('admin',$you->isGlobalOp());
 $lines = $omnomirc->loadChannel($count);
 if(!isset($_GET['userlist'])){
 	array_push($lines,array(
-		'curLine' => (int)$sql->query_prepare("SELECT MAX(`line_number`) AS `max` FROM `irc_lines`")[0]['max'],
+		'curLine' => (int)file_get_contents($config['settings']['curidFilePath']),
 		'type' => 'topic',
 		'network' => -1,
 		'time' => time(),
@@ -79,14 +79,14 @@ if(!isset($_GET['userlist'])){
 }
 $json->add('lines',$lines);
 $users = $sql->query_prepare("SELECT `username` AS `nick`,`online` AS `network` FROM `irc_users` WHERE `channel`=? AND `isOnline`=1 AND `username` IS NOT NULL ORDER BY `username`",array($channel));
-if($users[0]['nick'] == NULL){
-	$users = Array();
+if($users[0]['nick'] === NULL){
+	$users = array();
 }
 $json->add('users',$users);
 if($you->isLoggedIn()){
 	$userSql = $you->info();
 	$ignorelist = '';
-	if($userSql['name']!=NULL) {
+	if($userSql['name']!==NULL) {
 		$i = explode("\n",$userSql['ignores']);
 		array_pop($i); // last element is always garbage
 		$json->add('ignores',$i);

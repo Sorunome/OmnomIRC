@@ -555,6 +555,27 @@ class Bot(threading.Thread):
 							self.addLine(old,new,'nick','',c)
 							changedNicks.append(new)
 		return False
+	def sendUserList(self,nick,chan):
+		try:
+			cid = self.chanToId(chan)
+			if cid == -1:
+				return
+			users = sql.query("SELECT `username` FROM `irc_users` WHERE `channel`=%s AND `isOnline`=1 AND `online`<>%s AND `username` IS NOT NULL",[cid,self.i])
+			userchunks = []
+			chunk = []
+			print(users)
+			for u in users:
+				chunk.append(u['username'])
+				if len(chunk) >= 5:
+					userchunks.append(json.dumps(chunk,separators=(',',':')))
+					chunk = []
+			if len(chunk) > 0:
+				userchunks.append(json.dumps(chunk,separators=(',',':')))
+			for c in userchunks:
+				self.send('PRIVMSG '+nick+' :OIRCUSERS '+chan+' '+c)
+		except:
+			traceback.print_exc()
+			return
 	def doMain(self,line):
 		global handle,config
 		
@@ -568,8 +589,11 @@ class Bot(threading.Thread):
 		if chan[0]!='#':
 			chan = chan[1:]
 		if line[1]=='PRIVMSG':
-			if line[2][0]!='#' and line[3] == ':DOTHIS' and line[4] == config.json['security']['ircPwd']:
-				self.send(' '.join(line[5:]))
+			if line[2][0]!='#':
+				if line[3] == ':DOTHIS' and line[4] == config.json['security']['ircPwd']:
+					self.send(' '.join(line[5:]))
+				elif line[3] == ':GETUSERLIST' and len(line) > 4:
+					self.sendUserList(nick,line[4])
 			elif line[2][0]=='#':
 				if line[3]==':\x01ACTION' and message[-1:]=='\x01':
 					self.addLine(nick,'','action',message[8:-1],chan)
@@ -911,7 +935,7 @@ class WebSocketsHandler(ServerHandler):
 		global sql
 		if isinstance(self.chan,str) and len(self.chan) > 0 and self.chan[0]=='*': # no userlist on PMs
 			return
-		if handle.addUser(self.nick,str(self.chan),self.network):
+		if handle.addUser(self.nick,str(self.chan),self.network,self.uid):
 			handle.sendToOther(self.nick,'','join','',str(self.chan),self.network,self.uid)
 	def part(self):
 		if self.chan!='':
@@ -1393,13 +1417,13 @@ class Main():
 		except Exception as inst:
 			print('(handle) curline error',inst)
 			traceback.print_exc()
-	def addUser(self,u,c,i):
+	def addUser(self,u,c,i,uid=-1):
 		temp = sql.query("SELECT usernum,isOnline FROM irc_users WHERE username=%s AND channel=%s AND online=%s",[u,c,int(i)])
 		if(len(temp)==0):
-			sql.query("INSERT INTO `irc_users` (`username`,`channel`,`online`) VALUES (%s,%s,%s)",[u,c,int(i)])
+			sql.query("INSERT INTO `irc_users` (`username`,`channel`,`online`,`uid`) VALUES (%s,%s,%s,%s)",[u,c,int(i),int(uid)])
 			return True
 		else:
-			sql.query("UPDATE `irc_users` SET `isOnline`=1 WHERE `usernum`=%s",[int(temp[0]['usernum'])])
+			sql.query("UPDATE `irc_users` SET `isOnline`=1,`uid`=%s,`time`=0 WHERE `usernum`=%s",[int(uid),int(temp[0]['usernum'])])
 			return temp[0]['isOnline'] == 0
 	def removeUser(self,u,c,i):
 		sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE `username` = %s AND `channel` = %s AND online=%s",[u,c,int(i)])
@@ -1481,7 +1505,7 @@ class Main():
 							'chan': c,
 							'uid': uid
 						})
-						memcached.set('oirc_lines_'+c,json.dumps(lines_cached,separators=(',',':')))
+						memcached.set('oirc_lines_'+c,json.dumps(lines_cached,separators=(',',':')),int(time.time())+(60*60*24*3))
 					except:
 						traceback.print_exc()
 						memcached.delete('oirc_lines_'+c)
@@ -1517,12 +1541,12 @@ class Main():
 				self.relays.append(RelayWebsockets(n))
 	def get_net_cheat(self):
 		net_cheat = config.json['networks'][:]
-		net_cheat[-1] = {
+		net_cheat = [{
 			'id':-1,
 			'type':-1,
 			'enabled':config.json['websockets']['use'],
 			'config':config.json['websockets']
-		}
+		}] + net_cheat
 		return net_cheat
 	def updateConfig(self):
 		print('(handle) Got signal to update config!')

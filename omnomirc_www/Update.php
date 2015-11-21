@@ -65,6 +65,7 @@ if($channel[0] == '*' && $nick){ //PM
 }
 $countBeforeQuit = 0;
 $you->update();
+
 while(true){
 	if($countBeforeQuit++ >= 50){//Timeout after 25 seconds.
 		$you->update();
