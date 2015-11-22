@@ -165,6 +165,9 @@ def modifyRawData(word,word_eol,userdata):
 					hexchat.command('RECV :'+nick_notext+'!'+getNick(nick_prefix,nick_notext)+'@'+OMNOMJOINIGNORE+' PART '+chan)
 					cmd = cmd.replace(' ','\xA0')
 					hexchat.command('RECV :'+cmd+'!'+getNick(nick_prefix,cmd)+'@'+OMNOMJOINIGNORE+' JOIN :'+chan)
+				elif textEvent=='Quit':
+					hexchat.emit_print(textEvent,getNick(nick_prefix,nick_notext),*args)
+					hexchat.command('RECV :'+nick_notext+'!'+getNick(nick_prefix,nick_notext)+'@'+OMNOMJOINIGNORE+' PART '+chan)
 				else:
 					hexchat.command('RECV :'+nick+'!'+getNick(nick_prefix,nick_notext)+'@'+OMNOMIDENTSTR+' '+cmd)
 				return hexchat.EAT_ALL
@@ -212,12 +215,6 @@ def modifyKickData(word,word_eol,userdata):
 		if hexchat.nickcmp(kicknick,hexchat.get_info('nick'))!=0:
 			hexchat.command('RECV :'+kicknick+'!()\xA0'+kicknick+'@'+OMNOMJOINIGNORE+' PART '+word[2])
 		return hexchat.EAT_ALL
-def modifyQuitData(word,word_eol,userdata):
-	if len(word) > 2 and '\xA0' in word[2]: # we need to modify this!
-		if word[2][-len(OMNOMJOINIGNORE):] == OMNOMJOINIGNORE:
-			return hexchat.EAT_ALL
-		hexchat.emit_print('Quit',word[2][:-len('@'+OMNOMIDENTSTR)],word[1])
-		return hexchat.EAT_ALL
 
 hexchat.hook_server('352',addExtraNicks_352,priority=hexchat.PRI_HIGHEST)
 hexchat.hook_server('354',addExtraNicks_354,priority=hexchat.PRI_HIGHEST)
@@ -226,7 +223,6 @@ hexchat.hook_print('Join',modifyJoinData,priority=hexchat.PRI_HIGHEST)
 hexchat.hook_print('Part',modifyPartData,priority=hexchat.PRI_HIGHEST)
 hexchat.hook_print('Part with Reason',modifyPartData,priority=hexchat.PRI_HIGHEST)
 hexchat.hook_print('Kick',modifyKickData,priority=hexchat.PRI_HIGHEST)
-hexchat.hook_print('Quit',modifyQuitData,priority=hexchat.PRI_HIGHEST)
 hexchat.hook_print('Topic',topicBinding,priority=hexchat.PRI_HIGHEST)
 
 print(__module_name__, 'version', __module_version__, 'loaded.')
