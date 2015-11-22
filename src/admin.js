@@ -20,7 +20,8 @@
  */
 
 (function(){
-	var sendEdit = function(page,json,fn){
+	var adminconfig = [],
+		sendEdit = function(page,json,fn){
 			oirc.network.post('admin.php?set='+page,{data:JSON.stringify(json)},function(data){
 				var alertStr = '';
 				if(data.errors.length>0){
@@ -40,30 +41,37 @@
 			$('#adminContent').append(
 				'<div style="font-weight:bold">'+name+' Settings</div>',
 				$.map(data,function(d,i){
-					if(i!=='warnings' && i!=='errors'){
-						var $input = $('<input>').attr('name',i);
-						if(d === null){ // typeof bug
-							d = undefined;
+					var $input = $('<input>').attr('name',i),
+						name = i,
+						val = d;
+					if((typeof d).toLowerCase() == 'object'){
+						name = d[0];
+						if(name===false){
+							return '<br>';
 						}
-						switch((typeof d).toLowerCase()){
-							case 'string':
-								$input.attr('type','text').val(d);
-								break;
-							case 'number':
-								$input.attr('type','number').val(d);
-								break;
-							case 'boolean':
-								$input.attr('type','checkbox').attr((d?'checked':'false'),'checked');
-								break;
-							default:
-								$input.attr('type','hidden').data('data',d);
-						}
-						return $('<div>')
-							.append(
-								i,
-								': ',$input
-							);
+						val = d[1];
 					}
+					if(d === null){ // typeof bug
+						d = undefined;
+					}
+					switch((typeof val).toLowerCase()){
+						case 'string':
+							$input.attr('type','text').val(val);
+							break;
+						case 'number':
+							$input.attr('type','number').val(val);
+							break;
+						case 'boolean':
+							$input.attr('type','checkbox').attr((val?'checked':'false'),'checked');
+							break;
+						default:
+							$input.attr('type','hidden').data('data',val);
+					}
+					return $('<div>')
+						.append(
+							name,
+							': ',$input
+						);
 				}),'<br>',
 				$('<button>')
 					.text('submit')
@@ -736,7 +744,7 @@
 					}),
 				$('<div>').attr('id','fetchingNews').text('fetching news...')
 			);
-			$.getJSON(oirc.OMNOMIRCSERVER+'/getNewestVersion.php?version='+info.version+'&jsoncallback=?').done(function(data){
+			$.getJSON(oirc.OMNOMIRCSERVER+'/getNewestVersion.php?version='+info.version+(adminconfig.betaUpdates?'&experimental':'')+'&jsoncallback=?').done(function(data){
 				if(data.latest){
 					$('#fetchingUpdates').empty().text('No new updates available');
 				}else{
@@ -812,6 +820,9 @@
 					case 'misc':
 						getInputBoxSettings(p,'Misc',data.misc);
 						break;
+					case 'ex':
+						getInputBoxSettings(p,'Experimental',data.ex);
+						break;
 					case 'releaseNotes':
 						$('#adminContent').append(
 							$('<h2>').text('Release notes version '+data.version),
@@ -827,19 +838,23 @@
 			});
 		};
 		
+		
 		$('#adminNav a').click(function(e){
 			e.preventDefault();
 			loadPage($(this).data('page'));
 		});
 		oirc.settings.fetch(function(){
-			var hash = window.location.hash;
-			if(hash.split('#')[1] !== undefined){
-				hash = hash.split('#')[1];
-			}else if(hash == ''){
-				hash = 'index';
-			}
-			oirc.page.changeLinks();
-			loadPage(hash);
+			oirc.network.getJSON('config.php?nologinerrors&admincfg',function(data){
+				adminconfig = data;
+				var hash = window.location.hash;
+				if(hash.split('#')[1] !== undefined){
+					hash = hash.split('#')[1];
+				}else if(hash == ''){
+					hash = 'index';
+				}
+				oirc.page.changeLinks();
+				loadPage(hash);
+			});
 		});
 		$('#adminContent').height($(window).height() - 50);
 		$(window).resize(function(){

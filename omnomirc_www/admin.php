@@ -151,12 +151,20 @@ if($you->isGlobalOp()){
 				break;
 			case 'misc':
 				$json->add('misc',array(
-					'useBot' => $config['settings']['useBot'],
-					'botPort' => $config['settings']['botPort'],
-					'hostname' => $config['settings']['hostname'],
-					'curidFilePath' => $config['settings']['curidFilePath'],
-					'signatureKey' => $config['security']['sigKey'],
-					'ircPasswd' => $config['security']['ircPwd']
+					'useBot' => array('use bot',$config['settings']['useBot']),
+					'botPort' => array('bot port',$config['settings']['botPort']),
+					'hostname' => array('hostname',$config['settings']['hostname']),
+					'curidFilePath' => array('curid file path',$config['settings']['curidFilePath']),
+					'signatureKey' => array('signature key',$config['security']['sigKey']),
+					'ircPasswd' => array('irc passwd',$config['security']['ircPwd']),
+					'spacer' => array(false),
+					'experimental' => array('Turn on experimental settings (not recommended)',$config['settings']['experimental'])
+				));
+				break;
+			case 'ex':
+				$json->add('ex',array(
+					'minified' => array('use minfied sources',!isset($config['settings']['minified'])||$config['settings']['minified']),
+					'betaUpdates' => array('fetch beta updates',isset($config['settings']['betaUpdates'])&&$config['settings']['betaUpdates'])
 				));
 				break;
 			case 'releaseNotes':
@@ -270,6 +278,12 @@ if($you->isGlobalOp()){
 				$config['settings']['curidFilePath'] = $jsonData['curidFilePath'];
 				$config['security']['sigKey'] = $jsonData['signatureKey'];
 				$config['security']['ircPwd'] = $jsonData['ircPasswd'];
+				$config['settings']['experimental'] = $jsonData['experimental'];
+				writeConfig();
+				break;
+			case 'ex':
+				$config['settings']['minified'] = $jsonData['minified'];
+				$config['settings']['betaUpdates'] = $jsonData['betaUpdates'];
 				writeConfig();
 				break;
 			default:

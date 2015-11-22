@@ -48,7 +48,7 @@ function getPage($title,$head,$body,$page){
 				($theme!=-1?'<link rel="stylesheet" type="text/css" href="theme.php?theme='.$theme.'" />':'').
 				'<script type="text/javascript" src="btoa.js"></script>'.
 				'<script type="text/javascript" src="jquery-1.11.3.min.js"></script>'.
-				'<script type="text/javascript" src="omnomirc.min.js"></script>'.
+				'<script type="text/javascript" src="omnomirc'.(!isset($config['settings']['minified'])||$config['settings']['minified']?'.min':'').'.js"></script>'.
 				'<title>'.$title.'</title>'.
 				'<script type="text/javascript">document.domain="'.$config['settings']['hostname'].'";</script>'.
 				$head.
@@ -129,11 +129,31 @@ tr td:nth-child(5) {
 </div>
 ','options');
 }elseif(isset($_GET['admin'])){
+$adminlinks = array(
+	'index' => 'Index',
+	'themes' => 'Theme',
+	'channels' => 'Channels',
+	'hotlinks' => 'Hotlinks',
+	'smileys' => 'Smileys',
+	'networks' => 'Networks',
+	'sql' => 'SQL',
+	'ws' => 'WebSockets',
+	'misc' => 'Misc'
+);
+if($config['settings']['experimental']){
+	$adminlinks['ex'] = 'Experimental';
+}
+$nav = '';
+foreach($adminlinks as $l => $n){
+	if($nav!=''){
+		$nav .= ' | ';
+	}
+	$nav .= '<a data-page="'.$l.'">'.$n.'</a>';
+}
 echo getPage('OmnomIRC admin panel','','
 <div id="container">
 <div style="font-weight:bold;">OmnomIRC Admin Panel</div>
-<div id="adminNav"><a data-page="index">Index</a> | <a data-page="themes">Theme</a> | <a data-page="channels">Channels</a> | <a data-page="hotlinks">Hotlinks</a>
-	| <a data-page="smileys">Smileys</a> | <a data-page="networks">Networks</a> | <a data-page="sql">SQL</a> | <a data-page="ws">WebSockets</a> | <a data-page="misc">Misc</a></div>
+<div id="adminNav">'.$nav.'</div>
 <div id="adminContent" style="overflow-y:auto;">Loading...</div>
 </div>
 <div id="adminFooter"><a href="index.php">Back to OmnomIRC</a></div>

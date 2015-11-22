@@ -130,6 +130,17 @@ if(isset($_GET['js'])){
 		),
 		'extraChanMsg' => $extraChanMsg
 	));
+}elseif(isset($_GET['admincfg'])){
+	include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
+	header('Content-type: application/json');
+	if($you->isGlobalOp()){
+		echo json_encode(array(
+			'betaUpdates' => isset($config['settings']['betaUpdates'])&&$config['settings']['betaUpdates']
+		));
+	}else{
+		$json->addError('permission denied');
+		echo $json->get();
+	}
 }elseif(isset($_GET['channels'])){
 	include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 	header('Content-type: application/json');

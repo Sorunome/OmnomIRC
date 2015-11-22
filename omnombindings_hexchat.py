@@ -24,8 +24,6 @@ def getNick(prefix,nick):
 	else: # as omnomirc can color nicks on itself
 		nick = hexchat.strip(nick)
 	return '\x0F'+prefix+'\x0F\xA0'+nick
-def doHighlight(msg):
-	return hexchat.get_info('nick') in msg
 def topicBinding(word,word_eol,userdata):
 	s = hexchat.strip(word[0])
 	if (s in TOPICBOTNICK) or (s in TOPICBOTNICK):
