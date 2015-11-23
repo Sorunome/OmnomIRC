@@ -22,15 +22,15 @@
 oirc = (function(){
 	var OMNOMIRCSERVER = 'https://omnomirc.omnimaga.org',
 		settings = (function(){
-			var hostname = '',
-				nick = '',
-				signature = '',
-				numHigh = 4,
-				uid = 0,
-				checkLoginUrl = '',
-				net = '',
-				networks = [];
-			return {
+			var self = {
+				hostname:'',
+				nick:'',
+				signature:'',
+				numHigh:4,
+				uid:-1,
+				checkLoginUrl:'',
+				net:'',
+				networks:[],
 				fetch:function(fn,clOnly){
 					if(clOnly===undefined){
 						clOnly = false;
@@ -38,38 +38,38 @@ oirc = (function(){
 					network.getJSON('config.php?js'+(document.URL.split('network=')[1]!==undefined?'&network='+document.URL.split('network=')[1].split('&')[0].split('#')[0]:'')+(clOnly?'&clonly':''),function(data){
 						var set;
 						if(!clOnly){
-							hostname = data.hostname;
+							self.hostname = data.hostname;
 							channels.setChans(data.channels);
 							parser.setSmileys(data.smileys);
-							networks = data.networks;
-							net = data.network;
+							self.networks = data.networks;
+							self.net = data.network;
+							ls.setPrefix(self.net);
 							options.setDefaults(data.defaults);
 							options.setExtraChanMsg(data.extraChanMsg);
 							ws.set(data.websockets.use,data.websockets.host,data.websockets.port,data.websockets.ssl);
 						}
 						
-						checkLoginUrl = data.checkLoginUrl;
+						self.checkLoginUrl = data.checkLoginUrl;
 						
-						set = ls.get('OmnomIRCCL'+settings.net());
-						if(set===null || set=='' || !set || clOnly){
-							network.getJSON(checkLoginUrl+'&network='+net.toString()+'&jsoncallback=?',function(data){
-								nick = data.nick;
-								signature = data.signature;
-								uid = data.uid;
-								ls.set('OmnomIRCCL'+settings.net(),JSON.stringify({
-									nick:nick,
-									signature:signature,
-									uid:uid
-								}));
+						set = ls.get('checklogin');
+						if(!set){
+							network.getJSON(self.checkLoginUrl+'&network='+self.net.toString()+'&jsoncallback=?',function(data){
+								self.nick = data.nick;
+								self.signature = data.signature;
+								self.uid = data.uid;
+								ls.set('checklogin',{
+									nick:self.nick,
+									signature:self.signature,
+									uid:self.uid
+								});
 								if(fn!==undefined){
 									fn();
 								}
 							},!clOnly,false);
 						}else{
-							set = JSON.parse(set);
-							nick = set.nick;
-							signature = set.signature;
-							uid = set.uid;
+							self.nick = set.nick;
+							self.signature = set.signature;
+							self.uid = set.uid;
 							if(fn!==undefined){
 								fn();
 							}
@@ -77,33 +77,44 @@ oirc = (function(){
 					},!clOnly,false);
 				},
 				getUrlParams:function(){
-					return 'nick='+base64.encode(nick)+'&signature='+base64.encode(signature)+'&time='+(+new Date()).toString()+'&id='+uid+'&network='+net+(nick!=''?'&noLoginErrors':'');
+					return 'nick='+base64.encode(self.nick)+'&signature='+base64.encode(self.signature)+'&time='+(+new Date()).toString()+'&id='+self.uid+'&network='+self.net+(self.nick!=''?'&noLoginErrors':'');
+				},
+				getNetworks:function(){
+					return self.networks;
 				},
 				getIdentParams:function(){
 					return {
-						nick:nick,
-						signature:signature,
+						nick:self.nick,
+						signature:self.signature,
 						time:(+new Date()).toString(),
-						id:uid,
-						network:net
+						id:self.uid,
+						network:self.net
 					};
-				},
-				networks:function(){
-					return networks;
-				},
+				}
+			};
+			return {
+				fetch:self.fetch,
+				getUrlParams:self.getUrlParams,
+				getIdentParams:self.getIdentParams,
+				getNetworks:self.getNetworks,
 				nick:function(){
-					return nick;
+					return self.nick;
 				},
 				net:function(){
-					return net;
+					return self.net;
 				},
 				loggedIn:function(){
-					return signature !== '';
+					return self.signature !== '';
 				}
 			};
 		})(),
 		ls = (function(){
-			var getCookie = function(c_name){
+			var self = {
+				prefix:'',
+				setPrefix:function(p){
+					self.prefix = p;
+				},
+				getCookie:function(c_name){
 					var i,x,y,ARRcookies=document.cookie.split(";");
 					for(i=0;i<ARRcookies.length;i++){
 						x=ARRcookies[i].substr(0,ARRcookies[i].indexOf("="));
@@ -114,36 +125,50 @@ oirc = (function(){
 						}
 					}
 				},
-				setCookie = function(c_name,value,exdays){
+				setCookie:function(c_name,value,exdays){
 					var exdate = new Date(),
 						c_value = escape(value);
 					exdate.setDate(exdate.getDate() + exdays);
 					c_value += ((exdays===null) ? '' : '; expires='+exdate.toUTCString());
 					document.cookie=c_name + '=' + c_value;
 				},
-				support = function(){
-					try{
-						localStorage.setItem('test',1);
-						localStorage.removeItem('test');
-						return true;
-					}catch(e){
-						return false;
+				haveSupport:null,
+				support:function(){
+					if(self.haveSupport===null){
+						try{
+							localStorage.setItem('test',1);
+							localStorage.removeItem('test');
+							self.haveSupport = true;
+						}catch(e){
+							self.haveSupport = false;
+						}
 					}
-				};
-			return {
+					return self.haveSupport;
+				},
 				get:function(name){
-					if(support()){
-						return localStorage.getItem(name);
+					var s;
+					name = self.prefix+name;
+					if(self.support()){
+						s = localStorage.getItem(name);
+					}else{
+						s = getCookie(name);
 					}
-					return getCookie(name);
+					return JSON.parse(s);
 				},
 				set:function(name,value){
-					if(support()){
+					name = self.prefix+name;
+					value = JSON.stringify(value);
+					if(self.support()){
 						localStorage.setItem(name,value);
 					}else{
-						setCookie(name,value,30);
+						setCookie(name,value);
 					}
 				}
+			}
+			return {
+				setPrefix:self.setPrefix,
+				get:self.get,
+				set:self.set
 			};
 		})(),
 		network = (function(){
@@ -563,7 +588,7 @@ oirc = (function(){
 					defaults = d;
 				},
 				set:function(optionsNum,value){
-					var optionsString = ls.get('OmnomIRCSettings'+settings.net());
+					var optionsString = ls.get('settings'+settings.net());
 					delete resultCache[optionsNum]; // this may be the string
 					optionsNum = getOptionsNum(optionsNum)[0];
 					delete resultCache[optionsNum]; // and this the id
@@ -675,26 +700,26 @@ oirc = (function(){
 		instant = (function(){
 			var id = '',
 				update = function(){
-					ls.set('OmnomBrowserTab',id);
-					ls.set('OmnomNewInstant','false');
+					ls.set('browserTab',id);
+					ls.set('newInstant',false);
 				};
 			return {
 				init:function(){
 					id = Math.random().toString(36)+(new Date()).getTime().toString();
-					ls.set('OmnomBrowserTab',id);
+					ls.set('browserTab',id);
 					$(window)
 						.focus(function(){
 							update();
 						})
 						.unload(function(){
-							ls.set('OmnomNewInstant','true');
+							ls.set('newInstant',true);
 						});
 				},
 				current:function(){
-					if(ls.get('OmnomNewInstant')=='true'){
+					if(ls.get('newInstant')==true){
 						update();
 					}
-					return id == ls.get('OmnomBrowserTab');
+					return id == ls.get('browserTab');
 				}
 			};
 		}()),
@@ -933,17 +958,17 @@ oirc = (function(){
 				inRequest = false,
 				handler = false,
 				send = function(){
-					if(channels.getCurrent()==='' || ws.use()){
+					if(!channels.current().loaded() || ws.use()){
 						return;
 					}
 					handler = network.getJSON(
 							'Update.php?high='+
 							(parseInt(options.get('charsHigh'),10)+1).toString()+
-							'&channel='+channels.getCurrent(false,true)+
+							'&channel='+channels.current().handlerB64+
 							'&lineNum='+curLine.toString(),
 						function(data){
 							var newRequest = true;
-							if(channels.getCurrent()===''){
+							if(!channels.current().loaded()){
 								return;
 							}
 							handler = false;
@@ -972,7 +997,7 @@ oirc = (function(){
 						});
 				},
 				setTimer = function(){
-					if(channels.getCurrent()!=='' && handler===false && !ws.use()){
+					if(channels.current().loaded() && handler===false && !ws.use()){
 						setTimeout(function(){
 							send();
 						},(page.isBlurred()?2500:200));
@@ -1004,360 +1029,28 @@ oirc = (function(){
 			};
 		})(),
 		channels = (function(){
-			var chans = [],
-				current = '',
-				currentb64 = '',
-				currentName = '',
-				save = function(){
-					ls.set('OmnomIRCChannels'+settings.net(),JSON.stringify(chans));
-				},
-				load = function(){
-					try{
-						var chanList = JSON.parse(ls.get('OmnomIRCChannels'+settings.net())),
-							exChans = $.map(chans,function(ch){
-								if((ch.ex && options.get('extraChans')=='T') || !ch.ex){
-									return ch;
+			var Channel = function(i,parent){
+					var exists = parent.chans[i]!==undefined,
+						self = {
+							i:i,
+							name:exists?parent.chans[i].chan:'',
+							handler:exists?parent.getHandler(i):-1,
+							handlerB64:exists?parent.getHandler(i,true):-1,
+							loaded:false,
+							load:function(data,fn){
+								if(data.lines === undefined){ // something went wrong....
+									if(data.message){
+										send.internal(data.message);
+									}else{
+										send.internal('<span style="color:#C73232;"><b>ERROR:</b> couldn\'t join channel</span>');
+									}
+									return false;
 								}
-								return undefined;
-							}),
-							exChansInUse = [];
-						if(chanList!==null && chanList!=[]){
-							chans = $.merge(
-									$.map(chanList,function(v){
-										if(v.id != -1){
-											var valid = false;
-											$.each(chans,function(i,vc){
-												if(vc.id == v.id){
-													exChansInUse.push(v);
-													valid = true;
-													v.chan = vc.chan;
-													return false;
-												}
-											});
-											if(!valid){
-												return undefined;
-											}
-										}
-										return v;
-									}),
-									$.map(exChans,function(v){
-										var oldChan = false;
-										$.each(exChansInUse,function(i,vc){
-											if(vc.id == v.id){
-												oldChan = true;
-												v.chan = vc.chan;
-												return false
-											}
-										});
-										if(oldChan){
-											return undefined;
-										}
-										return v;
-									})
-								);
-							save();
-						}
-					}catch(e){}
-				},
-				draw = function(){
-					$('#ChanList').empty().append(
-						$.map(chans,function(c,i){
-							if((c.ex && options.get('extraChans')=='T') || !c.ex){
-								var mouseX = 0, // new closur as in map
-									startX = 0,
-									initDrag = false,
-									offsetX = 0,
-									canClick = false,
-									width = 0,
-									startDrag = function(elem){
-										width = $(elem).width();
-										canClick = false;
-										$(elem).css({
-												'position':'absolute',
-												'z-index':100,
-												'left':mouseX - offsetX
-											})
-											.after(
-												$('<div>')
-													.attr('id','topicDragPlaceHolder')
-													.css({
-														'display':'inline-block',
-														'width':width
-													})
-											)
-											.addClass('dragging')
-											.find('div').css('display','block').focus();
-										initDrag = false;
-									},
-									mousedownFn = function(e,elem){
-										e.preventDefault();
-										startX = e.clientX;
-										offsetX = startX - $(elem).position().left;
-										initDrag = true;
-									},
-									mousemoveFn = function(e,elem){
-										mouseX = e.clientX;
-										if(initDrag && Math.abs(mouseX - startX) >= 4){
-											initDrag = false;
-											startDrag(elem);
-											e.preventDefault();
-										}else if($(elem).hasClass('dragging')){
-											var newX = mouseX - offsetX;
-											$(elem).css('left',newX);
-											$ne = $('#topicDragPlaceHolder').next('.chanList');
-											$pe = $('#topicDragPlaceHolder').prev('.chanList');
-											if($ne.length > 0 && ($ne.position().left) < (newX + (width/2))){
-												$ne.after($('#topicDragPlaceHolder').remove());
-											}else if($pe.length > 0){
-												if($pe.attr('id') == $(elem).attr('id')){ // we selected our own element!
-													$pe = $pe.prev();
-												}
-												if($pe.length > 0 && $pe.position().left > newX){
-													$pe.before($('#topicDragPlaceHolder').remove());
-												}
-											}
-										}
-									},
-									mouseupFn = function(e,elem){
-										if(initDrag){
-											initDrag = false;
-										}else{
-											$(elem).find('div').css('display','none');
-											$('#topicDragPlaceHolder').replaceWith(elem);
-											chans = $.map($('.chanList'),function(chan,i){
-												if($(chan).find('span').hasClass('curchan')){
-													options.set(4,String.fromCharCode(i+45));
-												}
-												return $(chan).data('json');
-											});
-											save();
-											draw();
-										}
-									};
-								return $('<div>')
-									.data('json',c)
-									.attr('id','chan'+i.toString())
-									.addClass('chanList'+(c.high?' highlightChan':''))
-									.append(
-										$('<span>')
-											.addClass('chan '+(getHandler(i)==current?' curchan':''))
-											.append(
-												(c.chan.substr(0,1)!='#'?
-												$('<span>')
-													.addClass('closeButton')
-													.css({
-														width:9,
-														float:'left'
-													})
-													.mouseup(function(){
-														if(canClick){
-															channels.part(i);
-														}
-													})
-													.text('x')
-												:''),
-												$('<span>').text(c.chan)
-											)
-											.mouseup(function(){
-												if(canClick){
-													channels.join(i);
-												}
-											}),
-										$('<div>')
-											.css({
-												'position':'fixed',
-												'width':'100%',
-												'height':'100%',
-												'z-index':101,
-												'top':0,
-												'left':0,
-												'display':'none'
-											})
-											.mousemove(function(e){
-												mousemoveFn(e,$(this).parent());
-											})
-											.mouseup(function(e){
-												mouseupFn(e,$(this).parent());
-											})
-											.mouseout(function(e){
-												mouseupFn(e,$(this).parent());
-											})
-									)
-									.mousedown(function(e){
-										canClick = true;
-										mousedownFn(e,this);
-									})
-									.mousemove(function(e){
-										mousemoveFn(e,this);
-									})
-									.mouseout(function(e){
-										if(initDrag){
-											startDrag(this);
-										}
-									})
-									.mouseup(function(e){
-										mouseupFn(e,this);
-									});
-							}
-						})
-					);
-				},
-				requestHandler = false,
-				getHandler = function(i,b64){
-					if(chans[i].id!=-1){
-						return chans[i].id;
-					}
-					if(b64){
-						return base64.encode(chans[i].chan);
-					}
-					return chans[i].chan;
-				};
-			return {
-				highlight:function(c,doSave){
-					$.each(chans,function(i,ci){
-						if(c == ci.id || ci.chan.toLowerCase()==c.toString().toLowerCase()){
-							$('#chan'+i.toString()).addClass('highlightChan');
-							chans[i].high = true;
-						}
-					});
-					if(doSave!==undefined && doSave){
-						save();
-					}
-				},
-				openChan:function(s){
-					var addChan = true;
-					s = s.trim();
-					if(s.substr(0,1) != '@' && s.substr(0,1) != '#'){
-						s = '@' + s;
-					}
-					s = s.toLowerCase();
-					$.each(chans,function(i,c){
-						if(c.chan==s){
-							addChan = i;
-						}
-					});
-					if(addChan===true){
-						if(s.substr(0,1)=='#'){
-							send.internal('<span style="color:#C73232;"> Join Error: Cannot join new channels starting with #.</span>');
-							return;
-						}
-						chans.push({
-							chan:s,
-							high:false,
-							ex:false,
-							id:-1,
-							order:-1
-						});
-						save();
-						draw();
-						channels.join(chans.length-1);
-					}else{
-						channels.join(addChan);
-					}
-					tab.load();
-				},
-				openPm:function(s,join){
-					var addChan = true;
-					if(join===undefined){
-						join = false;
-					}
-					s = s.trim();
-					if(s.substr(0,1)=='@' || s.substr(0,1)=='#'){
-						send.internal('<span style="color:#C73232;"> Query Error: Cannot query a channel. Use /join instead.</span>');
-						return;
-					}
-					s = s.toLowerCase();
-					if(s.substr(0,1)!='*'){
-						s = '*'+s;
-					}
-					$.each(chans,function(i,c){
-						if(c.chan==s){
-							addChan = i;
-						}
-					});
-					if(addChan===true){
-						chans.push({
-							chan:s,
-							high:!join,
-							ex:false,
-							id:-1,
-							order:-1
-						});
-						save();
-						draw();
-						if(join){
-							channels.join(chans.length-1);
-						}
-					}else{
-						chans[addChan].high = !join;
-						if(join){
-							channels.join(addChan);
-						}
-					}
-					tab.load();
-				},
-				part:function(i){
-					var select = false;
-					if(i===undefined){
-						$.each(chans,function(ci,c){
-							if(c.chan == current || c.id == current){
-								i = ci;
-							}
-						});
-					}
-					if(isNaN(parseInt(i,10))){
-						$.each(chans,function(ci,c){
-							if(c.chan == i){
-								i = ci;
-							}
-						});
-					}
-					if(isNaN(parseInt(i,10)) || i===undefined){
-						send.internal('<span style="color:#C73232;"> Part Error: I cannot part '+i+'. (You are not in it.)</span>');
-						return;
-					}
-					i = parseInt(i,10);
-					if(chans[i].chan.substr(0,1)=='#'){
-						send.internal('<span style="color:#C73232;"> Part Error: I cannot part '+chans[i].chan+'. (IRC channel.)</span>');
-						return;
-					}
-					if(getHandler(i) == current){
-						select = true;
-					}
-					chans.splice(i,1);
-					save();
-					draw();
-					if(select){
-						channels.join(i-1);
-					}
-				},
-				join:function(i,fn){
-					if(chans[i]!==undefined){
-						indicator.start();
-						request.cancel();
-						ws.dissallowRecLines();
-						$('#message').attr('disabled','true');
-						$('#MessageBox').empty();
-						$('.chan').removeClass('curchan');
-						if(requestHandler!==false){
-							requestHandler.abort();
-						}
-						requestHandler = network.getJSON('Load.php?count=125&channel='+getHandler(i,true),function(data){
-							if(data.lines === undefined){
-								if(data.message){
-									send.internal(data.message);
-								}else{
-									send.internal('<span style="color:#C73232;"><b>ERROR:</b> couldn\'t join channel</span>');
+								options.set('curChan',String.fromCharCode(i+45));
+								if(data.banned){
+									send.internal('<span style="color:#C73232;"><b>ERROR:</b> banned</span>');
+									return false;
 								}
-								indicator.stop();
-								return;
-							}
-							current = getHandler(i);
-							currentb64 = getHandler(i,true);
-							currentName = chans[i].chan;
-							oldMessages.read();
-							options.set('curChan',String.fromCharCode(i+45));
-							if(!data.banned){
 								if(data.admin){
 									$('#adminLink').css('display','');
 								}else{
@@ -1369,70 +1062,406 @@ oirc = (function(){
 								users.setUsers(data.users);
 								users.draw();
 								$.each(data.lines,function(i,line){
-									parser.addLine(line);
+									parser.addLine(line,true);
 								});
 								scroll.down();
-								requestHandler = false;
-								ws.setChan(getHandler(i));
+								self.loaded = true;
+								return true;
+							},
+							part:function(){
+								parent.part(self.i);
+							},
+							reloadUserlist:function(i){
+								if(!exists){
+									return;
+								}
+								network.getJSON('Load.php?userlist&channel='+self.handlerB64,function(data){
+									if(!data.banned){
+										users.setUsers(data.users);
+										users.draw();
+									}else{
+										send.internal('<span style="color:#C73232;"><b>ERROR:</b> banned</span>');
+									}
+								});
+							}
+						};
+					return {
+						name:self.name,
+						handler:self.handler,
+						handlerB64:self.handlerB64,
+						load:self.load,
+						part:self.part,
+						reloadUserlist:self.reloadUserlist,
+						loaded:function(){
+							return self.loaded;
+						}
+					};
+				},
+				self = {
+					chans:[],
+					current:false,
+					save:function(){
+						ls.set('channels',self.chans);
+					},
+					load:function(){
+						try{
+							var chanList = ls.get('channels'),
+								exChans = $.map(chans,function(ch){
+									if((ch.ex && options.get('extraChans')=='T') || !ch.ex){
+										return ch;
+									}
+									return undefined;
+								}),
+								exChansInUse = [];
+							if(chanList!==null && chanList!=[]){
+								self.chans = $.merge(
+										$.map(chanList,function(v){
+											if(v.id != -1){
+												var valid = false;
+												$.each(self.chans,function(i,vc){
+													if(vc.id == v.id){
+														exChansInUse.push(v);
+														valid = true;
+														v.chan = vc.chan;
+														return false;
+													}
+												});
+												if(!valid){
+													return undefined;
+												}
+											}
+											return v;
+										}),
+										$.map(exChans,function(v){
+											var oldChan = false;
+											$.each(exChansInUse,function(i,vc){
+												if(vc.id == v.id){
+													oldChan = true;
+													v.chan = vc.chan;
+													return false
+												}
+											});
+											if(oldChan){
+												return undefined;
+											}
+											return v;
+										})
+									);
+								save();
+							}
+						}catch(e){}
+					},
+					draw:function(){
+						var mouseX = 0, // new closur as in map
+							startX = 0,
+							initDrag = false,
+							offsetX = 0,
+							canClick = false,
+							width = 0,
+							startDrag = function(elem){
+								width = $(elem).width();
+								canClick = false;
+								$(elem).css({
+										'position':'absolute',
+										'z-index':100,
+										'left':mouseX - offsetX
+									})
+									.after(
+										$('<div>')
+											.attr('id','topicDragPlaceHolder')
+											.css({
+												'display':'inline-block',
+												'width':width
+											})
+									)
+									.addClass('dragging')
+									.find('div').css('display','block').focus();
+								initDrag = false;
+							},
+							mousedownFn = function(e,elem){
+								e.preventDefault();
+								startX = e.clientX;
+								offsetX = startX - $(elem).position().left;
+								initDrag = true;
+							},
+							mousemoveFn = function(e,elem){
+								mouseX = e.clientX;
+								if(initDrag && Math.abs(mouseX - startX) >= 4){
+									initDrag = false;
+									startDrag(elem);
+									e.preventDefault();
+								}else if($(elem).hasClass('dragging')){
+									var newX = mouseX - offsetX;
+									$(elem).css('left',newX);
+									$ne = $('#topicDragPlaceHolder').next('.chanList');
+									$pe = $('#topicDragPlaceHolder').prev('.chanList');
+									if($ne.length > 0 && ($ne.position().left) < (newX + (width/2))){
+										$ne.after($('#topicDragPlaceHolder').remove());
+									}else if($pe.length > 0){
+										if($pe.attr('id') == $(elem).attr('id')){ // we selected our own element!
+											$pe = $pe.prev();
+										}
+										if($pe.length > 0 && $pe.position().left > newX){
+											$pe.before($('#topicDragPlaceHolder').remove());
+										}
+									}
+								}
+							},
+							mouseupFn = function(e,elem){
+								if(initDrag){
+									initDrag = false;
+								}else{
+									$(elem).find('div').css('display','none');
+									$('#topicDragPlaceHolder').replaceWith(elem);
+									chans = $.map($('.chanList'),function(chan,i){
+										if($(chan).find('span').hasClass('curchan')){
+											options.set(4,String.fromCharCode(i+45));
+										}
+										return $(chan).data('json');
+									});
+									save();
+									draw();
+								}
+							};
+						$('#ChanList').empty().append(
+							$.map(self.chans,function(c,i){
+								if((c.ex && options.get('extraChans')=='T') || !c.ex){
+									return $('<div>')
+										.data('json',c)
+										.attr('id','chan'+i.toString())
+										.addClass('chanList'+(c.high?' highlightChan':''))
+										.append(
+											$('<span>')
+												.addClass('chan '+(i==self.current.i?' curchan':''))
+												.append(
+													(c.chan.substr(0,1)!='#'?
+													$('<span>')
+														.addClass('closeButton')
+														.css({
+															width:9,
+															float:'left'
+														})
+														.mouseup(function(){
+															if(canClick){
+																channels.part(i);
+															}
+														})
+														.text('x')
+													:''),
+													$('<span>').text(c.chan)
+												)
+												.mouseup(function(){
+													if(canClick){
+														channels.join(i);
+													}
+												}),
+											$('<div>')
+												.css({
+													'position':'fixed',
+													'width':'100%',
+													'height':'100%',
+													'z-index':101,
+													'top':0,
+													'left':0,
+													'display':'none'
+												})
+												.mousemove(function(e){
+													mousemoveFn(e,$(this).parent());
+												})
+												.mouseup(function(e){
+													mouseupFn(e,$(this).parent());
+												})
+												.mouseout(function(e){
+													mouseupFn(e,$(this).parent());
+												})
+										)
+										.mousedown(function(e){
+											canClick = true;
+											mousedownFn(e,this);
+										})
+										.mousemove(function(e){
+											mousemoveFn(e,this);
+										})
+										.mouseout(function(e){
+											if(initDrag){
+												startDrag(this);
+											}
+										})
+										.mouseup(function(e){
+											mouseupFn(e,this);
+										});
+								}
+							})
+						);
+					},
+					init:function(){
+						self.load();
+						self.draw();
+						self.current = Channel(-1,self);
+					},
+					getHandler:function(i,b64){
+						if(self.chans[i].id!=-1){
+							return self.chans[i].id.toString();
+						}
+						if(b64){
+							return base64.encode(self.chans[i].chan);
+						}
+						return self.chans[i].chan;
+					},
+					requestHandler:false,
+					join:function(i,fn){
+						if(self.chans[i]===undefined){ // this channel doesn't exist!
+							return;
+						}
+						indicator.start();
+						request.cancel();
+						ws.dissallowRecLines();
+						$('#message').attr('disabled','true');
+						$('#MessageBox').empty();
+						$('.chan').removeClass('curchan');
+						if(self.requestHandler!==false){
+							self.requestHandler.abort();
+						}
+						self.requestHandler = network.getJSON('Load.php?count=125&channel='+self.getHandler(i,true),function(data){
+							self.current = Channel(i,self);
+							if(self.current.load(data,fn)){
+								ws.setChan(self.getHandler(i));
 								ws.allowRecLines();
 								request.start();
-							}else{
-								send.internal('<span style="color:#C73232;"><b>ERROR:</b> banned</span>');
-								requestHandler = false;
+								
+								self.chans[i].high = false;
+								self.save();
+								tab.load();
+								
+								if(settings.loggedIn()){
+									$('#message').removeAttr('disabled');
+								}
 							}
+							self.requestHandler = false;
 							$('#chan'+i.toString()).removeClass('highlightChan').find('.chan').addClass('curchan');
-							chans[i].high = false;
-							save();
-							tab.load();
+							
 							if(fn!==undefined){
 								fn();
 							}
-							if(settings.loggedIn()){
-								$('#message').removeAttr('disabled');
-							}
 							indicator.stop();
-						});
-					}
-				},
-				reloadUserlist:function(i){
-					if(chans[i]!==undefined){
-						network.getJSON('Load.php?userlist&channel='+getHandler(i,true),function(data){
-							if(!data.banned){
-								users.setUsers(data.users);
-								users.draw();
-							}else{
-								send.internal('<span style="color:#C73232;"><b>ERROR:</b> banned</span>');
+						})
+					},
+					highlight:function(c,doSave){
+						$.each(self.chans,function(i,ci){
+							if(c == ci.id || ci.chan.toLowerCase()==c.toString().toLowerCase()){
+								$('#chan'+i.toString()).addClass('highlightChan');
+								self.chans[i].high = true;
 							}
 						});
+						if(doSave!==undefined && doSave){
+							self.save();
+						}
+					},
+					addChan:function(s,join){
+						s = s.toLowerCase();
+						$.each(chans,function(i,c){
+							if(c.chan==s){
+								addChan = i;
+							}
+						});
+						if(addChan===true){
+							self.chans.push({
+								chan:s,
+								high:!join,
+								ex:false,
+								id:-1,
+								order:-1
+							});
+							self.save();
+							self.draw();
+							if(join){
+								self.join(self.chans.length-1);
+							}
+						}else{
+							chans[addChan].high |= !join;
+							if(join){
+								self.join(addChan);
+							}
+						}
+					},
+					open:function(s){
+						var addChan = true;
+						s = s.trim();
+						if(s.substr(0,1) != '@' && s.substr(0,1) != '#'){
+							s = '@' + s;
+						}
+						// s will now be either prefixed with # or with @
+						self.addChan(s,true);
+					},
+					openPm:function(s,join){
+						var addChan = true;
+						if(join===undefined){
+							join = false;
+						}
+						s = s.trim();
+						if(s.substr(0,1)=='@' || s.substr(0,1)=='#'){
+							send.internal('<span style="color:#C73232;"> Query Error: Cannot query a channel. Use /join instead.</span>');
+							return;
+						}
+						s = s.toLowerCase();
+						if(s.substr(0,1)!='*'){
+							s = '*'+s;
+						}
+						// s will now be prefixed with *
+						self.addChan(s,join);
+					},
+					part:function(i){
+						var select = false;
+						if(parseInt(i,10) == i){ // we convert it to a number so that we don't have to deal with it
+							i = parseInt(1,10);
+						}
+						if((typeof i)!='number'){
+							// a string was passed, we need to get the correct i
+							$.each(self.chans,function(ci,c){
+								if(c.chan == i){
+									i = ci;
+								}
+							});
+						}
+						if((typeof i)!='number' || self.chans[i] !== undefined){ // we aren#t in the channel
+							send.internal('<span style="color:#C73232;"> Part Error: I cannot part '+i+'. (You are not in it.)</span>');
+							return;
+						}
+						if(self.chans[i].chan.substr(0,1)=='#'){
+							send.internal('<span style="color:#C73232;"> Part Error: I cannot part '+self.chans[i].chan+'. (IRC channel.)</span>');
+							return;
+						}
+						if(i == self.current.i){
+							select = true;
+						}
+						self.chans.splice(i,1);
+						self.save();
+						self.draw();
+						if(select){
+							self.join(i-1);
+						}
+					},
+					getNames:function(){
+						return $.map(self.chans,function(c){
+							return c.chan;
+						});
+					},
+					setChans:function(c){
+						self.chans = c;
 					}
+				};
+			return {
+				highlight:self.highlight,
+				join:self.join,
+				current:function(){
+					return self.current;
 				},
-				getCurrent:function(override,b64){
-					if(requestHandler===false || override){
-						return (b64?currentb64:current);
-					}
-					return '';
-				},
-				getCurrentName:function(override){
-					if(requestHandler===false || override){
-						return currentName;
-					}
-					return '';
-				},
-				getNames:function(){
-					return $.map(chans,function(c){
-						return c.chan;
-					});
-				},
-				init:function(){
-					load();
-					draw();
-				},
-				setChans:function(c){
-					chans = c;
-				},
-				getChans:function(){
-					return chans;
-				}
+				open:self.open,
+				openPm:self.openPm,
+				part:self.part,
+				getNames:self.getNames,
+				init:self.init,
+				setChans:self.setChans
 			};
 		})(),
 		tab = (function(){
@@ -1550,13 +1579,13 @@ oirc = (function(){
 				};
 			return {
 				add:function(u){
-					if(channels.getCurrent()!==''){
+					if(channels.current().handler!==''){
 						usrs.push(u);
 						users.draw();
 					}
 				},
 				remove:function(u){
-					if(channels.getCurrent()!==''){
+					if(channels.current().handler!==''){
 						$.each(usrs,function(i,us){
 							if(us.nick == u.nick && us.network == u.network){
 								usrs.splice(i,1);
@@ -1577,9 +1606,9 @@ oirc = (function(){
 								ne = encodeURIComponent(u.nick),
 								n = $('<span>').text(u.nick).html();
 							return $('<span>')
-								.attr('title',(settings.networks()[u.network]!==undefined?settings.networks()[u.network].name:'Unknown Network'))
+								.attr('title',(settings.getNetworks()[u.network]!==undefined?settings.getNetworks()[u.network].name:'Unknown Network'))
 								.append(
-									(settings.networks()[u.network]!==undefined?settings.networks()[u.network].userlist.split('NICKENCODE').join(ne).split('NICK').join(n):n),
+									(settings.getNetworks()[u.network]!==undefined?settings.getNetworks()[u.network].userlist.split('NICKENCODE').join(ne).split('NICK').join(n):n),
 									'<br>'
 								)
 								.mouseover(function(){
@@ -1612,15 +1641,7 @@ oirc = (function(){
 				},
 				reload:function(){
 					var num = false;
-					$.each(channels.getChans(),function(i,c){
-						if(c.chan==channels.getCurrent() || c.id==channels.getCurrent()){
-							num = i;
-							return false;
-						}
-					});
-					if(num!==false){
-						channels.reloadUserlist(num);
-					}
+					channels.current().reloadUserlist();
 				}
 			};
 		})(),
@@ -2291,9 +2312,7 @@ oirc = (function(){
 						case 'win':
 						case 'w':
 						case 'window':
-							if(parseInt(parameters,10) < channels.getChans().length && parseInt(parameters,10) >= 0){
-								channels.join(parseInt(parameters,10));
-							}
+							channels.join(parseInt(parameters,10));
 							return true;
 						case 'p':
 						case 'part':
@@ -2371,15 +2390,14 @@ oirc = (function(){
 						messages.shift();
 					}
 					counter = messages.length;
-					ls.set('oldMessages-'+channels.getCurrent(true,true),messages.join('\n'));
+					ls.set('oldMessages-'+channels.current().handlerB64,messages);
 				},
 				read:function(){
-					var temp = ls.get('oldMessages-'+channels.getCurrent(true,true));
-					if(temp){
-						messages = temp.split("\n");
-					}else{
+					messages = ls.get('oldMessages-'+channels.current().handlerB64);
+					if(!messages){
 						messages = [];
 					}
+					console.log(messages);
 					counter = messages.length;
 				}
 			};
@@ -2408,7 +2426,7 @@ oirc = (function(){
 							}else{
 								sending = true;
 								request.cancel();
-								network.getJSON('message.php?message='+base64.encode(s)+'&channel='+channels.getCurrent(false,true),function(){
+								network.getJSON('message.php?message='+base64.encode(s)+'&channel='+channels.current().handlerB64,function(){
 									if(!wysiwyg.support()){
 										$('#message').val('');
 									}else{
@@ -2681,7 +2699,7 @@ oirc = (function(){
 						sum = 0,
 						i = 0,
 						cn = n,
-						net = settings.networks()[o],
+						net = settings.getNetworks()[o],
 						addLink = true;
 					switch(options.get('colordNames')){
 						case '1': // calc
@@ -2851,18 +2869,18 @@ oirc = (function(){
 				},
 				lineHigh = false;
 			return {
-				addLine:function(line,logMode){
+				addLine:function(line,loadMode){
+					if(loadMode===undefined){
+						loadMode = false;
+					}
 					if(line.curLine > request.getCurLine()){
 						request.setCurLine(line.curLine);
 					}
-					console.log('====');
-					console.log(line);
-					console.log(channels.getCurrent(true));
 					if(
 						line.name === null || line.name === undefined || line.type === null || ignores.indexOf(line.name.toLowerCase()) > -1
 						|| (
-							line.chan.toString().toLowerCase()!=channels.getCurrent(true).toString().toLowerCase()
-							&& ('*'+line.chan).toLowerCase()!=channels.getCurrent(true).toString().toLowerCase()
+							line.chan.toString().toLowerCase()!=channels.current().handler.toLowerCase()
+							&& ('*'+line.chan).toLowerCase()!=channels.current().handler.toLowerCase()
 							&& line.chan.toString()[0]!='*' && line.chan.toString().toLowerCase()!=settings.nick().toLowerCase()
 						)
 						){
@@ -2887,7 +2905,7 @@ oirc = (function(){
 					switch(line.type){
 						case 'reload':
 							addLine = false;
-							if(logMode!==true && channels.getCurrent()!==''){
+							if(!loadMode){
 								var num;
 								$.each(channels.getChans(),function(i,c){
 									if(c.chan==channels.getCurrent() || c.id==channels.getCurrent()){
@@ -2901,61 +2919,61 @@ oirc = (function(){
 							break;
 						case 'reload_userlist':
 							addLine = false;
-							if(logMode!==true && channels.getCurrent()!==''){
+							if(!loadMode){
 								users.reload();
 								return true;
 							}
 						case 'relog':
 							addLine = false;
-							if(logMode!==true && channels.getCurrent()!==''){
+							if(!loadMode){
 								settings.fetch(undefined,true);
 							}
 							break;
 						case 'refresh':
 							addLine = false;
-							if(logMode!==true && channels.getCurrent()!==''){
+							if(!loadMode){
 								location.reload(true);
 							}
 							break;
 						case 'join':
-							tdMessage = [name,' has joined '+channels.getCurrentName()];
-							if(logMode!==true){
+							tdMessage = [name,' has joined '+channels.current().name];
+							if(!loadMode){
 								users.add({
 									nick:line.name,
 									network:line.network
 								});
 							}
-							if(addLine && settings.networks()[line.network].type==1 && options.get('oircJoinPart')=='F'){
+							if(addLine && settings.getNetworks()[line.network].type==1 && options.get('oircJoinPart')=='F'){
 								addLine = false;
 							}
 							break;
 						case 'part':
-							tdMessage = [name,' has left '+channels.getCurrentName()+' (',message,')'];
-							if(logMode!==true){
+							tdMessage = [name,' has left '+channels.current().name+' (',message,')'];
+							if(!loadMode){
 								users.remove({
 									nick:line.name,
 									network:line.network
 								});
 							}
-							if(addLine && settings.networks()[line.network].type==1 && options.get('oircJoinPart')=='F'){
+							if(addLine && settings.getNetworks()[line.network].type==1 && options.get('oircJoinPart')=='F'){
 								addLine = false;
 							}
 							break;
 						case 'quit':
 							tdMessage = [name,' has quit IRC (',message,')'];
-							if(logMode!==true){
+							if(!loadMode){
 								users.remove({
 									nick:line.name,
 									network:line.network
 								});
 							}
-							if(addLine && settings.networks()[line.network].type==1 && options.get('oircJoinPart')=='F'){
+							if(addLine && settings.getNetworks()[line.network].type==1 && options.get('oircJoinPart')=='F'){
 								addLine = false;
 							}
 							break;
 						case 'kick':
-							tdMessage = [name,' has kicked ',parseName(line.name2,line.network),' from '+channels.getCurrentName()+' (',message,')'];
-							if(logMode!==true){
+							tdMessage = [name,' has kicked ',parseName(line.name2,line.network),' from '+channels.current().name+' (',message,')'];
+							if(!loadMode){
 								users.remove({
 									nick:line.name2,
 									network:line.network
@@ -2979,11 +2997,11 @@ oirc = (function(){
 								});
 								message = message.join(' ');
 							}
-							tdMessage = [name,' set '+channels.getCurrentName()+' mode ',message];
+							tdMessage = [name,' set '+channels.current().name+' mode ',message];
 							break;
 						case 'nick':
 							tdMessage = [name,' has changed nicks to ',parseName(line.name2,line.network)];
-							if(logMode!==true){
+							if(!loadMode){
 								users.add({
 									nick:line.name2,
 									network:line.network
@@ -2999,11 +3017,11 @@ oirc = (function(){
 							tdMessage = [name,' has changed the topic to ',parseMessage(line.message,true)];
 							break;
 						case 'pm':
-							if(channels.getCurrentName(true).toLowerCase() == '*'+line.name.toLowerCase() || channels.getCurrentName(true).toLowerCase() == '*'+line.chan.toLowerCase()){
+							if(channels.current().name.toLowerCase() == '*'+line.name.toLowerCase() || channels.current().name.toLowerCase() == '*'+line.chan.toLowerCase()){
 								tdName = name;
 								line.type = 'message';
 							}else{
-								if(channels.getCurrent()!=='' && logMode!==true){
+								if(!loadMode){
 									if(line.name.toLowerCase() == settings.nick().toLowerCase()){
 										addLine = false;
 										channels.openPm(line.chan);
@@ -3018,11 +3036,11 @@ oirc = (function(){
 							}
 							break;
 						case 'pmaction':
-							if(channels.getCurrentName(true).toLowerCase() == '*'+line.name.toLowerCase() || channels.getCurrentName(true).toLowerCase() == '*'+line.chan.toLowerCase()){
+							if(channels.current().name.toLowerCase() == '*'+line.name.toLowerCase() || channels.current().name.toLowerCase() == '*'+line.chan.toLowerCase()){
 								tdMessage = [name,' ',message];
 								line.type = 'action';
 							}else{
-								if(channels.getCurrent()!=='' && logMode!==true){
+								if(!loadMode){
 									if(line.name.toLowerCase() == settings.nick().toLowerCase()){
 										addLine = false;
 										channels.openPm(line.chan);
@@ -3038,7 +3056,7 @@ oirc = (function(){
 							}
 							break;
 						case 'highlight':
-							if(line.name.toLowerCase() != 'new'){
+							if(line.name.toLowerCase() != '*'){
 								notification.make('('+line.chan+') <'+line.name+'> '+line.message,line.chan);
 							}
 							addLine = false;
