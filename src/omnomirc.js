@@ -30,7 +30,7 @@ oirc = (function(){
 				uid:-1,
 				checkLoginUrl:'',
 				net:'',
-				networks:[],
+				networks:{},
 				fetch:function(fn,clOnly){
 					if(clOnly===undefined){
 						clOnly = false;
@@ -41,12 +41,15 @@ oirc = (function(){
 							self.hostname = data.hostname;
 							channels.setChans(data.channels);
 							parser.setSmileys(data.smileys);
-							self.networks = data.networks;
+							self.networks = {};
+							$.each(data.networks,function(i,n){
+								self.networks[n.id] = n;
+							});
 							self.net = data.network;
 							ls.setPrefix(self.net);
 							options.setDefaults(data.defaults);
 							options.setExtraChanMsg(data.extraChanMsg);
-							ws.set(data.websockets.use,data.websockets.host,data.websockets.port,data.websockets.ssl);
+							request.setData(data.websockets.use,data.websockets.host,data.websockets.port,data.websockets.ssl);
 						}
 						
 						self.checkLoginUrl = data.checkLoginUrl;
@@ -79,8 +82,17 @@ oirc = (function(){
 				getUrlParams:function(){
 					return 'nick='+base64.encode(self.nick)+'&signature='+base64.encode(self.signature)+'&time='+(+new Date()).toString()+'&id='+self.uid+'&network='+self.net+(self.nick!=''?'&noLoginErrors':'');
 				},
-				getNetworks:function(){
-					return self.networks;
+				getNetwork:function(i){
+					if(self.networks[i]!==undefined){
+						return self.networks[i];
+					}
+					return {
+						id:-1,
+						normal:'NICK',
+						userlist:'NICK',
+						name:'Invalid network',
+						type:-1
+					};
 				},
 				getIdentParams:function(){
 					return {
@@ -96,7 +108,7 @@ oirc = (function(){
 				fetch:self.fetch,
 				getUrlParams:self.getUrlParams,
 				getIdentParams:self.getIdentParams,
-				getNetworks:self.getNetworks,
+				getNetwork:self.getNetwork,
 				nick:function(){
 					return self.nick;
 				},
@@ -172,12 +184,13 @@ oirc = (function(){
 			};
 		})(),
 		network = (function(){
-			var errors = [],
-				warnings = [],
-				errorsOpen = false,
-				warningsOpen = false,
-				didRelog = false,
-				removeSig = function(s){
+			var self = {
+				errors:[],
+				warnings:[],
+				errorsOpen:false,
+				warningsOpen:false,
+				didRelog:false,
+				removeSig:function(s){
 					try{
 						var parts = s.split('signature='),
 							moreParts = parts[1].split('&');
@@ -191,31 +204,25 @@ oirc = (function(){
 						return s;
 					}
 				},
-				addError = function(s,e){
-					s = removeSig(s);
-					errors.push({
+				addError:function(s,e){
+					s = self.removeSig(s);
+					self.errors.push({
 						time:(new Date().getTime()),
 						file:s,
 						content:e
 					});
-					$('#errors')
-						.css('display','')
-						.find('.count')
-						.text(errors.length);
+					$('#errors').css('display','').find('.count').text(self.errors.length);
 				},
-				addWarning = function(s,e){
-					s = removeSig(s);
-					warnings.push({
+				addWarning:function(s,e){
+					s = self.removeSig(s);
+					self.warnings.push({
 						time:(new Date().getTime()),
 						file:s,
 						content:e
 					});
-					$('#warnings')
-						.css('display','')
-						.find('.count')
-						.text(warnings.length);
+					$('#warnings').css('display','').find('.count').text(self.warnings.length)
 				},
-				checkCallback = function(data,fn,recall,url){
+				checkCallback:function(data,fn,recall,url){
 					if(data.relog!=2){
 						if(data.errors!==undefined){
 							$.map(data.errors,function(e){
@@ -228,7 +235,7 @@ oirc = (function(){
 									});
 								}
 								if(errorsOpen){
-									$('.errors > .errorPopupCont').append(getSinglePopupEntry(errors[errors.length - 1]));
+									$('.errors > .errorPopupCont').append(self.getSinglePopupEntry(errors[errors.length - 1]));
 								}
 							});
 						}
@@ -243,21 +250,21 @@ oirc = (function(){
 									});
 								}
 								if(warningsOpen){
-									$('.warnings > .errorPopupCont').append(getSinglePopupEntry(warnings[warnings.length - 1]));
+									$('.warnings > .errorPopupCont').append(self.getSinglePopupEntry(warnings[warnings.length - 1]));
 								}
 							});
 						}
 					}
 					if(data.relog!==undefined && data.relog!=0){
 						if(data.relog==1){
-							settings.fetch(undefined,true);
+							settings.fetch(undefined,true); // everything is still fine, no need to block the rest of the thread
 							fn(data);
 						}else if(data.relog==2){
 							settings.fetch(function(){
 								recall();
 							},true);
 						}else if(data.relog==3){
-							if(didRelog){
+							if(self.didRelog){ // that's it, no more trying!
 								fn(data);
 							}else{
 								settings.fetch(function(){
@@ -265,12 +272,13 @@ oirc = (function(){
 								},true);
 							}
 						}
-						didRelog = true;
+						self.didRelog = true;
 					}else{
+						self.didRelog = false; // relog successfull, new try!
 						fn(data);
 					}
 				},
-				getSinglePopupEntry = function(e){
+				getSinglePopupEntry:function(e){
 					return $('<div>')
 						.css('border-bottom','1px solid black')
 						.append(
@@ -283,7 +291,7 @@ oirc = (function(){
 							})
 						);
 				},
-				makePopup = function(type,data,fn){
+				makePopup:function(type,data,fn){
 					return $('<div>')
 						.addClass('errorPopup')
 						.addClass(type.toLowerCase())
@@ -302,13 +310,12 @@ oirc = (function(){
 								.addClass('errorPopupCont')
 								.append(
 									$.map(data,function(e){
-										return getSinglePopupEntry(e);
+										return self.getSinglePopupEntry(e);
 									})
 								)
 						)
 						.appendTo('body');
-				};
-			return {
+				},
 				getJSON:function(s,fn,async,urlparams){
 					if(async==undefined){
 						async = true;
@@ -323,8 +330,8 @@ oirc = (function(){
 							async:async
 						})
 						.done(function(data){
-							checkCallback(data,fn,function(){
-								network.getJSON(s,fn,async,urlparams);
+							self.checkCallback(data,fn,function(){
+								self.getJSON(s,fn,async,urlparams);
 							},url);
 						});
 				},
@@ -343,13 +350,12 @@ oirc = (function(){
 							data:pdata
 						})
 						.done(function(data){
-							checkCallback(data,fn,function(){
-								network.post(s,pdata,fn,async,urlparams);
+							self.checkCallback(data,fn,function(){
+								self.post(s,pdata,fn,async,urlparams);
 							},url);
 						});
 				},
 				init:function(){
-					
 					$('#errors > .icon')
 						.click(function(){
 							if(!errorsOpen){
@@ -370,48 +376,39 @@ oirc = (function(){
 						});
 				}
 			};
-		})(),
-		admin = (function(){
 			return {
-				init:function(){
-					$.getScript('admin.js');
-				}
-			}
+				getJSON:self.getJSON,
+				post:self.post,
+				init:self.init
+			};
 		})(),
 		options = (function(){
-			var defaults = '',
-				refreshCache = true,
-				cache = '',
-				allOptions = [
-					{
+			var self = {
+				extraChanMsg:'',
+				allOptions:{
+					highBold:{
 						disp:'Highlight Bold',
-						alt:'highBold',
-						id:1,
-						defaultOption:'T'
+						default:true
 					},
-					{
+					highRed:{
 						disp:'Highlight Red',
-						alt:'highRed',
-						id:2,
-						defaultOption:'T'
+						default:true
 					},
-					{
+					colordNames:{
 						disp:'Colored Names',
-						alt:'colordNames',
-						id:3,
-						defaultOption:'0',
+						default:0,
 						handler:function(){
 							return $('<td>')
 								.attr('colspan',2)
 								.css('border-right','none')
 								.append($('<select>')
 									.change(function(){
-										options.set('colordNames',this.value);
+										self.set('colordNames',this.value);
 									})
 									.append(
 										$.map(['none','calc','server'],function(v,i){
 											return $('<option>')
-												.attr((options.get('colordNames')==i?'selected':'false'),'selected')
+												.attr((self.get('colordNames')==i?'selected':'false'),'selected')
 												.val(i)
 												.text(v);
 										})
@@ -419,135 +416,101 @@ oirc = (function(){
 								)
 						}
 					},
-					{
-						alt:'curChan',
-						id:4,
+					curChan:{
 						hidden:true,
-						defaultOption:'-'
+						default:0
 					},
-					{
+					extraChans:{
 						disp:'Show extra Channels',
-						alt:'extraChans',
-						id:9,
-						defaultOption:'F',
+						default:false,
 						before:function(){
-							if(extraChanMsg!==''){
-								alert(extraChanMsg);
+							if(self.extraChanMsg!==''){
+								alert(self.extraChanMsg);
 							}
 							return true;
 						}
 					},
-					{
+					altLines:{
 						disp:'Alternating Line Highlight',
-						alt:'altLines',
-						id:6,
-						defaultOption:'T'
+						default:true
 					},
-					{
+					enable:{
 						disp:'Enable OmnomIRC',
-						alt:'enable',
-						id:5,
-						defaultOption:'T'
+						default:true
 					},
-					{
+					ding:{
 						disp:'Ding on Highlight',
-						alt:'ding',
-						id:8,
-						defaultOption:'F'
+						default:false
 					},
-					{
+					times:{
 						disp:'Show Timestamps',
-						alt:'times',
-						id:10,
-						defaultOption:'T'
+						default:true
 					},
-					{
+					statusBar:{
 						disp:'Show Updates in Browser Status Bar',
-						alt:'statusBar',
-						id:11,
-						defaultOption:'T'
+						default:true
 					},
-					{
+					smileys:{
 						disp:'Show Smileys',
-						alt:'smileys',
-						id:12,
-						defaultOption:'T'
+						default:true
 					},
-					{
+					hideUserlist:{
 						disp:'Hide Userlist',
-						alt:'hideUserlist',
-						id:14,
-						defaultOption:'F'
+						default:false
 					},
-					{
+					charsHigh:{
 						disp:'Number chars for Highlighting',
-						alt:'charsHigh',
-						id:13,
-						defaultOption:'3',
+						default:4,
 						handler:function(){
 							return $('<td>')
 								.attr('colspan',2)
 								.css('border-right','none')
 								.append($('<select>')
 									.change(function(){
-										options.set(13,this.value);
+										self.set('charsHigh',this.value);
 									})
 									.append(
-										$.map([0,1,2,3,4,5,6,7,8,9],function(i){
+										$.map([1,2,3,4,5,6,7,8,9,10],function(i){
 											return $('<option>')
-												.attr((options.get('charsHigh')==i?'selected':'false'),'selected')
+												.attr((self.get('charsHigh')==i?'selected':'false'),'selected')
 												.val(i)
-												.text(i+1);
+												.text(i);
 										})
 									)
 								);
 						}
 					},
-					{
+					scrollBar:{
 						disp:'Show Scrollbar',
-						alt:'scrollBar',
-						id:15,
-						defaultOption:'T'
+						default:true
 					},
-					{
+					scrollWheel:{
 						disp:'Enable Scrollwheel',
-						alt:'scrollWheel',
-						id:16,
-						defaultOption:'T'
+						default:true
 					},
-					{
+					browserNotifications:{
 						disp:'Browser Notifications',
-						alt:'browserNotifications',
-						id:7,
-						defaultOption:'F',
+						default:false,
 						before:function(){
 							notification.request();
 							return false;
 						}
 					},
-					{
+					oircJoinPart:{
 						disp:'Show OmnomIRC join/part messages',
-						alt:'oircJoinPart',
-						id:17,
-						defaultOption:'F'
+						default:false
 					},
-					{
+					wysiwyg:{
 						disp:'Use WYSIWYG editor (experimental)',
-						alt:'wysiwyg',
-						id:18,
-						defaultOption:'F'
+						default:false
 					},
-					{
+					textDeco:{
 						disp:'Enable simple text decorations',
-						alt:'textDeco',
-						id:19,
-						defaultOption:'F'
+						default:false
 					},
-					{
+					fontSize:{
 						disp:'Font Size',
-						alt:'fontSize',
-						id:20,
-						defaultOption:String.fromCharCode(9+45),
+						default:9,
 						handler:function(){
 							return $('<td>')
 								.attr('colspan',2)
@@ -560,95 +523,53 @@ oirc = (function(){
 										max:42
 									})
 									.css('width','3em')
-									.val(options.get('fontSize').charCodeAt(0) - 45)
+									.val(self.get('fontSize'))
 									.change(function(){
-										options.set('fontSize',String.fromCharCode(parseInt(this.value,10) + 45));
+										self.set('fontSize',parseInt(this.value,10));
 										$('body').css('font-size',this.value+'pt');
 									})
 								)
 						}
 					}
-				],
-				extraChanMsg = '',
-				getOptionsNum = function(s){
-					var num = -1,
-						def = '';
-					$.each(allOptions,function(i,v){
-						if(v.alt == s || v.id == s){
-							num = v.id;
-							def = v.defaultOption;
-							return;
+				},
+				init:function(def){
+					var opts = ls.get('options');
+					$.each(self.allOptions,function(i,v){
+						var val = v.default;
+						if(opts && opts[i]!==undefined){
+							val = opts[i];
+						}else if(def && def[i]!==undefined){
+							val = def[i];
 						}
+						self.allOptions[i].value = val;
 					});
-					return [num,def];
 				},
-				resultCache = [];
-			return {
-				setDefaults:function(d){
-					defaults = d;
-				},
-				set:function(optionsNum,value){
-					var optionsString = ls.get('settings'+settings.net());
-					delete resultCache[optionsNum]; // this may be the string
-					optionsNum = getOptionsNum(optionsNum)[0];
-					delete resultCache[optionsNum]; // and this the id
-					if(optionsNum == -1){
+				set:function(s,v){
+					if(self.allOptions[s]===undefined){
 						return;
 					}
-					if(!optionsString){
-						ls.set('OmnomIRCSettings'+settings.net(),'----------------------------------------');
-						optionsString = ls.get('OmnomIRCSettings'+settings.net());
-					}
-					if(!optionsString){ // we have cookies / local storage disabled, normal chatting will still work, though
-						return;
-					}
-					optionsString = optionsString.substring(0,optionsNum-1)+value+optionsString.substring(optionsNum);
-					ls.set('OmnomIRCSettings'+settings.net(),optionsString);
-					refreshCache = true;
+					self.allOptions[s].value = v;
+					var opts = ls.get('options') || {};
+					opts[s] = v;
+					ls.set('options',opts);
 				},
 				get:function(s){
-					var optionsString = (refreshCache?(cache=ls.get('OmnomIRCSettings'+settings.net())):cache),
-						result,
-						defaultOption;
-					refreshCache = false;
-					
-					if(resultCache[s] !== undefined){
-						return resultCache[s];
+					if(self.allOptions[s]!==undefined){
+						return self.allOptions[s].value;
 					}
-					optionsNum = getOptionsNum(s);
-					defaultOption = optionsNum[1];
-					optionsNum = optionsNum[0];
-					if(optionsNum == -1){
-						return;
-					}
-					if(!optionsString){
-						result = '-';
-					}else{
-						result = optionsString.charAt(optionsNum-1);
-					}
-					if(result=='-'){
-						result = (defaults.charAt(optionsNum-1)!=='' && defaults.charAt(optionsNum-1)!='-'?defaults.charAt(optionsNum-1):defaultOption);
-					}
-					resultCache[s] = result;
-					return result;
 				},
 				setExtraChanMsg:function(s){
-					extraChanMsg = s;
+					self.extraChanMsg = s;
 				},
-				getFullOptionsString:function(){
-					var optionsString = (refreshCache?(cache=ls.get('OmnomIRCSettings'+settings.net())):cache),
-						res = '';
-					for(var i = 0;optionsString.charAt(i)!='';i++){
-						res += (optionsString.charAt(i)!='-'?optionsString.charAt(i):(defaults.charAt(i)!=''?defaults.charAt(i):'-'));
-					}
-					return res;
+				setDefaults:function(def){
+					self.init(def);
 				},
 				getHTML:function(){
 					return $.merge($.map([false,true],function(alternator){
 							return $('<table>')
 								.addClass('optionsTable')
 								.append(
-									$.map(allOptions,function(o){
+									$.map(self.allOptions,function(o,i){
 										if(o.hidden){
 											return;
 										}
@@ -659,22 +580,22 @@ oirc = (function(){
 													.text(o.disp)],
 												(o.handler===undefined?[
 												$('<td>')
-													.addClass('option '+(options.get(o.id,o.defaultOption)=='T'?'selected':''))
+													.addClass('option '+(self.get(i)?'selected':''))
 													.text('Yes')
 													.click(function(){
-														if(options.get(o.id,o.defaultOption)=='F'){
+														if(!self.get(i)){
 															if((o.before!==undefined && o.before()) || o.before===undefined){
-																options.set(o.id,'T');
+																self.set(i,true);
 																$(this).addClass('selected').next().removeClass('selected');
 															}
 														}
 													}),
 												$('<td>')
-													.addClass('option '+(options.get(o.id,o.defaultOption)=='F'?'selected':''))
+													.addClass('option '+(!self.get(i)?'selected':''))
 													.text('No')
 													.click(function(){
-														if(options.get(o.id,o.defaultOption)=='T'){
-															options.set(o.id,'F');
+														if(self.get(i)){
+															self.set(i,false);
 															$(this).addClass('selected').prev().removeClass('selected');
 														}
 													})]:o.handler()))
@@ -688,50 +609,57 @@ oirc = (function(){
 							.text('Reset Defaults')
 							.click(function(e){
 								e.preventDefault();
-								ls.set('OmnomIRCSettings'+settings.net(),'----------------------------------------');
-								ls.set('OmnomIRCChannels'+settings.net(),'');
-								ls.set('OmnomIRCCL'+settings.net(),'');
+								ls.set('options',null);
+								ls.set('checklogin',null);
+								ls.set('channels',null);
 								document.location.reload();
 							})
 					));
 				}
 			};
+			return {
+				set:self.set,
+				get:self.get,
+				setDefaults:self.setDefaults,
+				setExtraChanMsg:self.setExtraChanMsg,
+				getHTML:self.getHTML
+			};
 		})(),
 		instant = (function(){
-			var id = '',
-				update = function(){
-					ls.set('browserTab',id);
+			var self = {
+				id:Math.random().toString(36)+(new Date()).getTime().toString(),
+				update:function(){
+					ls.set('browserTab',self.id);
 					ls.set('newInstant',false);
-				};
-			return {
+				},
 				init:function(){
-					id = Math.random().toString(36)+(new Date()).getTime().toString();
-					ls.set('browserTab',id);
-					$(window)
-						.focus(function(){
-							update();
-						})
-						.unload(function(){
-							ls.set('newInstant',true);
-						});
+					ls.set('browserTab',self.id);
+					$(window).focus(function(){
+						self.update();
+					}).unload(function(){
+						ls.set('newInstant',true);
+					})
 				},
 				current:function(){
-					if(ls.get('newInstant')==true){
-						update();
+					if(ls.get('newInstant')){
+						self.update();
 					}
-					return id == ls.get('browserTab');
+					return self.id == ls.get('browserTab');
 				}
+			}
+			return {
+				init:self.init,
+				current:self.current
 			};
 		}()),
 		indicator = (function(){
-			var interval = false,
-				$elem = false,
-				pixels = [];
-			return {
+			var self = {
+				interval:false,
+				$elem:false,
 				start:function(){
-					if(interval===false){
+					if(self.interval===false){
 						pixels = [true,true,true,true,true,false,false,false];
-						$elem = $('<div>')
+						self.$elem = $('<div>')
 							.attr('id','indicator')
 							.css({
 								position:'absolute',
@@ -742,8 +670,8 @@ oirc = (function(){
 								right:0
 							})
 							.appendTo('body');
-						interval = setInterval(function(){
-							$elem.empty().append(
+						self.interval = setInterval(function(){
+							self.$elem.empty().append(
 								$.map(pixels,function(p){
 									return $('<div>')
 										.css({
@@ -765,55 +693,56 @@ oirc = (function(){
 					}
 				},
 				stop:function(){
-					if(interval!==false){
-						clearInterval(interval);
-						interval = false;
-						$elem.remove();
+					if(self.interval!==false){
+						clearInterval(self.interval);
+						self.interval = false;
+						self.$elem.remove();
 					}
 				}
 			};
+			return {
+				start:self.start,
+				stop:self.stop
+			};
 		})(),
 		notification = (function(){
-			var notification_support = window.webkitNotifications!==undefined && window.webkitNotifications!==null && window.webkitNotifications,
-				support = function(){
-					if(notification_support || (typeof Notification!='undefined' && Notification && Notification.permission!='denied')){
-						return true;
-					}
-					return false;
+			var self = {
+				support_webkit:window.webkitNotifications!==undefined && window.webkitNotifications!==null && window.webkitNotifications,
+				support:function(){
+					return typeof Notification!='undefined' && Notification && Notification.permission!='denied';
 				},
-				show = function(s){
+				show:function(s){
 					var n;
-					if(notification_support && window.webkitNotifications.checkPermission() === 0){
-						n = window.webkitNotifications.createNotification('http://www.omnimaga.org/favicon.ico','OmnomIRC Highlight',s);
+					if(self.support_webkit){
+						n = window.webkitNotifications.createNotification('omni.png','OmnomIRC Highlight',s);
 						n.show();
-					}else if(typeof Notification!='undefined' && Notification && Notification.permission=='granted'){
+					}else if(self.support()){
 						n = new Notification('OmnomIRC Highlight',{
-							icon:'http://www.omnimaga.org/favicon.ico',
+							icon:'omni.png',
 							body:s
 						});
 						n.onshow = function(){
 							setTimeout(n.close,30000);
 						};
 					}
-				};
-			return {
+				},
 				request:function(){
-					if(notification_support){
+					if(self.support_webkit){
 						window.webkitNotifications.requestPermission(function(){
 							if (window.webkitNotifications.checkPermission() === 0){
 								show('Notifications Enabled!');
-								options.set(7,'T');
+								options.set(7,true);
 								document.location.reload();
 							}
 						});
-					}else if(typeof Notification!=='undefined' && Notification && Notification.permission!=='denied'){
+					}else if(self.support()){
 						Notification.requestPermission(function(status){
 							if (Notification.permission !== status){
 								Notification.permission = status;
 							}
 							if(status==='granted'){
 								show('Notifications Enabled!');
-								options.set(7,'T');
+								options.set(7,true);
 								document.location.reload();
 							}
 						});
@@ -823,219 +752,267 @@ oirc = (function(){
 				},
 				make:function(s,c){
 					if(instant.current()){
-						if(options.get('browserNotifications')=='T'){
-							show(s);
+						if(options.get('browserNotifications')){
+							self.show(s);
 						}
-						if(options.get('ding')=='T'){
+						if(options.get('ding')){
 							$('#ding')[0].play();
 						}
-						if(c!=channels.getCurrentName()){
+						if(c!=channels.current().handler){
 							channels.highlight(c,true);
 						}
 					}else{
-						if(c!=channels.getCurrentName()){
+						if(c!=channels.current().handler){
 							channels.highlight(c);
 						}
 					}
 				}
 			};
-		})(),
-		ws = (function(){
-			var socket = false,
-				connected = false,
-				use = true,
-				sendBuffer = [],
-				allowLines = false,
-				enabled = false,
-				host = '',
-				port = 0,
-				ssl = true,
-				tryFallback = true,
-				fallback = function(){
-					if(tryFallback){
-						try{
-							tryFallback = false;
-							socket.close();
-						}catch(e){}
-						network.getJSON('omnomirc.php?getcurline&noLoginErrors',function(data){
-							users.reload(); // this is usually a good idea.
-							request.setCurLine(data.curline);
-							use = false;
-							request.start();
-						});
-					}
-				},
-				identify = function(){
-					ws.send($.extend({action:'ident'},settings.getIdentParams()));
-				};
 			return {
-				init:function(){
-					if(!("WebSocket" in window) || !enabled){
-						use = false;
-						return false;
-					}
-					try{
-						socket = new WebSocket((ssl?'wss://':'ws://')+host+':'+port.toString(10));
-					}catch(e){
-						console.log(socket);
-						console.log((ssl?'wss://':'ws://')+host+':'+port.toString(10));
-						console.log(e);
-						fallback();
-					}
-					socket.onopen = function(e){
-						connected = true;
-						for(var i = 0;i < sendBuffer.length;i++){
-							ws.send(sendBuffer[i]);
-						}
-					};
-					socket.onmessage = function(e){
-						try{
-							var data = JSON.parse(e.data);
-							console.log(data);
-							if(allowLines && data.line!==undefined){
-								if(!parser.addLine(data.line)){
-									tryFallback = false;
-									socket.close();
-								}
-							}
-							if(data.relog!==undefined && data.relog!=0){
-								settings.fetch(function(){
-									identify();
-								},true);
-							}
-						}catch(e){};
-					};
-					socket.onclose = function(e){
-						use = false;
-						fallback();
-					};
-					socket.onerror = function(e){
-						socket.close();
-						use = false;
-						fallback();
-					};
-					
-					identify();
-					
-					$(window).on('beforeunload',function(){
-						socket.close();
-					});
-					return true;
-				},
-				set:function(enabledd,hostt,portt,ssll){
-					enabled = enabledd;
-					host = hostt;
-					port = portt;
-					ssl = ssll;
-				},
-				send:function(msg){
-					if(connected){
-						socket.send(JSON.stringify(msg));
-					}else{
-						sendBuffer.push(msg);
-					}
-				},
-				setChan:function(c){
-					ws.send({
-						action:'chan',
-						chan:c
-					});
-				},
-				use:function(){
-					return use;
-				},
-				allowRecLines:function(){
-					allowLines = true;
-				},
-				dissallowRecLines:function(){
-					allowLines = false;
-				}
+				request:self.request,
+				make:self.make
 			};
 		})(),
 		request = (function(){
-			var lastSuccess = (new Date).getTime(),
-				curLine = 0,
-				inRequest = false,
-				handler = false,
-				send = function(){
-					if(!channels.current().loaded() || ws.use()){
-						return;
+			var self = {
+				ws:{
+					socket:false,
+					connected:false,
+					use:true,
+					sendBuffer:[],
+					allowLines:false,
+					enabled:false,
+					host:'',
+					port:0,
+					ssl:true,
+					tryFallback:true,
+					fallback:function(){
+						if(self.ws.tryFallback){
+							try{
+								self.ws.tryFallback = false;
+								self.ws.socket.close();
+							}catch(e){}
+							network.getJSON('omnomirc.php?getcurline&noLoginErrors',function(data){
+								channels.current().reloadUserlist(); // this is usually a good idea.
+								self.setCurLine(data.curline);
+								use = false;
+								self.old.lastSuccess = (new Date).getTime();
+								self.old.start();
+							});
+						}
+					},
+					identify:function(){
+						self.ws.send($.extend({action:'ident'},settings.getIdentParams()));
+					},
+					init:function(){
+						if(!("WebSocket" in window) || !self.ws.enabled){
+							self.ws.use = false;
+							return false;
+						}
+						try{
+							self.ws.socket = new WebSocket((self.ws.ssl?'wss://':'ws://')+self.ws.host+':'+self.ws.port.toString());
+						}catch(e){
+							console.log(self.ws.socket);
+							console.log((ssl?'wss://':'ws://')+self.ws.host+':'+self.ws.port.toString());
+							console.log(e);
+							self.ws.fallback();
+						}
+						self.ws.socket.onopen = function(e){
+							self.ws.connected = true;
+							for(var i = 0;i < self.ws.sendBuffer.length;i++){
+								self.ws.send(self.ws.sendBuffer[i]);
+							}
+							self.ws.sendBuffer = [];
+						};
+						self.ws.socket.onmessage = function(e){
+							try{
+								var data = JSON.parse(e.data);
+								console.log(data);
+								if(self.ws.allowLines && data.line!==undefined){
+									if(!parser.addLine(data.line)){
+										self.ws.tryFallback = false;
+										self.ws.socket.close();
+									}
+								}
+								if(data.relog!==undefined && data.relog!=0){
+									settings.fetch(function(){
+										self.ws.identify();
+									},true);
+								}
+							}catch(e){};
+						};
+						self.ws.socket.onclose = function(e){
+							self.ws.use = false;
+							self.ws.fallback();
+						};
+						self.ws.socket.onerror = function(e){
+							self.ws.socket.close();
+							self.ws.use = false;
+							self.ws.fallback();
+						};
+						
+						self.ws.identify();
+						
+						$(window).on('beforeunload',function(){
+							self.ws.socket.close();
+						});
+						return true;
+					},
+					send:function(msg){
+						if(self.ws.connected){
+							self.ws.socket.send(JSON.stringify(msg));
+						}else{
+							self.ws.sendBuffer.push(msg);
+						}
 					}
-					handler = network.getJSON(
-							'Update.php?high='+
-							(parseInt(options.get('charsHigh'),10)+1).toString()+
-							'&channel='+channels.current().handlerB64+
-							'&lineNum='+curLine.toString(),
-						function(data){
-							var newRequest = true;
-							if(!channels.current().loaded()){
-								return;
-							}
-							handler = false;
-							lastSuccess = (new Date).getTime();
-							if(data.lines!==undefined){
-								$.each(data.lines,function(i,line){
-									return newRequest = parser.addLine(line);
-								});
-							}
-							if(data.banned === true){
-								newRequest = false;
-							}
-							if(newRequest){
-								setTimer();
-							}
-						})
-						.fail(function(){
-							handler = false;
-							if((new Date).getTime() >= lastSuccess + 300000  ){
-								send.internal('<span style="color:#C73232;">OmnomIRC has lost connection to server. Please refresh to reconnect.</span>');
-							}else if(!inRequest){
-								lastSuccess = (new Date).getTime();
-							}else{
-								setTimer();
+				},
+				old:{
+					inRequest:false,
+					handler:false,
+					lastSuccess:(new Date).getTime(),
+					sendRequest:function(){
+						if(!channels.current().loaded()){
+							return;
+						}
+						self.old.handler = network.getJSON(
+								'Update.php?high='+
+								options.get('charsHigh').toString()+
+								'&channel='+channels.current().handlerB64+
+								'&lineNum='+self.curLine.toString(),
+							function(data){
+								var newRequest = true;
+								if(!channels.current().loaded()){
+									return;
+								}
+								self.old.handler = false;
+								self.old.lastSuccess = (new Date).getTime();
+								if(data.lines!==undefined){
+									$.each(data.lines,function(i,line){
+										return newRequest = parser.addLine(line);
+									});
+								}
+								if(data.banned === true){
+									newRequest = false;
+								}
+								if(newRequest){
+									self.old.setTimer();
+								}
+							})
+							.fail(function(){
+								self.old.handler = false;
+								if((new Date).getTime() >= self.old.lastSuccess + 300000){
+									send.internal('<span style="color:#C73232;">OmnomIRC has lost connection to server. Please refresh to reconnect.</span>');
+								}else if(!self.old.inRequest){
+									self.old.lastSuccess = (new Date).getTime();
+								}else{
+									self.old.setTimer();
+								}
+							});
+					},
+					setTimer:function(){
+						if(channels.current().loaded() && self.old.handler===false){
+							setTimeout(function(){
+								self.old.sendRequest();
+							},(page.isBlurred()?2500:200));
+						}else{
+							self.old.stop();
+						}
+					},
+					start:function(){
+						if(!self.old.inRequest){
+							self.old.inRequest = true;
+							self.old.setTimer();
+						}
+					},
+					stop:function(){
+						if(self.old.inRequest){
+							self.old.inRequest = false;
+							try{
+								self.old.handler.abort();
+							}catch(e){}
+						}
+					},
+					send:function(s,fn){
+						self.old.stop();
+						network.getJSON('message.php?message='+base64.encode(s)+'&channel='+channels.current().handlerB64,function(){
+							self.old.start();
+							if(fn!==undefined){
+								fn();
 							}
 						});
-				},
-				setTimer = function(){
-					if(channels.current().loaded() && handler===false && !ws.use()){
-						setTimeout(function(){
-							send();
-						},(page.isBlurred()?2500:200));
-					}else{
-						request.cancel();
 					}
-				};
-			return {
-				cancel:function(){
-					if(inRequest){
-						inRequest = false;
-						try{
-							handler.abort();
-						}catch(e){}
+				},
+				curLine:0,
+				setChan:function(c){
+					if(self.ws.use){
+						self.ws.send({
+							action:'chan',
+							chan:c
+						});
+					}
+				},
+				stop:function(){
+					if(self.ws.use){
+						self.ws.allowLines = false;
+					}else{
+						self.old.stop();
 					}
 				},
 				start:function(){
-					if(!(inRequest || ws.use())){
-						inRequest = true;
-						setTimer();
+					if(self.ws.use){
+						self.ws.allowLines = true;
+					}else{
+						self.old.start();
 					}
 				},
 				setCurLine:function(c){
-					curLine = c;
+					if(c > self.curLine){
+						self.curLine = c;
+					}
 				},
-				getCurLine:function(){
-					return curLine;
+				send:function(s,fn){
+					if(self.ws.use){
+						self.ws.send({
+							action:'message',
+							message:s
+						});
+						if(fn!==undefined){
+							fn();
+						}
+					}else{
+						self.old.send(s,fn);
+					}
+				},
+				setData:function(enabled,host,port,ssl){
+					self.ws.enabled = enabled;
+					self.ws.host = host;
+					self.ws.port = port;
+					self.ws.ssl = ssl;
+				},
+				init:function(){
+					if(self.ws.enabled){
+						self.ws.init();
+					}
 				}
+			};
+			return {
+				setChan:self.setChan,
+				start:self.start,
+				stop:self.stop,
+				setCurLine:self.setCurLine,
+				send:self.send,
+				setData:self.setData,
+				init:self.init
 			};
 		})(),
 		channels = (function(){
-			var Channel = function(i,parent){
-					var exists = parent.chans[i]!==undefined,
+			var Channel = function(i,_parent){
+					var exists = _parent.chans[i]!==undefined,
 						self = {
 							i:i,
-							name:exists?parent.chans[i].chan:'',
-							handler:exists?parent.getHandler(i):-1,
-							handlerB64:exists?parent.getHandler(i,true):-1,
+							name:exists?_parent.chans[i].chan.toLowerCase():'',
+							handler:exists?_parent.getHandler(i):-1,
+							handlerB64:exists?_parent.getHandler(i,true):-1,
 							loaded:false,
 							load:function(data,fn){
 								if(data.lines === undefined){ // something went wrong....
@@ -1046,7 +1023,7 @@ oirc = (function(){
 									}
 									return false;
 								}
-								options.set('curChan',String.fromCharCode(i+45));
+								options.set('curChan',i);
 								if(data.banned){
 									send.internal('<span style="color:#C73232;"><b>ERROR:</b> banned</span>');
 									return false;
@@ -1069,7 +1046,7 @@ oirc = (function(){
 								return true;
 							},
 							part:function(){
-								parent.part(self.i);
+								_parent.part(self.i);
 							},
 							reloadUserlist:function(i){
 								if(!exists){
@@ -1083,6 +1060,9 @@ oirc = (function(){
 										send.internal('<span style="color:#C73232;"><b>ERROR:</b> banned</span>');
 									}
 								});
+							},
+							reload:function(){
+								_parent.join(self.i);
 							}
 						};
 					return {
@@ -1092,6 +1072,7 @@ oirc = (function(){
 						load:self.load,
 						part:self.part,
 						reloadUserlist:self.reloadUserlist,
+						reload:self.reload,
 						loaded:function(){
 							return self.loaded;
 						}
@@ -1107,7 +1088,7 @@ oirc = (function(){
 						try{
 							var chanList = ls.get('channels'),
 								exChans = $.map(chans,function(ch){
-									if((ch.ex && options.get('extraChans')=='T') || !ch.ex){
+									if((ch.ex && options.get('extraChans')) || !ch.ex){
 										return ch;
 									}
 									return undefined;
@@ -1215,7 +1196,7 @@ oirc = (function(){
 									$('#topicDragPlaceHolder').replaceWith(elem);
 									chans = $.map($('.chanList'),function(chan,i){
 										if($(chan).find('span').hasClass('curchan')){
-											options.set(4,String.fromCharCode(i+45));
+											options.set(4,i);
 										}
 										return $(chan).data('json');
 									});
@@ -1225,7 +1206,7 @@ oirc = (function(){
 							};
 						$('#ChanList').empty().append(
 							$.map(self.chans,function(c,i){
-								if((c.ex && options.get('extraChans')=='T') || !c.ex){
+								if((c.ex && options.get('extraChans')) || !c.ex){
 									return $('<div>')
 										.data('json',c)
 										.attr('id','chan'+i.toString())
@@ -1314,8 +1295,7 @@ oirc = (function(){
 							return;
 						}
 						indicator.start();
-						request.cancel();
-						ws.dissallowRecLines();
+						request.stop();
 						$('#message').attr('disabled','true');
 						$('#MessageBox').empty();
 						$('.chan').removeClass('curchan');
@@ -1325,8 +1305,7 @@ oirc = (function(){
 						self.requestHandler = network.getJSON('Load.php?count=125&channel='+self.getHandler(i,true),function(data){
 							self.current = Channel(i,self);
 							if(self.current.load(data,fn)){
-								ws.setChan(self.getHandler(i));
-								ws.allowRecLines();
+								request.setChan(self.getHandler(i));
 								request.start();
 								
 								self.chans[i].high = false;
@@ -1566,53 +1545,54 @@ oirc = (function(){
 			};
 		})(),
 		users = (function(){
-			var usrs = [],
-				exists = function(u){
+			var self = {
+				users:[],
+				exists:function(e){
 					var result = false;
-					$.each(usrs,function(i,us){
+					$.each(self.users,function(i,us){
 						if(us.nick.toLowerCase() == u.nick.toLowerCase() && us.network == u.network){
 							result = true;
 							return false;
 						}
 					});
 					return result;
-				};
-			return {
+				},
 				add:function(u){
 					if(channels.current().handler!==''){
-						usrs.push(u);
-						users.draw();
+						self.users.push(u);
+						self.draw();
 					}
 				},
 				remove:function(u){
 					if(channels.current().handler!==''){
-						$.each(usrs,function(i,us){
+						$.each(self.users,function(i,us){
 							if(us.nick == u.nick && us.network == u.network){
-								usrs.splice(i,1);
+								self.users.splice(i,1);
 								return false;
 							}
 						});
-						users.draw();
+						self.draw();
 					}
 				},
 				draw:function(){
-					usrs.sort(function(a,b){
-						var al=a.nick.toLowerCase(),bl=b.nick.toLowerCase();
+					self.users.sort(function(a,b){
+						var al = a.nick.toLowerCase(),
+							bl = b.nick.toLowerCase();
 						return al==bl?(a==b?0:a<b?-1:1):al<bl?-1:1;
 					});
 					$('#UserList').empty().append(
-						$.map(usrs,function(u){
+						$.map(self.users,function(u){
 							var getInfo,
 								ne = encodeURIComponent(u.nick),
 								n = $('<span>').text(u.nick).html();
 							return $('<span>')
-								.attr('title',(settings.getNetworks()[u.network]!==undefined?settings.getNetworks()[u.network].name:'Unknown Network'))
+								.attr('title',settings.getNetwork(u.network).name)
 								.append(
-									(settings.getNetworks()[u.network]!==undefined?settings.getNetworks()[u.network].userlist.split('NICKENCODE').join(ne).split('NICK').join(n):n),
+									settings.getNetwork(u.network).userlist.split('NICKENCODE').join(ne).split('NICK').join(n),
 									'<br>'
 								)
 								.mouseover(function(){
-									getInfo = network.getJSON('Load.php?userinfo&name='+base64.encode(u.nick)+'&chan='+channels.getCurrent(false,true)+'&online='+u.network.toString(),function(data){
+									getInfo = network.getJSON('Load.php?userinfo&name='+base64.encode(u.nick)+'&chan='+channels.current().handlerB64+'&online='+u.network.toString(),function(data){
 										if(data.last){
 											$('#lastSeenCont').text('Last Seen: '+(new Date(data.last*1000)).toLocaleString());
 										}else{
@@ -1632,26 +1612,30 @@ oirc = (function(){
 					);
 				},
 				setUsers:function(u){
-					usrs = u;
+					self.users = u;
 				},
 				getNames:function(){
-					return $.map(usrs,function(u){
+					return $.map(self.users,function(u){
 						return u.nick;
 					});
-				},
-				reload:function(){
-					var num = false;
-					channels.current().reloadUserlist();
 				}
+			};
+			return {
+				add:self.add,
+				remove:self.remove,
+				draw:self.draw,
+				setUsers:self.setUsers,
+				getNames:self.getNames
 			};
 		})(),
 		topic = (function(){
-			var current = '';
-			return {
+			var self = {
 				set:function(t){
 					$('#topic').empty().append(t);
-					current = t;
 				}
+			};
+			return {
+				set:self.set
 			};
 		})(),
 		scroll = (function(){
@@ -1735,7 +1719,7 @@ oirc = (function(){
 					if(newTop==maxScroll){
 						isDown = true;
 					}
-					if(options.get('scrollBar')=='T'){
+					if(options.get('scrollBar')){
 						reCalcBar();
 					}
 				},
@@ -2014,12 +1998,12 @@ oirc = (function(){
 					$mBoxCont = $('#mBoxCont');
 					enableButtons();
 					headerOffset = $('#header').height() - 2;
-					if(options.get('scrollBar')=='T'){
+					if(options.get('scrollBar')){
 						showBar();
 					}else{
 						showButtons();
 					}
-					if(options.get('scrollWheel')=='T'){
+					if(options.get('scrollWheel')){
 						enableWheel();
 					}
 					enableUserlist();
@@ -2078,13 +2062,13 @@ oirc = (function(){
 					return msg;
 				},
 				support:function(){
-					return (('contentEditable' in document.documentElement) && options.get('wysiwyg')=='T');
+					return (('contentEditable' in document.documentElement) && options.get('wysiwyg'));
 				}
 			}
 		})(),
 		page = (function(){
 			var initSmileys = function(){
-					if(options.get('smileys')=='T'){
+					if(options.get('smileys')){
 						$('#smileyMenuButton')
 							.css('cursor','pointer')
 							.click(function(){
@@ -2128,7 +2112,7 @@ oirc = (function(){
 					$('#toggleButton')
 						.click(function(e){
 							e.preventDefault();
-							options.set(5,!(options.get('enable')=='T')?'T':'F');
+							options.set('enable',!options.get('enable'));
 							document.location.reload();
 						});
 				},
@@ -2167,9 +2151,9 @@ oirc = (function(){
 						is_android = ((nua.indexOf('Mozilla/5.0') > -1 && nua.indexOf('Android ') > -1 && nua.indexOf('AppleWebKit') > -1) && !(nua.indexOf('Chrome') > -1)),
 						is_ios = (nua.match(/(iPod|iPhone|iPad)/i) && nua.match(/AppleWebKit/i)),
 						is_mobile_webkit = (nua.match(/AppleWebKit/i) && nua.match(/Android/i));
-					$('body').css('font-size',(options.get('fontSize').charCodeAt(0) - 45).toString(10)+'pt');
-					hide_userlist = options.get('hideUserlist')=='T';
-					show_scrollbar = options.get('scrollBar')=='T';
+					$('body').css('font-size',options.get('fontSize').toString(10)+'pt');
+					hide_userlist = options.get('hideUserlist');
+					show_scrollbar = options.get('scrollBar');
 					page.changeLinks();
 					if(!wysiwyg.support()){
 						$('#message').replaceWith(
@@ -2226,14 +2210,14 @@ oirc = (function(){
 				load:function(){
 					indicator.start();
 					settings.fetch(function(){
-						if(options.get('enable')=='T'){
+						if(options.get('enable')){
 							init();
 							initSmileys();
 							send.init();
 							oldMessages.init();
 							channels.init();
-							ws.init()
-							channels.join(options.get('curChan').charCodeAt(0) - 45);
+							request.init()
+							channels.join(options.get('curChan'));
 						}else{
 							registerToggle();
 							$('#mBoxCont').empty().append(
@@ -2243,7 +2227,7 @@ oirc = (function(){
 									.text('OmnomIRC is disabled. Click here to enable.')
 									.click(function(e){
 										e.preventDefault();
-										options.set(5,'T');
+										options.set(5,true);
 										window.location.reload();
 									})
 							);
@@ -2268,35 +2252,39 @@ oirc = (function(){
 			};
 		})(),
 		statusBar = (function(){
-			var text = '',
-				started = false,
-				start = function(){
-					if(options.get('statusBar')!='T'){
+			var self = {
+				text:'',
+				started:false,
+				start:function(){
+					if(!options.get('statusBar')){
+						self.started = true; // no need to performthe check 9001 times
 						return;
 					}
-					if(!started){
+					if(!self.started){
 						setInterval(function(){
-							window.status = text;
+							window.status = self.text;
 							if(parent){
 								try{
-									parent.window.status = text;
+									parent.window.status = self.text;
 								}catch(e){}
 							}
 						},500);
-						started = true;
+						self.started = true;
 					}
-				};
-			return {
+				},
 				set:function(s){
-					text = s;
-					if(!started){
-						start();
+					self.text = s;
+					if(!self.started){
+						self.start();
 					}
 				}
 			};
+			return {
+				set:self.set
+			};
 		})(),
 		commands = (function(){
-			return {
+			var self = {
 				parse:function(s){
 					var command = s.split(' ')[0].toLowerCase(),
 						parameters = s.substr(command.length+1).toLowerCase().trim();
@@ -2336,6 +2324,9 @@ oirc = (function(){
 							return false;
 					}
 				}
+			};
+			return {
+				parse:self.parse
 			};
 		})(),
 		oldMessages = (function(){
@@ -2413,40 +2404,15 @@ oirc = (function(){
 						}
 					}else{
 						if(!sending){
-							if(ws.use()){
-								ws.send({
-									action:'message',
-									message:s
-								})
+							sending = true;
+							request.send(s,function(){
 								if(!wysiwyg.support()){
 									$('#message').val('');
 								}else{
 									$('#message').html('');
 								}
-							}else{
-								sending = true;
-								request.cancel();
-								network.getJSON('message.php?message='+base64.encode(s)+'&channel='+channels.current().handlerB64,function(){
-									if(!wysiwyg.support()){
-										$('#message').val('');
-									}else{
-										$('#message').html('');
-									}
-									request.start();
-									sending = false;
-								});
-							}
-							/*if(s.search('goo.gl/QMET')!=-1 || s.search('oHg5SJYRHA0')!=-1 || s.search('dQw4w9WgXcQ')!=-1){
-								$('<div>')
-									.css({
-										position:'absolute',
-										zIndex:39,
-										top:39,
-										left:0
-									})
-									.html('<object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=6,0,29,0"><param name="movie" value="http://134.0.27.190/juju/i-lost-the-ga.me/rickroll.swf"><param name="quality" value="high"><embed src="http://134.0.27.190/juju/i-lost-the-ga.me/rickroll.swf" quality="high" pluginspage="http://www.macromedia.com/go/getflashplayer" type="application/x-shockwave-flash"></embed></object>')
-									.appendTo('body');
-							}*/
+								sending = false;
+							});
 						}
 					}
 				};
@@ -2459,7 +2425,7 @@ oirc = (function(){
 						name:'',
 						message:s,
 						name2:'',
-						chan:channels.getCurrent()
+						chan:channels.current().handler
 					});
 				},
 				init:function(){
@@ -2579,8 +2545,7 @@ oirc = (function(){
 					var d = new Date();
 					
 					indicator.start();
-					request.cancel();
-					ws.dissallowRecLines();
+					request.stop();
 					
 					$('#message').attr('disabled','true');
 					users.setUsers([]); //empty userlist
@@ -2589,7 +2554,7 @@ oirc = (function(){
 					$('#logDatePicker').css('display','none');
 					$('#logsHeader').css('display','block');
 					
-					$('#logChanIndicator').text(channels.getCurrentName());
+					$('#logChanIndicator').text(channels.current().name);
 					
 					year = parseInt(d.getFullYear(),10);
 					month = parseInt(d.getMonth()+1,10);
@@ -2602,21 +2567,14 @@ oirc = (function(){
 				close = function(){
 					var num;
 					
-					ws.allowRecLines()
 					
 					$('#chattingHeader').css('display','block');
 					$('#logsHeader').css('display','none');
-					$.each(channels.getChans(),function(i,c){
-						if(c.chan==channels.getCurrent() || c.id==channels.getCurrent()){
-							num = i;
-							return false;
-						}
-					});
-					channels.join(num);
 					isOpen = false;
+					channels.current().reload();
 				},
 				fetchPart = function(n){
-					network.getJSON('Log.php?day='+getLogUrlParam()+'&offset='+parseInt(n,10)+'&channel='+channels.getCurrent(false,true),function(data){
+					network.getJSON('Log.php?day='+getLogUrlParam()+'&offset='+parseInt(n,10)+'&channel='+channels.current().handlerB64,function(data){
 						if(!data.banned){
 							if(data.lines.length>=1000){
 								fetchPart(n+1000);
@@ -2699,7 +2657,7 @@ oirc = (function(){
 						sum = 0,
 						i = 0,
 						cn = n,
-						net = settings.getNetworks()[o],
+						net = settings.getNetwork(o),
 						addLink = true;
 					switch(options.get('colordNames')){
 						case '1': // calc
@@ -2842,12 +2800,12 @@ oirc = (function(){
 					return colorStr;
 				},
 				parseHighlight = function(s){
-					if(s.toLowerCase().indexOf(settings.nick().toLowerCase().substr(0,parseInt(options.get('charsHigh'),10)+1)) >= 0 && settings.nick() != ''){
+					if(s.toLowerCase().indexOf(settings.nick().toLowerCase().substr(0,options.get('charsHigh'))) >= 0 && settings.nick() != ''){
 						var style = '';
-						if(options.get('highRed')!='T'){
+						if(!options.get('highRed')){
 							style += 'background:none;padding:none;border:none;';
 						}
-						if(options.get('highBold')=='T'){
+						if(options.get('highBold')){
 							style += 'font-weight:bold;';
 						}
 						return '<span class="highlight" style="'+style+'">'+s+'</span>';
@@ -2861,7 +2819,7 @@ oirc = (function(){
 					s = (s=="\x00"?'':s); //fix 0-string bug
 					s = $('<span>').text(s).html();
 					s = parseLinks(s);
-					if(options.get('smileys')=='T' && noSmileys===false){
+					if(options.get('smileys') && noSmileys===false){
 						s = parseSmileys(s);
 					}
 					s = parseColors(s);
@@ -2873,15 +2831,14 @@ oirc = (function(){
 					if(loadMode===undefined){
 						loadMode = false;
 					}
-					if(line.curLine > request.getCurLine()){
-						request.setCurLine(line.curLine);
-					}
+					request.setCurLine(line.curLine);
 					if(
 						line.name === null || line.name === undefined || line.type === null || ignores.indexOf(line.name.toLowerCase()) > -1
 						|| (
 							line.chan.toString().toLowerCase()!=channels.current().handler.toLowerCase()
 							&& ('*'+line.chan).toLowerCase()!=channels.current().handler.toLowerCase()
 							&& line.chan.toString()[0]!='*' && line.chan.toString().toLowerCase()!=settings.nick().toLowerCase()
+							&& line.type != 'highlight'
 						)
 						){
 						return true; // invalid line but we don't want to stop the new requests
@@ -2899,28 +2856,21 @@ oirc = (function(){
 					if((['message','action','pm','pmaction'].indexOf(line.type)>=0) && line.name.toLowerCase() != '*'){
 						tdMessage = message = parseHighlight(message,line);
 						if(page.isBlurred()){
-							notification.make('('+channels.getCurrentName()+') <'+line.name+'> '+line.message,line.chan);
+							notification.make('('+channels.current().name+') <'+line.name+'> '+line.message,line.chan);
 						}
 					}
 					switch(line.type){
 						case 'reload':
 							addLine = false;
 							if(!loadMode){
-								var num;
-								$.each(channels.getChans(),function(i,c){
-									if(c.chan==channels.getCurrent() || c.id==channels.getCurrent()){
-										num = i;
-										return false;
-									}
-								});
-								channels.join(num);
+								channels.current().reload();
 								return false;
 							}
 							break;
 						case 'reload_userlist':
 							addLine = false;
 							if(!loadMode){
-								users.reload();
+								channels.current().reloadUserlist();
 								return true;
 							}
 						case 'relog':
@@ -2943,7 +2893,7 @@ oirc = (function(){
 									network:line.network
 								});
 							}
-							if(addLine && settings.getNetworks()[line.network].type==1 && options.get('oircJoinPart')=='F'){
+							if(addLine && settings.getNetwork(line.network).type==1 && options.get('oircJoinPart')){
 								addLine = false;
 							}
 							break;
@@ -2955,7 +2905,7 @@ oirc = (function(){
 									network:line.network
 								});
 							}
-							if(addLine && settings.getNetworks()[line.network].type==1 && options.get('oircJoinPart')=='F'){
+							if(addLine && settings.getNetwork(line.network).type==1 && options.get('oircJoinPart')){
 								addLine = false;
 							}
 							break;
@@ -2967,7 +2917,7 @@ oirc = (function(){
 									network:line.network
 								});
 							}
-							if(addLine && settings.getNetworks()[line.network].type==1 && options.get('oircJoinPart')=='F'){
+							if(addLine && settings.getNetwork(line.network).type==1 && options.get('oircJoinPart')){
 								addLine = false;
 							}
 							break;
@@ -3017,7 +2967,7 @@ oirc = (function(){
 							tdMessage = [name,' has changed the topic to ',parseMessage(line.message,true)];
 							break;
 						case 'pm':
-							if(channels.current().name.toLowerCase() == '*'+line.name.toLowerCase() || channels.current().name.toLowerCase() == '*'+line.chan.toLowerCase()){
+							if(channels.current().name == '*'+line.name.toLowerCase() || channels.current().name == '*'+line.chan.toLowerCase()){
 								tdName = name;
 								line.type = 'message';
 							}else{
@@ -3036,7 +2986,7 @@ oirc = (function(){
 							}
 							break;
 						case 'pmaction':
-							if(channels.current().name.toLowerCase() == '*'+line.name.toLowerCase() || channels.current().name.toLowerCase() == '*'+line.chan.toLowerCase()){
+							if(channels.current().name == '*'+line.name.toLowerCase() || channels.current().name == '*'+line.chan.toLowerCase()){
 								tdMessage = [name,' ',message];
 								line.type = 'action';
 							}else{
@@ -3080,17 +3030,17 @@ oirc = (function(){
 						}else{
 							statusTxt = '<'+line.name+'> ';
 						}
-						if(options.get('times')=='T'){
+						if(options.get('times')){
 							statusTxt = '['+(new Date(line.time*1000)).toLocaleTimeString()+'] '+statusTxt;
 						}
 						statusTxt += $('<span>').append(tdMessage).text();
 						statusBar.set(statusTxt);
 						
 						var $tr = $('<tr>')
-							.addClass((options.get('altLines')=='T' && (lineHigh = !lineHigh)?'lineHigh':''))
+							.addClass((options.get('altLines') && (lineHigh = !lineHigh)?'lineHigh':''))
 							.addClass(((new Date(lastMessage)).getDay()!=(new Date(line.time*1000)).getDay())?'seperator':'') //new day indicator
 							.append(
-								(options.get('times')=='T'?$('<td>')
+								(options.get('times')?$('<td>')
 									.addClass('irc-date')
 									.append('['+(new Date(line.time*1000)).toLocaleTimeString()+']'):''),
 								$('<td>')
@@ -3120,7 +3070,7 @@ oirc = (function(){
 					ignores = a;
 				},
 				parseTextDecorations:function(s){
-					if(s !== '' && options.get('textDeco') == 'T'){
+					if(s !== '' && options.get('textDeco')){
 						if(s[0] == '>'){
 							s = '\x033'+s;
 						}
@@ -3144,12 +3094,12 @@ oirc = (function(){
 							$('#options').height($(window).height() - 75);
 						}
 					});
-					$('body').css('font-size',(options.get('fontSize').charCodeAt(0) - 45).toString(10)+'pt');
+					$('body').css('font-size',options.get('fontSize').toString(10)+'pt');
 					$('#options').append(options.getHTML());
 				});
 				break;
 			case 'admin':
-				admin.init();
+				$.getScript('admin.js');
 				break;
 			//case 'main': // no need, already caught by default.
 			default:
@@ -3169,12 +3119,8 @@ oirc = (function(){
 			}
 		},
 		indicator:{
-			start:function(){
-				indicator.start();
-			},
-			stop:function(){
-				indicator.stop();
-			}
+			start:indicator.start,
+			stop:indicator.stop
 		},
 		network:{
 			getJSON:function(s,fn,async,urlparams){

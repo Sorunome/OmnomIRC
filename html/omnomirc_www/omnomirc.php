@@ -908,16 +908,12 @@ class OmnomIRC{
 							`type` != 'pm'
 							AND
 							LOWER(`channel`) = LOWER(?)
-							AND NOT
-							(
-								(`type` = 'join' OR `type` = 'part') AND `Online` = ?
-							)
 						)
 						ORDER BY `line_number` DESC
 						LIMIT ?,?
 					) AS x
 					ORDER BY `line_number` ASC
-					",array($you->chan,$you->getNetwork(),(int)$offset,(int)$count));
+					",array($you->chan,(int)$offset,(int)$count));
 			}
 			
 			$lines = $this->getLines($res,$table,true); // we don't want ignores to land in cache, thus override them!

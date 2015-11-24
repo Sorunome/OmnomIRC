@@ -242,7 +242,7 @@ td.action > a:nth-child(1) > span {
 	display:inline-block;
 	color:#22C;
 }
-.chanList.highlightChan{
+.chanList.highlightChan > .chan{
 	color:#CC2222;
 }
 .chan{
