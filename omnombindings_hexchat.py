@@ -23,6 +23,7 @@ def getNick(prefix,nick):
 		nick = addColor(nick)
 	else: # as omnomirc can color nicks on itself
 		nick = hexchat.strip(nick)
+	nick = nick.replace(' ','\xA0')
 	return '\x0F'+prefix+'\x0F\xA0'+nick
 def topicBinding(word,word_eol,userdata):
 	s = hexchat.strip(word[0])

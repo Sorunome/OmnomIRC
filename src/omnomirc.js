@@ -55,7 +55,7 @@ oirc = (function(){
 						self.checkLoginUrl = data.checkLoginUrl;
 						
 						set = ls.get('checklogin');
-						if(!set){
+						if(!set || clOnly){
 							network.getJSON(self.checkLoginUrl+'&network='+self.net.toString()+'&jsoncallback=?',function(data){
 								self.nick = data.nick;
 								self.signature = data.signature;
@@ -274,7 +274,9 @@ oirc = (function(){
 						}
 						self.didRelog = true;
 					}else{
-						self.didRelog = false; // relog successfull, new try!
+						if(data.relog!==undefined){
+							self.didRelog = false; // relog successfull, new try!
+						}
 						fn(data);
 					}
 				},
@@ -1063,6 +1065,12 @@ oirc = (function(){
 							},
 							reload:function(){
 								_parent.join(self.i);
+							},
+							setI:function(i){
+								self.i = i;
+							},
+							is:function(i){
+								return i == self.i;
 							}
 						};
 					return {
@@ -1075,7 +1083,9 @@ oirc = (function(){
 						reload:self.reload,
 						loaded:function(){
 							return self.loaded;
-						}
+						},
+						setI:self.setI,
+						is:self.is
 					};
 				},
 				self = {
@@ -1087,7 +1097,7 @@ oirc = (function(){
 					load:function(){
 						try{
 							var chanList = ls.get('channels'),
-								exChans = $.map(chans,function(ch){
+								exChans = $.map(self.chans,function(ch){
 									if((ch.ex && options.get('extraChans')) || !ch.ex){
 										return ch;
 									}
@@ -1194,14 +1204,15 @@ oirc = (function(){
 								}else{
 									$(elem).find('div').css('display','none');
 									$('#topicDragPlaceHolder').replaceWith(elem);
-									chans = $.map($('.chanList'),function(chan,i){
+									self.chans = $.map($('.chanList'),function(chan,i){
 										if($(chan).find('span').hasClass('curchan')){
-											options.set(4,i);
+											options.set('curChan',i);
+											self.current.setI(i);
 										}
 										return $(chan).data('json');
 									});
-									save();
-									draw();
+									self.save();
+									self.draw();
 								}
 							};
 						$('#ChanList').empty().append(
@@ -1213,7 +1224,7 @@ oirc = (function(){
 										.addClass('chanList'+(c.high?' highlightChan':''))
 										.append(
 											$('<span>')
-												.addClass('chan '+(i==self.current.i?' curchan':''))
+												.addClass('chan '+(self.current.is(i)?' curchan':''))
 												.append(
 													(c.chan.substr(0,1)!='#'?
 													$('<span>')
@@ -1276,9 +1287,9 @@ oirc = (function(){
 						);
 					},
 					init:function(){
+						self.current = Channel(-1,self);
 						self.load();
 						self.draw();
-						self.current = Channel(-1,self);
 					},
 					getHandler:function(i,b64){
 						if(self.chans[i].id!=-1){
@@ -1410,7 +1421,7 @@ oirc = (function(){
 							send.internal('<span style="color:#C73232;"> Part Error: I cannot part '+self.chans[i].chan+'. (IRC channel.)</span>');
 							return;
 						}
-						if(i == self.current.i){
+						if(self.current.is(i)){
 							select = true;
 						}
 						self.chans.splice(i,1);
@@ -1599,7 +1610,7 @@ oirc = (function(){
 											$('#lastSeenCont').text('Last Seen: never');
 										}
 										$('#lastSeenCont').css('display','block');
-									},undefined,false);
+									});
 								})
 								.mouseout(function(){
 									try{
@@ -2227,7 +2238,7 @@ oirc = (function(){
 									.text('OmnomIRC is disabled. Click here to enable.')
 									.click(function(e){
 										e.preventDefault();
-										options.set(5,true);
+										options.set('enable',true);
 										window.location.reload();
 									})
 							);

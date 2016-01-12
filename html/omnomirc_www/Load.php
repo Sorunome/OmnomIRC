@@ -21,14 +21,15 @@
 include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 if(isset($_GET['userinfo'])){
 	$json->clear();
-	if(isset($_GET['name']) && isset($_GET['chan']) && isset($_GET['online'])){
+	if($you->isBanned()){
+		$json->addError('banned');
+	}elseif(isset($_GET['name']) && isset($_GET['chan']) && isset($_GET['online'])){
 		$temp = $sql->query_prepare("SELECT `lastMsg` FROM `irc_users` WHERE username=? AND channel=? AND online=?",array(base64_url_decode($_GET['name']),(preg_match('/^[0-9]+$/',$_GET['chan'])?$_GET['chan']:base64_url_decode($_GET['chan'])),(int)$_GET['online']));
 		$json->add('last',(int)$temp[0]['lastMsg']);
-		echo $json->get();
 	}else{
 		$json->addError('Bad parameters');
-		echo $json->get();
 	}
+	echo $json->get();
 	exit;
 }
 
