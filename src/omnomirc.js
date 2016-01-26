@@ -227,14 +227,14 @@ oirc = (function(){
 						if(data.errors!==undefined){
 							$.map(data.errors,function(e){
 								if(e.type!==undefined){
-									addError(url,e);
+									self.addError(url,e);
 								}else{
-									addError(url,{
+									self.addError(url,{
 										type:'misc',
 										message:e
 									});
 								}
-								if(errorsOpen){
+								if(self.errorsOpen){
 									$('.errors > .errorPopupCont').append(self.getSinglePopupEntry(errors[errors.length - 1]));
 								}
 							});
@@ -242,14 +242,14 @@ oirc = (function(){
 						if(data.warnings!==undefined){
 							$.map(data.warnings,function(w){
 								if(w.type!==undefined){
-									addWarning(url,w);
+									self.addWarning(url,w);
 								}else{
-									addWarning(url,{
+									self.addWarning(url,{
 										type:'misc',
 										message:w
 									});
 								}
-								if(warningsOpen){
+								if(self.warningsOpen){
 									$('.warnings > .errorPopupCont').append(self.getSinglePopupEntry(warnings[warnings.length - 1]));
 								}
 							});
@@ -360,19 +360,19 @@ oirc = (function(){
 				init:function(){
 					$('#errors > .icon')
 						.click(function(){
-							if(!errorsOpen){
-								errorsOpen = true;
-								makePopup('Errors',errors,function(){
-									errorsOpen = false;
+							if(!self.errorsOpen){
+								self.errorsOpen = true;
+								self.makePopup('Errors',self.errors,function(){
+									self.errorsOpen = false;
 								});
 							}
 						});
 					$('#warnings > .icon')
 						.click(function(){
-							if(!warningsOpen){
-								warningsOpen = true;
-								makePopup('Warnings',warnings,function(){
-									warningsOpen = false;
+							if(!self.warningsOpen){
+								self.warningsOpen = true;
+								self.makePopup('Warnings',self.warnings,function(){
+									self.warningsOpen = false;
 								});
 							}
 						});
@@ -789,6 +789,7 @@ oirc = (function(){
 					ssl:true,
 					tryFallback:true,
 					fallback:function(){
+						console.log('trying fallback...');
 						if(self.ws.tryFallback){
 							try{
 								self.ws.tryFallback = false;
@@ -844,14 +845,16 @@ oirc = (function(){
 							}catch(e){};
 						};
 						self.ws.socket.onclose = function(e){
+							console.log(e);
 							self.ws.use = false;
 							self.ws.fallback();
-						};
+						};/*
 						self.ws.socket.onerror = function(e){
+							console.log(e);
 							self.ws.socket.close();
 							self.ws.use = false;
 							self.ws.fallback();
-						};
+						};*/
 						
 						self.ws.identify();
 						
@@ -1233,7 +1236,7 @@ oirc = (function(){
 															width:9,
 															float:'left'
 														})
-														.mouseup(function(){
+														.mouseup(function(e){
 															if(canClick){
 																channels.part(i);
 															}
@@ -1293,6 +1296,9 @@ oirc = (function(){
 					},
 					getHandler:function(i,b64){
 						if(self.chans[i].id!=-1){
+							if((typeof self.chans[i].id)!='number' && b64){
+								return base64.encode(self.chans[i].id);
+							}
 							return self.chans[i].id.toString();
 						}
 						if(b64){
@@ -1347,9 +1353,13 @@ oirc = (function(){
 							self.save();
 						}
 					},
-					addChan:function(s,join){
+					addChan:function(s,join,chanid){
+						var addChan = true;
+						if(chanid === undefined){
+							chanid = -1;
+						}
 						s = s.toLowerCase();
-						$.each(chans,function(i,c){
+						$.each(self.chans,function(i,c){
 							if(c.chan==s){
 								addChan = i;
 							}
@@ -1359,7 +1369,7 @@ oirc = (function(){
 								chan:s,
 								high:!join,
 								ex:false,
-								id:-1,
+								id:chanid,
 								order:-1
 							});
 							self.save();
@@ -1368,7 +1378,7 @@ oirc = (function(){
 								self.join(self.chans.length-1);
 							}
 						}else{
-							chans[addChan].high |= !join;
+							self.chans[addChan].high |= !join;
 							if(join){
 								self.join(addChan);
 							}
@@ -1383,27 +1393,35 @@ oirc = (function(){
 						// s will now be either prefixed with # or with @
 						self.addChan(s,true);
 					},
-					openPm:function(s,join){
-						var addChan = true;
-						if(join===undefined){
-							join = false;
+					openPm:function(s,n,join){
+						var addChan = true,
+							callback = function(nick,id){
+							if(join===undefined){
+								join = false;
+							}
+							nick = nick.trim();
+							if(nick.substr(0,1)!='*'){
+								nick = '*'+s;
+							}
+							// s will now be prefixed with *
+							self.addChan(nick,join,id);
 						}
-						s = s.trim();
-						if(s.substr(0,1)=='@' || s.substr(0,1)=='#'){
-							send.internal('<span style="color:#C73232;"> Query Error: Cannot query a channel. Use /join instead.</span>');
-							return;
+						if(n === ''){
+							network.getJSON('Load.php?openpm='+base64.encode(s),function(data){
+								if(data.chanid){
+									callback(data.channick,data.chanid);
+								}else{
+									send.internal('<span style="color:#C73232;">Query Error: User not found.</span>');
+								}
+							});
+						}else{
+							callback(s,n);
 						}
-						s = s.toLowerCase();
-						if(s.substr(0,1)!='*'){
-							s = '*'+s;
-						}
-						// s will now be prefixed with *
-						self.addChan(s,join);
 					},
 					part:function(i){
 						var select = false;
 						if(parseInt(i,10) == i){ // we convert it to a number so that we don't have to deal with it
-							i = parseInt(1,10);
+							i = parseInt(i,10);
 						}
 						if((typeof i)!='number'){
 							// a string was passed, we need to get the correct i
@@ -1413,7 +1431,7 @@ oirc = (function(){
 								}
 							});
 						}
-						if((typeof i)!='number' || self.chans[i] !== undefined){ // we aren#t in the channel
+						if((typeof i)!='number' || self.chans[i] === undefined){ // we aren#t in the channel
 							send.internal('<span style="color:#C73232;"> Part Error: I cannot part '+i+'. (You are not in it.)</span>');
 							return;
 						}
@@ -2302,11 +2320,11 @@ oirc = (function(){
 					switch(command){
 						case 'j':
 						case 'join':
-							channels.openChan(parameters);
+							channels.open(parameters);
 							return true;
 						case 'q':
 						case 'query':
-							channels.openPm(parameters,true);
+							channels.openPm(parameters,'',true);
 							return true;
 						case 'win':
 						case 'w':
@@ -2845,12 +2863,7 @@ oirc = (function(){
 					request.setCurLine(line.curLine);
 					if(
 						line.name === null || line.name === undefined || line.type === null || ignores.indexOf(line.name.toLowerCase()) > -1
-						|| (
-							line.chan.toString().toLowerCase()!=channels.current().handler.toLowerCase()
-							&& ('*'+line.chan).toLowerCase()!=channels.current().handler.toLowerCase()
-							&& line.chan.toString()[0]!='*' && line.chan.toString().toLowerCase()!=settings.nick().toLowerCase()
-							&& line.type != 'highlight'
-						)
+						|| line.chan.toString().toLowerCase()!=channels.current().handler.toLowerCase()
 						){
 						return true; // invalid line but we don't want to stop the new requests
 					}
@@ -2978,7 +2991,7 @@ oirc = (function(){
 							tdMessage = [name,' has changed the topic to ',parseMessage(line.message,true)];
 							break;
 						case 'pm':
-							if(channels.current().name == '*'+line.name.toLowerCase() || channels.current().name == '*'+line.chan.toLowerCase()){
+							if(line.chan==channels.current().handler){
 								tdName = name;
 								line.type = 'message';
 							}else{
@@ -2997,7 +3010,7 @@ oirc = (function(){
 							}
 							break;
 						case 'pmaction':
-							if(channels.current().name == '*'+line.name.toLowerCase() || channels.current().name == '*'+line.chan.toLowerCase()){
+							if(line.chan == channels.current().handler){
 								tdMessage = [name,' ',message];
 								line.type = 'action';
 							}else{

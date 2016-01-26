@@ -32,7 +32,18 @@ if(isset($_GET['userinfo'])){
 	echo $json->get();
 	exit;
 }
-
+if(isset($_GET['openpm'])){
+	$json->clear();
+	if($you->isBanned()){
+		$json->addError('banned');
+	}else{
+		$temp = $sql->query_prepare("SELECT `name`,`network`,`uid` FROM `irc_userstuff` WHERE LOWER(`name`)=LOWER(?) AND `network`=?",array(base64_url_decode($_GET['openpm']),isset($_GET['checknet'])?$_GET['checknet']:$you->getNetwork()));
+		$json->add('chanid','*'.$you->getWholePmHandler($temp[0]['name'],$temp[0]['network']));
+		$json->add('channick',$temp[0]['name']);
+	}
+	echo $json->get();
+	exit;
+}
 $net = $networks->get($you->getNetwork());
 if(!$you->isLoggedIn() && $net['config']['guests'] == 0){
 	$json->add('message','You need to log in to be able to view chat!');

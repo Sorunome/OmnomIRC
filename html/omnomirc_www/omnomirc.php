@@ -626,32 +626,6 @@ class You{
 		
 		$this->network = $networks->getNetworkId();
 		
-		if(isset($_GET['channel'])){
-			if(preg_match('/^[0-9]+$/',$_GET['channel'])){
-				$this->setChan($_GET['channel']);
-			}else{
-				$this->setChan(base64_url_decode($_GET['channel']));
-			}
-		}else{
-			if($ADMINPAGE!==true){
-				$order = -1;
-				$defaultChan = '';
-				foreach($config['channels'] as $chan){
-					if($chan['enabled']){
-						foreach($chan['networks'] as $cn){
-							if($cn['id'] == $this->network && ($order == -1 || $cn['order']<$order)){
-								$order = $cn['order'];
-								$defaultChan = $chan['id'];
-							}
-						}
-					}
-				}
-				$json->addWarning('Didn\'t set a channel, defaulting to '.$defaultChan);
-			}else{
-				$defaultChan = 'false';
-			}
-			$this->chan = $defaultChan;
-		}
 		
 		$json->add('network',$this->network);
 		if($this->network == 0){ // server network, do aditional validating
@@ -676,6 +650,34 @@ class You{
 				$this->nick = false;
 			}
 		}
+		
+		
+		if(isset($_GET['channel'])){
+			if(preg_match('/^\d+$/',$_GET['channel'])){
+				$this->setChan($_GET['channel']);
+			}else{
+				$this->setChan(base64_url_decode($_GET['channel']));
+			}
+		}else{
+			if($ADMINPAGE!==true){
+				$order = -1;
+				$defaultChan = '';
+				foreach($config['channels'] as $chan){
+					if($chan['enabled']){
+						foreach($chan['networks'] as $cn){
+							if($cn['id'] == $this->network && ($order == -1 || $cn['order']<$order)){
+								$order = $cn['order'];
+								$defaultChan = $chan['id'];
+							}
+						}
+					}
+				}
+				$json->addWarning('Didn\'t set a channel, defaulting to '.$defaultChan);
+			}else{
+				$defaultChan = 'false';
+			}
+			$this->chan = $defaultChan;
+		}
 	}
 	public function setChan($channel){
 		global $json,$config;
@@ -684,8 +686,14 @@ class You{
 			echo $json->get();
 			die();
 		}
-		if(!preg_match('/^[0-9]+$/',$channel) && $channel[0]!="*" && $channel[0]!="#" && $channel[0]!="@" && $channel[0]!="&"){
+		if(!preg_match('/^\d+$/',$channel) && $channel[0]!="*" && $channel[0]!="#" && $channel[0]!="@" && $channel[0]!="&"){
 			$json->addError('Invalid channel');
+			echo $json->get();
+			die();
+		}
+		$json->add('chan',$channel);
+		if($channel[0] == '*' && $this->getPmHandler() != '' && (!preg_match('/^(\[\d+,\d+\]){2}$/',ltrim($channel,'*')) || strpos($channel,$this->getPmHandler())===false)){
+			$json->addError('Invalid PM channel');
 			echo $json->get();
 			die();
 		}
@@ -827,6 +835,36 @@ class You{
 	public function getUid(){
 		return $this->id;
 	}
+	public function getPmHandler(){
+		if(!$this->loggedIn){
+			return '';
+		}
+		return '['.$this->network.','.$this->id.']';
+	}
+	public function getWholePmHandler($nick,$net = false){
+		global $omnomirc;
+		$youhandler = $this->getPmHandler();
+		if($youhandler == ''){
+			return '';
+		}
+		if($net === false){
+			$net = $this->network;
+		}
+		$uid = $omnomirc->getUid($nick,$net);
+		if($uid === NULL){
+			return '';
+		}
+		$otherhandler = '['.$net.','.$uid.']';
+		if($net < $this->network){
+			return $otherhandler.$youhandler;
+		}elseif($this->network < $net){
+			return $youhandler.$otherhandler;
+		}elseif($uid < $this->id){
+			return $otherhandler.$youhandler;
+		}else{
+			return $youhandler.$otherhandler;
+		}
+	}
 }
 $you = new You();
 class OmnomIRC{
@@ -873,48 +911,22 @@ class OmnomIRC{
 		$count -= $offset;
 		// $table is NEVER user-defined, only possible values are irc_lines and irc_lines_old!!!!!
 		while(true){
-			if($you->chan[0] == '*' && $you->nick){ // PM
-				$res = $sql->query_prepare("SELECT x.* FROM
+			$res = $sql->query_prepare("SELECT x.* FROM
+				(
+					SELECT * FROM `$table`
+					WHERE
 					(
-						SELECT * FROM `$table` 
-						WHERE
-						(
-							(
-								LOWER(`channel`) = LOWER(?)
-								AND
-								LOWER(`name1`) = LOWER(?)
-							)
-							OR
-							(
-								LOWER(`channel`) = LOWER(?)
-								AND
-								LOWER(`name1`) = LOWER(?)
-							)
-						)
-						AND `online` = ?
-						ORDER BY `line_number` DESC
-						LIMIT ?,?
-					) AS x
-					ORDER BY `line_number` ASC
-					",array(substr($you->chan,1),$you->nick,$you->nick,substr($you->chan,1),$you->getNetwork(),(int)$offset,(int)$count));
-			}else{
-				$res = $sql->query_prepare("SELECT x.* FROM
-					(
-						SELECT * FROM `$table`
-						WHERE
-						(
-							`type` != 'server'
-							AND
-							`type` != 'pm'
-							AND
-							LOWER(`channel`) = LOWER(?)
-						)
-						ORDER BY `line_number` DESC
-						LIMIT ?,?
-					) AS x
-					ORDER BY `line_number` ASC
-					",array($you->chan,(int)$offset,(int)$count));
-			}
+						`type` != 'server'
+						AND
+						`type` != 'pm'
+						AND
+						LOWER(`channel`) = LOWER(?)
+					)
+					ORDER BY `line_number` DESC
+					LIMIT ?,?
+				) AS x
+				ORDER BY `line_number` ASC
+				",array($you->chan,(int)$offset,(int)$count));
 			
 			$lines = $this->getLines($res,$table,true); // we don't want ignores to land in cache, thus override them!
 			
@@ -1225,6 +1237,7 @@ if(isset($_GET['ident'])){
 	$json->add('loggedin',$you->isLoggedIn());
 	$json->add('isglobalop',$you->isGlobalOp());
 	$json->add('isbanned',$you->isBanned());
+	$json->add('channel',$you->chan);
 	echo $json->get();
 	exit;
 }

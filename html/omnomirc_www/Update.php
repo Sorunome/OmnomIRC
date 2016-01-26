@@ -56,13 +56,8 @@ if(isset($_GET['high'])){
 	$numCharsHighlight = 4;
 }
 $channel = $you->chan;
-$pm = false;
 $nick = $you->nick;
-if($channel[0] == '*' && $nick){ //PM
-	$sender = substr($channel,1);
-	$channel = $nick;
-	$pm = true;
-}
+
 $countBeforeQuit = 0;
 $you->update();
 
@@ -84,21 +79,7 @@ while(true){
 			AND
 			(
 				(
-					(
-						`channel` = ?
-						OR
-						(
-							`channel` = ?
-							AND
-							`Online` = ?
-						)
-						OR
-						(
-							`name1` = ?
-							AND
-							`Online` = ?
-						)
-					)
+					`channel` = ?
 					AND
 					`type`!='server'
 				)
@@ -110,7 +91,7 @@ while(true){
 					AND
 					name2=?
 				)
-		)",array($curline,$channel,$nick,$you->getNetwork(),$nick,$you->getNetwork(),$nick,$channel));
+		)",array($curline,$channel,$nick,$channel));
 	}else{
 		$query = $sql->query_prepare("SELECT * FROM `irc_lines` WHERE `line_number` > ? AND (`channel` = '?')",array($curline,$channel));
 	}

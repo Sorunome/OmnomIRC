@@ -31,6 +31,26 @@ function removeLinebrakes($s){
 function strip_irc_colors($s){
 	return preg_replace("/(\x02|\x0F|\x16|\x1D|\x1F|\x03(\d{1,2}(,\d{1,2})?)?)/",'',$s);
 }
+
+
+function getOtherPmHandler($channel){
+	global $you;
+	$youhandler = $you->getPmHandler();
+	$channel = ltrim($channel,'*');
+	$parts = explode('][',$channel);
+	if(sizeof($parts) != 2){
+		return '';
+	}
+	$parts[0] .= ']';
+	$parts[1] = '['.$parts[1];
+	if($parts[0] == $youhandler){
+		return $parts[1];
+	}elseif($parts[1] == $youhandler){
+		return $parts[0];
+	}else{
+		return '';
+	}
+}
 $message = (isset($_GET['message'])?$_GET['message']:'');
 if(strlen($message) < 4){
 	$json->addError('Bad message');
@@ -67,7 +87,6 @@ if($json->hasErrors() || $json->hasWarnings()){
 
 $nick = $you->nick;
 $channel = $you->chan;
-$pm = false;
 $sendNormal = true;
 $reload = false;
 $sendPm = false;
@@ -81,7 +100,7 @@ if(substr($parts[0],0,1)=='/'){
 		case 'j':
 		case 'join':
 			$channel = substr($message,6);
-			if($channel[0]!='#' && $channel[0]!='&' && !preg_match('/^[0-9]+$/',$channel)){
+			if(strpos($channel[0],'#&@') === false && !preg_match('/^\d+$/',$channel)){
 				$channel = '@'.$channel;
 			}
 			$you->setChan($channel);
@@ -90,21 +109,31 @@ if(substr($parts[0],0,1)=='/'){
 			break;
 		case 'q':
 		case 'query':
-			$channel = '*'.substr($message,7);
-			$you->setChan($channel);
-			$_SESSION['content'] = '';
 			$sendNormal = false;
+			$channel = '*'.$you->getWholePmHandler($message);
+			if($channel == '*'){
+				$sendPm = true;
+				$returnmessage = "\x034ERROR: User not found";
+			}else{
+				$you->setChan($channel);
+				$_SESSION['content'] = '';
+			}
 			break;
 		case 'msg':
 		case 'pm':
 			if(isset($parts[1]) && strlen($parts[1])>=1 && !preg_match('/^([0-9]+$|[#@*])/',$parts[1])){
-				$channel = $parts[1];
-				$pm=true;
-				$message = '';
-				unset($parts[0]);
-				unset($parts[1]);
-				$message = implode(' ',$parts);
-				$type = 'pm';
+				$channel = '*'.$you->getWholePmHandler($parts[1]);
+				if($channel == '*'){
+					$sendNormal = false;
+					$sendPm = true;
+					$returnmessage = "\x034ERROR: User not found";
+				}else{
+					$message = '';
+					unset($parts[0]);
+					unset($parts[1]);
+					$message = implode(' ',$parts);
+					$type = 'pm';
+				}
 			}else{
 				$sendNormal = false;
 				$sendPm = true;
@@ -293,7 +322,6 @@ if($channel[0] == '*'){
 	}else{
 		$type = 'pm';
 	}
-	$channel = substr($channel,1);
 }
 
 if($sendNormal){
@@ -301,7 +329,7 @@ if($sendNormal){
 	if($channels->isMode($channel,'c')){
 		$message = strip_irc_colors($message);
 	}
-	$relay->sendLine($nick,'',$type,$message);
+	$relay->sendLine($nick,in_array($type,array('pm','pmaction')) ? getOtherPmHandler($channel) : '',$type,$message,$channel);
 	if($cache = $memcached->get('oirc_lines_'.$channel)){
 		$lines_cached = json_decode($cache,true);
 		if(json_last_error()===0){
