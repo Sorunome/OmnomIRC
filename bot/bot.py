@@ -20,7 +20,7 @@
 #	You should have received a copy of the GNU General Public License
 #	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 
-import server,traceback,json,signal,time,pymysql,sys,socket
+import server,traceback,json,signal,time,pymysql,sys,socket,subprocess
 
 try:
 	import memcache
@@ -50,6 +50,25 @@ def makeUnicode(s):
 			except:
 				return s
 		return ''
+
+def execPhp(f,d):
+	s = []
+	for key,value in d.items():
+		s.append(str(key)+'='+str(value))
+	res = subprocess.Popen(['php',DOCUMENTROOT+'/'+f] + s,stdout=subprocess.PIPE).communicate()
+	try:
+		return json.loads(makeUnicode(res[0]))
+	except:
+		try:
+			return makeUnicode(res[0])
+		except:
+			try:
+				return res[0]
+			except:
+				return res
+
+def execPhp_wrap(self,a,b):
+	return execPhp(a,b)
 
 def stripIrcColors(s):
 	return re.sub(r"(\x02|\x0F|\x16|\x1D|\x1F|\x03(\d{1,2}(,\d{1,2})?)?)",'',s)
@@ -273,7 +292,7 @@ class RelayWebsockets(OircRelay):
 	relayType = 1
 	def initRelay(self):
 		import websockets
-		ws_handler = type('WebSocketsHandler_anon',(websockets.WebSocketsHandler,),{'handle':handle})
+		ws_handler = type('WebSocketsHandler_anon',(websockets.WebSocketsHandler,),{'handle':handle,'execPhp':execPhp_wrap})
 		if config.json['websockets']['ssl']:
 			self.server = server.SSLServer(self.config['host'],self.config['port'],ws_handler)
 		else:

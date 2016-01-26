@@ -20,11 +20,10 @@
 #	You should have received a copy of the GNU General Public License
 #	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 
-import server,traceback,re,struct,json,subprocess,time,bot,errno
+import server,traceback,re,struct,json,time,bot,errno
 from base64 import b64encode
 from hashlib import sha1
 
-DOCUMENTROOT = '/usr/share/nginx/html/oirc'
 
 def makeUnicode(s):
 	try:
@@ -37,21 +36,7 @@ def makeUnicode(s):
 				return s
 		return ''
 
-def execPhp(f,d):
-	s = []
-	for key,value in d.items():
-		s.append(str(key)+'='+str(value))
-	res = subprocess.Popen(['php',DOCUMENTROOT+'/'+f] + s,stdout=subprocess.PIPE).communicate()
-	try:
-		return json.loads(makeUnicode(res[0]))
-	except:
-		try:
-			return makeUnicode(res[0])
-		except:
-			try:
-				return res[0]
-			except:
-				return res
+
 
 def b64encode_wrap(s):
 	return makeUnicode(b64encode(bytes(s,'utf-8')))
@@ -192,7 +177,7 @@ class WebSocketsHandler(server.ServerHandler):
 			if 'action' in m:
 				if m['action'] == 'ident':
 					try:
-						r = execPhp('omnomirc.php',{
+						r = self.execPhp('omnomirc.php',{
 							'ident':'',
 							'nick':b64encode_wrap(m['nick']),
 							'signature':b64encode_wrap(m['signature']),
@@ -231,7 +216,7 @@ class WebSocketsHandler(server.ServerHandler):
 						c = str(int(self.chan))
 					except:
 						c = b64encode_wrap(self.chan)
-					r = execPhp('omnomirc.php',{
+					r = self.execPhp('omnomirc.php',{
 						'ident':'',
 						'nick':b64encode_wrap(self.nick),
 						'signature':b64encode_wrap(self.sig),
@@ -263,7 +248,7 @@ class WebSocketsHandler(server.ServerHandler):
 										except:
 											c = b64encode_wrap(c)
 										
-										r = execPhp('message.php',{
+										r = self.execPhp('message.php',{
 											'message':b64encode_wrap(msg),
 											'channel':c,
 											'nick':b64encode_wrap(self.nick),
