@@ -20,7 +20,21 @@
 #	You should have received a copy of the GNU General Public License
 #	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 
-import server,traceback
+import server,traceback,struct,re
+
+def stripIrcColors(s):
+	return re.sub(r"(\x02|\x0F|\x16|\x1D|\x1F|\x03(\d{1,2}(,\d{1,2})?)?)",'',s)
+
+def makeUnicode(s):
+	try:
+		return s.decode('utf-8')
+	except:
+		if s!='':
+			try:
+				return s.decode(chardet.detect(s)['encoding'])
+			except:
+				return s
+		return ''
 
 #gCn bridge
 class CalculatorHandler(server.ServerHandler):
@@ -31,11 +45,11 @@ class CalculatorHandler(server.ServerHandler):
 	def userJoin(self):
 		c = self.chanToId(self.chan)
 		if c!=-1:
-			handle.addUser(self.calcName,c,self.i)
+			self.handle.addUser(self.calcName,c,self.i)
 	def userPart(self):
 		c = self.chanToId(self.chan)
 		if c!=-1:
-			handle.removeUser(self.calcName,c,self.i)
+			self.handle.removeUser(self.calcName,c,self.i)
 	def close(self):
 		print('(calcnet) ('+str(self.i)+') Giving signal to quit calculator...')
 		try:
@@ -55,7 +69,7 @@ class CalculatorHandler(server.ServerHandler):
 	def sendToIRC(self,t,m):
 		c = self.chanToId(self.chan)
 		if c!=-1:
-			handle.sendToOther(self.calcName,'',t,m,c,self.i)
+			self.handle.sendToOther(self.calcName,'',t,m,c,self.i)
 	def sendLine(self,n1,n2,t,m,c,s): #name 1, name 2, type, message, channel, source
 		c = self.idToChan(c)
 		if c!=-1:
@@ -105,8 +119,6 @@ class CalculatorHandler(server.ServerHandler):
 				break
 		return False
 	def updateChans(self,chans,default):
-		print(chans)
-		print(self.chans)
 		self.defaultChan = default
 		if not self.findchan(self.chan,chans):
 			self.sendToIRC('part','')
@@ -118,11 +130,10 @@ class CalculatorHandler(server.ServerHandler):
 			self.userJoin()
 		self.chans = chans
 	def setup(self):
-		global config
 		print('(calcnet) ('+str(self.i)+') New calculator')
 		self.chans = {}
 		self.defaultChan = ''
-		for ch in config.json['channels']:
+		for ch in self.handle.config.json['channels']:
 			if ch['enabled']:
 				for c in ch['networks']:
 					if c['id'] == self.i:
@@ -176,9 +187,9 @@ class CalculatorHandler(server.ServerHandler):
 						self.connectedToIRC=False
 						self.userPart()
 						self.sendToIRC('quit','')
-				elif r_bytes[17]==173 and data[5:10]=='Omnom':
-					printString+='msg ('+self.calcName+') '+data[data.find(':',18)+1:-1]+'\n'
-					message=data[data.find(":",18)+1:-1]
+				elif r_bytes[17]==173 and data[5:10]==b'Omnom':
+					printString+='msg ('+self.calcName+') '+makeUnicode(data[data.find(b':',18)+1:-1])+'\n'
+					message=makeUnicode(data[data.find(b':',18)+1:-1])
 					if message.split(' ')[0].lower()=='/join':
 						if self.findchan(message[message.find(' ')+1:].lower(),self.chans):
 							self.sendToIRC('part','')

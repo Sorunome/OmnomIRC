@@ -22,6 +22,8 @@
 
 import server,traceback,json,signal,time,pymysql,sys,socket,subprocess
 
+DOCUMENTROOT = '/usr/share/nginx/html/oirc'
+
 try:
 	import memcache
 	memcached = memcache.Client(['127.0.0.1:11211'],debug=0)
@@ -34,10 +36,6 @@ except:
 		def delete(self,str):
 			return False
 	memcached = Memcached_fake()
-
-DOCUMENTROOT = '/usr/share/nginx/html/oirc'
-
-
 
 
 def makeUnicode(s):
@@ -347,14 +345,25 @@ class RelayWebsockets(OircRelay):
 					print(inst)
 					traceback.print_exc()
 
-
 class RelayCalcnet(OircRelay):
 	relayType = 2
 	def initRelay(self):
 		import calculators
-		self.server = server.Server(self.config['server'],self.config['port'],type('CalculatorHandler_anon',(calculators.CalculatorHandler,),{'i':self.id}))
+		self.server = server.Server(self.config['server'],self.config['port'],type('CalculatorHandler_anon',(calculators.CalculatorHandler,),{'i':self.id,'handle':handle}))
 	def startRelay(self):
 		self.server.start()
+	def getChanStuff(self):
+		chans = {}
+		defaultChan = ''
+		for ch in config.json['channels']:
+			if ch['enabled']:
+				for c in ch['networks']:
+					if c['id'] == self.id:
+						chans[ch['id']] = c['name']
+						if defaultChan == '':
+							defaultChan = c['name']
+						break
+		return [chans,defaultChan]
 	def updateRelay(self,cfg):
 		if self.config['server'] != cfg['server'] or self.config['port'] != cfg['port']:
 			self.config = cfg
@@ -362,16 +371,8 @@ class RelayCalcnet(OircRelay):
 			self.startRelay_wrap()
 		else:
 			self.config = cfg
-			chans = {}
-			defaultChan = ''
-			for ch in config.json['channels']:
-				if ch['enabled']:
-					for c in ch['networks']:
-						if c['id'] == self.id:
-							chans[ch['id']] = c['name']
-							if defaultChan == '':
-								defaultChan = c['name']
-							break
+			chans, defaultChan = self.getChanStuff()
+			
 			for calc in self.server.inputHandlers:
 				calc.updateChans(chans,defaultChan)
 	def stopRelay(self):
@@ -424,6 +425,8 @@ class Main():
 	relays = []
 	bots = []
 	modeBuffer = {}
+	def __init__(self):
+		self.config = config
 	def updateCurline(self):
 		global config,sql
 		try:
