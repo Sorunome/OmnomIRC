@@ -102,7 +102,7 @@ class Bot_OIRC(irc.Bot):
 			self.s.sendall(bytes('TOPIC %s :%s\r\n' % (c,s),'utf-8'))
 			self.log('>> '+c+' '+s)
 	def colorizeNick(self,n):
-		rcolors = ['19','20','22','24','25','26','27','28','29']
+		rcolors = ['03','04','06','08','09','10','11','12','13']
 		i = 0
 		for c in n:
 			i += ord(c)

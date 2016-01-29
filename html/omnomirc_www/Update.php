@@ -1,7 +1,7 @@
 <?PHP
 /*
     OmnomIRC COPYRIGHT 2010,2011 Netham45
-                       2012-2015 Sorunome
+                       2012-2016 Sorunome
 
     This file is part of OmnomIRC.
 
@@ -90,8 +90,10 @@ while(true){
 					channel=?
 					AND
 					name2=?
+					AND
+					network=?
 				)
-		)",array($curline,$channel,$nick,$channel));
+		)",array($curline,$channel,$nick,$channel,$you->getNetwork()));
 	}else{
 		$query = $sql->query_prepare("SELECT * FROM `irc_lines` WHERE `line_number` > ? AND (`channel` = '?')",array($curline,$channel));
 	}

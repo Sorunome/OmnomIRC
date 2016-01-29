@@ -1,7 +1,7 @@
 /**
  * @license
  * OmnomIRC COPYRIGHT 2010,2011 Netham45
- *                    2012-2015 Sorunome
+ *                    2012-2016 Sorunome
  *
  *  This file is part of OmnomIRC.
  *
@@ -848,13 +848,13 @@ oirc = (function(){
 							console.log(e);
 							self.ws.use = false;
 							self.ws.fallback();
-						};/*
+						};
 						self.ws.socket.onerror = function(e){
 							console.log(e);
 							self.ws.socket.close();
 							self.ws.use = false;
 							self.ws.fallback();
-						};*/
+						};
 						
 						self.ws.identify();
 						
@@ -997,6 +997,10 @@ oirc = (function(){
 				init:function(){
 					if(self.ws.enabled){
 						self.ws.init();
+					}else{
+						self.ws.use = false;
+						self.old.lastSuccess = (new Date).getTime();
+						self.old.start();
 					}
 				}
 			};
@@ -2773,6 +2777,9 @@ oirc = (function(){
 									if(s != arrayResults[i+1]){
 										textDecoration.fg = s.split(':')[0];
 										arrayResults[i+1] = arrayResults[i+1].substr(s.length-1); // -1 due to added colon
+									}else{
+										textDecoration.fg = '-1';
+										textDecoration.bg = '-1';
 									}
 								}else{ // we also changed background
 									textDecoration.fg = s.split(':')[0];
@@ -2863,7 +2870,7 @@ oirc = (function(){
 					request.setCurLine(line.curLine);
 					if(
 						line.name === null || line.name === undefined || line.type === null || ignores.indexOf(line.name.toLowerCase()) > -1
-						|| line.chan.toString().toLowerCase()!=channels.current().handler.toLowerCase()
+						|| (line.chan.toString().toLowerCase()!=channels.current().handler.toLowerCase() && !(line.type == 'server' && line.chan == settings.nick()))
 						){
 						return true; // invalid line but we don't want to stop the new requests
 					}

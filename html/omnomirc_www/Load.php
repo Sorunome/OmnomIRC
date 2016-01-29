@@ -1,7 +1,7 @@
 <?PHP
 /*
     OmnomIRC COPYRIGHT 2010,2011 Netham45
-                       2012-2015 Sorunome
+                       2012-2016 Sorunome
 
     This file is part of OmnomIRC.
 

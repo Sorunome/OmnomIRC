@@ -1,7 +1,7 @@
 <?php
 /*
     OmnomIRC COPYRIGHT 2010,2011 Netham45
-                       2012-2015 Sorunome
+                       2012-2016 Sorunome
 
     This file is part of OmnomIRC.
 
@@ -47,7 +47,7 @@ exit;
 			}
 			$json->add('message',$m."\nconfig written");
 		}
-		if($config['settings']['useBot'] && ($socket = @socket_create(AF_INET,SOCK_STREAM,SOL_TCP)) && ($result = @socket_connect($socket,'localhost',$config['settings']['botPort']))){
+		if(!INTERNAL && $config['settings']['useBot'] && ($socket = @socket_create(AF_INET,SOCK_STREAM,SOL_TCP)) && ($result = @socket_connect($socket,'localhost',$config['settings']['botPort']))){
 			$sendToBotBuffer = json_encode(array(
 				't' => 'server_updateconfig'
 			))."\n";
@@ -73,6 +73,19 @@ if(isset($_GET['finishUpdate'])){
 		header('Location: index.php');
 	}else{
 		header('Location: index.php?admin&network='.$you->getNetwork().'#releaseNotes');
+	}
+}
+if(INTERNAL){
+	if(isset($_GET['internalAction'])){
+		switch($_GET['internalAction']){
+			case 'activateBot':
+				$config['settings']['useBot'] = true;
+				break;
+			case 'deactivateBot':
+				$config['settings']['useBot'] = false;
+				break;
+		}
+		writeConfig(true);
 	}
 }
 if($you->isGlobalOp()){

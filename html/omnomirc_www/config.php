@@ -1,7 +1,7 @@
 <?php
 /*
     OmnomIRC COPYRIGHT 2010,2011 Netham45
-                       2012-2015 Sorunome
+                       2012-2016 Sorunome
 
     This file is part of OmnomIRC.
 
@@ -123,7 +123,7 @@ if(isset($_GET['js'])){
 		'checkLoginUrl' => $cl,
 		'defaults' => $defaults,
 		'websockets' => array(
-			'use' => $config['websockets']['use'],
+			'use' => $config['websockets']['use'] && $config['settings']['useBot'],
 			'host' => $config['websockets']['host'],
 			'port' => $config['websockets']['port'],
 			'ssl' => $config['websockets']['ssl']

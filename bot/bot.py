@@ -22,7 +22,9 @@
 
 import server,traceback,json,signal,time,pymysql,sys,socket,subprocess
 
-DOCUMENTROOT = '/usr/share/nginx/html/oirc'
+f = open('documentroot.cfg')
+DOCUMENTROOT = f.readlines()[0].strip()
+f.close()
 
 try:
 	import memcache
@@ -50,7 +52,7 @@ def makeUnicode(s):
 		return ''
 
 def execPhp(f,d):
-	s = []
+	s = ['internal='+config.json['security']['sigKey']]
 	for key,value in d.items():
 		s.append(str(key)+'='+str(value))
 	res = subprocess.Popen(['php',DOCUMENTROOT+'/'+f] + s,stdout=subprocess.PIPE).communicate()
@@ -335,7 +337,9 @@ class RelayWebsockets(OircRelay):
 								and
 								c==client.nick
 								and
-								n2==str(client.chan)
+								str(n2)==str(client.chan)
+								and
+								s==client.network
 								and
 								client.identified
 							)
@@ -413,8 +417,8 @@ class OIRCLink(server.ServerHandler):
 				elif data['t'] == 'server_delete_modebuffer':
 					handle.deleteModeBuffer(data['c'])
 				else:
-					handle.sendToOther(data['n1'],data['n2'],data['t'],data['m'],data['c'],data['s'],data['uid'],False)
 					print('(oirc)>> '+str(data))
+					handle.sendToOther(data['n1'],data['n2'],data['t'],data['m'],data['c'],data['s'],data['uid'],False)
 			except:
 				traceback.print_exc()
 		return True
@@ -618,11 +622,13 @@ class Main():
 			r.stopRelay_wrap()
 		self.oircLink.stop()
 		
+		execPhp('admin.php',{'internalAction':'deactivateBot'})
 		sys.exit(code)
 
 if __name__ == "__main__":
 	print('Starting OmnomIRC bot...')
 	config = Config()
+	execPhp('admin.php',{'internalAction':'activateBot'})
 	sql = Sql()
 	config.can_postload = True
 	config.postLoad()

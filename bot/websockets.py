@@ -228,7 +228,6 @@ class WebSocketsHandler(server.ServerHandler):
 					self.checkRelog(r,m)
 					self.banned = r['isbanned']
 					self.chan = r['channel']
-					print(self.chan)
 					if not self.banned and self.identified:
 						self.join()
 				elif self.identified:

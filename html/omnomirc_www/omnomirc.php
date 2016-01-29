@@ -1,7 +1,7 @@
 <?php
 /*
 	OmnomIRC COPYRIGHT 2010,2011 Netham45
-					   2012-2015 Sorunome
+					   2012-2016 Sorunome
 
 	This file is part of OmnomIRC.
 
@@ -19,14 +19,6 @@
 	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-if(isset($argv)){
-	// parse command line args into $_GET
-	foreach($argv as $a){
-		if(($p = strpos($a,'='))!==false){
-			$_GET[substr($a,0,$p)] = substr($a,$p+1) or true;
-		}
-	}
-}
 class Json{
 	private $json;
 	private $warnings;
@@ -107,6 +99,19 @@ header('Pragma: no-cache');
 date_default_timezone_set('UTC');
 
 include_once(realpath(dirname(__FILE__)).'/config.php');
+
+if(isset($argv)){
+	// parse command line args into $_GET
+	foreach($argv as $a){
+		if(($p = strpos($a,'='))!==false){
+			$_GET[substr($a,0,$p)] = substr($a,$p+1) or true;
+		}
+	}
+	isset($_GET['internal']) && $_GET['internal'] == $config['security']['sigKey'] or die('Hacking attempt');
+	define('INTERNAL',true);
+}else{
+	define('INTERNAL',false);
+}
 
 class Cache{
 	private $mode = 0;

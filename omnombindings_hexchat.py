@@ -13,7 +13,7 @@ OMNOMJOINIGNORE = 'OmnomIRC_ignore_join'
 
 def addColor(s):
 	s = hexchat.strip(s)
-	rcolors = ['19','20','22','24','25','26','27','28','29']
+	rcolors = ['03','04','06','08','09','10','11','12','13']
 	i = 0
 	for c in s:
 		i += ord(c)
@@ -30,6 +30,8 @@ def topicBinding(word,word_eol,userdata):
 	if (s in TOPICBOTNICK) or (s in TOPICBOTNICK):
 		return hexchat.EAT_ALL
 	return hexchat.EAT_NONE
+def doHighlight(s):
+	return hexchat.get_info('nick') in s
 
 def modifyRawData(word,word_eol,userdata):
 	try:
@@ -49,7 +51,7 @@ def modifyRawData(word,word_eol,userdata):
 					chan = cmd[1]
 					for nick in json.loads(' '.join(cmd[2:])):
 						if hexchat.nickcmp(nick,hexchat.get_info('nick'))!=0:
-							hexchat.command('RECV :'+nick+'!()\xA0'+nick+'@'+OMNOMJOINIGNORE+' JOIN :'+chan)
+							hexchat.command('RECV :'+hexchat.strip(nick)+'!()\xA0'+nick+'@'+OMNOMJOINIGNORE+' JOIN :'+chan)
 			except Exception as inst:
 				print(__module_name__,': something unexpected happend, please report the following')
 				print('Oirc PM exeption')
@@ -146,7 +148,7 @@ def modifyRawData(word,word_eol,userdata):
 					args.append(word[2])
 				else:
 					args.append('')
-				nick_notext = nick = nick.replace(' ','\xA0')
+				nick_notext = nick = hexchat.strip(nick.replace(' ','\xA0'))
 				if not (textEvent in ['Part','Part with Reason','Quit','Join']):
 					if '!' in nick_prefix:
 						nick = '\x02'+nick+'\x02'
@@ -155,7 +157,7 @@ def modifyRawData(word,word_eol,userdata):
 				if hexchat.nickcmp(nick_notext,hexchat.get_info('nick'))==0 and textEvent in ['Part','Part with Reason','Quit','Join','Kick']:
 					hexchat.emit_print(textEvent,getNick(nick_prefix,nick_notext),*args)
 					if textEvent=='Kick':
-						kicknick = args[0][:-len('@'+OMNOMIDENTSTR)].replace(' ','\xA0')
+						kicknick = hexchat.strip(args[0][:-len('@'+OMNOMIDENTSTR)].replace(' ','\xA0'))
 						if hexchat.nickcmp(kicknick,hexchat.get_info('nick'))!=0:
 							hexchat.command('RECV :'+kicknick+'!'+getNick(nick_prefix,kicknick)+'@'+OMNOMJOINIGNORE+' PART '+chan)
 					return hexchat.EAT_ALL
@@ -163,7 +165,7 @@ def modifyRawData(word,word_eol,userdata):
 					hexchat.emit_print(textEvent,getNick(nick_prefix,nick_notext),*args)
 					hexchat.command('RECV :'+nick_notext+'!'+getNick(nick_prefix,nick_notext)+'@'+OMNOMJOINIGNORE+' PART '+chan)
 					cmd = cmd.replace(' ','\xA0')
-					hexchat.command('RECV :'+cmd+'!'+getNick(nick_prefix,cmd)+'@'+OMNOMJOINIGNORE+' JOIN :'+chan)
+					hexchat.command('RECV :'+hexchat.strip(cmd)+'!'+getNick(nick_prefix,cmd)+'@'+OMNOMJOINIGNORE+' JOIN :'+chan)
 				elif textEvent=='Quit':
 					hexchat.emit_print(textEvent,getNick(nick_prefix,nick_notext),*args)
 					hexchat.command('RECV :'+nick_notext+'!'+getNick(nick_prefix,nick_notext)+'@'+OMNOMJOINIGNORE+' PART '+chan)
