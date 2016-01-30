@@ -53,6 +53,7 @@ class WebSocketsHandler(server.ServerHandler):
 	banned = True
 	chan = ''
 	msgStack = []
+	pmHandler = '**'
 	def setup(self):
 		print('(websockets) connection established'+str(self.client_address))
 		self.handshake_done = False
@@ -198,16 +199,20 @@ class WebSocketsHandler(server.ServerHandler):
 							self.sig = m['signature']
 							self.uid = m['id']
 							self.network = m['network']
+							self.pmHandler = '['+str(self.network)+','+str(self.uid)+']'
 							for a in self.msgStack: # let's pop the whole stack!
 								self.on_message(a)
 							self.msgStack = []
 						else:
 							self.identified = False
 							self.nick = ''
+							self.pmHandler = '**'
 						if 'relog' in r:
 							self.send_message(json.dumps({'relog':r['relog']}))
 					except:
 						self.identified = False
+						self.pmHandler = '**'
+						self.nick = ''
 				elif m['action'] == 'chan':
 					if self.identified:
 						self.part()

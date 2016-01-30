@@ -1134,7 +1134,7 @@ oirc = (function(){
 							if(chanList!==null && chanList!=[]){
 								self.chans = $.merge(
 										$.map(chanList,function(v){
-											if(v.id != -1){
+											if(v.id != -1 && v.id.toString().substr(0,1)!='*'){
 												var valid = false;
 												$.each(self.chans,function(i,vc){
 													if(vc.id == v.id){

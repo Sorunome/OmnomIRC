@@ -332,17 +332,7 @@ class RelayWebsockets(OircRelay):
 								and t!='server'
 							)
 							or
-							(
-								t=='server'
-								and
-								c==client.nick
-								and
-								str(n2)==str(client.chan)
-								and
-								s==client.network
-								and
-								client.identified
-							)
+							str(n2) == client.pmHandler
 						)):
 						client.sendLine(n1,n2,t,m,c,s,uid)
 				except Exception as inst:
