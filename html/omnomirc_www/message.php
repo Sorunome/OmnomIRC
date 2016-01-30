@@ -354,7 +354,7 @@ if($sendNormal){
 	}
 }
 if($sendPm){
-	$relay->sendLine('OmnomIRC',$channel,'server',$returnmessage,$nick);
+	$relay->sendLine('OmnomIRC',$you->getPmHandler(),'server',$returnmessage,$nick);
 }
 if($reload){
 	$relay->sendLine('OmnomIRC','','reload','THE GAME');

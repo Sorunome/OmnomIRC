@@ -31,6 +31,7 @@ oirc = (function(){
 				checkLoginUrl:'',
 				net:'',
 				networks:{},
+				pmIdent:false,
 				fetch:function(fn,clOnly){
 					if(clOnly===undefined){
 						clOnly = false;
@@ -60,6 +61,7 @@ oirc = (function(){
 								self.nick = data.nick;
 								self.signature = data.signature;
 								self.uid = data.uid;
+								self.pmIdent = '['+self.net.toString()+','+self.uid.toString()+']';
 								ls.set('checklogin',{
 									nick:self.nick,
 									signature:self.signature,
@@ -73,6 +75,7 @@ oirc = (function(){
 							self.nick = set.nick;
 							self.signature = set.signature;
 							self.uid = set.uid;
+							self.pmIdent = '['+self.net.toString()+','+self.uid.toString()+']';
 							if(fn!==undefined){
 								fn();
 							}
@@ -102,6 +105,21 @@ oirc = (function(){
 						id:self.uid,
 						network:self.net
 					};
+				},
+				loggedIn:function(){
+					return self.signature !== '';
+				},
+				getWholePmIdent:function(uid,net){
+					var otherhandler = '['+net.toString()+','+uid.toString()+']';
+					if(net < self.net){
+						return otherhandler+self.pmIdent;
+					}else if(self.net < net){
+						return self.pmIdent+otherhandler;
+					}else if(uid < self.uid){
+						return otherhandler+self.pmIdent;
+					}else{
+						return self.pmIdent+otherhandler;
+					}
 				}
 			};
 			return {
@@ -115,9 +133,11 @@ oirc = (function(){
 				net:function(){
 					return self.net;
 				},
-				loggedIn:function(){
-					return self.signature !== '';
-				}
+				loggedIn:self.loggedIn,
+				getPmIdent:function(){
+					return self.pmIdent;
+				},
+				getWholePmIdent:self.getWholePmIdent
 			};
 		})(),
 		ls = (function(){
@@ -1400,17 +1420,21 @@ oirc = (function(){
 					openPm:function(s,n,join){
 						var addChan = true,
 							callback = function(nick,id){
-							if(join===undefined){
-								join = false;
+								if(join===undefined){
+									join = false;
+								}
+								nick = nick.trim();
+								if(nick.substr(0,1)!='*'){
+									nick = '*'+s;
+								}
+								id = id.trim();
+								if(id.substr(0,1)!='*'){
+									id = '*'+id;
+								}
+								// s will now be prefixed with *
+								self.addChan(nick,join,id);
 							}
-							nick = nick.trim();
-							if(nick.substr(0,1)!='*'){
-								nick = '*'+s;
-							}
-							// s will now be prefixed with *
-							self.addChan(nick,join,id);
-						}
-						if(n === ''){
+						if(n == ''){
 							network.getJSON('Load.php?openpm='+base64.encode(s),function(data){
 								if(data.chanid){
 									callback(data.channick,data.chanid);
@@ -2869,8 +2893,8 @@ oirc = (function(){
 					}
 					request.setCurLine(line.curLine);
 					if(
-						line.name === null || line.name === undefined || line.type === null || ignores.indexOf(line.name.toLowerCase()) > -1
-						|| (line.chan.toString().toLowerCase()!=channels.current().handler.toLowerCase() && !(line.type == 'server' && line.chan == settings.nick()))
+						ignores.indexOf(line.name.toLowerCase()) > -1
+						|| (line.chan.toString().toLowerCase()!=channels.current().handler.toLowerCase() && line.name2 !== settings.getPmIdent())
 						){
 						return true; // invalid line but we don't want to stop the new requests
 					}
@@ -2879,10 +2903,9 @@ oirc = (function(){
 						message = parseMessage(line.message),
 						tdName = '*',
 						tdMessage = message,
-						addLine = true,
 						statusTxt = '';
 					if(line.network == -1){
-						addLine = false;
+						return true;
 					}
 					if((['message','action','pm','pmaction'].indexOf(line.type)>=0) && line.name.toLowerCase() != '*'){
 						tdMessage = message = parseHighlight(message,line);
@@ -2892,29 +2915,26 @@ oirc = (function(){
 					}
 					switch(line.type){
 						case 'reload':
-							addLine = false;
 							if(!loadMode){
 								channels.current().reload();
 								return false;
 							}
-							break;
+							return true;
 						case 'reload_userlist':
-							addLine = false;
 							if(!loadMode){
 								channels.current().reloadUserlist();
-								return true;
 							}
+							return true;
 						case 'relog':
-							addLine = false;
 							if(!loadMode){
 								settings.fetch(undefined,true);
 							}
-							break;
+							return true;
 						case 'refresh':
-							addLine = false;
 							if(!loadMode){
 								location.reload(true);
 							}
+							return true;
 							break;
 						case 'join':
 							tdMessage = [name,' has joined '+channels.current().name];
@@ -2924,8 +2944,8 @@ oirc = (function(){
 									network:line.network
 								});
 							}
-							if(addLine && settings.getNetwork(line.network).type==1 && options.get('oircJoinPart')){
-								addLine = false;
+							if(settings.getNetwork(line.network).type==1 && options.get('oircJoinPart')){
+								return true;
 							}
 							break;
 						case 'part':
@@ -2936,8 +2956,8 @@ oirc = (function(){
 									network:line.network
 								});
 							}
-							if(addLine && settings.getNetwork(line.network).type==1 && options.get('oircJoinPart')){
-								addLine = false;
+							if(settings.getNetwork(line.network).type==1 && options.get('oircJoinPart')){
+								return true;
 							}
 							break;
 						case 'quit':
@@ -2948,8 +2968,8 @@ oirc = (function(){
 									network:line.network
 								});
 							}
-							if(addLine && settings.getNetwork(line.network).type==1 && options.get('oircJoinPart')){
-								addLine = false;
+							if(settings.getNetwork(line.network).type==1 && options.get('oircJoinPart')){
+								return true;
 							}
 							break;
 						case 'kick':
@@ -3004,15 +3024,15 @@ oirc = (function(){
 							}else{
 								if(!loadMode){
 									if(line.name.toLowerCase() == settings.nick().toLowerCase()){
-										addLine = false;
-										channels.openPm(line.chan);
+										channels.openPm(line.chan,settings.getWholePmIdent(line.uid,line.network));
+										return true;
 									}else{
 										tdName = ['(PM)',name];
-										channels.openPm(line.name);
+										channels.openPm(line.name,settings.getWholePmIdent(line.uid,line.network));
 										notification.make('(PM) <'+line.name+'> '+line.message,line.chan);
 									}
 								}else{
-									addLine = false;
+									return true;
 								}
 							}
 							break;
@@ -3023,16 +3043,16 @@ oirc = (function(){
 							}else{
 								if(!loadMode){
 									if(line.name.toLowerCase() == settings.nick().toLowerCase()){
-										addLine = false;
-										channels.openPm(line.chan);
+										channels.openPm(line.chan,settings.getWholePmIdent(line.uid,line.network));
+										return true;
 									}else{
 										tdMessage = ['(PM)',name,' ',message];
-										channels.openPm(line.name);
+										channels.openPm(line.name,settings.getWholePmIdent(line.uid,line.network));
 										notification.make('* (PM)'+line.name+' '+line.message,line.chan);
 										line.type = 'pm';
 									}
 								}else{
-									addLine = false;
+									return true;
 								}
 							}
 							break;
@@ -3040,55 +3060,53 @@ oirc = (function(){
 							if(line.name.toLowerCase() != '*'){
 								notification.make('('+line.chan+') <'+line.name+'> '+line.message,line.chan);
 							}
-							addLine = false;
-							break;
+							return true;
 						case 'internal':
 							tdMessage = line.message;
 							break;
 						case 'server':
 							break;
 						default:
-							addLine = false;
+							return true;
 					}
-					if(addLine){
-						if(($mBox.find('tr').length>maxLines) && logMode!==true){
-							$mBox.find('tr:first').remove();
-						}
-						
-						
-						if(tdName == '*'){
-							statusTxt = '* ';
-						}else{
-							statusTxt = '<'+line.name+'> ';
-						}
-						if(options.get('times')){
-							statusTxt = '['+(new Date(line.time*1000)).toLocaleTimeString()+'] '+statusTxt;
-						}
-						statusTxt += $('<span>').append(tdMessage).text();
-						statusBar.set(statusTxt);
-						
-						var $tr = $('<tr>')
-							.addClass((options.get('altLines') && (lineHigh = !lineHigh)?'lineHigh':''))
-							.addClass(((new Date(lastMessage)).getDay()!=(new Date(line.time*1000)).getDay())?'seperator':'') //new day indicator
-							.append(
-								(options.get('times')?$('<td>')
-									.addClass('irc-date')
-									.append('['+(new Date(line.time*1000)).toLocaleTimeString()+']'):''),
-								$('<td>')
-									.addClass('name')
-									.append(tdName),
-								$('<td>')
-									.addClass(line.type)
-									.append(tdMessage)
-							);
-						$tr.find('img').load(function(e){
-							scroll.slide();
-						});
-						$mBox.append($tr);
+					if(($mBox.find('tr').length>maxLines) && logMode!==true){
+						$mBox.find('tr:first').remove();
+					}
+					
+					
+					if(tdName == '*'){
+						statusTxt = '* ';
+					}else{
+						statusTxt = '<'+line.name+'> ';
+					}
+					if(options.get('times')){
+						statusTxt = '['+(new Date(line.time*1000)).toLocaleTimeString()+'] '+statusTxt;
+					}
+					statusTxt += $('<span>').append(tdMessage).text();
+					statusBar.set(statusTxt);
+					
+					var $tr = $('<tr>')
+						.addClass((options.get('altLines') && (lineHigh = !lineHigh)?'lineHigh':''))
+						.addClass(((new Date(lastMessage)).getDay()!=(new Date(line.time*1000)).getDay())?'seperator':'') //new day indicator
+						.append(
+							(options.get('times')?$('<td>')
+								.addClass('irc-date')
+								.append('['+(new Date(line.time*1000)).toLocaleTimeString()+']'):''),
+							$('<td>')
+								.addClass('name')
+								.append(tdName),
+							$('<td>')
+								.addClass(line.type)
+								.append(tdMessage)
+						);
+					$tr.find('img').load(function(e){
 						scroll.slide();
-						
-						lastMessage = line.time*1000;
-					}
+					});
+					$mBox.append($tr);
+					scroll.slide();
+					
+					lastMessage = line.time*1000;
+					
 					return true;
 				},
 				setSmileys:function(s){

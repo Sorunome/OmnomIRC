@@ -84,16 +84,8 @@ while(true){
 					`type`!='server'
 				)
 				OR
-				(
-					`type` = 'server'
-					AND
-					channel=?
-					AND
-					name2=?
-					AND
-					network=?
-				)
-		)",array($curline,$channel,$nick,$channel,$you->getNetwork()));
+				name2=?
+		)",array($curline,$channel,$you->getPmHandler()));
 	}else{
 		$query = $sql->query_prepare("SELECT * FROM `irc_lines` WHERE `line_number` > ? AND (`channel` = '?')",array($curline,$channel));
 	}

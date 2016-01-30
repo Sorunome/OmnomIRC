@@ -923,8 +923,6 @@ class OmnomIRC{
 					(
 						`type` != 'server'
 						AND
-						`type` != 'pm'
-						AND
 						LOWER(`channel`) = LOWER(?)
 					)
 					ORDER BY `line_number` DESC
