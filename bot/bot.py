@@ -20,7 +20,7 @@
 #	You should have received a copy of the GNU General Public License
 #	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 
-import server,traceback,json,signal,time,pymysql,sys,socket,subprocess
+import server,traceback,json,signal,time,pymysql,sys,subprocess,re
 
 f = open('documentroot.cfg')
 DOCUMENTROOT = f.readlines()[0].strip()
@@ -126,6 +126,7 @@ class Sql:
 					user=config.json['sql']['user'],
 					password=config.json['sql']['passwd'],
 					db=config.json['sql']['db'],
+					unix_socket='/var/run/mysqld/mysqld.sock',
 					charset='utf8',
 					cursorclass=pymysql.cursors.DictCursor)
 			except:
@@ -134,7 +135,6 @@ class Sql:
 					user=config.json['sql']['user'],
 					password=config.json['sql']['passwd'],
 					db=config.json['sql']['db'],
-					unix_socket='/var/run/mysqld/mysqld.sock',
 					charset='utf8',
 					cursorclass=pymysql.cursors.DictCursor)
 			return self.db.cursor()
@@ -392,8 +392,6 @@ class RelayCalcnet(OircRelay):
 #fetch lines off of OIRC
 class OIRCLink(server.ServerHandler):
 	readbuffer = ''
-	def setup(self):
-		return socket.gethostbyname('localhost') == self.client_address[0]
 	def recieve(self):
 		try:
 			data = makeUnicode(self.socket.recv(1024))
@@ -571,7 +569,12 @@ class Main():
 		return net_cheat
 	def updateConfig(self):
 		print('(handle) Got signal to update config!')
+		oldInternalSock = config.json['settings']['botSocket']
 		config.readFile()
+		
+		if oldInternalSock != config.json['settings']['botSocket']:
+			self.oircLink.stop()
+			self.startOircLink()
 		
 		for n in self.get_net_cheat():
 			r = self.findRelay(n['id'])
@@ -590,6 +593,18 @@ class Main():
 	def sigquit(self,e,s):
 		print('(handle) sigquit')
 		self.quit()
+	def startOircLink(self):
+		sock = config.json['settings']['botSocket']
+		if sock.startswith('unix:'):
+			self.oircLink = server.Server(sock[5:],0,OIRCLink)
+		else:
+			res = re.match(r'^([\w\.]+):(\d+)',sock)
+			if not res:
+				print('(handle) ERROR: invalid internal socket ',sock)
+				return False
+			self.oircLink = server.Server(res.group(1),int(res.group(2)),OIRCLink)
+		self.oircLink.start()
+		return True
 	def serve(self):
 		signal.signal(signal.SIGQUIT,self.sigquit)
 		self.calcNetwork = -1
@@ -599,9 +614,8 @@ class Main():
 			if n['enabled']:
 				self.addRelay(n)
 		
-		
-		self.oircLink = server.Server('localhost',config.json['settings']['botPort'],OIRCLink)
-		self.oircLink.start()
+		if not self.startOircLink():
+			self.exit(42)
 		
 		try:
 			for r in self.relays:

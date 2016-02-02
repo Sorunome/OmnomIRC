@@ -558,13 +558,33 @@ class Relay{
 			}
 			$values = rtrim($values,',');
 			$sql->query_prepare("INSERT INTO `irc_lines` (name1,name2,type,message,channel,online,uid,time) VALUES $values",$valArray);
-			if($config['settings']['useBot'] && ($socket = @socket_create(AF_INET,SOCK_STREAM,SOL_TCP)) && @socket_connect($socket,'localhost',$config['settings']['botPort'])){
-				$socketBuf = '';
-				foreach($this->sendBuffer as $line){
-					$socketBuf .= trim(json_encode($line))."\n";
+			
+			
+			
+			if($config['settings']['useBot']){
+				$sock = $config['settings']['botSocket'];
+				$socket = false;
+				if(substr($sock,0,5) == 'unix:'){
+					$socket = socket_create(AF_UNIX,SOCK_STREAM,0);
+					socket_connect($socket,substr($sock,5));
+				}else{
+					$matches = array();
+					preg_match('/^([\\w\\.]+):(\\d+)/',$sock,$matches);
+					if($matches){
+						$socket = socket_create(AF_INET,SOCK_STREAM,SOL_TCP);
+						socket_connect($socket,$matches[1],$matches[2]);
+					}
 				}
-				socket_write($socket,$socketBuf,strlen($socketBuf));
-				socket_close($socket);
+				
+				if($socket){
+					$socketBuf = '';
+					foreach($this->sendBuffer as $line){
+						$socketBuf .= trim(json_encode($line))."\n";
+					}
+					socket_set_nonblock($socket);
+					socket_write($socket,$socketBuf,strlen($socketBuf));
+					socket_close($socket);
+				}
 			}
 			$this->sendBuffer = array();
 			file_put_contents($config['settings']['curidFilePath'],$sql->insertId());

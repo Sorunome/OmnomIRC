@@ -164,7 +164,7 @@ if($you->isGlobalOp()){
 				break;
 			case 'misc':
 				$json->add('misc',array(
-					'botPort' => array('bot port',$config['settings']['botPort']),
+					'botSocket' => array('bot socket',$config['settings']['botSocket']),
 					'hostname' => array('hostname',$config['settings']['hostname']),
 					'curidFilePath' => array('curid file path',$config['settings']['curidFilePath']),
 					'signatureKey' => array('signature key',$config['security']['sigKey']),
@@ -285,7 +285,7 @@ if($you->isGlobalOp()){
 				writeConfig();
 				break;
 			case 'misc':
-				$config['settings']['botPort'] = $jsonData['botPort'];
+				$config['settings']['botSocket'] = $jsonData['botSocket'];
 				$config['settings']['hostname'] = $jsonData['hostname'];
 				$config['settings']['curidFilePath'] = $jsonData['curidFilePath'];
 				$config['security']['sigKey'] = $jsonData['signatureKey'];

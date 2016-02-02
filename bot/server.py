@@ -59,10 +59,23 @@ class Server(threading.Thread):
 				return i
 		return False
 	def getSocket(self):
-		return socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+		if self.port != 0:
+			return socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+		return socket.socket(socket.AF_UNIX,socket.SOCK_STREAM)
 	def run(self):
+		if self.port == 0:
+			import os
+			try:
+				os.unlink(self.host)
+			except OSError:
+				if os.path.exists(self.host):
+					raise
 		server = self.getSocket()
-		server.bind((self.host,self.port))
+		if self.port != 0:
+			server.bind((self.host,self.port))
+		else:
+			server.bind(self.host)
+			os.chmod(self.host,0o777)
 		server.listen(self.backlog)
 		server.settimeout(5)
 		input = [server]
@@ -125,6 +138,12 @@ class Server(threading.Thread):
 				i.close()
 			except:
 				pass
+		if self.port == 0:
+			try:
+				os.unlink(self.host)
+			except OSError:
+				if os.path.exists(self.host):
+					raise
 	def stop(self):
 		self.stopnow = True
 
