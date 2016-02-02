@@ -164,7 +164,6 @@ if($you->isGlobalOp()){
 				break;
 			case 'misc':
 				$json->add('misc',array(
-					'useBot' => array('use bot',$config['settings']['useBot']),
 					'botPort' => array('bot port',$config['settings']['botPort']),
 					'hostname' => array('hostname',$config['settings']['hostname']),
 					'curidFilePath' => array('curid file path',$config['settings']['curidFilePath']),
@@ -176,6 +175,7 @@ if($you->isGlobalOp()){
 				break;
 			case 'ex':
 				$json->add('ex',array(
+					'useBot' => array('use bot',$config['settings']['useBot']),
 					'minified' => array('use minfied sources',!isset($config['settings']['minified'])||$config['settings']['minified']),
 					'betaUpdates' => array('fetch beta updates',isset($config['settings']['betaUpdates'])&&$config['settings']['betaUpdates'])
 				));
@@ -285,7 +285,6 @@ if($you->isGlobalOp()){
 				writeConfig();
 				break;
 			case 'misc':
-				$config['settings']['useBot'] = $jsonData['useBot'];
 				$config['settings']['botPort'] = $jsonData['botPort'];
 				$config['settings']['hostname'] = $jsonData['hostname'];
 				$config['settings']['curidFilePath'] = $jsonData['curidFilePath'];
@@ -295,6 +294,7 @@ if($you->isGlobalOp()){
 				writeConfig();
 				break;
 			case 'ex':
+				$config['settings']['useBot'] = $jsonData['useBot'];
 				$config['settings']['minified'] = $jsonData['minified'];
 				$config['settings']['betaUpdates'] = $jsonData['betaUpdates'];
 				writeConfig();

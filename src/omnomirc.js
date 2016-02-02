@@ -1352,6 +1352,7 @@ oirc = (function(){
 								self.chans[i].high = false;
 								self.save();
 								tab.load();
+								oldMessages.read();
 								
 								if(settings.loggedIn()){
 									$('#message').removeAttr('disabled');
@@ -2387,45 +2388,45 @@ oirc = (function(){
 			};
 		})(),
 		oldMessages = (function(){
-			var messages = [],
-				counter = 0,
-				current = '',
-				setMsg = function(s){
+			var self = {
+				messages:[],
+				counter:0,
+				current:'',
+				setMsg:function(s){
 					if(!wysiwyg.support()){
 						$('#message').val(s);
 					}else{
 						$('#message').html(s);
 					}
 				},
-				getMsg = function(){
+				getMsg:function(){
 					if(!wysiwyg.support()){
 						return $('#message').val();
 					}
 					return $('#message').html();
-				};
-			return {
+				},
 				init:function(){
 					$('#message')
 						.keydown(function(e){
 							if(e.keyCode==38 || e.keyCode==40){
 								e.preventDefault();
-								if(counter==messages.length){
-									current = getMsg();
+								if(self.counter==self.messages.length){
+									self.current = self.getMsg();
 								}
-								if(messages.length!==0){
+								if(self.messages.length!==0){
 									if(e.keyCode==38){ //up
-										if(counter!==0){
-											counter--;
+										if(self.counter!==0){
+											self.counter--;
 										}
-										setMsg(messages[counter]);
+										self.setMsg(self.messages[self.counter]);
 									}else{ //down
-										if(counter!=messages.length){
-											counter++;
+										if(self.counter!=self.messages.length){
+											self.counter++;
 										}
-										if(counter==messages.length){
-											setMsg(current);
+										if(self.counter==self.messages.length){
+											self.setMsg(self.current);
 										}else{
-											setMsg(messages[counter]);
+											self.setMsg(self.messages[self.counter]);
 										}
 									}
 								}
@@ -2433,26 +2434,32 @@ oirc = (function(){
 						});
 				},
 				add:function(s){
-					messages.push(s);
-					if(messages.length>20){
-						messages.shift();
+					self.messages.push(s);
+					if(self.messages.length>20){
+						self.messages.shift();
 					}
-					counter = messages.length;
-					ls.set('oldMessages-'+channels.current().handlerB64,messages);
+					self.counter = self.messages.length;
+					ls.set('oldMessages-'+channels.current().handlerB64,self.messages);
 				},
 				read:function(){
-					messages = ls.get('oldMessages-'+channels.current().handlerB64);
-					if(!messages){
-						messages = [];
+					self.messages = ls.get('oldMessages-'+channels.current().handlerB64);
+					if(!self.messages){
+						self.messages = [];
 					}
-					console.log(messages);
-					counter = messages.length;
+					console.log(self.messages);
+					self.counter = self.messages.length;
 				}
+			};
+			return {
+				init:self.init,
+				add:self.add,
+				read:self.read
 			};
 		})(),
 		send = (function(){
-			var sending = false,
-				sendMessage = function(s){
+			var self = {
+				sending:false,
+				sendMessage:function(s){
 					if(s[0] == '/' && commands.parse(s.substr(1))){
 						if(!wysiwyg.support()){
 							$('#message').val('');
@@ -2460,20 +2467,19 @@ oirc = (function(){
 							$('#message').html('');
 						}
 					}else{
-						if(!sending){
-							sending = true;
+						if(!self.sending){
+							self.sending = true;
 							request.send(s,function(){
 								if(!wysiwyg.support()){
 									$('#message').val('');
 								}else{
 									$('#message').html('');
 								}
-								sending = false;
+								self.sending = false;
 							});
 						}
 					}
-				};
-			return {
+				},
 				internal:function(s){
 					parser.addLine({
 						curLine:0,
@@ -2486,7 +2492,6 @@ oirc = (function(){
 					});
 				},
 				init:function(){
-					
 					$('#sendMessage')
 						.submit(function(e){
 							e.preventDefault();
@@ -2503,7 +2508,7 @@ oirc = (function(){
 								console.log(val);
 								val = parser.parseTextDecorations(val);
 								if(!$('#message').attr('disabled') && val!==''){
-									sendMessage(val);
+									self.sendMessage(val);
 									$('#message').focus(); // fix IE not doing that automatically
 								}
 							}
@@ -2514,61 +2519,66 @@ oirc = (function(){
 					}
 				}
 			};
+			return {
+				internal:self.internal,
+				init:self.init
+			};
 		})(),
 		logs = (function(){
-			var isOpen = false,
-				year = 0,
-				month = 0,
-				day = 0,
-				months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-				getLogUrlParam = function(){
-					return base64.encode(year.toString(10)+'-'+month.toString(10)+'-'+day.toString(10));
+			var self = {
+				isOpen:false,
+				year:0,
+				month:0,
+				day:0,
+				months:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+				getLogUrlParam:function(){
+					return base64.encode(self.year.toString(10)+'-'+self.month.toString(10)+'-'+self.day.toString(10));
 				},
-				updateInputVal = function(){
-					$('#logDate').val(months[month-1]+' '+day.toString(10)+' '+year.toString(10));
+				updateInputVal:function(){
+					$('#logDate').val(self.months[self.month-1]+' '+self.day.toString(10)+' '+self.year.toString(10));
 				},
-				displayDatePicker = function(){
-					var d = new Date(year,month,day),
+				displayDatePicker:function(){
+					var d = new Date(self.year,self.month,self.day),
 						week = ['Sun','Mon','Tue','Wen','Thu','Fri','Sat'],
-						days = (new Date(year,month,0)).getDate(),
-						firstDayOfWeek = (new Date(year,month-1,1)).getDay(),
+						days = (new Date(self.year,self.month,0)).getDate(),
+						firstDayOfWeek = (new Date(self.year,self.month-1,1)).getDay(),
 						i = 0;
-					if(day > days){
-						day = days;
+					if(self.day > days){
+						self.day = days;
 					}
-					updateInputVal();
+					self.updateInputVal();
 					$('#logDatePicker').empty().append(
 						$('<a>').text('<').click(function(e){
 							e.preventDefault();
 							e.stopPropagation();
-							year--;
-							displayDatePicker();
-						}),' ',year.toString(10),' ',
+							self.year--;
+							self.displayDatePicker();
+						}),' ',self.year.toString(10),' ',
 						$('<a>').text('>').click(function(e){
 							e.preventDefault();
 							e.stopPropagation();
-							year++;
-							displayDatePicker();
+							self.year++;
+							self.displayDatePicker();
 						}),'<br>',
 						$('<a>').text('<').click(function(e){
 							e.preventDefault();
 							e.stopPropagation();
-							month--;
-							if(month < 1){
-								month = 12;
-								year--;
+							self.month--;
+							if(self.month < 1){
+								self.month = 12;
+								self.year--;
 							}
-							displayDatePicker();
-						}),' ',months[month-1],' ',
+							self.displayDatePicker();
+						}),' ',self.months[self.month-1],' ',
 						$('<a>').text('>').click(function(e){
 							e.preventDefault();
 							e.stopPropagation();
-							month++;
-							if(month > 12){
-								month = 1;
-								year++;
+							self.month++;
+							if(self.month > 12){
+								self.month = 1;
+								self.year++;
 							}
-							displayDatePicker();
+							self.displayDatePicker();
 						}),'<br>',
 						$('<table>').append(
 							$('<tr>').append(
@@ -2586,10 +2596,10 @@ oirc = (function(){
 											return $('<td>').text(' ');
 										}
 										i++;
-										return $('<td>').text(i).addClass('logDatePickerDay').addClass(i==day?'current':'').data('day',i).click(function(){
+										return $('<td>').text(i).addClass('logDatePickerDay').addClass(i==self.day?'current':'').data('day',i).click(function(){
 											$('.logDatePickerDay.current').removeClass('current');
-											day = $(this).addClass('current').data('day');
-											updateInputVal();
+											self.day = $(this).addClass('current').data('day');
+											self.updateInputVal();
 										});
 									})
 								);
@@ -2598,7 +2608,7 @@ oirc = (function(){
 					);
 					$('#logDatePicker').css('display','block');
 				},
-				open = function(){
+				open:function(){
 					var d = new Date();
 					
 					indicator.start();
@@ -2613,28 +2623,28 @@ oirc = (function(){
 					
 					$('#logChanIndicator').text(channels.current().name);
 					
-					year = parseInt(d.getFullYear(),10);
-					month = parseInt(d.getMonth()+1,10);
-					day = parseInt(d.getDate(),10);
-					updateInputVal();
+					self.year = parseInt(d.getFullYear(),10);
+					self.month = parseInt(d.getMonth()+1,10);
+					self.day = parseInt(d.getDate(),10);
+					self.updateInputVal();
 					
-					isOpen = true;
-					fetch();
+					self.isOpen = true;
+					self.fetch();
 				},
-				close = function(){
+				close:function(){
 					var num;
 					
 					
 					$('#chattingHeader').css('display','block');
 					$('#logsHeader').css('display','none');
-					isOpen = false;
+					self.isOpen = false;
 					channels.current().reload();
 				},
-				fetchPart = function(n){
-					network.getJSON('Log.php?day='+getLogUrlParam()+'&offset='+parseInt(n,10)+'&channel='+channels.current().handlerB64,function(data){
+				fetchPart:function(n){
+					network.getJSON('Log.php?day='+self.getLogUrlParam()+'&offset='+parseInt(n,10)+'&channel='+channels.current().handlerB64,function(data){
 						if(!data.banned){
 							if(data.lines.length>=1000){
-								fetchPart(n+1000);
+								self.fetchPart(n+1000);
 							}
 							$.each(data.lines,function(i,line){
 								parser.addLine(line,true);
@@ -2648,46 +2658,45 @@ oirc = (function(){
 						}
 					});
 				},
-				fetch = function(){
+				fetch:function(){
 					indicator.start();
 					
 					$('#MessageBox').empty();
 					
-					fetchPart(0);
+					self.fetchPart(0);
 				},
-				toggle = function(){
-					if(isOpen){
-						close();
+				toggle:function(){
+					if(self.isOpen){
+						self.close();
 					}else{
-						open();
+						self.open();
 					}
-				};
-			return {
+				},
 				init:function(){
 					$('#logCloseButton')
 						.click(function(e){
 							e.preventDefault();
-							close();
+							self.close();
 						});
 					$('#logGoButton')
 						.click(function(e){
 							e.preventDefault();
-							fetch();
+							self.fetch();
 						});
 					$('#logsButton').click(function(e){
 						e.preventDefault();
-						toggle();
+						self.toggle();
 					});
 					$('#logDate').click(function(e){
 						e.preventDefault();
 						$(this).focusout();
 						if($('#logDatePicker').css('display')!='block'){
-							displayDatePicker();
+							self.displayDatePicker();
 							e.stopPropagation();
 						}
 					});
 					$(document).click(function(e){
-						if(isOpen){
+						if(self.isOpen){
 							var $cont = $('#logDatePicker');
 							if(!$cont.is(e.target) && $cont.has(e.target).length === 0){
 								$cont.css('display','none');
@@ -2695,6 +2704,9 @@ oirc = (function(){
 						}
 					});
 				}
+			};
+			return {
+				init:self.init
 			};
 		})();
 		parser = (function(){
@@ -2893,7 +2905,8 @@ oirc = (function(){
 					}
 					request.setCurLine(line.curLine);
 					if(
-						ignores.indexOf(line.name.toLowerCase()) > -1
+						line.name == null
+						|| ignores.indexOf(line.name.toLowerCase()) > -1
 						|| (line.chan.toString().toLowerCase()!=channels.current().handler.toLowerCase() && line.name2 !== settings.getPmIdent())
 						){
 						return true; // invalid line but we don't want to stop the new requests
@@ -2944,7 +2957,7 @@ oirc = (function(){
 									network:line.network
 								});
 							}
-							if(settings.getNetwork(line.network).type==1 && options.get('oircJoinPart')){
+							if(settings.getNetwork(line.network).type==1 && !options.get('oircJoinPart')){
 								return true;
 							}
 							break;
@@ -2956,7 +2969,7 @@ oirc = (function(){
 									network:line.network
 								});
 							}
-							if(settings.getNetwork(line.network).type==1 && options.get('oircJoinPart')){
+							if(settings.getNetwork(line.network).type==1 && !options.get('oircJoinPart')){
 								return true;
 							}
 							break;
@@ -2968,7 +2981,7 @@ oirc = (function(){
 									network:line.network
 								});
 							}
-							if(settings.getNetwork(line.network).type==1 && options.get('oircJoinPart')){
+							if(settings.getNetwork(line.network).type==1 && !options.get('oircJoinPart')){
 								return true;
 							}
 							break;

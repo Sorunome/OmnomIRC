@@ -43,8 +43,8 @@ $channel = $you->chan;
 if($you->isBanned()){
 	$json->add('banned',true);
 	$json->add('admin',false);
-	$json->add('lines',Array());
-	$json->add('users',Array());
+	$json->add('lines',array());
+	$json->add('users',array());
 	echo $json->get();
 	die();
 }
@@ -58,45 +58,24 @@ if(isset($_GET['day'])){
 	$json->addWarning('No day set, defaulting to today');
 }
 $t_high = $t_low + (3600 * 24);
-$lines = Array();
+$lines = array();
 $table = 'irc_lines_old';
 // $table is NEVER user-defined, it is only irc_lines_old or irc_lines!!
 while(true){
-	if($channel[0] == "*"){ // PM
-		$res = $sql->query_prepare("SELECT * FROM `$table` 
-								WHERE (
-									((`channel` = ?
-									AND `name1` = ?)
-									OR
-									(`channel` = ?
-									AND `name1` = ?))
-								) AND
-									`time` >= ?
-										AND
-									`time` <= ?
-										AND
-									`online` = ?
-								ORDER BY `line_number` ASC 
-								LIMIT ?,1000
-							",array(substr($channel,1),$you->nick,$you->nick,substr($channel,1),$t_low,$t_high,$you->getNetwork(),(int)$offset));
-	}else{
-		$res = $sql->query_prepare("SELECT * FROM `$table` 
-									WHERE (
-											(`type` != 'server' AND ((`channel` = ? OR `channel` = ?)
-											)
-											)
-											OR (`type` = 'server' AND channel=? AND name2=?)
-										) AND
-											`time` >= ?
-										AND
-											`time` <= ?
-									ORDER BY `line_number` ASC 
-									LIMIT ?,1000
-										",array($channel,$you->nick,$you->nick,$channel,$t_low,$t_high,(int)$offset));
-	}
+	$res = $sql->query_prepare("SELECT * FROM `$table`
+		WHERE
+				`channel` = ?
+			AND
+				`type` != 'server'
+			AND
+				`time` >= ?
+			AND
+				`time` <= ?
+			ORDER BY `line_number` ASC
+			LIMIT ?,1000",array($channel,$t_low,$t_high,(int)$offset));
 	
 	foreach($res as $result){
-		$lines[] = Array(
+		$lines[] = array(
 			'curLine' => ($table=='irc_lines'?(int)$result['line_number']:0),
 			'type' => $result['type'],
 			'network' => (int)$result['Online'],

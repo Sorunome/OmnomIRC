@@ -735,7 +735,7 @@ class You{
 		return 'nick='.base64_url_encode($this->nick).'&signature='.base64_url_encode($this->sig).'&id='.($this->id).'&channel='.(preg_match('/^[0-9]+$/',$this->chan)?$this->chan:base64_url_encode($this->chan)).'&network='.$this->getNetwork();
 	}
 	public function update(){
-		global $sql,$users,$relay;
+		global $sql,$users,$relay,$config;
 		if($this->chan[0]=='*'){
 			return;
 		} // INSERT INTO `irc_users` (`username`,`channel`,`online`,`time`) VALUES ('Sorunome',0,1,9001) ON DUPLICATE KEY UPDATE `time`=UNIX_TIMESTAMP(CURRENT_TIMESTAMP)
@@ -749,7 +749,9 @@ class You{
 			$sql->query_prepare("INSERT INTO `irc_users` (`username`,`channel`,`time`,`online`,`uid`) VALUES (?,?,UNIX_TIMESTAMP(CURRENT_TIMESTAMP),?,?)",array($this->nick,$this->chan,$this->getNetwork(),$this->getUid()));
 			$users->notifyJoin($this->nick,$this->chan,$this->getNetwork(),$this->getUid());
 		}
-		$users->clean();
+		if(!$config['settings']['useBot']){
+			$users->clean();
+		}
 		$relay->commitBuffer();
 	}
 	public function info(){
@@ -1248,6 +1250,15 @@ if(isset($_GET['getcurline'])){
 	header('Content-Type:application/json');
 	$json->clear();
 	$json->add('curline',(int)file_get_contents($config['settings']['curidFilePath']));
+	echo $json->get();
+	exit;
+}
+if(isset($_GET['cleanUsers'])){
+	header('Content-Type:application/json');
+	$users->clean();
+	$relay->commitBuffer();
+	$json->clear();
+	$json->add('success',true);
 	echo $json->get();
 	exit;
 }

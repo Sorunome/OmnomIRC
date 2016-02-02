@@ -51,7 +51,7 @@ def makeUnicode(s):
 				return s
 		return ''
 
-def execPhp(f,d):
+def execPhp(f,d = {}):
 	s = ['internal='+config.json['security']['sigKey']]
 	for key,value in d.items():
 		s.append(str(key)+'='+str(value))
@@ -67,7 +67,7 @@ def execPhp(f,d):
 			except:
 				return res
 
-def execPhp_wrap(self,a,b):
+def execPhp_wrap(self,a,b = {}):
 	return execPhp(a,b)
 
 def stripIrcColors(s):
@@ -102,6 +102,7 @@ class Config:
 
 #sql handler
 class Sql:
+	db = False
 	def __init__(self):
 		global config
 	def fetchOneAssoc(self,cur):
@@ -114,11 +115,13 @@ class Sql:
 			ret[name[0]] = value
 		print(ret)
 		return ret
-	def query(self,q,p = []):
-		global config
+	def getDbCursor(self):
 		try:
+			return self.db.cursor()
+		except:
+			print('(sql) creating new SQL connection...')
 			try:
-				db = pymysql.connect(
+				self.db = pymysql.connect(
 					host=config.json['sql']['server'],
 					user=config.json['sql']['user'],
 					password=config.json['sql']['passwd'],
@@ -126,7 +129,7 @@ class Sql:
 					charset='utf8',
 					cursorclass=pymysql.cursors.DictCursor)
 			except:
-				db = pymysql.connect(
+				self.db = pymysql.connect(
 					host=config.json['sql']['server'],
 					user=config.json['sql']['user'],
 					password=config.json['sql']['passwd'],
@@ -134,17 +137,20 @@ class Sql:
 					unix_socket='/var/run/mysqld/mysqld.sock',
 					charset='utf8',
 					cursorclass=pymysql.cursors.DictCursor)
-			cur = db.cursor()
+			return self.db.cursor()
+	def query(self,q,p = []):
+		try:
+			
+			cur = self.getDbCursor()
 			
 			cur.execute(q,tuple(p))
-			db.commit()
+			self.db.commit()
 			rows = []
 			for row in cur:
 				if row == None:
 					break
 				rows.append(row)
 			cur.close()
-			db.close()
 			return rows
 		except Exception as inst:
 			print(config.json['sql'])
@@ -440,6 +446,8 @@ class Main():
 			return temp[0]['isOnline'] == 0
 	def removeUser(self,u,c,i):
 		sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE `username` = %s AND `channel` = %s AND online=%s",[u,c,int(i)])
+	def timeoutUser(self,u,c,i):
+		sql.query("UPDATE `irc_users` SET `time` = UNIX_TIMESTAMP(CURRENT_TIMESTAMP) WHERE `username` = %s AND `channel` = %s AND online=%s",[u,c,int(i)])
 	def removeAllUsersChan(self,c,i):
 		sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE `channel` = %s AND online=%s",[c,int(i)])
 	def removeAllUsersNetwork(self,i):
@@ -532,7 +540,7 @@ class Main():
 				else:
 					sql.query("UPDATE `irc_channels` SET topic=%s WHERE chan=%s",[m,c.lower()])
 			if t=='action' or t=='message':
-				sql.query("UPDATE `irc_users` SET lastMsg=%s WHERE username=%s AND channel=%s AND online=%s",[str(int(time.time())),n1,c,int(s)])
+				sql.query("UPDATE `irc_users` SET lastMsg=UNIX_TIMESTAMP(CURRENT_TIMESTAMP) WHERE username=%s AND channel=%s AND online=%s",[n1,c,int(s)])
 		self.updateCurline()
 	def findRelay(self,id):
 		for r in self.relays:
@@ -601,6 +609,9 @@ class Main():
 			
 			while True:
 				time.sleep(30)
+				r = execPhp('omnomirc.php',{'cleanUsers':''});
+				if not r['success']:
+					print('(handle) Something went wrong updating users...',r)
 		except KeyboardInterrupt:
 			print('(handle) KeyboardInterrupt, exiting...')
 			self.quit()

@@ -134,8 +134,7 @@ class WebSocketsHandler(server.ServerHandler):
 			self.handle.sendToOther(self.nick,'','join','',str(self.chan),self.network,self.uid)
 	def part(self):
 		if self.chan!='':
-			self.handle.removeUser(self.nick,str(self.chan),self.network)
-			self.handle.sendToOther(self.nick,'','part','',str(self.chan),self.network,self.uid)
+			self.handle.timeoutUser(self.nick,str(self.chan),self.network)
 	def sendLine(self,n1,n2,t,m,c,s,uid): #name 1, name 2, type, message, channel, source
 		if self.banned:
 			return False
