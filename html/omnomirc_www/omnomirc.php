@@ -546,6 +546,9 @@ class Relay{
 			$valArray = array();
 			foreach($this->sendBuffer as $line){
 				$values .= '(?,?,?,?,?,?,?,UNIX_TIMESTAMP(CURRENT_TIMESTAMP)),';
+				if($line['n1'] == '' && $line['n2'] == ''){
+					continue;
+				}
 				$valArray = array_merge($valArray,array(
 					$line['n1'],
 					$line['n2'],
@@ -556,9 +559,10 @@ class Relay{
 					$line['uid']
 				));
 			}
-			$values = rtrim($values,',');
-			$sql->query_prepare("INSERT INTO `irc_lines` (name1,name2,type,message,channel,online,uid,time) VALUES $values",$valArray);
-			
+			if(sizeof($valArray) > 0){
+				$values = rtrim($values,',');
+				$sql->query_prepare("INSERT INTO `irc_lines` (name1,name2,type,message,channel,online,uid,time) VALUES $values",$valArray);
+			}
 			
 			
 			if($config['settings']['useBot']){

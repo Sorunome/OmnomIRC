@@ -47,12 +47,10 @@ exit;
 			}
 			$json->add('message',$m."\nconfig written");
 		}
-		if(!INTERNAL && $config['settings']['useBot'] && ($socket = @socket_create(AF_INET,SOCK_STREAM,SOL_TCP)) && ($result = @socket_connect($socket,'localhost',$config['settings']['botPort']))){
-			$sendToBotBuffer = json_encode(array(
-				't' => 'server_updateconfig'
-			))."\n";
-			socket_write($socket,$sendToBotBuffer,strlen($sendToBotBuffer));
-			socket_close($socket);
+		if(!INTERNAL && $config['settings']['useBot']){
+			global $relay;
+			$relay->sendLine('','','server_updateconfig','');
+			$relay->commitBuffer();
 		}
 	}else{
 		$json->addError('Couldn\'t write config');
