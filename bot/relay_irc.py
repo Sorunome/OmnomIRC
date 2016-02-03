@@ -20,19 +20,114 @@
 #	You should have received a copy of the GNU General Public License
 #	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 
-import irc
+import irc,oirc_include as oirc
 
+relayType = 3
+defaultCfg = {
+	'main':{
+		'nick':'OmnomIRC',
+		'server':'irc server',
+		'port':6667,
+		'nickserv':'nickserv password',
+		'ssl':False
+	},
+	'topic':{
+		'nick':'',
+		'server':'irc server',
+		'port':6667,
+		'nickserv':'nickserv password',
+		'ssl':False
+	}
+}
 
-def makeUnicode(s):
-	try:
-		return s.decode('utf-8')
-	except:
-		if s!='':
-			try:
-				return s.decode(chardet.detect(s)['encoding'])
-			except:
-				return s
-		return ''
+class Relay(oirc.OircRelay):
+	relayType = -42
+	bot = False
+	topicBot = False
+	def getColorCache(self):
+		colorAddingCache = {}
+		for n in self.handle.config.json['networks']:
+			colorAdding = ''
+			if n['irc']['color']==-2:
+				colorAdding = '\x02'+n['irc']['prefix']+'\x02'
+			elif n['irc']['color']==-1:
+				colorAdding = n['irc']['prefix']
+			else:
+				colorAdding = '\x03'+str(n['irc']['color'])+n['irc']['prefix']+'\x0F'
+			colorAddingCache[n['id']] = colorAdding
+		return colorAddingCache
+	def getIdChans(self):
+		idchans = {}
+		for ch in self.handle.config.json['channels']:
+			if ch['enabled']:
+				for c in ch['networks']:
+					if c['id'] == self.id:
+						idchans[ch['id']] = c['name']
+						break
+		return idchans
+	def newBot(self,t,cfg):
+		bot_class = type('Bot_OIRC_anon',(Bot_OIRC,),{'handle':self.handle})
+		return bot_class(cfg[t]['server'],cfg[t]['port'],cfg[t]['nick'],cfg[t]['nickserv'],cfg[t]['ssl'],self.getIdChans(),t=='main',self.id,
+						self.haveTopicBot,cfg['topic']['nick'],cfg['colornicks'],self.getColorCache())
+	def initRelay(self):
+		self.relayType = relayType
+		self.haveTopicBot = self.config['topic']['nick'] != ''
+		self.bot = self.newBot('main',self.config)
+		if self.haveTopicBot:
+			self.topicBot = self.newBot('topic',self.config)
+	def startRelay(self):
+		self.bot.start()
+		if self.haveTopicBot:
+			self.topicBot.start()
+	def updateRelay(self,cfg):
+		haveTopicBot = cfg['topic']['nick'] != ''
+		haveTopicBot_old = self.haveTopicBot
+		self.haveTopicBot = haveTopicBot
+		for bot_ref,t in [['bot','main'],['topicBot','topic']]:
+			bot = getattr(self,bot_ref)
+			if bot:
+				if bot.ssl != cfg[t]['ssl'] or bot.server != cfg[t]['server'] or bot.port != cfg[t]['port']:
+					bot.stopThread()
+					setattr(self,bot_ref,self.newBot(t,cfg))
+					getattr(self,bot_ref).start()
+					continue
+				bot.updateConfig(cfg[t]['nick'],cfg[t]['nickserv'],self.haveTopicBot,cfg['topic']['nick'],cfg['colornicks'],self.getIdChans(),self.getColorCache())
+		if haveTopicBot_old != haveTopicBot:
+			self.bot.topicbotExists = self.haveTopicBot
+			if self.haveTopicBot: # we need to generate a new bot!
+				self.topicBot = self.newBot('topic',cfg)
+				self.topicBot.start()
+			else: # we need to remove a bot!
+				self.topicBot.stopThread()
+				self.topicBot = False
+		self.config = cfg
+	def stopRelay(self):
+		self.bot.stopThread()
+		if self.haveTopicBot:
+			self.topicBot.stopThread()
+	def relayMessage(self,n1,n2,t,m,c,s,uid):
+		try:
+			if s != self.id:
+				self.bot.sendLine(n1,n2,t,m,c,s)
+		except Exception as inst:
+			print(inst)
+			traceback.print_exc()
+	def relayTopic(self,s,c,i):
+		if i != self.id:
+			if self.haveTopicBot:
+				self.topicBot.sendTopic(s,c)
+			else:
+				self.bot.sendTopic(s,c)
+	def joinThread():
+		try:
+			self.bot.join()
+		except:
+			pass
+		try:
+			self.topicBot.join()
+		except:
+			pass
+
 
 #irc bot
 class Bot_OIRC(irc.Bot):
@@ -187,7 +282,7 @@ class Bot_OIRC(irc.Bot):
 				return
 			if not (cid in self.userlist and nick in self.userlist[cid]):
 				return
-			users = self.sql.query("SELECT `username` FROM `irc_users` WHERE `channel`=%s AND `isOnline`=1 AND `online`<>%s AND `username` IS NOT NULL",[cid,self.i])
+			users = self.handle.sql.query("SELECT `username` FROM `irc_users` WHERE `channel`=%s AND `isOnline`=1 AND `online`<>%s AND `username` IS NOT NULL",[cid,self.i])
 			userchunks = []
 			chunk = []
 			for u in users:
@@ -204,7 +299,7 @@ class Bot_OIRC(irc.Bot):
 			return
 	def doMain(self,line):
 		for i in range(len(line)):
-			line[i] = makeUnicode(line[i])
+			line[i] = oirc.makeUnicode(line[i])
 			
 		message = ' '.join(line[3:])[1:]
 		

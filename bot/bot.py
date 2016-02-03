@@ -20,11 +20,7 @@
 #	You should have received a copy of the GNU General Public License
 #	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 
-import server,traceback,json,signal,time,pymysql,sys,subprocess,re
-
-f = open('documentroot.cfg')
-DOCUMENTROOT = f.readlines()[0].strip()
-f.close()
+import server,traceback,signal,json,time,pymysql,sys,re,oirc_include as oirc,os
 
 try:
 	import memcache
@@ -39,42 +35,6 @@ except:
 			return False
 	memcached = Memcached_fake()
 
-
-def makeUnicode(s):
-	try:
-		return s.decode('utf-8')
-	except:
-		if s!='':
-			try:
-				return s.decode(chardet.detect(s)['encoding'])
-			except:
-				return s
-		return ''
-
-def execPhp(f,d = {}):
-	s = ['internal='+config.json['security']['sigKey']]
-	for key,value in d.items():
-		s.append(str(key)+'='+str(value))
-	res = subprocess.Popen(['php',DOCUMENTROOT+'/'+f] + s,stdout=subprocess.PIPE).communicate()
-	try:
-		return json.loads(makeUnicode(res[0]))
-	except:
-		try:
-			return makeUnicode(res[0])
-		except:
-			try:
-				return res[0]
-			except:
-				return res
-
-def execPhp_wrap(self,a,b = {}):
-	return execPhp(a,b)
-
-def stripIrcColors(s):
-	return re.sub(r"(\x02|\x0F|\x16|\x1D|\x1F|\x03(\d{1,2}(,\d{1,2})?)?)",'',s)
-
-
-
 #config handler
 class Config:
 	can_postload=False
@@ -83,7 +43,7 @@ class Config:
 	def readFile(self):
 		jsons = ''
 		searchingJson = True
-		f = open(DOCUMENTROOT+'/config.json.php')
+		f = open(oirc.DOCUMENTROOT+'/config.json.php')
 		lines = f.readlines()
 		f.close()
 		for l in lines:
@@ -99,6 +59,7 @@ class Config:
 		for i in range(len(self.json['networks'])):
 			if self.json['networks'][i]['config'] == True:
 				self.json['networks'][i]['config'] = sql.getVar('net_config_'+str(self.json['networks'][i]['id']))
+
 
 #sql handler
 class Sql:
@@ -142,7 +103,6 @@ class Sql:
 		try:
 			
 			cur = self.getDbCursor()
-			
 			cur.execute(q,tuple(p))
 			self.db.commit()
 			rows = []
@@ -181,212 +141,11 @@ class Sql:
 					return False
 			return False
 		return False
-
-class OircRelay:
-	relayType = -1
-	id = -1
-	def __init__(self,n):
-		self.id = int(n['id'])
-		self.config = n['config']
-		self.initRelay()
-	def initRelay(self):
-		return
-	def startRelay_wrap(self):
-		handle.removeAllUsersNetwork(self.id)
-		self.startRelay()
-	def startRelay(self):
-		return
-	def updateRelay_wrap(self,cfg):
-		if self.id == int(cfg['id']):
-			self.updateRelay(cfg['config'])
-	def updateRelay(self,cfg):
-		self.stopRelay_wrap()
-		self.config = cfg
-		self.startRelay_wrap()
-	def stopRelay_wrap(self):
-		handle.removeAllUsersNetwork(self.id)
-		self.stopRelay()
-	def stopRelay(self):
-		return
-	def relayMessage(self,n1,n2,t,m,c,s,uid):
-		return
-	def relayTopic(self,s,c,i):
-		return
-
-
-
-class RelayIRC(OircRelay):
-	relayType = 3
-	bot = False
-	topicBot = False
-	def getColorCache(self):
-		colorAddingCache = {}
-		for n in config.json['networks']:
-			colorAdding = ''
-			if n['irc']['color']==-2:
-				colorAdding = '\x02'+n['irc']['prefix']+'\x02'
-			elif n['irc']['color']==-1:
-				colorAdding = n['irc']['prefix']
-			else:
-				colorAdding = '\x03'+str(n['irc']['color'])+n['irc']['prefix']+'\x0F'
-			colorAddingCache[n['id']] = colorAdding
-		return colorAddingCache
-	def getIdChans(self):
-		idchans = {}
-		for ch in config.json['channels']:
-			if ch['enabled']:
-				for c in ch['networks']:
-					if c['id'] == self.id:
-						idchans[ch['id']] = c['name']
-						break
-		return idchans
-	def newBot(self,t,cfg):
-		import irc_wrap
-		bot_class = type('Bot_OIRC_anon',(irc_wrap.Bot_OIRC,),{'handle':handle,'sql':sql})
-		return bot_class(cfg[t]['server'],cfg[t]['port'],cfg[t]['nick'],cfg[t]['nickserv'],cfg[t]['ssl'],self.getIdChans(),t=='main',self.id,
-						self.haveTopicBot,cfg['topic']['nick'],cfg['colornicks'],self.getColorCache())
-	def initRelay(self):
-		self.haveTopicBot = self.config['topic']['nick'] != ''
-		self.bot = self.newBot('main',self.config)
-		if self.haveTopicBot:
-			self.topicBot = self.newBot('topic',self.config)
-	def startRelay(self):
-		self.bot.start()
-		if self.haveTopicBot:
-			self.topicBot.start()
-	def updateRelay(self,cfg):
-		haveTopicBot = cfg['topic']['nick'] != ''
-		haveTopicBot_old = self.haveTopicBot
-		self.haveTopicBot = haveTopicBot
-		for bot_ref,t in [['bot','main'],['topicBot','topic']]:
-			bot = getattr(self,bot_ref)
-			if bot:
-				if bot.ssl != cfg[t]['ssl'] or bot.server != cfg[t]['server'] or bot.port != cfg[t]['port']:
-					bot.stopThread()
-					setattr(self,bot_ref,self.newBot(t,cfg))
-					getattr(self,bot_ref).start()
-					continue
-				bot.updateConfig(cfg[t]['nick'],cfg[t]['nickserv'],self.haveTopicBot,cfg['topic']['nick'],cfg['colornicks'],self.getIdChans(),self.getColorCache())
-		if haveTopicBot_old != haveTopicBot:
-			self.bot.topicbotExists = self.haveTopicBot
-			if self.haveTopicBot: # we need to generate a new bot!
-				self.topicBot = self.newBot('topic',cfg)
-				self.topicBot.start()
-			else: # we need to remove a bot!
-				self.topicBot.stopThread()
-				self.topicBot = False
-		self.config = cfg
-	def stopRelay(self):
-		self.bot.stopThread()
-		if self.haveTopicBot:
-			self.topicBot.stopThread()
-	def relayMessage(self,n1,n2,t,m,c,s,uid):
+	def close(self):
 		try:
-			if s != self.id:
-				self.bot.sendLine(n1,n2,t,m,c,s)
-		except Exception as inst:
-			print(inst)
-			traceback.print_exc()
-	def relayTopic(self,s,c,i):
-		if i != self.id:
-			if self.haveTopicBot:
-				self.topicBot.sendTopic(s,c)
-			else:
-				self.bot.sendTopic(s,c)
-
-class RelayWebsockets(OircRelay):
-	relayType = 1
-	def initRelay(self):
-		import websockets
-		ws_handler = type('WebSocketsHandler_anon',(websockets.WebSocketsHandler,),{'handle':handle,'execPhp':execPhp_wrap})
-		if config.json['websockets']['ssl']:
-			self.server = server.SSLServer(self.config['host'],self.config['port'],ws_handler)
-		else:
-			self.server = server.Server(self.config['host'],self.config['port'],ws_handler)
-	def startRelay(self):
-		self.server.start()
-	def updateRelay(self,cfg):
-		if self.config['host'] != cfg['host'] or self.config['port'] != cfg['port'] or self.config['ssl'] != cfg['ssl']:
-			self.config = cfg
-			self.stopRelay_wrap()
-			self.initRelay()
-			self.startRelay_wrap()
-		else:
-			self.config = cfg
-	def stopRelay(self):
-		if hasattr(self.server,'inputHandlers'):
-			for client in self.server.inputHandlers:
-				client.sendLine('OmnomIRC','','reload_userlist','THE GAME',client.nick,0,-1)
-		self.server.stop()
-	def relayMessage(self,n1,n2,t,m,c,s,uid): #self.server.inputHandlers
-		oircOnly = False
-		try:
-			c = int(c)
+			self.db.close()
 		except:
-			oircOnly = True
-		if hasattr(self.server,'inputHandlers'):
-			for client in self.server.inputHandlers:
-				try:
-					if ((not client.banned) and
-						(
-							(
-								(
-									(not oircOnly) or c[0]=='@'
-								)
-								and
-								c == client.chan
-								and t!='server'
-							)
-							or
-							str(n2) == client.pmHandler
-						)):
-						client.sendLine(n1,n2,t,m,c,s,uid)
-				except Exception as inst:
-					print(inst)
-					traceback.print_exc()
-
-class RelayCalcnet(OircRelay):
-	relayType = 2
-	def initRelay(self):
-		import calculators
-		self.server = server.Server(self.config['server'],self.config['port'],type('CalculatorHandler_anon',(calculators.CalculatorHandler,),{'i':self.id,'handle':handle}))
-	def startRelay(self):
-		self.server.start()
-	def getChanStuff(self):
-		chans = {}
-		defaultChan = ''
-		for ch in config.json['channels']:
-			if ch['enabled']:
-				for c in ch['networks']:
-					if c['id'] == self.id:
-						chans[ch['id']] = c['name']
-						if defaultChan == '':
-							defaultChan = c['name']
-						break
-		return [chans,defaultChan]
-	def updateRelay(self,cfg):
-		if self.config['server'] != cfg['server'] or self.config['port'] != cfg['port']:
-			self.config = cfg
-			self.stopRelay_wrap()
-			self.startRelay_wrap()
-		else:
-			self.config = cfg
-			chans, defaultChan = self.getChanStuff()
-			
-			for calc in self.server.inputHandlers:
-				calc.updateChans(chans,defaultChan)
-	def stopRelay(self):
-		self.server.stop()
-	def relayMessage(self,n1,n2,t,m,c,s,uid = -1):
-		for calc in self.server.inputHandlers:
-			try:
-				if calc.connectedToIRC and (not (s==self.id and n1==calc.calcName)) and calc.idToChan(c).lower()==calc.chan.lower():
-					calc.sendLine(n1,n2,t,m,c,s)
-			except Exception as inst:
-				print(inst)
-				traceback.print_exc()
-
-
+			pass
 
 
 #fetch lines off of OIRC
@@ -394,7 +153,7 @@ class OIRCLink(server.ServerHandler):
 	readbuffer = ''
 	def recieve(self):
 		try:
-			data = makeUnicode(self.socket.recv(1024))
+			data = oirc.makeUnicode(self.socket.recv(1024))
 			if not data: # EOF
 				return False
 			self.readbuffer += data
@@ -420,11 +179,23 @@ class OIRCLink(server.ServerHandler):
 
 #main handler
 class Main():
+	relayTypes = {}
 	relays = []
 	bots = []
 	modeBuffer = {}
 	def __init__(self):
 		self.config = config
+		self.sql = sql
+		for f in os.listdir('.'):
+			relay = re.match(r'^relay_(\w+)\.py$',f)
+			if relay:
+				relay = relay.group(1)
+				print('(handle) Found relay',relay,'importing...')
+				relay = __import__('relay_'+relay)
+				self.relayTypes[relay.relayType] = {
+					'class':relay.Relay,
+					'defaultCfg':relay.defaultCfg
+				}
 	def updateCurline(self):
 		global config,sql
 		try:
@@ -463,7 +234,7 @@ class Main():
 	def getModeString(self,chan):
 		if chan in self.modeBuffer:
 			return self.modeBuffer[chan]
-		res = sql.query("SELECT `modes` FROM `irc_channels` WHERE chan=LOWER(%s)",[makeUnicode(chan)])
+		res = sql.query("SELECT `modes` FROM `irc_channels` WHERE chan=LOWER(%s)",[oirc.makeUnicode(chan)])
 		if len(res)==0:
 			self.modeBuffer[chan] = '+-'
 			return '+-'
@@ -504,7 +275,7 @@ class Main():
 		
 		print('(handle) (relay) '+str({'name1':n1,'name2':n2,'type':t,'message':m,'channel':c,'source':s,'uid':uid}))
 		if do_sql:
-			c = makeUnicode(str(c))
+			c = oirc.makeUnicode(str(c))
 			sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`,`uid`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",[n1,n2,m,t,c,str(int(time.time())),int(s),uid])
 			try:
 				lines_cached = memcached.get('oirc_lines_'+c)
@@ -546,18 +317,17 @@ class Main():
 				return r
 		return False
 	def addRelay(self,n):
-		if n['type']==3: # irc
-			self.relays.append(RelayIRC(n))
-		elif n['type']==2: # calc
-			self.relays.append(RelayCalcnet(n))
-		elif n['type']==-1: # websocket, we only allow one of this type!
+		if n['type']==-1: # websocket, we only allow one of this type!
 			found = False
 			for r in self.relays:
 				if r.id == -1:
 					found = True
 					break
 			if not found:
-				self.relays.append(RelayWebsockets(n))
+				self.relays.append(self.relayTypes[-1]['class'](n,handle))
+		elif n['type'] in self.relayTypes:
+			self.relays.append(self.relayTypes[n['type']]['class'](n,handle))
+		
 	def get_net_cheat(self):
 		net_cheat = config.json['networks'][:]
 		net_cheat = [{
@@ -623,7 +393,7 @@ class Main():
 			
 			while True:
 				time.sleep(30)
-				r = execPhp('omnomirc.php',{'cleanUsers':''});
+				r = oirc.execPhp('omnomirc.php',{'cleanUsers':''});
 				if not r['success']:
 					print('(handle) Something went wrong updating users...',r)
 		except KeyboardInterrupt:
@@ -635,15 +405,19 @@ class Main():
 		global config
 		for r in self.relays:
 			r.stopRelay_wrap()
+		for r in self.relays:
+			r.joinThread()
 		self.oircLink.stop()
+		self.oircLink.join()
+		sql.close()
 		
-		execPhp('admin.php',{'internalAction':'deactivateBot'})
+		oirc.execPhp('admin.php',{'internalAction':'deactivateBot'})
 		sys.exit(code)
 
 if __name__ == "__main__":
 	print('Starting OmnomIRC bot...')
 	config = Config()
-	execPhp('admin.php',{'internalAction':'activateBot'})
+	oirc.execPhp('admin.php',{'internalAction':'activateBot'})
 	sql = Sql()
 	config.can_postload = True
 	config.postLoad()

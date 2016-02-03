@@ -20,26 +20,71 @@
 #	You should have received a copy of the GNU General Public License
 #	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 
-import server,traceback,re,struct,json,time,bot,errno
+import server,traceback,re,struct,json,time,bot,errno,oirc_include as oirc
 from base64 import b64encode
 from hashlib import sha1
 
+relayType = -1
+defaultCfg = False
 
-def makeUnicode(s):
-	try:
-		return s.decode('utf-8')
-	except:
-		if s!='':
-			try:
-				return s.decode(chardet.detect(s)['encoding'])
-			except:
-				return s
-		return ''
+class Relay(oirc.OircRelay):
+	relayType = 1
+	def initRelay(self):
+		self.relayType = relayType
+		ws_handler = type('WebSocketsHandler_anon',(WebSocketsHandler,),{'handle':self.handle})
+		if self.config['ssl']:
+			self.server = server.SSLServer(self.config['host'],self.config['port'],ws_handler)
+		else:
+			self.server = server.Server(self.config['host'],self.config['port'],ws_handler)
+	def startRelay(self):
+		self.server.start()
+	def updateRelay(self,cfg):
+		if self.config['host'] != cfg['host'] or self.config['port'] != cfg['port'] or self.config['ssl'] != cfg['ssl']:
+			self.config = cfg
+			self.stopRelay_wrap()
+			self.initRelay()
+			self.startRelay_wrap()
+		else:
+			self.config = cfg
+	def stopRelay(self):
+		if hasattr(self.server,'inputHandlers'):
+			for client in self.server.inputHandlers:
+				client.sendLine('OmnomIRC','','reload_userlist','THE GAME',client.nick,0,-1)
+		self.server.stop()
+	def relayMessage(self,n1,n2,t,m,c,s,uid): #self.server.inputHandlers
+		oircOnly = False
+		try:
+			c = int(c)
+		except:
+			oircOnly = True
+		if hasattr(self.server,'inputHandlers'):
+			for client in self.server.inputHandlers:
+				try:
+					if ((not client.banned) and
+						(
+							(
+								(
+									(not oircOnly) or c[0]=='@'
+								)
+								and
+								c == client.chan
+								and t!='server'
+							)
+							or
+							str(n2) == client.pmHandler
+						)):
+						client.sendLine(n1,n2,t,m,c,s,uid)
+				except Exception as inst:
+					print(inst)
+					traceback.print_exc()
+	def joinThread(self):
+		self.server.join()
+
 
 
 
 def b64encode_wrap(s):
-	return makeUnicode(b64encode(bytes(s,'utf-8')))
+	return oirc.makeUnicode(b64encode(bytes(s,'utf-8')))
 
 # websockethandler skeleton from https://gist.github.com/jkp/3136208
 class WebSocketsHandler(server.ServerHandler):
@@ -89,14 +134,14 @@ class WebSocketsHandler(server.ServerHandler):
 		for char in self.socket.recv(length):
 			decoded += chr(char ^ masks[len(decoded) % 4])
 		try:
-			return self.on_message(json.loads(makeUnicode(decoded)))
+			return self.on_message(json.loads(oirc.makeUnicode(decoded)))
 		except Exception as inst:
 			traceback.print_exc()
 			return True
 	def send_message(self, message):
 		try:
 			header = bytearray()
-			message = makeUnicode(message)
+			message = oirc.makeUnicode(message)
 			
 			length = len(message)
 			self.socket.send(bytes([129]))
@@ -151,7 +196,7 @@ class WebSocketsHandler(server.ServerHandler):
 		}})
 		self.send_message(s)
 	def handshake(self):
-		data = makeUnicode(self.socket.recv(1024)).strip()
+		data = oirc.makeUnicode(self.socket.recv(1024)).strip()
 		
 		print('(websockets) Handshaking...')
 		key = re.search('\n[sS]ec-[wW]eb[sS]ocket-[kK]ey[\s]*:[\s]*(.*)\r?\n',data)
@@ -177,7 +222,7 @@ class WebSocketsHandler(server.ServerHandler):
 			if 'action' in m:
 				if m['action'] == 'ident':
 					try:
-						r = self.execPhp('omnomirc.php',{
+						r = oirc.execPhp('omnomirc.php',{
 							'ident':'',
 							'nick':b64encode_wrap(m['nick']),
 							'signature':b64encode_wrap(m['signature']),
@@ -220,7 +265,7 @@ class WebSocketsHandler(server.ServerHandler):
 						c = str(int(self.chan))
 					except:
 						c = b64encode_wrap(self.chan)
-					r = self.execPhp('omnomirc.php',{
+					r = oirc.execPhp('omnomirc.php',{
 						'ident':'',
 						'nick':b64encode_wrap(self.nick),
 						'signature':b64encode_wrap(self.sig),
@@ -251,7 +296,7 @@ class WebSocketsHandler(server.ServerHandler):
 										except:
 											c = b64encode_wrap(c)
 										
-										r = self.execPhp('message.php',{
+										r = oirc.execPhp('message.php',{
 											'message':b64encode_wrap(msg),
 											'channel':c,
 											'nick':b64encode_wrap(self.nick),

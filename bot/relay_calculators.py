@@ -20,21 +20,58 @@
 #	You should have received a copy of the GNU General Public License
 #	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 
-import server,traceback,struct,re
+import server,traceback,struct,re,oirc_include as oirc
 
-def stripIrcColors(s):
-	return re.sub(r"(\x02|\x0F|\x16|\x1D|\x1F|\x03(\d{1,2}(,\d{1,2})?)?)",'',s)
+relayType = 2
+defaultCfg = {
+	'server':'mydomain.com',
+	'port':4295
+}
 
-def makeUnicode(s):
-	try:
-		return s.decode('utf-8')
-	except:
-		if s!='':
+class Relay(oirc.OircRelay):
+	relayType = -42
+	def initRelay(self):
+		self.relayType = relayType
+		self.server = server.Server(self.config['server'],self.config['port'],type('CalculatorHandler_anon',(CalculatorHandler,),{'i':self.id,'handle':self.handle}))
+	def startRelay(self):
+		self.server.start()
+	def getChanStuff(self):
+		chans = {}
+		defaultChan = ''
+		for ch in config.json['channels']:
+			if ch['enabled']:
+				for c in ch['networks']:
+					if c['id'] == self.id:
+						chans[ch['id']] = c['name']
+						if defaultChan == '':
+							defaultChan = c['name']
+						break
+		return [chans,defaultChan]
+	def updateRelay(self,cfg):
+		if self.config['server'] != cfg['server'] or self.config['port'] != cfg['port']:
+			self.config = cfg
+			self.stopRelay_wrap()
+			self.startRelay_wrap()
+		else:
+			self.config = cfg
+			chans, defaultChan = self.getChanStuff()
+			
+			for calc in self.server.inputHandlers:
+				calc.updateChans(chans,defaultChan)
+	def stopRelay(self):
+		self.server.stop()
+	def relayMessage(self,n1,n2,t,m,c,s,uid = -1):
+		for calc in self.server.inputHandlers:
 			try:
-				return s.decode(chardet.detect(s)['encoding'])
-			except:
-				return s
-		return ''
+				if calc.connectedToIRC and (not (s==self.id and n1==calc.calcName)) and calc.idToChan(c).lower()==calc.chan.lower():
+					calc.sendLine(n1,n2,t,m,c,s)
+			except Exception as inst:
+				print(inst)
+				traceback.print_exc()
+	def joinThread(self):
+		self.server.join()
+
+
 
 #gCn bridge
 class CalculatorHandler(server.ServerHandler):
@@ -73,7 +110,7 @@ class CalculatorHandler(server.ServerHandler):
 	def sendLine(self,n1,n2,t,m,c,s): #name 1, name 2, type, message, channel, source
 		c = self.idToChan(c)
 		if c!=-1:
-			m = stripIrcColors(m) # these will be glitched on the calc
+			m = oirc.stripIrcColors(m) # these will be glitched on the calc
 			if t=='message':
 				self.send(b'\xAD'+bytes('%s:%s' % (n1,m),'utf-8'))
 			elif t=='action':
@@ -150,7 +187,7 @@ class CalculatorHandler(server.ServerHandler):
 		except Exception as err:
 			print('(calcnet) ('+str(self.i)+') Error:',err)
 			return False
-		data = makeUnicode(r_bytes)
+		data = oirc.makeUnicode(r_bytes)
 		if len(r_bytes) == 0: # eof
 			print('(calcnet) ('+str(self.i)+') EOF recieved')
 			return False
@@ -170,7 +207,7 @@ class CalculatorHandler(server.ServerHandler):
 					printString+='Invalid channel, defaulting to '+self.defaultChan+'\n'
 					self.chan=self.defaultChan
 			if (r_bytes[2]==ord('c')):
-				calcId=makeUnicode(r_bytes[3:])
+				calcId=oirc.makeUnicode(r_bytes[3:])
 				printString+='Calc-message recieved. Calc-ID:'+calcId+'\n'
 			if (r_bytes[2]==ord('b') or r_bytes[2]==ord('f')):
 				if r_bytes[17]==171:
@@ -188,8 +225,8 @@ class CalculatorHandler(server.ServerHandler):
 						self.userPart()
 						self.sendToIRC('quit','')
 				elif r_bytes[17]==173 and data[5:10]==b'Omnom':
-					printString+='msg ('+self.calcName+') '+makeUnicode(data[data.find(b':',18)+1:-1])+'\n'
-					message=makeUnicode(data[data.find(b':',18)+1:-1])
+					printString+='msg ('+self.calcName+') '+oirc.makeUnicode(data[data.find(b':',18)+1:-1])+'\n'
+					message=oirc.makeUnicode(data[data.find(b':',18)+1:-1])
 					if message.split(' ')[0].lower()=='/join':
 						if self.findchan(message[message.find(' ')+1:].lower(),self.chans):
 							self.sendToIRC('part','')

@@ -100,14 +100,13 @@ date_default_timezone_set('UTC');
 
 include_once(realpath(dirname(__FILE__)).'/config.php');
 
-if(isset($argv)){
+if(isset($argv) && php_sapi_name() == 'cli'){
 	// parse command line args into $_GET
 	foreach($argv as $a){
 		if(($p = strpos($a,'='))!==false){
 			$_GET[substr($a,0,$p)] = substr($a,$p+1) or true;
 		}
 	}
-	isset($_GET['internal']) && $_GET['internal'] == $config['security']['sigKey'] or die('Hacking attempt');
 	define('INTERNAL',true);
 }else{
 	define('INTERNAL',false);
