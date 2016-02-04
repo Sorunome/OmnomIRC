@@ -727,8 +727,7 @@
 				$('<button>')
 					.text('submit')
 					.click(function(){
-						console.log(nets);
-						//sendEdit('networks',nets);
+						sendEdit('networks',nets);
 					})
 			);
 		},
