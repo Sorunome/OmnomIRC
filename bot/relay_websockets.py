@@ -26,6 +26,8 @@ from hashlib import sha1
 
 relayType = -1
 defaultCfg = False
+name = 'The Game'
+editPattern = False
 
 class Relay(oirc.OircRelay):
 	relayType = 1

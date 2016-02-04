@@ -169,6 +169,12 @@ class OIRCLink(server.ServerHandler):
 					handle.updateConfig()
 				elif data['t'] == 'server_delete_modebuffer':
 					handle.deleteModeBuffer(data['c'])
+				elif data['t'] == 'server_updaterelaytypes':
+					handle.updateRelayTypes()
+				elif data['t'] == 'server_getRelayTypes':
+					s = json.dumps(handle.getRelayTypesData())+'\n'
+					print('(oirc) Sending out network information...',s)
+					self.socket.sendall(bytes(s,'utf-8'))
 				else:
 					print('(oirc)>> '+str(data))
 					handle.sendToOther(data['n1'],data['n2'],data['t'],data['m'],data['c'],data['s'],data['uid'],False)
@@ -186,16 +192,37 @@ class Main():
 	def __init__(self):
 		self.config = config
 		self.sql = sql
+		self.updateRelayTypes()
+	def updateRelayTypes(self):
 		for f in os.listdir('.'):
-			relay = re.match(r'^relay_(\w+)\.py$',f)
-			if relay:
-				relay = relay.group(1)
-				print('(handle) Found relay',relay,'importing...')
-				relay = __import__('relay_'+relay)
-				self.relayTypes[relay.relayType] = {
-					'class':relay.Relay,
-					'defaultCfg':relay.defaultCfg
-				}
+			relay_file = re.match(r'^relay_(\w+)\.py$',f)
+			if relay_file:
+				relay_file = relay_file.group(1)
+				try:
+					print('(handle) Found relay',relay_file,'importing...')
+					relay = __import__('relay_'+relay_file)
+					self.relayTypes[relay.relayType] = {
+						'module':relay,
+						'file':relay_file,
+						'class':relay.Relay,
+						'defaultCfg':relay.defaultCfg,
+						'name':relay.name,
+						'editPattern':relay.editPattern
+					}
+				except Exception as inst:
+					print('(handle) Error importing relay',relay,':',inst)
+					traceback.print_exc()
+	def getRelayTypesData(self):
+		a = []
+		for i,v in self.relayTypes.items():
+			if i!=-1:
+				a.append({
+					'id':i,
+					'name':v['name'],
+					'defaultCfg':v['defaultCfg'],
+					'editPattern':v['editPattern']
+				})
+		return a
 	def updateCurline(self):
 		global config,sql
 		try:

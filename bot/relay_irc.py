@@ -37,8 +37,70 @@ defaultCfg = {
 		'port':6667,
 		'nickserv':'nickserv password',
 		'ssl':False
-	}
+	},
+	'colornicks':False
 }
+name = 'IRC'
+editPattern = [
+	{
+		'name':'Color Nicks',
+		'type':'checkbox',
+		'var':'colornicks'
+	},
+	{
+		'type':'newline'
+	},
+	{
+		'name':'Nick',
+		'type':'text',
+		'var':'main/nick'
+	},
+	{
+		'name':'Server',
+		'type':'text',
+		'var':'main/server'
+	},
+	{
+		'name':'Port',
+		'type':'number',
+		'var':'main/port'
+	},
+	{
+		'name':'SSL',
+		'type':'checkbox',
+		'var':'main/ssl'
+	},
+	{
+		'name':'Advanced settings',
+		'type':'more',
+		'pattern':[
+			{
+				'name':'Topicbot',
+				'type':'info'
+			},
+			{
+				'name':'Nick',
+				'type':'text',
+				'var':'topic/nick'
+			},
+			{
+				'name':'Server',
+				'type':'text',
+				'var':'topic/server'
+			},
+			{
+				'name':'Port',
+				'type':'number',
+				'var':'topic/port'
+			},
+			{
+				'name':'SSL',
+				'type':'checkbox',
+				'var':'topic/ssl'
+			}
+		]
+	}
+]
 
 class Relay(oirc.OircRelay):
 	relayType = -42

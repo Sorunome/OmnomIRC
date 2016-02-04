@@ -27,6 +27,19 @@ defaultCfg = {
 	'server':'mydomain.com',
 	'port':4295
 }
+name = 'CalcNet'
+editPattern = [
+	{
+		'name':'Server',
+		'type':'text',
+		'var':'server'
+	},
+	{
+		'name':'Port',
+		'type':'number',
+		'var':'port'
+	}
+]
 
 class Relay(oirc.OircRelay):
 	relayType = -42

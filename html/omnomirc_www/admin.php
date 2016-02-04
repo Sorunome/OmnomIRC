@@ -145,6 +145,43 @@ if($you->isGlobalOp()){
 					}
 				}
 				$json->add('networks',$config['networks']);
+				
+				// time to fetch which network types we have!
+				$networkTypes = array(
+					1 => array(
+						'id' => 1,
+						'name' => 'OmnomIRC',
+						'defaultCfg' => array(
+							'checkLogin' => 'link to checkLogin file',
+							'theme' => -1,
+							'defaults' => '',
+							'opGroups' => [],
+							'guests' => 0,
+							'editPattern' => false
+						)
+					)
+				);
+				if($config['settings']['useBot']){
+					if($socket = $relay->getSocket()){
+						$s = json_encode(array('t' => 'server_getRelayTypes'))."\n";
+						socket_write($socket,$s,strlen($s));
+						$b = '';
+						socket_set_option($socket,SOL_SOCKET,SO_RCVTIMEO,array('sec' => 2,'usec' => 0));
+						while($buf = socket_read($socket,2048)){
+							$b .= $buf;
+							if(strpos($b,"\n")!==false){
+								break;
+							}
+						}
+						socket_close($socket);
+						if($a = json_decode($b,true)){
+							foreach($a as $b){
+								$networkTypes[$b['id']] = $b;
+							}
+						}
+					}
+				}
+				$json->add('networkTypes',$networkTypes);
 				break;
 			case 'checkLogin':
 				$success = false;

@@ -538,6 +538,23 @@ class Relay{
 			'uid' => $uid
 		);
 	}
+	public function getSocket(){
+		global $config;
+		$sock = $config['settings']['botSocket'];
+		$socket = false;
+		if(substr($sock,0,5) == 'unix:'){
+			$socket = socket_create(AF_UNIX,SOCK_STREAM,0);
+			socket_connect($socket,substr($sock,5));
+		}else{
+			$matches = array();
+			preg_match('/^([\\w\\.]+):(\\d+)/',$sock,$matches);
+			if($matches){
+				$socket = socket_create(AF_INET,SOCK_STREAM,SOL_TCP);
+				socket_connect($socket,$matches[1],$matches[2]);
+			}
+		}
+		return $socket;
+	}
 	public function commitBuffer(){
 		global $config,$sql;
 		if(sizeof($this->sendBuffer)>0){
@@ -566,20 +583,8 @@ class Relay{
 			
 			if($config['settings']['useBot']){
 				$sock = $config['settings']['botSocket'];
-				$socket = false;
-				if(substr($sock,0,5) == 'unix:'){
-					$socket = socket_create(AF_UNIX,SOCK_STREAM,0);
-					socket_connect($socket,substr($sock,5));
-				}else{
-					$matches = array();
-					preg_match('/^([\\w\\.]+):(\\d+)/',$sock,$matches);
-					if($matches){
-						$socket = socket_create(AF_INET,SOCK_STREAM,SOL_TCP);
-						socket_connect($socket,$matches[1],$matches[2]);
-					}
-				}
 				
-				if($socket){
+				if($socket = $this->getSocket()){
 					$socketBuf = '';
 					foreach($this->sendBuffer as $line){
 						$socketBuf .= trim(json_encode($line))."\n";
