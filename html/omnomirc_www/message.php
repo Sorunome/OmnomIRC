@@ -182,7 +182,7 @@ if(substr($parts[0],0,1)=='/'){
 				if($ignoreuser=='*'){
 					$returnmessage = "\x033You are no longer ignoring anybody.";
 				}
-				$sql->query_prepare("UPDATE `irc_userstuff` SET ignores=? WHERE name=LOWER(?)",array($userSql["ignores"],$nick));
+				$sql->query_prepare("UPDATE `{db_prefix}userstuff` SET ignores=? WHERE name=LOWER(?)",array($userSql["ignores"],$nick));
 				$reload = true;
 			}else{
 				$returnmessage = "\x034ERROR: You weren't ignoring $ignoreuser";
@@ -325,7 +325,7 @@ if($channel[0] == '*'){
 }
 
 if($sendNormal){
-	$sql->query_prepare("UPDATE `irc_users` SET lastMsg=? WHERE username=? AND channel=? AND online=?",array(time(),$nick,$channel,$you->getNetwork()));
+	$sql->query_prepare("UPDATE `{db_prefix}users` SET lastMsg=? WHERE username=? AND channel=? AND online=?",array(time(),$nick,$channel,$you->getNetwork()));
 	if($channels->isMode($channel,'c')){
 		$message = strip_irc_colors($message);
 	}

@@ -59,8 +59,8 @@ if(isset($_GET['day'])){
 }
 $t_high = $t_low + (3600 * 24);
 $lines = array();
-$table = 'irc_lines_old';
-// $table is NEVER user-defined, it is only irc_lines_old or irc_lines!!
+$table = '{db_prefix}lines_old';
+// $table is NEVER user-defined, it is only {db_prefix}lines_old or {db_prefix}lines!!
 while(true){
 	$res = $sql->query_prepare("SELECT * FROM `$table`
 		WHERE
@@ -76,7 +76,7 @@ while(true){
 	
 	foreach($res as $result){
 		$lines[] = array(
-			'curLine' => ($table=='irc_lines'?(int)$result['line_number']:0),
+			'curLine' => ($table=='{db_prefix}lines'?(int)$result['line_number']:0),
 			'type' => $result['type'],
 			'network' => (int)$result['Online'],
 			'time' => (int)$result['time'],
@@ -86,8 +86,8 @@ while(true){
 			'chan' => $result['channel']
 		);
 	}
-	if(count($lines)<1000 && $table == 'irc_lines_old'){
-		$table = 'irc_lines';
+	if(count($lines)<1000 && $table == '{db_prefix}lines_old'){
+		$table = '{db_prefix}lines';
 		continue;
 	}
 	break;

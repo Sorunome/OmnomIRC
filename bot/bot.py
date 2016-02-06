@@ -100,10 +100,10 @@ class Sql:
 					cursorclass=pymysql.cursors.DictCursor)
 			return self.db.cursor()
 	def query(self,q,p = []):
+		global config
 		try:
-			
 			cur = self.getDbCursor()
-			cur.execute(q,tuple(p))
+			cur.execute(q.replace('{db_prefix}',config.json['sql']['prefix']),tuple(p))
 			self.db.commit()
 			rows = []
 			for row in cur:
@@ -118,7 +118,7 @@ class Sql:
 			traceback.print_exc()
 			return False
 	def getVar(self,var):
-		res = self.query('SELECT value,type FROM irc_vars WHERE name=%s',[var])
+		res = self.query('SELECT value,type FROM {db_prefix}vars WHERE name=%s',[var])
 		if isinstance(res,list) and len(res) > 0:
 			res = res[0]
 			if res['type'] == 0:
@@ -227,27 +227,27 @@ class Main():
 		global config,sql
 		try:
 			f = open(config.json['settings']['curidFilePath'],'w')
-			f.write(str(sql.query("SELECT MAX(line_number) AS max FROM irc_lines")[0]['max']))
+			f.write(str(sql.query("SELECT MAX(line_number) AS max FROM {db_prefix}lines")[0]['max']))
 			f.close()
 		except Exception as inst:
 			print('(handle) curline error',inst)
 			traceback.print_exc()
 	def addUser(self,u,c,i,uid=-1):
-		temp = sql.query("SELECT usernum,isOnline FROM irc_users WHERE username=%s AND channel=%s AND online=%s",[u,c,int(i)])
+		temp = sql.query("SELECT usernum,isOnline FROM {db_prefix}users WHERE username=%s AND channel=%s AND online=%s",[u,c,int(i)])
 		if(len(temp)==0):
-			sql.query("INSERT INTO `irc_users` (`username`,`channel`,`online`,`uid`) VALUES (%s,%s,%s,%s)",[u,c,int(i),int(uid)])
+			sql.query("INSERT INTO `{db_prefix}users` (`username`,`channel`,`online`,`uid`) VALUES (%s,%s,%s,%s)",[u,c,int(i),int(uid)])
 			return True
 		else:
-			sql.query("UPDATE `irc_users` SET `isOnline`=1,`uid`=%s,`time`=0 WHERE `usernum`=%s",[int(uid),int(temp[0]['usernum'])])
+			sql.query("UPDATE `{db_prefix}users` SET `isOnline`=1,`uid`=%s,`time`=0 WHERE `usernum`=%s",[int(uid),int(temp[0]['usernum'])])
 			return temp[0]['isOnline'] == 0
 	def removeUser(self,u,c,i):
-		sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE `username` = %s AND `channel` = %s AND online=%s",[u,c,int(i)])
+		sql.query("UPDATE `{db_prefix}users` SET `isOnline`=0 WHERE `username` = %s AND `channel` = %s AND online=%s",[u,c,int(i)])
 	def timeoutUser(self,u,c,i):
-		sql.query("UPDATE `irc_users` SET `time` = UNIX_TIMESTAMP(CURRENT_TIMESTAMP) WHERE `username` = %s AND `channel` = %s AND online=%s",[u,c,int(i)])
+		sql.query("UPDATE `{db_prefix}users` SET `time` = UNIX_TIMESTAMP(CURRENT_TIMESTAMP) WHERE `username` = %s AND `channel` = %s AND online=%s",[u,c,int(i)])
 	def removeAllUsersChan(self,c,i):
-		sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE `channel` = %s AND online=%s",[c,int(i)])
+		sql.query("UPDATE `{db_prefix}users` SET `isOnline`=0 WHERE `channel` = %s AND online=%s",[c,int(i)])
 	def removeAllUsersNetwork(self,i):
-		sql.query("UPDATE `irc_users` SET `isOnline`=0 WHERE `online`=%s",[int(i)])
+		sql.query("UPDATE `{db_prefix}users` SET `isOnline`=0 WHERE `online`=%s",[int(i)])
 	def getCurline(self):
 		global config
 		f = open(config.json['settings']['curidFilePath'])
@@ -261,7 +261,7 @@ class Main():
 	def getModeString(self,chan):
 		if chan in self.modeBuffer:
 			return self.modeBuffer[chan]
-		res = sql.query("SELECT `modes` FROM `irc_channels` WHERE chan=LOWER(%s)",[oirc.makeUnicode(chan)])
+		res = sql.query("SELECT `modes` FROM `{db_prefix}channels` WHERE chan=LOWER(%s)",[oirc.makeUnicode(chan)])
 		if len(res)==0:
 			self.modeBuffer[chan] = '+-'
 			return '+-'
@@ -303,7 +303,7 @@ class Main():
 		print('(handle) (relay) '+str({'name1':n1,'name2':n2,'type':t,'message':m,'channel':c,'source':s,'uid':uid}))
 		if do_sql:
 			c = oirc.makeUnicode(str(c))
-			sql.query("INSERT INTO `irc_lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`,`uid`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",[n1,n2,m,t,c,str(int(time.time())),int(s),uid])
+			sql.query("INSERT INTO `{db_prefix}lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`,`uid`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",[n1,n2,m,t,c,str(int(time.time())),int(s),uid])
 			try:
 				lines_cached = memcached.get('oirc_lines_'+c)
 				if lines_cached:
@@ -330,13 +330,13 @@ class Main():
 				print('(handle) (relay) ERROR: couldn\'t update memcached: ',inst)
 			if t=='topic':
 				memcached.set('oirc_topic_'+c,m)
-				temp = sql.query("SELECT channum FROM `irc_channels` WHERE chan=%s",[c.lower()])
+				temp = sql.query("SELECT channum FROM `{db_prefix}channels` WHERE chan=%s",[c.lower()])
 				if len(temp)==0:
-					sql.query("INSERT INTO `irc_channels` (chan,topic) VALUES(%s,%s)",[c.lower(),m])
+					sql.query("INSERT INTO `{db_prefix}channels` (chan,topic) VALUES(%s,%s)",[c.lower(),m])
 				else:
-					sql.query("UPDATE `irc_channels` SET topic=%s WHERE chan=%s",[m,c.lower()])
+					sql.query("UPDATE `{db_prefix}channels` SET topic=%s WHERE chan=%s",[m,c.lower()])
 			if t=='action' or t=='message':
-				sql.query("UPDATE `irc_users` SET lastMsg=UNIX_TIMESTAMP(CURRENT_TIMESTAMP) WHERE username=%s AND channel=%s AND online=%s",[n1,c,int(s)])
+				sql.query("UPDATE `{db_prefix}users` SET lastMsg=UNIX_TIMESTAMP(CURRENT_TIMESTAMP) WHERE username=%s AND channel=%s AND online=%s",[n1,c,int(s)])
 		self.updateCurline()
 	def findRelay(self,id):
 		for r in self.relays:

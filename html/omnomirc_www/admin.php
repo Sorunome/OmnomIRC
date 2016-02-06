@@ -125,7 +125,8 @@ if($you->isGlobalOp()){
 				$json->add('sql',array(
 					'server' => $config['sql']['server'],
 					'db' => $config['sql']['db'],
-					'user' => $config['sql']['user']
+					'user' => $config['sql']['user'],
+					'prefix' => $config['sql']['prefix']
 				));
 				break;
 			case 'smileys':
@@ -264,13 +265,18 @@ if($you->isGlobalOp()){
 				$json->add('message','Config saved!');
 				break;
 			case 'sql':
-				$config['sql']['server'] = $jsonData['server'];
-				$config['sql']['db'] = $jsonData['db'];
-				$config['sql']['user'] = $jsonData['user'];
-				$config['sql']['passwd'] = $jsonData['passwd'];
-				$sql_connection=@mysqli_connect($config['sql']['server'],$config['sql']['user'],$config['sql']['passwd'],$config['sql']['db']);
-				if (mysqli_connect_errno($sql_connection)!=0){
-					$json->addError('Could not connect to SQL DB: '.mysqli_connect_errno($sql_connection).' '.mysqli_connect_error($sql_connection));
+				$config['sql']['prefix'] = $jsonData['prefix'];
+				if($jsonData['passwd'] != '' || $config['sql']['server'] != $jsonData['server'] || $config['sql']['user'] != $jsonData['user'] || $config['sql']['db'] != $jsonData['db']){
+					$config['sql']['server'] = $jsonData['server'];
+					$config['sql']['db'] = $jsonData['db'];
+					$config['sql']['user'] = $jsonData['user'];
+					$config['sql']['passwd'] = $jsonData['passwd'];
+					$sql_connection=@mysqli_connect($config['sql']['server'],$config['sql']['user'],$config['sql']['passwd'],$config['sql']['db']);
+					if (mysqli_connect_errno($sql_connection)!=0){
+						$json->addError('Could not connect to SQL DB: '.mysqli_connect_errno($sql_connection).' '.mysqli_connect_error($sql_connection));
+					}else{
+						writeConfig();
+					}
 				}else{
 					writeConfig();
 				}

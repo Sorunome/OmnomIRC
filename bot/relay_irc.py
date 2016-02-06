@@ -344,7 +344,7 @@ class Bot_OIRC(irc.Bot):
 				return
 			if not (cid in self.userlist and nick in self.userlist[cid]):
 				return
-			users = self.handle.sql.query("SELECT `username` FROM `irc_users` WHERE `channel`=%s AND `isOnline`=1 AND `online`<>%s AND `username` IS NOT NULL",[cid,self.i])
+			users = self.handle.sql.query("SELECT `username` FROM `{db_prefix}users` WHERE `channel`=%s AND `isOnline`=1 AND `online`<>%s AND `username` IS NOT NULL",[cid,self.i])
 			userchunks = []
 			chunk = []
 			for u in users:
