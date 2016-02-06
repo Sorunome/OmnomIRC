@@ -832,54 +832,57 @@ oirc = (function(){
 							self.ws.use = false;
 							return false;
 						}
-						try{
-							self.ws.socket = new WebSocket((self.ws.ssl?'wss://':'ws://')+self.ws.host+':'+self.ws.port.toString());
-						}catch(e){
-							console.log(self.ws.socket);
-							console.log((ssl?'wss://':'ws://')+self.ws.host+':'+self.ws.port.toString());
-							console.log(e);
-							self.ws.fallback();
-						}
-						self.ws.socket.onopen = function(e){
-							self.ws.connected = true;
-							for(var i = 0;i < self.ws.sendBuffer.length;i++){
-								self.ws.send(self.ws.sendBuffer[i]);
-							}
-							self.ws.sendBuffer = [];
-						};
-						self.ws.socket.onmessage = function(e){
+						$.getScript('pooledwebsocket.min.js',function(){
 							try{
-								var data = JSON.parse(e.data);
-								console.log(data);
-								if(self.ws.allowLines && data.line!==undefined){
-									if(!parser.addLine(data.line)){
-										self.ws.tryFallback = false;
-										self.ws.socket.close();
+								self.ws.socket = new PooledWebSocket((self.ws.ssl?'wss://':'ws://')+self.ws.host+':'+self.ws.port.toString()+'/'+settings.net());
+							}catch(e){
+								console.log(self.ws.socket);
+								console.log((ssl?'wss://':'ws://')+self.ws.host+':'+self.ws.port.toString());
+								console.log(e);
+								self.ws.fallback();
+							}
+							self.ws.socket.onopen = function(e){
+								self.ws.connected = true;
+								for(var i = 0;i < self.ws.sendBuffer.length;i++){
+									self.ws.send(self.ws.sendBuffer[i]);
+								}
+								self.ws.sendBuffer = [];
+							};
+							self.ws.socket.onmessage = function(e){
+								try{
+									var data = JSON.parse(e.data);
+									console.log(data);
+									if(self.ws.allowLines && data.line!==undefined){
+										if(!parser.addLine(data.line)){
+											self.ws.tryFallback = false;
+											delete self.ws.socket;
+										}
 									}
-								}
-								if(data.relog!==undefined && data.relog!=0){
-									settings.fetch(function(){
-										self.ws.identify();
-									},true);
-								}
-							}catch(e){};
-						};
-						self.ws.socket.onclose = function(e){
-							console.log(e);
-							self.ws.use = false;
-							self.ws.fallback();
-						};
-						self.ws.socket.onerror = function(e){
-							console.log(e);
-							self.ws.socket.close();
-							self.ws.use = false;
-							self.ws.fallback();
-						};
-						
-						self.ws.identify();
-						
-						$(window).on('beforeunload',function(){
-							self.ws.socket.close();
+									if(data.relog!==undefined && data.relog!=0){
+										settings.fetch(function(){
+											self.ws.identify();
+										},true);
+									}
+								}catch(e){};
+							};
+							self.ws.socket.onclose = function(e){
+								console.log(e);
+								self.ws.use = false;
+								self.ws.fallback();
+							};
+							self.ws.socket.onerror = function(e){
+								console.log(e);
+								delete self.ws.socket;
+								self.ws.use = false;
+								self.ws.fallback();
+							};
+							
+							self.ws.identify();
+							
+							$(window).on('beforeunload',function(){
+								self.partChan(channels.current().handler);
+								delete self.ws.socket;
+							});
 						});
 						return true;
 					},
@@ -971,7 +974,15 @@ oirc = (function(){
 				setChan:function(c){
 					if(self.ws.use){
 						self.ws.send({
-							action:'chan',
+							action:'joinchan',
+							chan:c
+						});
+					}
+				},
+				partChan:function(c){
+					if(self.ws.use){
+						self.ws.send({
+							action:'partchan',
 							chan:c
 						});
 					}
@@ -999,6 +1010,7 @@ oirc = (function(){
 					if(self.ws.use){
 						self.ws.send({
 							action:'message',
+							channel:channels.current().handler,
 							message:s
 						});
 						if(fn!==undefined){
@@ -1026,6 +1038,7 @@ oirc = (function(){
 			};
 			return {
 				setChan:self.setChan,
+				partChan:self.partChan,
 				start:self.start,
 				stop:self.stop,
 				setCurLine:self.setCurLine,
@@ -1343,10 +1356,11 @@ oirc = (function(){
 						if(self.requestHandler!==false){
 							self.requestHandler.abort();
 						}
+						request.partChan(self.current.handler);
 						self.requestHandler = network.getJSON('Load.php?count=125&channel='+self.getHandler(i,true),function(data){
 							self.current = Channel(i,self);
 							if(self.current.load(data,fn)){
-								request.setChan(self.getHandler(i));
+								request.setChan(self.current.handler);
 								request.start();
 								
 								self.chans[i].high = false;

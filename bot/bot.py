@@ -26,6 +26,7 @@ try:
 	import memcache
 	memcached = memcache.Client(['127.0.0.1:11211'],debug=0)
 except:
+	print('no memcached available')
 	class Memcached_fake:
 		def get(self,str):
 			return False
@@ -293,14 +294,15 @@ class Main():
 			c = int(c)
 		except:
 			oircOnly = True
+		print('(handle) (relay) '+str({'name1':n1,'name2':n2,'type':t,'message':m,'channel':c,'source':s,'uid':uid}))
+		
 		for r in self.relays:
-			if (oircOnly and r.relayType==1) or not oircOnly:
+			if (oircOnly and r.relayType==-1) or not oircOnly:
 				try:
 					r.relayMessage(n1,n2,t,m,c,s,uid)
 				except:
 					traceback.print_exc()
 		
-		print('(handle) (relay) '+str({'name1':n1,'name2':n2,'type':t,'message':m,'channel':c,'source':s,'uid':uid}))
 		if do_sql:
 			c = oirc.makeUnicode(str(c))
 			sql.query("INSERT INTO `{db_prefix}lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`,`uid`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",[n1,n2,m,t,c,str(int(time.time())),int(s),uid])

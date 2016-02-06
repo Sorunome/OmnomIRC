@@ -116,6 +116,7 @@ class Cache{
 	private $mode = 0;
 	private $handle = false;
 	public function __construct($host = 'localhost',$port = 11211){
+		global $json;
 		if(class_exists('Memcached')){
 			$this->handle = new Memcached;
 			$this->handle->addServer($host,$port);
@@ -127,6 +128,7 @@ class Cache{
 			$this->handle->setCompressThreshold(0,1); // disable compression
 			$this->mode = 2;
 		}
+		$json->add('memcache_mode',$this->mode);
 	}
 	public function get($var){
 		switch($this->mode){
@@ -933,7 +935,7 @@ class OmnomIRC{
 			return array();
 		}
 		$lines_cached = array();
-		if($cache = $memcached->get('o{db_prefix}lines_'.$you->chan)){
+		if($cache = $memcached->get('oirc_lines_'.$you->chan)){
 			$lines_cached = json_decode($cache,true);
 			if(json_last_error()!==0){
 				$lines_cached = array();
@@ -975,7 +977,7 @@ class OmnomIRC{
 			break;
 		}
 		$lines_cached = array_merge($lines_cached,$lines,$linesExtra);
-		$memcached->set('o{db_prefix}lines_'.$you->chan,json_encode($lines_cached),time()+(60*60*24*3));
+		$memcached->set('oirc_lines_'.$you->chan,json_encode($lines_cached),time()+(60*60*24*3));
 		return $lines_cached;
 	}
 	public function getNick($uid,$net){
@@ -1086,12 +1088,12 @@ class Channels{
 	}
 	public function setTopic($chan,$topic){
 		global $sql,$memcached;
-		$memcached->set('o{db_prefix}topic_'.$chan,$topic);
+		$memcached->set('oirc_topic_'.$chan,$topic);
 		$sql->query_prepare("UPDATE `{db_prefix}channels` SET `topic`=? WHERE `channum`=?",array($topic,$this->getChanId($chan,true)));
 	}
 	public function getTopic($chan){
 		global $sql,$memcached;
-		if($cache = $memcached->get('o{db_prefix}topic_'.$chan)){
+		if($cache = $memcached->get('oirc_topic_'.$chan)){
 			return $cache;
 		}
 		$id = $this->getChanId($chan);
@@ -1106,7 +1108,7 @@ class Channels{
 				$cache = $res;
 			}
 		}
-		$memcached->set('o{db_prefix}topic_'.$chan,$cache);
+		$memcached->set('oirc_topic_'.$chan,$cache);
 		return $cache;
 	}
 	public function addOp($chan,$nick,$network){
@@ -1164,7 +1166,7 @@ class Channels{
 	}
 	public function getModes($chan){
 		global $sql,$memcached;
-		if($cache = $memcached->get('o{db_prefix}chanmodes_'.$chan)){
+		if($cache = $memcached->get('oirc_chanmodes_'.$chan)){
 			return $cache;
 		}
 		$modestring = $sql->query_prepare("SELECT `modes` FROM `{db_prefix}channels` WHERE chan=LOWER(?)",array($chan));
@@ -1174,7 +1176,7 @@ class Channels{
 		}else{
 			$cache = $modestring;
 		}
-		$memcached->set('o{db_prefix}chanmodes_'.$chan,$cache);
+		$memcached->set('oirc_chanmodes_'.$chan,$cache);
 		return $cache;
 	}
 	public function setMode($chan,$s){
@@ -1261,7 +1263,7 @@ class Channels{
 		foreach($modes['-'] as $m => $t){
 			$newModes .= $m;
 		}
-		$memcached->set('o{db_prefix}chanmodes_'.$chan,$newModes);
+		$memcached->set('oirc_chanmodes_'.$chan,$newModes);
 		$sql->query_prepare("UPDATE `{db_prefix}channels` SET `modes`=? WHERE `channum`=?",array($newModes,$this->getChanId($chan,true)));
 		return true;
 	}

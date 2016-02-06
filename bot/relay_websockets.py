@@ -54,23 +54,16 @@ class Relay(oirc.OircRelay):
 				client.sendLine('OmnomIRC','','reload_userlist','THE GAME',client.nick,0,-1)
 		self.server.stop()
 	def relayMessage(self,n1,n2,t,m,c,s,uid): #self.server.inputHandlers
-		oircOnly = False
-		try:
-			c = int(c)
-		except:
-			oircOnly = True
+		c = str(c)
 		if hasattr(self.server,'inputHandlers'):
 			for client in self.server.inputHandlers:
 				try:
 					if ((not client.banned) and
 						(
 							(
-								(
-									(not oircOnly) or c[0]=='@'
-								)
+								c in client.chans
 								and
-								c == client.chan
-								and t!='server'
+								t!='server'
 							)
 							or
 							str(n2) == client.pmHandler
@@ -98,7 +91,7 @@ class WebSocketsHandler(server.ServerHandler):
 	identified = False
 	globalop = False
 	banned = True
-	chan = ''
+	chans = {}
 	msgStack = []
 	pmHandler = '**'
 	def setup(self):
@@ -120,9 +113,9 @@ class WebSocketsHandler(server.ServerHandler):
 		#if not b1 & 0x80:
 		#	print('(websockets) Client closed connection')
 		#	return False
-		if b1 & 0x0F == 0x8:
-			print('(websockets) Client asked to close connection')
-			return False
+		#if b1 & 0x0F == 0x8:
+		#	print('(websockets) Client asked to close connection')
+		#	return False
 		#if not b1 & 0x80:
 		#	print('(websockets) Client must always be masked')
 		#	return False
@@ -161,8 +154,7 @@ class WebSocketsHandler(server.ServerHandler):
 			if e.errno == errno.EPIPE:
 				return self.close()
 		return True
-	def addLine(self,t,m):
-		c = self.chan
+	def addLine(self,t,m,c):
 		if isinstance(c,str) and len(c) > 0 and c[0]=='*':
 			c = c[1:]
 			if t=='message':
@@ -174,14 +166,27 @@ class WebSocketsHandler(server.ServerHandler):
 		if c!='':
 			print('(websockets) ('+str(self.network)+')>> '+str({'chan':c,'nick':self.nick,'message':m,'type':t}))
 			self.handle.sendToOther(self.nick,'',t,m,c,self.network,self.uid)
-	def join(self): # updates nick in userlist
-		if isinstance(self.chan,str) and len(self.chan) > 0 and self.chan[0]=='*': # no userlist on PMs
+	def join(self,c): # updates nick in userlist
+		c = str(c)
+		if c in self.chans:
+			self.chans[c] += 1
+			print(self.chans)
+			return # no need to add to the userlist
+		self.chans[c] = 1
+		print(self.chans)
+		if isinstance(c,str) and len(c) > 0 and c[0]=='*': # no userlist on PMs
 			return
-		if self.handle.addUser(self.nick,str(self.chan),self.network,self.uid):
-			self.handle.sendToOther(self.nick,'','join','',str(self.chan),self.network,self.uid)
-	def part(self):
-		if self.chan!='':
-			self.handle.timeoutUser(self.nick,str(self.chan),self.network)
+		if self.handle.addUser(self.nick,str(c),self.network,self.uid):
+			self.handle.sendToOther(self.nick,'','join','',str(c),self.network,self.uid)
+	def part(self,c):
+		c = str(c)
+		if not c in self.chans:
+			return
+		self.chans[c] -= 1
+		if self.chans[c]<=0:
+			self.chans.pop(c,None)
+			self.handle.timeoutUser(self.nick,str(c),self.network)
+		print(self.chans)
 	def sendLine(self,n1,n2,t,m,c,s,uid): #name 1, name 2, type, message, channel, source
 		if self.banned:
 			return False
@@ -259,14 +264,12 @@ class WebSocketsHandler(server.ServerHandler):
 						self.identified = False
 						self.pmHandler = '**'
 						self.nick = ''
-				elif m['action'] == 'chan':
-					if self.identified:
-						self.part()
-					self.chan = m['chan']
+				elif m['action'] == 'joinchan':
+					c = m['chan']
 					try:
-						c = str(int(self.chan))
+						c = str(int(c))
 					except:
-						c = b64encode_wrap(self.chan)
+						c = b64encode_wrap(c)
 					r = oirc.execPhp('omnomirc.php',{
 						'ident':'',
 						'nick':b64encode_wrap(self.nick),
@@ -277,22 +280,24 @@ class WebSocketsHandler(server.ServerHandler):
 						'channel':c
 					})
 					self.checkRelog(r,m)
-					self.banned = r['isbanned']
-					self.chan = r['channel']
-					if not self.banned and self.identified:
-						self.join()
+					if not r['isbanned'] and self.identified:
+						self.join(r['channel'])
+				elif m['action'] == 'partchan':
+					self.part(m['chan'])
 				elif self.identified:
-					if m['action'] == 'message' and self.chan!='' and not self.banned:
+					print(m)
+					print(self.chans)
+					if m['action'] == 'message' and m['channel'] in self.chans and not self.banned:
 						msg = m['message']
 						if len(msg) <= 256 and len(msg) > 0:
 							if msg[0] == '/':
 								if len(msg) > 1 and msg[1]=='/': # normal message, erase trailing /
-									self.addLine('message',msg[1:])
+									self.addLine('message',msg[1:],m['channel'])
 								else:
 									if len(msg) > 4 and msg[0:4].lower() == '/me ': # /me message
-										self.addLine('action',msg[4:])
+										self.addLine('action',msg[4:],m['channel'])
 									else:
-										c = self.chan
+										c = m['channel']
 										try:
 											c = str(int(c))
 										except:
@@ -309,7 +314,7 @@ class WebSocketsHandler(server.ServerHandler):
 										})
 										self.checkRelog(r,m)
 							else: # normal message
-								self.addLine('message',msg)
+								self.addLine('message',msg,m['channel'])
 		except:
 			traceback.print_exc()
 		return True

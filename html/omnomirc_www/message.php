@@ -352,6 +352,7 @@ if($sendNormal){
 			$memcached->set('oirc_lines_'.$channel,false,1);
 		}
 	}
+	$json->add('cache',$cache);
 }
 if($sendPm){
 	$relay->sendLine('OmnomIRC',$you->getPmHandler(),'server',$returnmessage,$nick);
