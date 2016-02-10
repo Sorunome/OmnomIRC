@@ -214,7 +214,6 @@ class WebSocketsHandler(server.ServerHandler):
 		response += 'Upgrade: websocket\r\n'
 		response += 'Connection: Upgrade\r\n'
 		protocol = re.search('\n[sS]ec-[wW]eb[sS]ocket-[pP]rotocol[\s]*:[\s]*(.*)\r?\n?',data)
-		print(data)
 		if protocol:
 			response += 'Sec-WebSocket-Protocol: %s\r\n' % protocol.group(1).strip()
 		response += 'Sec-WebSocket-Accept: %s\r\n\r\n' % digest

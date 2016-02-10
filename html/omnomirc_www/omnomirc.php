@@ -620,8 +620,8 @@ class Users{
 	}
 	public function clean(){
 		global $sql;
-		$result = $sql->query_prepare("SELECT `username`,`channel`,`online`,`uid` FROM `{db_prefix}users` WHERE (`time` < ? and `time`!=0) AND `isOnline`=1",array(strtotime('-1 minute')));
-		$sql->query_prepare("UPDATE `{db_prefix}users` SET `isOnline`=0 WHERE (`time` < ? and `time`!=0) AND `isOnline`=1",array(strtotime('-1 minute')));
+		$result = $sql->query_prepare("SELECT `username`,`channel`,`online`,`uid` FROM `{db_prefix}users` WHERE (`time` < ? and `time`!=0) AND `isOnline`=1",array(strtotime('-5 minutes')));
+		$sql->query_prepare("UPDATE `{db_prefix}users` SET `isOnline`=0 WHERE (`time` < ? and `time`!=0) AND `isOnline`=1",array(strtotime('-5 minutes')));
 		foreach($result as $row){
 			$this->notifyPart($row['username'],$row['channel'],(int)$row['online'],(int)$row['uid']);
 		}

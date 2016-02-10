@@ -1518,72 +1518,73 @@ oirc = (function(){
 			};
 		})(),
 		tab = (function(){
-			var tabWord = '',
-				tabCount = 0,
-				isInTab = false,
-				startPos = 0,
-				startChar = '',
-				endPos = 0,
-				endChar = '',
-				endPos0 = 0,
-				tabAppendStr = ' ',
-				searchArray = [],
-				node;
-				getCurrentWord = function(){
-					var messageVal = (!wysiwyg.support()?$('#message')[0].value:(node = window.getSelection().anchorNode).nodeValue);
-					if(isInTab){
-						return tabWord;
+			var self = {
+				tabWord:'',
+				tabCount:0,
+				isInTab:false,
+				startPos:0,
+				startChar:'',
+				endPos:0,
+				endChar:'',
+				endPos0:0,
+				tabAppendStr:'',
+				searchArray:[],
+				node:false,
+				getCurrentWord:function(){
+					var messageVal = (!wysiwyg.support()?$('#message')[0].value:(self.node = window.getSelection().anchorNode).nodeValue);
+					if(self.isInTab){
+						return self.tabWord;
 					}
-					startPos = (!wysiwyg.support()?$('#message')[0].selectionStart:window.getSelection().anchorOffset);
-					startChar = messageVal.charAt(startPos);
-					while(startChar != ' ' && --startPos > 0){
-						startChar = messageVal.charAt(startPos);
+					self.startPos = (!wysiwyg.support()?$('#message')[0].selectionStart:window.getSelection().anchorOffset);
+					self.startChar = messageVal.charAt(self.startPos);
+					while(self.startChar != ' ' && --self.startPos > 0){
+						self.startChar = messageVal.charAt(self.startPos);
 					}
-					if(startChar == ' '){
-						startPos++;
+					if(self.startChar == ' '){
+						self.startPos++;
 					}
-					endPos = (!wysiwyg.support()?$('#message')[0].selectionStart:window.getSelection().anchorOffset);
-					endChar = messageVal.charAt(endPos);
-					while(endChar != ' ' && ++endPos <= messageVal.length){
-						endChar = messageVal.charAt(endPos);
+					self.endPos = (!wysiwyg.support()?$('#message')[0].selectionStart:window.getSelection().anchorOffset);
+					self.endChar = messageVal.charAt(self.endPos);
+					while(self.endChar != ' ' && ++self.endPos <= messageVal.length){
+						self.endChar = messageVal.charAt(self.endPos);
 					}
-					endPos0 = endPos;
-					tabWord = messageVal.substr(startPos,endPos - startPos).trim();
-					return tabWord;
+					self.endPos0 = self.endPos;
+					self.tabWord = messageVal.substr(self.startPos,self.endPos - self.startPos).trim();
+					return self.tabWord;
 				},
-				getTabComplete = function(){
-					var messageVal = (!wysiwyg.support()?$('#message')[0].value:node.nodeValue),
+				getTabComplete:function(){
+					var messageVal = (!wysiwyg.support()?$('#message')[0].value:self.node.nodeValue),
 						name;
 					if(messageVal === null){
 						return;
 					}
-					name = search(getCurrentWord(),tabCount);
-					if(!isInTab){
-						tabAppendStr = ' ';
-						if(startPos===0){
-							tabAppendStr = ': ';
+					name = self.search(self.getCurrentWord(),self.tabCount);
+					if(!self.isInTab){
+						self.tabAppendStr = ' ';
+						if(self.startPos===0){
+							self.tabAppendStr = ': ';
 						}
 					}
-					if(name == getCurrentWord()){
-						tabCount = 0;
-						name = search(getCurrentWord(),tabCount);
+					if(name == self.getCurrentWord()){
+						self.tabCount = 0;
+						name = self.search(self.getCurrentWord(),self.tabCount);
 					}
-					messageVal = messageVal.substr(0,startPos)+name+tabAppendStr+messageVal.substr(endPos+1);
+					messageVal = messageVal.substr(0,self.startPos)+name+self.tabAppendStr+messageVal.substr(self.endPos+1);
 					if(!wysiwyg.support()){
 						$('#message')[0].value = messageVal;
 					}else{
 						window.getSelection().anchorNode.nodeValue = messageVal;
-						window.getSelection().getRangeAt(0).setEnd(node,startPos+name.length+tabAppendStr.length);
-						window.getSelection().getRangeAt(0).setStart(node,startPos+name.length+tabAppendStr.length);
+						window.getSelection().getRangeAt(0).setEnd(self.node,self.startPos+name.length+self.tabAppendStr.length);
+						window.getSelection().getRangeAt(0).setStart(self.node,self.startPos+name.length+self.tabAppendStr.length);
 					}
-					endPos = endPos0+name.length+tabAppendStr.length;
+					self.endPos = self.endPos0+name.length+self.tabAppendStr.length;
 				},
-				search = function(start,startAt){
+				search:function(start,startAt){
 					var res = false;
 					if(!startAt){
 						startAt = 0;
 					}
-					$.each(searchArray,function(i,u){
+					$.each(self.searchArray,function(i,u){
 						if(u.toLowerCase().indexOf(start.toLowerCase()) === 0 && startAt-- <= 0 && res === false){
 							res = u;
 						}
@@ -1592,8 +1593,7 @@ oirc = (function(){
 						return res;
 					}
 					return start;
-				};
-			return {
+				},
 				init:function(){
 					$('#message')
 						.keydown(function(e){
@@ -1601,21 +1601,25 @@ oirc = (function(){
 								if(!e.ctrlKey){
 									e.preventDefault();
 									
-									getTabComplete();
-									isInTab = true;
-									tabCount++;
+									self.getTabComplete();
+									self.isInTab = true;
+									self.tabCount++;
 									setTimeout(1,1);
 								}
 							}else{
-								tabWord = '';
-								tabCount = 0;
-								isInTab = false;
+								self.tabWord = '';
+								self.tabCount = 0;
+								self.isInTab = false;
 							}
 						});
 				},
 				load:function(){
-					searchArray = $.merge(users.getNames(),channels.getNames());
+					self.searchArray = $.merge(users.getNames(),channels.getNames());
 				}
+			};
+			return {
+				init:self.init,
+				load:self.load
 			};
 		})(),
 		users = (function(){
@@ -1713,18 +1717,19 @@ oirc = (function(){
 			};
 		})(),
 		scroll = (function(){
-			var isDown = false,
-				is_touch = (('ontouchstart' in window) || (navigator.MaxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0)),
-				headerOffset = 0,
-				$mBox = false,
-				$mBoxCont = false,
-				touchScroll = function($elem,fn){
+			var self = {
+				isDown:false,
+				is_touch:(('ontouchstart' in window) || (navigator.MaxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0)),
+				headerOffset:0,
+				$mBox:false,
+				$mBoxCont:false,
+				touchScroll:function($elem,fn){
 					var lastY = -1;
 					$elem.bind('touchstart',function(e){
 						if($(e.target).is('a')){
 							return;
 						}
-						$mBox.css('transition','none');
+						self.$mBox.css('transition','none');
 						e.preventDefault();
 						lastY = e.originalEvent.touches[0].clientY;
 					}).bind('touchmove',function(e){
@@ -1742,12 +1747,12 @@ oirc = (function(){
 						if($(e.target).is('a')){
 							return;
 						}
-						$mBox.css('transition','');
+						self.$mBox.css('transition','');
 						e.preventDefault();
 						lastY = -1;
 					});
 				},
-				enableButtons = function(){
+				enableButtons:function(){
 					var addHook = function(elem,effect,inc){
 							var interval;
 							$(elem)
@@ -1766,7 +1771,7 @@ oirc = (function(){
 										clearInterval(interval);
 									}catch(e){}
 								});
-							if(is_touch){
+							if(self.is_touch){
 								$(elem).bind('touchstart',function(){
 									interval = setInterval(function(){
 										document.getElementById(effect).scrollLeft += inc;
@@ -1784,47 +1789,47 @@ oirc = (function(){
 					addHook('#arrowLeftTopic','topicCont',-9);
 					addHook('#arrowRightTopic','topicCont',9);
 				},
-				moveWindow = function(delta){
-					var oldTop = -parseInt($mBox[0].style.top,10),
-						maxScroll = $mBox.height() - $mBoxCont.height(),
+				moveWindow:function(delta){
+					var oldTop = -parseInt(self.$mBox[0].style.top,10),
+						maxScroll = self.$mBox.height() - self.$mBoxCont.height(),
 						newTop = Math.min(maxScroll,Math.max(0,oldTop - delta));
-					isDown = false;
-					$mBox.css('top',-newTop)
+					self.isDown = false;
+					self.$mBox.css('top',-newTop);
 					if(newTop==maxScroll){
-						isDown = true;
+						self.isDown = true;
 					}
 					if(options.get('scrollBar')){
-						reCalcBar();
+						self.reCalcBar();
 					}
 				},
-				enableWheel = function(){
-					$mBoxCont.bind('DOMMouseScroll mousewheel',function(e){
-						var oldTop = $mBox[0].style.top;
-						moveWindow((/Firefox/i.test(navigator.userAgent)?(e.originalEvent.detail*(-20)):(e.originalEvent.wheelDelta/2)));
+				enableWheel:function(){
+					self.$mBoxCont.bind('DOMMouseScroll mousewheel',function(e){
+						var oldTop = self.$mBox[0].style.top;
+						self.moveWindow((/Firefox/i.test(navigator.userAgent)?(e.originalEvent.detail*(-20)):(e.originalEvent.wheelDelta/2)));
 						//if(oldTop != $mBox[0].style.top){
 							e.preventDefault();
 							e.stopPropagation();
 							e.cancelBubble = true;
 						//}
 					});
-					if(is_touch){
-						touchScroll($mBoxCont,function(d){
-							moveWindow(d);
+					if(self.is_touch){
+						self.touchScroll(self.$mBoxCont,function(d){
+							self.moveWindow(d);
 						});
 					}
 				},
-				reCalcBar = function(){
+				reCalcBar:function(){
 					if($('#scrollBar').length!==0){
-						if($mBox.height() <= $mBoxCont.height()){
-							$('#scrollBar').css('top',headerOffset);
+						if(self.$mBox.height() <= self.$mBoxCont.height()){
+							$('#scrollBar').css('top',self.headerOffset);
 						}else{
-							$('#scrollBar').css('top',(parseInt($mBox[0].style.top,10)/($mBoxCont.height() - $mBox.height()))*($('body')[0].offsetHeight-$('#scrollBar')[0].offsetHeight-headerOffset)+headerOffset);
+							$('#scrollBar').css('top',(parseInt(self.$mBox[0].style.top,10)/(self.$mBoxCont.height() - self.$mBox.height()))*($('body')[0].offsetHeight-$('#scrollBar')[0].offsetHeight-self.headerOffset)+self.headerOffset);
 						}
 					}
 				},
-				enableUserlist = function(){
-					var moveUserList = function(delta,self){
-							$(self).css('top',Math.min(0,Math.max(((/Opera/i.test(navigator.userAgent))?-30:0)+document.getElementById('UserListInnerCont').clientHeight-self.scrollHeight,delta+parseInt($('#UserList').css('top'),10))));
+				enableUserlist:function(){
+					var moveUserList = function(delta,_self){
+							$(self).css('top',Math.min(0,Math.max(((/Opera/i.test(navigator.userAgent))?-30:0)+document.getElementById('UserListInnerCont').clientHeight-_self.scrollHeight,delta+parseInt($('#UserList').css('top'),10))));
 						};
 					$('#UserList')
 						.css('top',0)
@@ -1835,28 +1840,28 @@ oirc = (function(){
 							e = e.originalEvent;
 							moveUserList((/Firefox/i.test(navigator.userAgent)?(e.detail*(-20)):(e.wheelDelta/2)),this);
 						});
-					if(is_touch){
-						touchScroll($('#UserList'),function(d){
-							moveUserList(d,this);
+					if(self.is_touch){
+						self.touchScroll($('#UserList'),function(d){
+							self.moveUserList(d,this);
 						});
 					}
 				},
-				showBar = function(){
+				showBar:function(){
 					var mouseMoveFn = function(y){
 							var newscrollbartop = 0;
 							if($bar.data('isClicked')){
 								newscrollbartop = parseInt($bar.css('top'),10)+(y-$bar.data('prevY'));
 								
-								$mBox.css('top',-((newscrollbartop-headerOffset)/($('body')[0].offsetHeight-$bar[0].offsetHeight-headerOffset))*($mBox.height() - $mBoxCont.height()));
-								isDown = false;
-								if(newscrollbartop<headerOffset){
-									newscrollbartop = headerOffset;
-									$mBox.css('top',0);
+								self.$mBox.css('top',-((newscrollbartop-self.headerOffset)/($('body')[0].offsetHeight-$bar[0].offsetHeight-self.headerOffset))*(self.$mBox.height() - self.$mBoxCont.height()));
+								self.isDown = false;
+								if(newscrollbartop<self.headerOffset){
+									newscrollbartop = self.headerOffset;
+									self.$mBox.css('top',0);
 								}
 								if(newscrollbartop>($('body')[0].offsetHeight-$bar[0].offsetHeight)){
 									newscrollbartop = $('body')[0].offsetHeight-$bar[0].offsetHeight;
-									$mBox.css('top',$mBoxCont.height() - $mBox.height());
-									isDown = true;
+									self.$mBox.css('top',self.$mBoxCont.height() - self.$mBox.height());
+									self.isDown = true;
 								}
 								$bar.css('top',newscrollbartop);
 							}
@@ -1865,12 +1870,12 @@ oirc = (function(){
 						mouseDownFn = function(){
 							$bar.data('isClicked',true);
 							$('#scrollArea').css('display','block');
-							$mBox.css('transition','none');
+							self.$mBox.css('transition','none');
 						},
 						mouseUpFn = function(){
 							$bar.data('isClicked',false);
 							$('#scrollArea').css('display','none');
-							$mBox.css('transition','');
+							self.$mBox.css('transition','');
 						},
 						$bar = $('<div>').attr('id','scrollBar').data({prevY:0,isClicked:false}).appendTo('body')
 							.mousemove(function(e){
@@ -1905,7 +1910,7 @@ oirc = (function(){
 						.mouseout(function(){
 							mouseUpFn();
 						});
-					if(is_touch){
+					if(self.is_touch){
 						$tmp.bind('touchend touchcancel touchleave',function(e){
 							mouseUpFn();
 						}).bind('touchmove',function(e){
@@ -1929,17 +1934,17 @@ oirc = (function(){
 						.appendTo('body');
 					$(window).trigger('resize');
 				},
-				showButtons = function(){
+				showButtons:function(){
 					var downIntM,
 						upIntM,
 						downIntMfn = function(){
 							downIntM = setInterval(function(){
-								moveWindow(9);
+								self.moveWindow(9);
 							},50);
 						},
 						upIntMfn = function(){
 							upIntM = setInterval(function(){
-								moveWindow(-9);
+								self.moveWindow(-9);
 							},50);
 						},
 						$tmp;
@@ -1970,23 +1975,23 @@ oirc = (function(){
 									marginLeft:'-10pt'
 								})
 								.mousedown(function(){
-									$mBox.css('transition','none');
+									self.$mBox.css('transition','none');
 									downIntMfn();
 								})
 								.mouseout(function(){
-									$mBox.css('transition','');
+									self.$mBox.css('transition','');
 									try{
 										clearInterval(downIntM);
 									}catch(e){}
 								})
 								.mouseup(function(){
-									$mBox.css('transition','');
+									self.$mBox.css('transition','');
 									try{
 										clearInterval(downIntM);
 									}catch(e){}
 								})
 						);
-					if(is_touch){
+					if(self.is_touch){
 						$tmp.bind('touchstart',function(){
 							downIntMfn();
 						}).bind('touchend touchcancel touchleave',function(e){
@@ -2024,23 +2029,23 @@ oirc = (function(){
 									marginLeft:'-10pt'
 								})
 								.mousedown(function(){
-									$mBox.css('transition','none');
+									self.$mBox.css('transition','none');
 									upIntMfn();
 								})
 								.mouseout(function(){
-									$mBox.css('transition','');
+									self.$mBox.css('transition','');
 									try{
 										clearInterval(upIntM);
 									}catch(e){}
 								})
 								.mouseup(function(){
-									$mBox.css('transition','');
+									self.$mBox.css('transition','');
 									try{
 										clearInterval(upIntM);
 									}catch(e){}
 								})
 						);
-					if(is_touch){
+					if(self.is_touch){
 						$tmp.bind('touchstart',function(){
 							upIntMfn();
 						}).bind('touchend touchcancel touchleave',function(e){
@@ -2050,56 +2055,62 @@ oirc = (function(){
 						});
 					}
 					$tmp.appendTo('body');
-				};
-			return {
+				},
 				down:function(){
-					$mBox.css('top',$mBoxCont.height() - $mBox.height()); // reverse direction on subtraction to gain negativity
-					reCalcBar();
-					isDown = true;
+					self.$mBox.css('top',self.$mBoxCont.height() - self.$mBox.height()); // reverse direction on subtraction to gain negativity
+					self.reCalcBar();
+					self.isDown = true;
 				},
 				up:function(){
-					$mBox.css('top',0);;
-					reCalcBar();
-					isDown = false;
+					self.$mBox.css('top',0);;
+					self.reCalcBar();
+					self.isDown = false;
 				},
 				slide:function(){
-					if(isDown){
-						scroll.down();
+					if(self.isDown){
+						self.down();
 					}
 				},
 				init:function(){
-					$mBox = $('#MessageBox');
-					$mBoxCont = $('#mBoxCont');
-					enableButtons();
-					headerOffset = $('#header').height() - 2;
+					self.$mBox = $('#MessageBox');
+					self.$mBoxCont = $('#mBoxCont');
+					self.enableButtons();
+					self.headerOffset = $('#header').height() - 2;
 					if(options.get('scrollBar')){
-						showBar();
+						self.showBar();
 					}else{
-						showButtons();
+						self.showButtons();
 					}
 					if(options.get('scrollWheel')){
-						enableWheel();
+						self.enableWheel();
 					}
-					enableUserlist();
+					self.enableUserlist();
 					$(document).add(window).add('body').add('html').scroll(function(e){
 						e.preventDefault();
 					});
-				},
-				reCalcBar:reCalcBar
+				}
+			};
+			
+			return {
+				down:self.down,
+				up:self.up,
+				slide:self.slide,
+				init:self.init,
+				reCalcBar:self.reCalcBar
 			};
 		})(),
 		wysiwyg = (function(){
-			var sel,
-				menuOpen = false,
-				hideMenu = function(){
+			var self = {
+				sel:false,
+				menuOpen:false,
+				hideMenu:function(){
 					$('#textDecoForm').css('display','none');
-					menuOpen = false;
-				 };
-			return {
+					self.menuOpen = false;
+				},
 				init:function(){
 					$('#message').mouseup(function(e){
-						sel = window.getSelection();
-						if(sel.isCollapsed){
+						self.sel = window.getSelection();
+						if(self.sel.isCollapsed){
 							return;
 						}
 						e.preventDefault();
@@ -2107,23 +2118,23 @@ oirc = (function(){
 							display:'block',
 							left:Math.max(e.pageX-52,0)
 						});
-						menuOpen = true;
+						self.menuOpen = true;
 						
 						
 					});
 					$(document).mousedown(function(e){
-						if(!$(e.target).closest('#textDecoForm').length && menuOpen){
-							hideMenu();
+						if(!$(e.target).closest('#textDecoForm').length && self.menuOpen){
+							self.hideMenu();
 						}
 					})
 					$('#textDecoFormBold').click(function(){
-						sel.getRangeAt(0).surroundContents($('<b>')[0]);
+						self.sel.getRangeAt(0).surroundContents($('<b>')[0]);
 					});
 					$('#textDecoFormItalic').click(function(){
-						sel.getRangeAt(0).surroundContents($('<i>')[0]);
+						self.sel.getRangeAt(0).surroundContents($('<i>')[0]);
 					});
 					$('#textDecoFormUnderline').click(function(){
-						sel.getRangeAt(0).surroundContents($('<u>')[0]);
+						self.sel.getRangeAt(0).surroundContents($('<u>')[0]);
 					});
 				},
 				getMsg:function(){
@@ -2138,10 +2149,16 @@ oirc = (function(){
 				support:function(){
 					return (('contentEditable' in document.documentElement) && options.get('wysiwyg'));
 				}
+			};
+			return {
+				init:self.init,
+				getMsg:self.getMsg,
+				support:self.support
 			}
 		})(),
 		page = (function(){
-			var initSmileys = function(){
+			var self = {
+				initSmileys:function(){
 					if(options.get('smileys')){
 						$('#smileyMenuButton')
 							.css('cursor','pointer')
@@ -2179,19 +2196,18 @@ oirc = (function(){
 						})
 					);
 				},
-				mBoxContWidthOffset = 90,
-				hide_userlist = false,
-				show_scrollbar = true,
-				registerToggle = function(){
-					$('#toggleButton')
-						.click(function(e){
-							e.preventDefault();
-							options.set('enable',!options.get('enable'));
-							document.location.reload();
-						});
+				mBoxContWidthOffset:90,
+				hide_userlist:false,
+				show_scrollbar:true,
+				registerToggle:function(){
+					$('#toggleButton').click(function(e){
+						e.preventDefault();
+						options.set('enable',!options.get('enable'));
+						document.location.reload();
+					});
 				},
-				isBlurred = false,
-				calcResize = function(allowHeightChange){
+				isBlurred:false,
+				calcResize:function(allowHeightChange){
 					var htmlHeight = window.innerHeight,
 						htmlWidth = window.innerWidth,
 						headerHeight = $('#header').outerHeight(),
@@ -2204,10 +2220,10 @@ oirc = (function(){
 						$('#mBoxCont').css('height',htmlHeight - footerHeight - headerHeight - 0.2*em);
 						$('html,body').height(htmlHeight);
 						
-						$('#message').css('width',htmlWidth*(hide_userlist?1:0.91) - 12*em);
+						$('#message').css('width',htmlWidth*(self.hide_userlist?1:0.91) - 12*em);
 					}
-					if(show_scrollbar){
-						var widthOffset = (htmlWidth/100)*mBoxContWidthOffset;
+					if(self.show_scrollbar){
+						var widthOffset = (htmlWidth/100)*self.mBoxContWidthOffset;
 						if(allowHeightChange){
 							$('#mBoxCont').css('width',widthOffset-1.9*em);
 						}
@@ -2220,14 +2236,14 @@ oirc = (function(){
 					}
 					scroll.down();
 				},
-				init = function(){
+				init:function(){
 					var nua = navigator.userAgent,
 						is_android = ((nua.indexOf('Mozilla/5.0') > -1 && nua.indexOf('Android ') > -1 && nua.indexOf('AppleWebKit') > -1) && !(nua.indexOf('Chrome') > -1)),
 						is_ios = (nua.match(/(iPod|iPhone|iPad)/i) && nua.match(/AppleWebKit/i)),
 						is_mobile_webkit = (nua.match(/AppleWebKit/i) && nua.match(/Android/i));
 					$('body').css('font-size',options.get('fontSize').toString(10)+'pt');
-					hide_userlist = options.get('hideUserlist');
-					show_scrollbar = options.get('scrollBar');
+					self.hide_userlist = options.get('hideUserlist');
+					self.show_scrollbar = options.get('scrollBar');
 					page.changeLinks();
 					if(!wysiwyg.support()){
 						$('#message').replaceWith(
@@ -2249,8 +2265,8 @@ oirc = (function(){
 						});
 						wysiwyg.init();
 					}
-					if(hide_userlist){ // hide userlist is on
-						mBoxContWidthOffset = 99;
+					if(self.hide_userlist){ // hide userlist is on
+						self.mBoxContWidthOffset = 99;
 						$('<style>')
 							.append(
 								'#mBoxCont{width:99%;}',
@@ -2264,36 +2280,36 @@ oirc = (function(){
 					tab.init();
 					instant.init();
 					logs.init();
-					registerToggle();
+					self.registerToggle();
 					if(is_ios){
-						calcResize(true);
+						self.calcResize(true);
 					}
 					$(window).resize(function(){
-						calcResize(!is_ios);
+						self.calcResize(!is_ios);
 					}).trigger('resize').blur(function(){
-						isBlurred = true;
+						self.isBlurred = true;
 					}).focus(function(){
-						isBlurred = false;
+						self.isBlurred = false;
 					});
 					$('#aboutButton').click(function(e){
 						e.preventDefault();
 						$('#about').toggle();
 					});
-				};
-			return {
+				},
 				load:function(){
 					indicator.start();
 					settings.fetch(function(){
 						if(options.get('enable')){
-							init();
-							initSmileys();
+							self.init();
+							self.initSmileys();
+							
 							send.init();
 							oldMessages.init();
 							channels.init();
 							request.init()
 							channels.join(options.get('curChan'));
 						}else{
-							registerToggle();
+							self.registerToggle();
 							$('#mBoxCont').empty().append(
 								'<br>',
 								$('<a>')
@@ -2310,9 +2326,6 @@ oirc = (function(){
 						}
 					});
 				},
-				isBlurred:function(){
-					return isBlurred;
-				},
 				changeLinks:function(){
 					// change links to add network
 					$('#adminLink a,a[href="."],a[href="?options"],a[href="index.php"]').each(function(){
@@ -2323,6 +2336,13 @@ oirc = (function(){
 						}
 					});
 				}
+			};
+			return {
+				load:self.load,
+				isBlurred:function(){
+					return self.isBlurred;
+				},
+				changeLinks:self.changeLinks
 			};
 		})(),
 		statusBar = (function(){
