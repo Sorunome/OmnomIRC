@@ -832,58 +832,60 @@ oirc = (function(){
 							self.ws.use = false;
 							return false;
 						}
-						$.getScript('pooledwebsocket.min.js',function(){
-							try{
-								self.ws.socket = new PooledWebSocket((self.ws.ssl?'wss://':'ws://')+self.ws.host+':'+self.ws.port.toString()+'/'+settings.net());
-							}catch(e){
-								console.log(self.ws.socket);
-								console.log((ssl?'wss://':'ws://')+self.ws.host+':'+self.ws.port.toString());
-								console.log(e);
-								self.ws.fallback();
+						
+						try{
+							self.ws.socket = new PooledWebSocket((self.ws.ssl?'wss://':'ws://')+self.ws.host+':'+self.ws.port.toString()+'/'+settings.net());
+						}catch(e){
+							console.log(self.ws.socket);
+							console.log((ssl?'wss://':'ws://')+self.ws.host+':'+self.ws.port.toString());
+							console.log(e);
+							self.ws.fallback();
+						}
+						self.ws.socket.onopen = function(e){
+							self.ws.connected = true;
+							for(var i = 0;i < self.ws.sendBuffer.length;i++){
+								self.ws.send(self.ws.sendBuffer[i]);
 							}
-							self.ws.socket.onopen = function(e){
-								self.ws.connected = true;
-								for(var i = 0;i < self.ws.sendBuffer.length;i++){
-									self.ws.send(self.ws.sendBuffer[i]);
+							self.ws.sendBuffer = [];
+						};
+						self.ws.socket.onmessage = function(e){
+							try{
+								var data = JSON.parse(e.data);
+								console.log(data);
+								if(self.ws.allowLines && data.line!==undefined){
+									if(!parser.addLine(data.line)){
+										self.ws.tryFallback = false;
+										delete self.ws.socket;
+									}
 								}
-								self.ws.sendBuffer = [];
-							};
-							self.ws.socket.onmessage = function(e){
-								try{
-									var data = JSON.parse(e.data);
-									console.log(data);
-									if(self.ws.allowLines && data.line!==undefined){
-										if(!parser.addLine(data.line)){
-											self.ws.tryFallback = false;
-											delete self.ws.socket;
-										}
-									}
-									if(data.relog!==undefined && data.relog!=0){
-										settings.fetch(function(){
-											self.ws.identify();
-										},true);
-									}
-								}catch(e){};
-							};
-							self.ws.socket.onclose = function(e){
-								console.log(e);
-								self.ws.use = false;
-								self.ws.fallback();
-							};
-							self.ws.socket.onerror = function(e){
-								console.log(e);
-								delete self.ws.socket;
-								self.ws.use = false;
-								self.ws.fallback();
-							};
-							
-							self.ws.identify();
-							
-							$(window).on('beforeunload',function(){
-								self.partChan(channels.current().handler);
-								delete self.ws.socket;
-							});
+								if(data.relog!==undefined && data.relog!=0){
+									settings.fetch(function(){
+										self.ws.identify();
+									},true);
+								}
+							}catch(e){};
+						};
+						self.ws.socket.onclose = function(e){
+							console.log('CLOOOOOOOOOSE');
+							console.log(e);
+							self.ws.use = false;
+							self.ws.fallback();
+						};
+						self.ws.socket.onerror = function(e){
+							console.log('ERRRORRRR');
+							console.log(e);
+							delete self.ws.socket;
+							self.ws.use = false;
+							self.ws.fallback();
+						};
+						
+						self.ws.identify();
+						
+						$(window).on('beforeunload',function(){
+							self.partChan(channels.current().handler);
+							delete self.ws.socket;
 						});
+						
 						return true;
 					},
 					send:function(msg){
@@ -2747,7 +2749,7 @@ oirc = (function(){
 							while(n[i]){
 								sum += n.charCodeAt(i++);
 							}
-							cn = $('<span>').append($('<span>').addClass('uName-'+rcolors[sum %= 9].toString()).html(n)).html();
+							cn = $('<span>').append($('<span>').addClass('uName-'+rcolors[sum % 9].toString()).html(n)).html();
 							break;
 						case '2': //server
 							if(net!==undefined && net.checkLogin!==undefined){
@@ -2775,12 +2777,14 @@ oirc = (function(){
 					return '<span title="Unknown Network">'+cn+'</span>';
 				},
 				parseSmileys = function(s){
-					var addStuff = '';
 					if(!s){
 						return '';
 					}
+					if(/^[\w\s\d\.,!?]*$/.test(s)){
+						return s;
+					}
 					$.each(smileys,function(i,smiley){
-						s = s.replace(RegExp(smiley.regex,'g'),smiley.replace.split('ADDSTUFF').join(addStuff).split('PIC').join(smiley.pic).split('ALT').join(smiley.alt));
+						s = s.replace(RegExp(smiley.regex,'g'),smiley.replace);
 					});
 					return s;
 				},
@@ -3136,8 +3140,15 @@ oirc = (function(){
 					
 					return true;
 				},
-				setSmileys:function(s){
-					smileys = s;
+				setSmileys:function(sm){
+					var addStuff = '';
+					smileys = [];
+					$.each(sm,function(i,s){
+						smileys.push({
+							regex:s.regex,
+							replace:s.replace.split('ADDSTUFF').join(addStuff).split('PIC').join(s.pic).split('ALT').join(s.alt)
+						});
+					});
 				},
 				getSmileys:function(){
 					return smileys;

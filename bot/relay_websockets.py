@@ -170,10 +170,8 @@ class WebSocketsHandler(server.ServerHandler):
 		c = str(c)
 		if c in self.chans:
 			self.chans[c] += 1
-			print(self.chans)
 			return # no need to add to the userlist
 		self.chans[c] = 1
-		print(self.chans)
 		if isinstance(c,str) and len(c) > 0 and c[0]=='*': # no userlist on PMs
 			return
 		if self.handle.addUser(self.nick,str(c),self.network,self.uid):
@@ -186,7 +184,6 @@ class WebSocketsHandler(server.ServerHandler):
 		if self.chans[c]<=0:
 			self.chans.pop(c,None)
 			self.handle.timeoutUser(self.nick,str(c),self.network)
-		print(self.chans)
 	def sendLine(self,n1,n2,t,m,c,s,uid): #name 1, name 2, type, message, channel, source
 		if self.banned:
 			return False
@@ -206,7 +203,7 @@ class WebSocketsHandler(server.ServerHandler):
 		data = oirc.makeUnicode(self.socket.recv(1024)).strip()
 		
 		print('(websockets) Handshaking...')
-		key = re.search('\n[sS]ec-[wW]eb[sS]ocket-[kK]ey[\s]*:[\s]*(.*)\r?\n',data)
+		key = re.search('\n[sS]ec-[wW]eb[sS]ocket-[kK]ey[\s]*:[\s]*(.*)\r?\n?',data)
 		if key:
 			key = key.group(1).strip()
 		else:
@@ -216,6 +213,10 @@ class WebSocketsHandler(server.ServerHandler):
 		response = 'HTTP/1.1 101 Switching Protocols\r\n'
 		response += 'Upgrade: websocket\r\n'
 		response += 'Connection: Upgrade\r\n'
+		protocol = re.search('\n[sS]ec-[wW]eb[sS]ocket-[pP]rotocol[\s]*:[\s]*(.*)\r?\n?',data)
+		print(data)
+		if protocol:
+			response += 'Sec-WebSocket-Protocol: %s\r\n' % protocol.group(1).strip()
 		response += 'Sec-WebSocket-Accept: %s\r\n\r\n' % digest
 		self.handshake_done = self.socket.send(bytes(response,'latin_1'))
 		return True
@@ -321,7 +322,9 @@ class WebSocketsHandler(server.ServerHandler):
 	def close(self):
 		print('(websockets) connection closed')
 		try:
-			self.part()
+			for c in self.chans:
+				self.chans[c] = 1 # we want to quit right away
+				self.part(c)
 			self.socket.close()
 		except:
 			pass
