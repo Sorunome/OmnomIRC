@@ -303,8 +303,16 @@
 										'vertical-align':'top'
 									})
 									.append(
-										$('<b>').text(chan.alias),
-										'<br>Enabled:',
+										$('<b>').text(chan.alias),' (',
+										$('<a>').text('delete').click(function(e){
+											e.preventDefault();
+											if(confirm('Are you sure you want to delete channel '+chan.alias+'?\nThis will also delete all data (messages etc) associated with that channel!')){
+												chans.splice(i,1);
+												$('#adminContent').empty();
+												makeChannelsPage(chans,nets);
+											}
+										}),
+										')<br>Enabled:',
 										$('<input>').attr('type','checkbox').attr((chan.enabled?'checked':'false'),'checked').change(function(){chans[i].enabled = this.checked;}),
 										'<br>',
 										$('<div>').css({

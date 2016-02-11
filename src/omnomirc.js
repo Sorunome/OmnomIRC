@@ -1348,7 +1348,7 @@ oirc = (function(){
 					requestHandler:false,
 					join:function(i,fn){
 						if(self.chans[i]===undefined){ // this channel doesn't exist!
-							return;
+							return false;
 						}
 						indicator.start();
 						request.stop();
@@ -1381,7 +1381,8 @@ oirc = (function(){
 								fn();
 							}
 							indicator.stop();
-						})
+						});
+						return true;
 					},
 					highlight:function(c,doSave){
 						$.each(self.chans,function(i,ci){
@@ -2307,7 +2308,9 @@ oirc = (function(){
 							oldMessages.init();
 							channels.init();
 							request.init()
-							channels.join(options.get('curChan'));
+							if(!channels.join(options.get('curChan'))){
+								channels.join(0);
+							}
 						}else{
 							self.registerToggle();
 							$('#mBoxCont').empty().append(

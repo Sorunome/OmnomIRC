@@ -257,6 +257,26 @@ if($you->isGlobalOp()){
 				$json->add('message','Themes saved!');
 				break;
 			case 'channels':
+				$remChans = array();
+				foreach($config['channels'] as $c){
+					$found = false;
+					foreach($jsonData as $cc){
+						if($c['id'] == $cc['id']){
+							$found = true;
+							break;
+						}
+					}
+					if(!$found){
+						$remChans[] = $c['id'];
+					}
+				}
+				foreach($remChans as $removeChan){
+					$sql->query_prepare('DELETE FROM {db_prefix}channels WHERE `chan`=?',array($removeChan));
+					$sql->query_prepare('DELETE FROM {db_prefix}lines WHERE `channel`=?',array($removeChan));
+					$sql->query_prepare('DELETE FROM {db_prefix}lines_old WHERE `channel`=?',array($removeChan));
+					$sql->query_prepare('DELETE FROM {db_prefix}permissions WHERE `channel`=?',array($removeChan));
+					$sql->query_prepare('DELETE FROM {db_prefix}users WHERE `channel`=?',array($removeChan));
+				}
 				$config['channels'] = $jsonData;
 				writeConfig();
 				break;
