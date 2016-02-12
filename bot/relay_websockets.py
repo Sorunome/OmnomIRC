@@ -113,15 +113,12 @@ class WebSocketsHandler(server.ServerHandler):
 		except:
 			print('(websockets) nothing to recieve')
 			return False
-		#if not b1 & 0x80:
-		#	print('(websockets) Client closed connection')
-		#	return False
-		#if b1 & 0x0F == 0x8:
-		#	print('(websockets) Client asked to close connection')
-		#	return False
-		#if not b1 & 0x80:
-		#	print('(websockets) Client must always be masked')
-		#	return False
+		if b1 & 0x0F == 0x8:
+			print('(websockets) Client asked to close connection')
+			return False
+		if not b1 & 0x80:
+			print('(websockets) Client must always be masked')
+			return False
 		length = b2 & 127
 		if length == 126:
 			length = struct.unpack(">H", self.socket.recv(2))[0]
@@ -203,7 +200,13 @@ class WebSocketsHandler(server.ServerHandler):
 		}})
 		self.send_message(s)
 	def handshake(self):
-		data = oirc.makeUnicode(self.socket.recv(1024)).strip()
+		data = ''
+		buf = ''
+		while True:
+			buf = oirc.makeUnicode(self.socket.recv(1024)).strip()
+			data += buf
+			if len(buf) < 1024:
+				break
 		
 		print('(websockets) Handshaking...')
 		key = re.search('\n[sS]ec-[wW]eb[sS]ocket-[kK]ey[\s]*:[\s]*(.*)\r?\n?',data)

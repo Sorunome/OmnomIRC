@@ -231,8 +231,7 @@ td.action > a:nth-child(1) > span {
 #ChanListButtons {
 	width:98%;
 	overflow:hidden;
-	display:inline;
-	position:relative;
+	position:absolute;
 	left:0;
 	padding-bottom:0.2em;
 	margin: 0 0.2em;
@@ -247,9 +246,7 @@ td.action > a:nth-child(1) > span {
 	width:96%;
 	overflow-x:hidden;
 	display:block;
-	position:relative;
-	left:2.3em;
-	top:-1.3em;
+	margin-left:2.3em;
 }
 .chanList {
 	margin:0;
@@ -284,10 +281,8 @@ td.action > a:nth-child(1) > span {
 	padding-top:0.3em;
 }
 .chan.curchan {
-	height:108%;
 	font-weight:bolder;
 	color:#FFF;
-	padding-bottom:0.4em;
 	height:100%;
 	cursor: pointer;
 	

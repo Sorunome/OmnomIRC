@@ -104,7 +104,16 @@ class Sql:
 		global config
 		try:
 			cur = self.getDbCursor()
-			cur.execute(q.replace('{db_prefix}',config.json['sql']['prefix']),tuple(p))
+			try:
+				cur.execute(q.replace('{db_prefix}',config.json['sql']['prefix']),tuple(p))
+			except:
+				try:
+					self.db.close()
+				except:
+					pass
+				self.db = False
+				cur = self.getDbCursor()
+				cur.execute(q.replace('{db_prefix}',config.json['sql']['prefix']),tuple(p))
 			self.db.commit()
 			rows = []
 			for row in cur:
