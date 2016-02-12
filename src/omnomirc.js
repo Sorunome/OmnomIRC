@@ -1887,12 +1887,14 @@ oirc = (function(){
 							$bar.data('isClicked',true);
 							$('#scrollArea').css('display','block');
 							self.$mBox.css('transition','none');
+							firstEnter = false;
+							mouseUpPos = false;
+							mouseDownPos = false;
 						},
 						mouseUpFn = function(){
 							$bar.data('isClicked',false);
 							$('#scrollArea').css('display','none');
 							self.$mBox.css('transition','');
-							firstEnter = false;
 						},
 						$bar = $('<div>').attr('id','scrollBar').data({prevY:0,isClicked:false}).appendTo('body')
 							.mousemove(function(e){
@@ -2184,13 +2186,13 @@ oirc = (function(){
 						$('#smileyMenuButton')
 							.css('cursor','pointer')
 							.click(function(){
-									if($('#smileyselect').css('display')=='block'){
-										$('#smileyselect').css('display','none');
-										$(this).attr('src','smileys/smiley.gif');
-									}else{
-										$('#smileyselect').css('display','block');
-										$(this).attr('src','smileys/tongue.gif');
-									}
+								if($('#smileyselect').css('display')=='block'){
+									$('#smileyselect').css('display','none');
+									$(this).attr('src','smileys/smiley.gif');
+								}else{
+									$('#smileyselect').css('display','block');
+									$(this).attr('src','smileys/tongue.gif');
+								}
 							});
 					}else{
 						$('#smileyMenuButton')
