@@ -40,18 +40,21 @@ class Relay(oirc.OircRelay):
 			self.server = server.Server(self.config['host'],self.config['port'],ws_handler)
 	def startRelay(self):
 		self.server.start()
-	def updateRelay(self,cfg):
+	def updateRelay(self,cfg,chans):
 		if self.config['host'] != cfg['host'] or self.config['port'] != cfg['port'] or self.config['ssl'] != cfg['ssl']:
 			self.config = cfg
+			self.channels = chans
 			self.stopRelay_wrap()
 			self.initRelay()
 			self.startRelay_wrap()
 		else:
 			self.config = cfg
+			self.channels = chans
 	def stopRelay(self):
 		if hasattr(self.server,'inputHandlers'):
 			for client in self.server.inputHandlers:
-				client.sendLine('OmnomIRC','','reload_userlist','THE GAME',client.nick,0,-1)
+				for c in client.chans:
+					client.sendLine('OmnomIRC',client.pmHandler,'reload_userlist','THE GAME',c,0,-1)
 		self.server.stop()
 	def relayMessage(self,n1,n2,t,m,c,s,uid): #self.server.inputHandlers
 		c = str(c)
@@ -285,8 +288,6 @@ class WebSocketsHandler(server.ServerHandler):
 				elif m['action'] == 'partchan':
 					self.part(m['chan'])
 				elif self.identified:
-					print(m)
-					print(self.chans)
 					if m['action'] == 'message' and m['channel'] in self.chans and not self.banned:
 						msg = m['message']
 						if len(msg) <= 256 and len(msg) > 0:

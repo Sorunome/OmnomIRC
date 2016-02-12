@@ -54,7 +54,7 @@ class Bot(threading.Thread):
 				removeChans.append(c)
 		for c in removeChans:
 			self.send('PART %s' % c)
-			self.chans.pop(c,False)
+			self.chans.remove(c)
 		for c in updateChans:
 			self.chans.append(c)
 			self.send('JOIN %s' % c)

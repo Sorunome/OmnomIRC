@@ -118,18 +118,9 @@ class Relay(oirc.OircRelay):
 				colorAdding = '\x03'+str(n['irc']['color'])+n['irc']['prefix']+'\x0F'
 			colorAddingCache[n['id']] = colorAdding
 		return colorAddingCache
-	def getIdChans(self):
-		idchans = {}
-		for ch in self.handle.config.json['channels']:
-			if ch['enabled']:
-				for c in ch['networks']:
-					if c['id'] == self.id:
-						idchans[ch['id']] = c['name']
-						break
-		return idchans
 	def newBot(self,t,cfg):
 		bot_class = type('Bot_OIRC_anon',(Bot_OIRC,),{'handle':self.handle})
-		return bot_class(cfg[t]['server'],cfg[t]['port'],cfg[t]['nick'],cfg[t]['nickserv'],cfg[t]['ssl'],self.getIdChans(),t=='main',self.id,
+		return bot_class(cfg[t]['server'],cfg[t]['port'],cfg[t]['nick'],cfg[t]['nickserv'],cfg[t]['ssl'],self.channels,t=='main',self.id,
 						self.haveTopicBot,cfg['topic']['nick'],cfg['colornicks'],self.getColorCache())
 	def initRelay(self):
 		self.relayType = relayType
@@ -141,10 +132,11 @@ class Relay(oirc.OircRelay):
 		self.bot.start()
 		if self.haveTopicBot:
 			self.topicBot.start()
-	def updateRelay(self,cfg):
+	def updateRelay(self,cfg,chans):
 		haveTopicBot = cfg['topic']['nick'] != ''
 		haveTopicBot_old = self.haveTopicBot
 		self.haveTopicBot = haveTopicBot
+		self.channels = chans
 		for bot_ref,t in [['bot','main'],['topicBot','topic']]:
 			bot = getattr(self,bot_ref)
 			if bot:
@@ -153,7 +145,7 @@ class Relay(oirc.OircRelay):
 					setattr(self,bot_ref,self.newBot(t,cfg))
 					getattr(self,bot_ref).start()
 					continue
-				bot.updateConfig(cfg[t]['nick'],cfg[t]['nickserv'],self.haveTopicBot,cfg['topic']['nick'],cfg['colornicks'],self.getIdChans(),self.getColorCache())
+				bot.updateConfig(cfg[t]['nick'],cfg[t]['nickserv'],self.haveTopicBot,cfg['topic']['nick'],cfg['colornicks'],self.channels,self.getColorCache())
 		if haveTopicBot_old != haveTopicBot:
 			self.bot.topicbotExists = self.haveTopicBot
 			if self.haveTopicBot: # we need to generate a new bot!

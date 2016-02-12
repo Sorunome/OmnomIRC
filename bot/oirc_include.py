@@ -19,7 +19,7 @@
 #
 #	You should have received a copy of the GNU General Public License
 #	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
-import chardet,subprocess,json
+import chardet,subprocess,json,re
 
 f = open('documentroot.cfg')
 DOCUMENTROOT = f.readlines()[0].strip()
@@ -68,6 +68,7 @@ class OircRelay:
 	def __init__(self,n,handle):
 		self.id = int(n['id'])
 		self.config = n['config']
+		self.channels = n['channels']
 		self.handle = handle
 		self.initRelay()
 	def initRelay(self):
@@ -79,7 +80,7 @@ class OircRelay:
 		return
 	def updateRelay_wrap(self,cfg):
 		if self.id == int(cfg['id']):
-			self.updateRelay(cfg['config'])
+			self.updateRelay(cfg['config'],cfg['channels'])
 	def updateRelay(self,cfg):
 		self.stopRelay_wrap()
 		self.config = cfg

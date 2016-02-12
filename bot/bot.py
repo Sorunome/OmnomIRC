@@ -190,10 +190,12 @@ class Main():
 	relays = []
 	bots = []
 	modeBuffer = {}
+	chanIds = []
 	def __init__(self):
 		self.config = config
 		self.sql = sql
 		self.updateRelayTypes()
+		self.updateChanIds()
 	def updateRelayTypes(self):
 		for f in os.listdir('.'):
 			relay_file = re.match(r'^relay_(\w+)\.py$',f)
@@ -249,14 +251,6 @@ class Main():
 		sql.query("UPDATE `{db_prefix}users` SET `isOnline`=0 WHERE `channel` = %s AND online=%s",[c,int(i)])
 	def removeAllUsersNetwork(self,i):
 		sql.query("UPDATE `{db_prefix}users` SET `isOnline`=0 WHERE `online`=%s",[int(i)])
-	def getCurline(self):
-		global config
-		f = open(config.json['settings']['curidFilePath'])
-		lines = f.readlines()
-		f.close()
-		if len(lines)>=1:
-			return int(lines[0])
-		return 0
 	def deleteModeBuffer(self,chan):
 		self.modeBuffer.pop(chan,False)
 	def getModeString(self,chan):
@@ -289,12 +283,20 @@ class Main():
 		if self.isChanOfMode(c,'c'):
 			m = stripIrcColors(m)
 		
-		oircOnly = (t in ('join','part','quit') and uid!=-1)
+		oircOnly = False
 		try:
 			c = int(c)
 		except:
 			oircOnly = True
+		
 		print('(handle) (relay) '+str({'name1':n1,'name2':n2,'type':t,'message':m,'channel':c,'source':s,'uid':uid}))
+		
+		if not oircOnly:
+			oircOnly = (t in ('join','part','quit') and uid!=-1)
+			if not str(c) in self.chanIds:
+				print('(handle) (relay) Invalid channel '+str(c)+', dropping message')
+				return
+		
 		
 		for r in self.relays:
 			if (oircOnly and r.relayType==-1) or not oircOnly:
@@ -359,18 +361,31 @@ class Main():
 		
 	def get_net_cheat(self):
 		net_cheat = config.json['networks'][:]
+		for n in net_cheat:
+			n['channels'] = {}
+			for c in config.json['channels']:
+				if c['enabled']:
+					for cc in c['networks']:
+						if cc['id'] == n['id']:
+							n['channels'][c['id']] = cc['name']
+		
 		net_cheat = [{
 			'id':-1,
 			'type':-1,
 			'enabled':config.json['websockets']['use'],
+			'channels':{},
 			'config':config.json['websockets']
 		}] + net_cheat
 		return net_cheat
+	def updateChanIds(self):
+		self.chanIds = []
+		for c in config.json['channels']:
+			self.chanIds.append(str(c['id']))
 	def updateConfig(self):
 		print('(handle) Got signal to update config!')
 		oldInternalSock = config.json['settings']['botSocket']
 		config.readFile()
-		
+		self.updateChanIds()
 		if oldInternalSock != config.json['settings']['botSocket']:
 			self.oircLink.stop()
 			self.startOircLink()

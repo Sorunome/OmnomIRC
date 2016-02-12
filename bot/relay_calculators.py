@@ -45,7 +45,7 @@ class Relay(oirc.OircRelay):
 	relayType = -42
 	def initRelay(self):
 		self.relayType = relayType
-		self.server = server.Server(self.config['server'],self.config['port'],type('CalculatorHandler_anon',(CalculatorHandler,),{'i':self.id,'handle':self.handle}))
+		self.server = server.Server(self.config['server'],self.config['port'],type('CalculatorHandler_anon',(CalculatorHandler,),{'i':self.id,'handle':self.handle,'chans':self.channels}))
 	def startRelay(self):
 		self.server.start()
 	def getChanStuff(self):
@@ -60,17 +60,18 @@ class Relay(oirc.OircRelay):
 							defaultChan = c['name']
 						break
 		return [chans,defaultChan]
-	def updateRelay(self,cfg):
+	def updateRelay(self,cfg,chans):
 		if self.config['server'] != cfg['server'] or self.config['port'] != cfg['port']:
 			self.config = cfg
 			self.stopRelay_wrap()
 			self.startRelay_wrap()
 		else:
 			self.config = cfg
-			chans, defaultChan = self.getChanStuff()
+			defaultChan = next(iter(chans.values()))
 			
 			for calc in self.server.inputHandlers:
 				calc.updateChans(chans,defaultChan)
+		self.channels = chans
 	def stopRelay(self):
 		self.server.stop()
 	def relayMessage(self,n1,n2,t,m,c,s,uid = -1):
@@ -181,16 +182,7 @@ class CalculatorHandler(server.ServerHandler):
 		self.chans = chans
 	def setup(self):
 		print('(calcnet) ('+str(self.i)+') New calculator')
-		self.chans = {}
-		self.defaultChan = ''
-		for ch in self.handle.config.json['channels']:
-			if ch['enabled']:
-				for c in ch['networks']:
-					if c['id'] == self.i:
-						self.chans[ch['id']] = c['name']
-						if self.defaultChan == '':
-							self.defaultChan = c['name']
-						break
+		self.defaultChan = next(iter(self.chans.values()))
 		return True
 	def recieve(self):
 		try:
@@ -237,9 +229,9 @@ class CalculatorHandler(server.ServerHandler):
 						self.connectedToIRC=False
 						self.userPart()
 						self.sendToIRC('quit','')
-				elif r_bytes[17]==173 and data[5:10]==b'Omnom':
-					printString+='msg ('+self.calcName+') '+oirc.makeUnicode(data[data.find(b':',18)+1:-1])+'\n'
-					message=oirc.makeUnicode(data[data.find(b':',18)+1:-1])
+				elif r_bytes[17]==173 and str(data[5:10])=='Omnom':
+					printString+='msg ('+self.calcName+') '+oirc.makeUnicode(str(data[data.find(':',18)+1:-1]))+'\n'
+					message=oirc.makeUnicode(str(data[data.find(':',18)+1:-1]))
 					if message.split(' ')[0].lower()=='/join':
 						if self.findchan(message[message.find(' ')+1:].lower(),self.chans):
 							self.sendToIRC('part','')

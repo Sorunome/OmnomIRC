@@ -1848,23 +1848,38 @@ oirc = (function(){
 					}
 				},
 				showBar:function(){
-					var mouseMoveFn = function(y){
+					var mouseUpPos = false,
+						mouseDownPos = false,
+						mouseMoveFn = function(y){
 							var newscrollbartop = 0;
 							if($bar.data('isClicked')){
-								newscrollbartop = parseInt($bar.css('top'),10)+(y-$bar.data('prevY'));
+								if(!(mouseUpPos!==false && y <= mouseUpPos) && !(mouseDownPos!==false && y >= mouseDownPos)){
 								
-								self.$mBox.css('top',-((newscrollbartop-self.headerOffset)/($('body')[0].offsetHeight-$bar[0].offsetHeight-self.headerOffset))*(self.$mBox.height() - self.$mBoxCont.height()));
-								self.isDown = false;
-								if(newscrollbartop<self.headerOffset){
-									newscrollbartop = self.headerOffset;
-									self.$mBox.css('top',0);
+									newscrollbartop = parseInt($bar.css('top'),10)+(y-$bar.data('prevY'));
+									
+									self.$mBox.css('top',-((newscrollbartop-self.headerOffset)/($('body')[0].offsetHeight-$bar[0].offsetHeight-self.headerOffset))*(self.$mBox.height() - self.$mBoxCont.height()));
+									self.isDown = false;
+									if(newscrollbartop<self.headerOffset){
+										if(mouseUpPos === false){
+											mouseUpPos = y;
+										}
+										newscrollbartop = self.headerOffset;
+										self.$mBox.css('top',0);
+									}else{
+										mouseUpPos = false;
+									}
+									if(newscrollbartop>($('body')[0].offsetHeight-$bar[0].offsetHeight)){
+										if(mouseDownPos === false){
+											mouseDownPos = y;
+										}
+										newscrollbartop = $('body')[0].offsetHeight-$bar[0].offsetHeight;
+										self.$mBox.css('top',self.$mBoxCont.height() - self.$mBox.height());
+										self.isDown = true;
+									}else{
+										mouseDownPos = false;
+									}
+									$bar.css('top',newscrollbartop);
 								}
-								if(newscrollbartop>($('body')[0].offsetHeight-$bar[0].offsetHeight)){
-									newscrollbartop = $('body')[0].offsetHeight-$bar[0].offsetHeight;
-									self.$mBox.css('top',self.$mBoxCont.height() - self.$mBox.height());
-									self.isDown = true;
-								}
-								$bar.css('top',newscrollbartop);
 							}
 							$bar.data('prevY',y);
 						},
@@ -1877,18 +1892,20 @@ oirc = (function(){
 							$bar.data('isClicked',false);
 							$('#scrollArea').css('display','none');
 							self.$mBox.css('transition','');
+							firstEnter = false;
 						},
 						$bar = $('<div>').attr('id','scrollBar').data({prevY:0,isClicked:false}).appendTo('body')
 							.mousemove(function(e){
 								mouseMoveFn(e.clientY);
 							})
-							.mousedown(function(){
+							.mousedown(function(e){
 								mouseDownFn();
 							})
 							.mouseup(function(){
 								mouseUpFn();
 							}),
-						$tmp;
+						$tmp,
+						firstEnter = false;
 					$bar.css('top',$('body')[0].offsetHeight-$bar[0].offsetHeight);
 					$tmp = $('<div>')
 						.attr('id','scrollArea')
@@ -1908,8 +1925,11 @@ oirc = (function(){
 						.mouseup(function(){
 							mouseUpFn();
 						})
-						.mouseout(function(){
-							mouseUpFn();
+						.mouseenter(function(e){
+							if(e.originalEvent.buttons == 0 && firstEnter){
+								mouseUpFn();
+							}
+							firstEnter = true;
 						});
 					if(self.is_touch){
 						$tmp.bind('touchend touchcancel touchleave',function(e){
