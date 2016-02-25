@@ -235,11 +235,6 @@ if($you->isGlobalOp()){
 						'var' => 'use'
 					),
 					array(
-						'name' => 'Host (usually same URL as forum)',
-						'type' => 'text',
-						'var' => 'host'
-					),
-					array(
 						'name' => 'SSL',
 						'type' => 'checkbox',
 						'var' => 'ssl',
@@ -260,6 +255,11 @@ if($you->isGlobalOp()){
 						'name' => 'Advanced settings',
 						'type' => 'more',
 						'pattern' => array(
+							array(
+								'name' => 'Host (only set if different from setting in "misc")',
+								'type' => 'text',
+								'var' => 'host'
+							),
 							array(
 								'name' => 'Enable Port-poking (will disable internal port)',
 								'type' => 'checkbox',

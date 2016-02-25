@@ -124,7 +124,7 @@ if(isset($_GET['js'])){
 		'defaults' => $defaults,
 		'websockets' => array(
 			'use' => $config['websockets']['use'] && $config['settings']['useBot'],
-			'host' => $config['websockets']['host'],
+			'host' => $config['websockets']['host']?$config['websockets']['host']:$config['settings']['hostname'],
 			'port' => $config['websockets']['port'],
 			'ssl' => $config['websockets']['ssl']
 		),

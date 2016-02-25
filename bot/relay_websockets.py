@@ -35,7 +35,7 @@ class Relay(oirc.OircRelay):
 		if self.config['portpoking']:
 			print('(websockets) port in use, trying different port...')
 			self.config['port'] += 1
-			if self.config['port'] > 65535:
+			if self.config['port'] > 65535 or self.config['port'] < 10000:
 				self.config['port'] = 10000
 			oirc.execPhp('admin.php',{'internalAction':'setWsPort','port':self.config['port']})
 			self.initRelay()
@@ -45,6 +45,8 @@ class Relay(oirc.OircRelay):
 		ws_handler = type('WebSocketsHandler_anon',(WebSocketsHandler,),{'handle':self.handle})
 		port = self.config['intport']
 		host = self.config['host']
+		if host == '':
+			host = self.handle.config.json['settings']['hostname']
 		if self.config['portpoking']:
 			port = self.config['port']
 		else:
