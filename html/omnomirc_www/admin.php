@@ -82,6 +82,9 @@ if(INTERNAL){
 			case 'deactivateBot':
 				$config['settings']['useBot'] = false;
 				break;
+			case 'setWsPort':
+				$config['websockets']['port'] = (int)$_GET['port'];
+				break;
 		}
 		writeConfig(true);
 	}
@@ -126,7 +129,35 @@ if($you->isGlobalOp()){
 					'server' => $config['sql']['server'],
 					'db' => $config['sql']['db'],
 					'user' => $config['sql']['user'],
-					'prefix' => $config['sql']['prefix']
+					'prefix' => $config['sql']['prefix'],
+					'passwd' => ''
+				));
+				$json->add('pattern',array(
+					array(
+						'name' => 'Server',
+						'type' => 'text',
+						'var' => 'server'
+					),
+					array(
+						'name' => 'Database',
+						'type' => 'text',
+						'var' => 'db'
+					),
+					array(
+						'name' => 'User',
+						'type' => 'text',
+						'var' => 'user'
+					),
+					array(
+						'name' => 'Password',
+						'type' => 'text',
+						'var' => 'passwd'
+					),
+					array(
+						'name' => 'Database Prefix',
+						'type' => 'text',
+						'var' => 'prefix'
+					)
 				));
 				break;
 			case 'smileys':
@@ -197,23 +228,124 @@ if($you->isGlobalOp()){
 				break;
 			case 'ws':
 				$json->add('websockets',$config['websockets']);
+				$json->add('pattern',array(
+					array(
+						'name' => 'Enable Websockets',
+						'type' => 'checkbox',
+						'var' => 'use'
+					),
+					array(
+						'name' => 'Host (usually same URL as forum)',
+						'type' => 'text',
+						'var' => 'host'
+					),
+					array(
+						'name' => 'SSL',
+						'type' => 'checkbox',
+						'var' => 'ssl',
+						'pattern' => array(
+							array(
+								'name' => 'Certificate File',
+								'type' => 'text',
+								'var' => 'certfile'
+							),
+							array(
+								'name' => 'Private Key File',
+								'type' => 'text',
+								'var' => 'keyfile'
+							)
+						)
+					),
+					array(
+						'name' => 'Advanced settings',
+						'type' => 'more',
+						'pattern' => array(
+							array(
+								'name' => 'Enable Port-poking (will disable internal port)',
+								'type' => 'checkbox',
+								'var' => 'portpoking'
+							),
+							array(
+								'name' => 'External Port',
+								'type' => 'number',
+								'var' => 'port'
+							),
+							array(
+								'name' => 'Internal Port (e.g. for apache forwarding)',
+								'type' => 'text',
+								'var' => 'intport'
+							)
+						)
+					)
+				));
 				break;
 			case 'misc':
 				$json->add('misc',array(
-					'botSocket' => array('bot socket',$config['settings']['botSocket']),
-					'hostname' => array('hostname',$config['settings']['hostname']),
-					'curidFilePath' => array('curid file path',$config['settings']['curidFilePath']),
-					'signatureKey' => array('signature key',$config['security']['sigKey']),
-					'ircPasswd' => array('irc passwd',$config['security']['ircPwd']),
-					'spacer' => array(false),
-					'experimental' => array('Turn on experimental settings (not recommended)',$config['settings']['experimental'])
+					'botSocket' => $config['settings']['botSocket'],
+					'hostname' => $config['settings']['hostname'],
+					'curidFilePath' => $config['settings']['curidFilePath'],
+					'signatureKey' => $config['security']['sigKey'],
+					'ircPasswd' => $config['security']['ircPwd'],
+					'experimental' => $config['settings']['experimental']
+				));
+				$json->add('pattern',array(
+					array(
+						'name' => 'bot socket',
+						'type' => 'text',
+						'var' => 'botSocket'
+					),
+					array(
+						'name' => 'hostname',
+						'type' => 'text',
+						'var' => 'hostname'
+					),
+					array(
+						'name' => 'curid file path',
+						'type' => 'text',
+						'var' => 'curidFilePath'
+					),
+					array(
+						'name' => 'signature key',
+						'type' => 'text',
+						'var' => 'signatureKey'
+					),
+					array(
+						'name' => 'irc password',
+						'type' => 'text',
+						'var' => 'ircPasswd'
+					),
+					array(
+						'type' => 'newline'
+					),
+					array(
+						'name' => 'Turn on experimental settings (not recommended)',
+						'type' => 'checkbox',
+						'var' => 'experimental'
+					)
 				));
 				break;
 			case 'ex':
 				$json->add('ex',array(
-					'useBot' => array('use bot',$config['settings']['useBot']),
-					'minified' => array('use minfied sources',!isset($config['settings']['minified'])||$config['settings']['minified']),
-					'betaUpdates' => array('fetch beta updates',isset($config['settings']['betaUpdates'])&&$config['settings']['betaUpdates'])
+					'useBot' => $config['settings']['useBot'],
+					'minified' => !isset($config['settings']['minified'])||$config['settings']['minified'],
+					'betaUpdates' => isset($config['settings']['betaUpdates'])&&$config['settings']['betaUpdates']
+				));
+				$json->add('pattern',array(
+					array(
+						'name' => 'use bot',
+						'type' => 'checkbox',
+						'var' => 'useBot'
+					),
+					array(
+						'name' => 'use minfied sources',
+						'type' => 'checkbox',
+						'var' => 'minified'
+					),
+					array(
+						'name' => 'fetch beta updates',
+						'type' => 'checkbox',
+						'var' => 'betaUpdates'
+					)
 				));
 				break;
 			case 'releaseNotes':

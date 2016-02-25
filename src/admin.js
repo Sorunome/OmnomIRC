@@ -37,67 +37,15 @@
 				}
 			});
 		},
-		getInputBoxSettings = function(p,name,data){
+		getInputBoxSettings = function(p,name,data,pattern){
 			$('#adminContent').append(
 				'<div style="font-weight:bold">'+name+' Settings</div>',
-				$.map(data,function(d,i){
-					var $input = $('<input>').attr('name',i),
-						name = i,
-						val = d;
-					if((typeof d).toLowerCase() == 'object'){
-						name = d[0];
-						if(name===false){
-							return '<br>';
-						}
-						val = d[1];
-					}
-					if(d === null){ // typeof bug
-						d = undefined;
-					}
-					switch((typeof val).toLowerCase()){
-						case 'string':
-							$input.attr('type','text').val(val);
-							break;
-						case 'number':
-							$input.attr('type','number').val(val);
-							break;
-						case 'boolean':
-							$input.attr('type','checkbox').attr((val?'checked':'false'),'checked');
-							break;
-						default:
-							$input.attr('type','hidden').data('data',val);
-					}
-					return $('<div>')
-						.append(
-							name,
-							': ',$input
-						);
-				}),'<br>',
+				getLiveInputSettings(data,pattern),
+				'<br>',
 				$('<button>')
 					.text('submit')
 					.click(function(){
-						var json = {};
-						$('input').each(function(i,v){
-							var val = undefined;
-							switch($(v).attr('type')){
-								case 'text':
-									val = $(v).val();
-									break;
-								case 'number':
-									val = parseInt($(v).val(),10);
-									break;
-								case 'checkbox':
-									val = $(v)[0].checked;
-									break;
-								case 'hidden':
-									val = $(v).data('data');
-									break;
-							}
-							if(val!==undefined){
-								json[$(v).attr('name')] = val;
-							}
-						});
-						sendEdit(p,json);
+						sendEdit(p,data);
 					})
 			);
 		},
@@ -116,6 +64,19 @@
 				setVal = function(s,v,d){
 					if(d === undefined){
 						d = data;
+						// first run, we might as well change the other same input box thingies here
+						if(typeof(v) === "boolean"){
+							$('[data-var="'+s+'"').each(function(){
+								this.checked = v;
+							});
+							if(v){
+								$('[data-varbox="'+s+'"').show();
+							}else{
+								$('[data-varbox="'+s+'"').hide();
+							}
+						}else{
+							$('[data-var="'+s+'"').val(v);
+						}
 					}
 					s = s.split('/');
 					if(s.length == 1){
@@ -127,8 +88,7 @@
 				};
 			return $('<span>').css('display','inline-block').append(
 				$.map(pattern,function(prop){
-					$input = $('<span>');
-					console.log(prop);
+					var $input = $('<span>'),$more;
 					switch(prop.type){
 						case 'text':
 							$input = $('<input>').attr('type','text').val(getVal(prop.var)).change(function(){setVal(prop.var,this.value);});
@@ -139,13 +99,19 @@
 						case 'checkbox':
 							$input = $('<input>').attr('type','checkbox').change(function(){setVal(prop.var,this.checked);});
 							$input[0].checked = getVal(prop.var);
+							if(prop.pattern){
+								$more = getLiveInputSettings(data,prop.pattern).attr('data-varbox',prop.var).css('display','');
+								if(!$input[0].checked){
+									$more.hide();
+								}
+							}
 							break;
 						case 'newline':
 							return '<br>';
 						case 'info':
 							return [$('<b>').text(prop.name),'<br>'];
 						case 'more':
-							var $more = getLiveInputSettings(data,prop.pattern).css({
+							$more = getLiveInputSettings(data,prop.pattern).css({
 								border:'1px solid black',
 								padding:5
 							}).hide();
@@ -154,7 +120,8 @@
 								$more.toggle();
 							}),'<br>',$more,'<br>']
 					}
-					return [prop.name+':&nbsp;',$input,'<br>'];
+					$input.attr('data-var',prop.var);
+					return [prop.name+':&nbsp;',$input,'<br>',($more?$more:'')];
 				})
 			);
 		}
@@ -816,19 +783,16 @@
 						makeNetworksPage(data.networks,data.networkTypes);
 						break;
 					case 'sql':
-						$.extend(data.sql,{
-							passwd:''
-						});
-						getInputBoxSettings(p,'SQL',data.sql);
+						getInputBoxSettings(p,'SQL',data.sql,data.pattern);
 						break;
 					case 'ws':
-						getInputBoxSettings(p,'WebSockets',data.websockets);
+						getInputBoxSettings(p,'WebSockets',data.websockets,data.pattern);
 						break;
 					case 'misc':
-						getInputBoxSettings(p,'Misc',data.misc);
+						getInputBoxSettings(p,'Misc',data.misc,data.pattern);
 						break;
 					case 'ex':
-						getInputBoxSettings(p,'Experimental',data.ex);
+						getInputBoxSettings(p,'Experimental',data.ex,data.pattern);
 						break;
 					case 'releaseNotes':
 						$('#adminContent').append(

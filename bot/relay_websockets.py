@@ -31,13 +31,31 @@ editPattern = False
 
 class Relay(oirc.OircRelay):
 	relayType = 1
+	def errhandler(self):
+		if self.config['portpoking']:
+			print('(websockets) port in use, trying different port...')
+			self.config['port'] += 1
+			if self.config['port'] > 65535:
+				self.config['port'] = 10000
+			oirc.execPhp('admin.php',{'internalAction':'setWsPort','port':self.config['port']})
+			self.initRelay()
+			self.startRelay()
 	def initRelay(self):
 		self.relayType = relayType
 		ws_handler = type('WebSocketsHandler_anon',(WebSocketsHandler,),{'handle':self.handle})
-		if self.config['ssl']:
-			self.server = server.SSLServer(self.config['host'],self.config['port'],ws_handler)
+		port = self.config['intport']
+		host = self.config['host']
+		if self.config['portpoking']:
+			port = self.config['port']
 		else:
-			self.server = server.Server(self.config['host'],self.config['port'],ws_handler)
+			host = 'localhost'
+			if port.startswith('unix:'):
+				host = port
+				port = 0
+		if self.config['ssl']:
+			self.server = server.SSLServer(host,port,ws_handler,errhandler = self.errhandler,certfile = self.config['certfile'],keyfile = self.config['keyfile'])
+		else:
+			self.server = server.Server(host,port,ws_handler,errhandler = self.errhandler)
 	def startRelay(self):
 		self.server.start()
 	def updateRelay(self,cfg,chans):

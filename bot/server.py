@@ -31,11 +31,12 @@ class Server(threading.Thread):
 	port = 0
 	backlog = 5
 	stopnow = False
-	def __init__(self,host,port,handler):
+	def __init__(self,host,port,handler,errhandler = False):
 		threading.Thread.__init__(self)
 		self.host = host
 		self.port = port
 		self.handler = handler
+		self.errhandler = errhandler
 	def getHandler(self,client,address):
 		return self.handler(client,address)
 	def getInputHandler(self,s):
@@ -56,8 +57,14 @@ class Server(threading.Thread):
 				if os.path.exists(self.host):
 					raise
 		server = self.getSocket()
+		
 		if self.port != 0:
-			server.bind((self.host,self.port))
+			try:
+				server.bind((self.host,self.port))
+			except socket.error:
+				if hasattr(self.errhandler,'__call__'):
+					self.errhandler()
+					return
 		else:
 			server.bind(self.host)
 			os.chmod(self.host,0o777)
@@ -133,11 +140,12 @@ class Server(threading.Thread):
 		self.stopnow = True
 
 class SSLServer(Server):
+	def __init__(self,host,port,handler,errhandler = False,certfile = '',keyfile = ''):
+		Server.__init__(self,host,port,handler,errhandler)
+		self.certfile = certfile
+		self.keyfile = keyfile
 	def getSocket(self):
-		dir = os.path.dirname(__file__)
-		key_file = os.path.join(dir,'server.key')
-		cert_file = os.path.join(dir,'server.crt')
 		import ssl
 		s = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-		return ssl.wrap_socket(s, keyfile=key_file, certfile=cert_file, cert_reqs=ssl.CERT_NONE)
+		return ssl.wrap_socket(s, keyfile=self.keyfile, certfile=self.certfile, cert_reqs=ssl.CERT_NONE)
 
