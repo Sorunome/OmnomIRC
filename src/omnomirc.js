@@ -1,7 +1,7 @@
 /**
  * @license
  * OmnomIRC COPYRIGHT 2010,2011 Netham45
- *                    2012-2015 Sorunome
+ *                    2012-2016 Sorunome
  *
  *  This file is part of OmnomIRC.
  *
@@ -22,15 +22,16 @@
 oirc = (function(){
 	var OMNOMIRCSERVER = 'https://omnomirc.omnimaga.org',
 		settings = (function(){
-			var hostname = '',
-				nick = '',
-				signature = '',
-				numHigh = 4,
-				uid = 0,
-				checkLoginUrl = '',
-				net = '',
-				networks = [];
-			return {
+			var self = {
+				hostname:'',
+				nick:'',
+				signature:'',
+				numHigh:4,
+				uid:-1,
+				checkLoginUrl:'',
+				net:'',
+				networks:{},
+				pmIdent:false,
 				fetch:function(fn,clOnly){
 					if(clOnly===undefined){
 						clOnly = false;
@@ -38,38 +39,43 @@ oirc = (function(){
 					network.getJSON('config.php?js'+(document.URL.split('network=')[1]!==undefined?'&network='+document.URL.split('network=')[1].split('&')[0].split('#')[0]:'')+(clOnly?'&clonly':''),function(data){
 						var set;
 						if(!clOnly){
-							hostname = data.hostname;
+							self.hostname = data.hostname;
 							channels.setChans(data.channels);
 							parser.setSmileys(data.smileys);
-							networks = data.networks;
-							net = data.network;
+							self.networks = {};
+							$.each(data.networks,function(i,n){
+								self.networks[n.id] = n;
+							});
+							self.net = data.network;
+							ls.setPrefix(self.net);
 							options.setDefaults(data.defaults);
 							options.setExtraChanMsg(data.extraChanMsg);
-							ws.set(data.websockets.use,data.websockets.host,data.websockets.port,data.websockets.ssl);
+							request.setData(data.websockets.use,data.websockets.host,data.websockets.port,data.websockets.ssl);
 						}
 						
-						checkLoginUrl = data.checkLoginUrl;
+						self.checkLoginUrl = data.checkLoginUrl;
 						
-						set = ls.get('OmnomIRCCL'+settings.net());
-						if(set===null || set=='' || !set || clOnly){
-							network.getJSON(checkLoginUrl+'&network='+net.toString()+'&jsoncallback=?',function(data){
-								nick = data.nick;
-								signature = data.signature;
-								uid = data.uid;
-								ls.set('OmnomIRCCL'+settings.net(),JSON.stringify({
-									nick:nick,
-									signature:signature,
-									uid:uid
-								}));
+						set = ls.get('checklogin');
+						if(!set || clOnly){
+							network.getJSON(self.checkLoginUrl+'&network='+self.net.toString()+'&jsoncallback=?',function(data){
+								self.nick = data.nick;
+								self.signature = data.signature;
+								self.uid = data.uid;
+								self.pmIdent = '['+self.net.toString()+','+self.uid.toString()+']';
+								ls.set('checklogin',{
+									nick:self.nick,
+									signature:self.signature,
+									uid:self.uid
+								});
 								if(fn!==undefined){
 									fn();
 								}
 							},!clOnly,false);
 						}else{
-							set = JSON.parse(set);
-							nick = set.nick;
-							signature = set.signature;
-							uid = set.uid;
+							self.nick = set.nick;
+							self.signature = set.signature;
+							self.uid = set.uid;
+							self.pmIdent = '['+self.net.toString()+','+self.uid.toString()+']';
 							if(fn!==undefined){
 								fn();
 							}
@@ -77,33 +83,70 @@ oirc = (function(){
 					},!clOnly,false);
 				},
 				getUrlParams:function(){
-					return 'nick='+base64.encode(nick)+'&signature='+base64.encode(signature)+'&time='+(+new Date()).toString()+'&id='+uid+'&network='+net+(nick!=''?'&noLoginErrors':'');
+					return 'nick='+base64.encode(self.nick)+'&signature='+base64.encode(self.signature)+'&time='+(+new Date()).toString()+'&id='+self.uid+'&network='+self.net+(self.nick!=''?'&noLoginErrors':'');
+				},
+				getNetwork:function(i){
+					if(self.networks[i]!==undefined){
+						return self.networks[i];
+					}
+					return {
+						id:-1,
+						normal:'NICK',
+						userlist:'NICK',
+						name:'Invalid network',
+						type:-1
+					};
 				},
 				getIdentParams:function(){
 					return {
-						nick:nick,
-						signature:signature,
+						nick:self.nick,
+						signature:self.signature,
 						time:(+new Date()).toString(),
-						id:uid,
-						network:net
+						id:self.uid,
+						network:self.net
 					};
 				},
-				networks:function(){
-					return networks;
+				loggedIn:function(){
+					return self.signature !== '';
 				},
+				getWholePmIdent:function(uid,net){
+					var otherhandler = '['+net.toString()+','+uid.toString()+']';
+					if(net < self.net){
+						return otherhandler+self.pmIdent;
+					}else if(self.net < net){
+						return self.pmIdent+otherhandler;
+					}else if(uid < self.uid){
+						return otherhandler+self.pmIdent;
+					}else{
+						return self.pmIdent+otherhandler;
+					}
+				}
+			};
+			return {
+				fetch:self.fetch,
+				getUrlParams:self.getUrlParams,
+				getIdentParams:self.getIdentParams,
+				getNetwork:self.getNetwork,
 				nick:function(){
-					return nick;
+					return self.nick;
 				},
 				net:function(){
-					return net;
+					return self.net;
 				},
-				loggedIn:function(){
-					return signature !== '';
-				}
+				loggedIn:self.loggedIn,
+				getPmIdent:function(){
+					return self.pmIdent;
+				},
+				getWholePmIdent:self.getWholePmIdent
 			};
 		})(),
 		ls = (function(){
-			var getCookie = function(c_name){
+			var self = {
+				prefix:'',
+				setPrefix:function(p){
+					self.prefix = p;
+				},
+				getCookie:function(c_name){
 					var i,x,y,ARRcookies=document.cookie.split(";");
 					for(i=0;i<ARRcookies.length;i++){
 						x=ARRcookies[i].substr(0,ARRcookies[i].indexOf("="));
@@ -114,45 +157,60 @@ oirc = (function(){
 						}
 					}
 				},
-				setCookie = function(c_name,value,exdays){
+				setCookie:function(c_name,value,exdays){
 					var exdate = new Date(),
 						c_value = escape(value);
 					exdate.setDate(exdate.getDate() + exdays);
 					c_value += ((exdays===null) ? '' : '; expires='+exdate.toUTCString());
 					document.cookie=c_name + '=' + c_value;
 				},
-				support = function(){
-					try{
-						localStorage.setItem('test',1);
-						localStorage.removeItem('test');
-						return true;
-					}catch(e){
-						return false;
+				haveSupport:null,
+				support:function(){
+					if(self.haveSupport===null){
+						try{
+							localStorage.setItem('test',1);
+							localStorage.removeItem('test');
+							self.haveSupport = true;
+						}catch(e){
+							self.haveSupport = false;
+						}
 					}
-				};
-			return {
+					return self.haveSupport;
+				},
 				get:function(name){
-					if(support()){
-						return localStorage.getItem(name);
+					var s;
+					name = self.prefix+name;
+					if(self.support()){
+						s = localStorage.getItem(name);
+					}else{
+						s = getCookie(name);
 					}
-					return getCookie(name);
+					return JSON.parse(s);
 				},
 				set:function(name,value){
-					if(support()){
+					name = self.prefix+name;
+					value = JSON.stringify(value);
+					if(self.support()){
 						localStorage.setItem(name,value);
 					}else{
-						setCookie(name,value,30);
+						setCookie(name,value);
 					}
 				}
+			}
+			return {
+				setPrefix:self.setPrefix,
+				get:self.get,
+				set:self.set
 			};
 		})(),
 		network = (function(){
-			var errors = [],
-				warnings = [],
-				errorsOpen = false,
-				warningsOpen = false,
-				didRelog = false,
-				removeSig = function(s){
+			var self = {
+				errors:[],
+				warnings:[],
+				errorsOpen:false,
+				warningsOpen:false,
+				didRelog:false,
+				removeSig:function(s){
 					try{
 						var parts = s.split('signature='),
 							moreParts = parts[1].split('&');
@@ -166,73 +224,67 @@ oirc = (function(){
 						return s;
 					}
 				},
-				addError = function(s,e){
-					s = removeSig(s);
-					errors.push({
+				addError:function(s,e){
+					s = self.removeSig(s);
+					self.errors.push({
 						time:(new Date().getTime()),
 						file:s,
 						content:e
 					});
-					$('#errors')
-						.css('display','')
-						.find('.count')
-						.text(errors.length);
+					$('#errors').css('display','').find('.count').text(self.errors.length);
 				},
-				addWarning = function(s,e){
-					s = removeSig(s);
-					warnings.push({
+				addWarning:function(s,e){
+					s = self.removeSig(s);
+					self.warnings.push({
 						time:(new Date().getTime()),
 						file:s,
 						content:e
 					});
-					$('#warnings')
-						.css('display','')
-						.find('.count')
-						.text(warnings.length);
+					$('#warnings').css('display','').find('.count').text(self.warnings.length)
 				},
-				checkCallback = function(data,fn,recall,url){
+				checkCallback:function(data,fn,recall,url){
 					if(data.relog!=2){
 						if(data.errors!==undefined){
 							$.map(data.errors,function(e){
 								if(e.type!==undefined){
-									addError(url,e);
+									self.addError(url,e);
 								}else{
-									addError(url,{
+									self.addError(url,{
 										type:'misc',
 										message:e
 									});
 								}
-								if(errorsOpen){
-									$('.errors > .errorPopupCont').append(getSinglePopupEntry(errors[errors.length - 1]));
+								if(self.errorsOpen){
+									$('.errors > .errorPopupCont').append(self.getSinglePopupEntry(errors[errors.length - 1]));
 								}
 							});
 						}
 						if(data.warnings!==undefined){
 							$.map(data.warnings,function(w){
 								if(w.type!==undefined){
-									addWarning(url,w);
+									self.addWarning(url,w);
 								}else{
-									addWarning(url,{
+									self.addWarning(url,{
 										type:'misc',
 										message:w
 									});
 								}
-								if(warningsOpen){
-									$('.warnings > .errorPopupCont').append(getSinglePopupEntry(warnings[warnings.length - 1]));
+								if(self.warningsOpen){
+									$('.warnings > .errorPopupCont').append(self.getSinglePopupEntry(warnings[warnings.length - 1]));
 								}
 							});
 						}
 					}
 					if(data.relog!==undefined && data.relog!=0){
 						if(data.relog==1){
-							settings.fetch(undefined,true);
+							settings.fetch(undefined,true); // everything is still fine, no need to block the rest of the thread
 							fn(data);
 						}else if(data.relog==2){
 							settings.fetch(function(){
 								recall();
 							},true);
 						}else if(data.relog==3){
-							if(didRelog){
+							if(self.didRelog){ // that's it, no more trying!
 								fn(data);
 							}else{
 								settings.fetch(function(){
@@ -240,12 +292,15 @@ oirc = (function(){
 								},true);
 							}
 						}
-						didRelog = true;
+						self.didRelog = true;
 					}else{
+						if(data.relog!==undefined){
+							self.didRelog = false; // relog successfull, new try!
+						}
 						fn(data);
 					}
 				},
-				getSinglePopupEntry = function(e){
+				getSinglePopupEntry:function(e){
 					return $('<div>')
 						.css('border-bottom','1px solid black')
 						.append(
@@ -258,7 +313,7 @@ oirc = (function(){
 							})
 						);
 				},
-				makePopup = function(type,data,fn){
+				makePopup:function(type,data,fn){
 					return $('<div>')
 						.addClass('errorPopup')
 						.addClass(type.toLowerCase())
@@ -277,13 +332,12 @@ oirc = (function(){
 								.addClass('errorPopupCont')
 								.append(
 									$.map(data,function(e){
-										return getSinglePopupEntry(e);
+										return self.getSinglePopupEntry(e);
 									})
 								)
 						)
 						.appendTo('body');
-				};
-			return {
+				},
 				getJSON:function(s,fn,async,urlparams){
 					if(async==undefined){
 						async = true;
@@ -298,8 +352,8 @@ oirc = (function(){
 							async:async
 						})
 						.done(function(data){
-							checkCallback(data,fn,function(){
-								network.getJSON(s,fn,async,urlparams);
+							self.checkCallback(data,fn,function(){
+								self.getJSON(s,fn,async,urlparams);
 							},url);
 						});
 				},
@@ -318,75 +372,65 @@ oirc = (function(){
 							data:pdata
 						})
 						.done(function(data){
-							checkCallback(data,fn,function(){
-								network.post(s,pdata,fn,async,urlparams);
+							self.checkCallback(data,fn,function(){
+								self.post(s,pdata,fn,async,urlparams);
 							},url);
 						});
 				},
 				init:function(){
-					
 					$('#errors > .icon')
 						.click(function(){
-							if(!errorsOpen){
-								errorsOpen = true;
-								makePopup('Errors',errors,function(){
-									errorsOpen = false;
+							if(!self.errorsOpen){
+								self.errorsOpen = true;
+								self.makePopup('Errors',self.errors,function(){
+									self.errorsOpen = false;
 								});
 							}
 						});
 					$('#warnings > .icon')
 						.click(function(){
-							if(!warningsOpen){
-								warningsOpen = true;
-								makePopup('Warnings',warnings,function(){
-									warningsOpen = false;
+							if(!self.warningsOpen){
+								self.warningsOpen = true;
+								self.makePopup('Warnings',self.warnings,function(){
+									self.warningsOpen = false;
 								});
 							}
 						});
 				}
 			};
-		})(),
-		admin = (function(){
 			return {
-				init:function(){
-					$.getScript('admin.js');
-				}
-			}
+				getJSON:self.getJSON,
+				post:self.post,
+				init:self.init
+			};
 		})(),
 		options = (function(){
-			var defaults = '',
-				refreshCache = true,
-				cache = '',
-				allOptions = [
-					{
+			var self = {
+				extraChanMsg:'',
+				allOptions:{
+					highBold:{
 						disp:'Highlight Bold',
-						alt:'highBold',
-						id:1,
-						defaultOption:'T'
+						default:true
 					},
-					{
+					highRed:{
 						disp:'Highlight Red',
-						alt:'highRed',
-						id:2,
-						defaultOption:'T'
+						default:true
 					},
-					{
+					colordNames:{
 						disp:'Colored Names',
-						alt:'colordNames',
-						id:3,
-						defaultOption:'0',
+						default:0,
 						handler:function(){
 							return $('<td>')
 								.attr('colspan',2)
 								.css('border-right','none')
 								.append($('<select>')
 									.change(function(){
-										options.set('colordNames',this.value);
+										self.set('colordNames',this.value);
 									})
 									.append(
 										$.map(['none','calc','server'],function(v,i){
 											return $('<option>')
-												.attr((options.get('colordNames')==i?'selected':'false'),'selected')
+												.attr((self.get('colordNames')==i?'selected':'false'),'selected')
 												.val(i)
 												.text(v);
 										})
@@ -394,135 +438,101 @@ oirc = (function(){
 								)
 						}
 					},
-					{
-						alt:'curChan',
-						id:4,
+					curChan:{
 						hidden:true,
-						defaultOption:'-'
+						default:0
 					},
-					{
+					extraChans:{
 						disp:'Show extra Channels',
-						alt:'extraChans',
-						id:9,
-						defaultOption:'F',
+						default:false,
 						before:function(){
-							if(extraChanMsg!==''){
-								alert(extraChanMsg);
+							if(self.extraChanMsg!==''){
+								alert(self.extraChanMsg);
 							}
 							return true;
 						}
 					},
-					{
+					altLines:{
 						disp:'Alternating Line Highlight',
-						alt:'altLines',
-						id:6,
-						defaultOption:'T'
+						default:true
 					},
-					{
+					enable:{
 						disp:'Enable OmnomIRC',
-						alt:'enable',
-						id:5,
-						defaultOption:'T'
+						default:true
 					},
-					{
+					ding:{
 						disp:'Ding on Highlight',
-						alt:'ding',
-						id:8,
-						defaultOption:'F'
+						default:false
 					},
-					{
+					times:{
 						disp:'Show Timestamps',
-						alt:'times',
-						id:10,
-						defaultOption:'T'
+						default:true
 					},
-					{
+					statusBar:{
 						disp:'Show Updates in Browser Status Bar',
-						alt:'statusBar',
-						id:11,
-						defaultOption:'T'
+						default:true
 					},
-					{
+					smileys:{
 						disp:'Show Smileys',
-						alt:'smileys',
-						id:12,
-						defaultOption:'T'
+						default:true
 					},
-					{
+					hideUserlist:{
 						disp:'Hide Userlist',
-						alt:'hideUserlist',
-						id:14,
-						defaultOption:'F'
+						default:false
 					},
-					{
+					charsHigh:{
 						disp:'Number chars for Highlighting',
-						alt:'charsHigh',
-						id:13,
-						defaultOption:'3',
+						default:4,
 						handler:function(){
 							return $('<td>')
 								.attr('colspan',2)
 								.css('border-right','none')
 								.append($('<select>')
 									.change(function(){
-										options.set(13,this.value);
+										self.set('charsHigh',this.value);
 									})
 									.append(
-										$.map([0,1,2,3,4,5,6,7,8,9],function(i){
+										$.map([1,2,3,4,5,6,7,8,9,10],function(i){
 											return $('<option>')
-												.attr((options.get('charsHigh')==i?'selected':'false'),'selected')
+												.attr((self.get('charsHigh')==i?'selected':'false'),'selected')
 												.val(i)
-												.text(i+1);
+												.text(i);
 										})
 									)
 								);
 						}
 					},
-					{
+					scrollBar:{
 						disp:'Show Scrollbar',
-						alt:'scrollBar',
-						id:15,
-						defaultOption:'T'
+						default:true
 					},
-					{
+					scrollWheel:{
 						disp:'Enable Scrollwheel',
-						alt:'scrollWheel',
-						id:16,
-						defaultOption:'T'
+						default:true
 					},
-					{
+					browserNotifications:{
 						disp:'Browser Notifications',
-						alt:'browserNotifications',
-						id:7,
-						defaultOption:'F',
+						default:false,
 						before:function(){
 							notification.request();
 							return false;
 						}
 					},
-					{
+					oircJoinPart:{
 						disp:'Show OmnomIRC join/part messages',
-						alt:'oircJoinPart',
-						id:17,
-						defaultOption:'F'
+						default:false
 					},
-					{
+					wysiwyg:{
 						disp:'Use WYSIWYG editor (experimental)',
-						alt:'wysiwyg',
-						id:18,
-						defaultOption:'F'
+						default:false
 					},
-					{
+					textDeco:{
 						disp:'Enable simple text decorations',
-						alt:'textDeco',
-						id:19,
-						defaultOption:'F'
+						default:false
 					},
-					{
+					fontSize:{
 						disp:'Font Size',
-						alt:'fontSize',
-						id:20,
-						defaultOption:String.fromCharCode(9+45),
+						default:9,
 						handler:function(){
 							return $('<td>')
 								.attr('colspan',2)
@@ -535,95 +545,53 @@ oirc = (function(){
 										max:42
 									})
 									.css('width','3em')
-									.val(options.get('fontSize').charCodeAt(0) - 45)
+									.val(self.get('fontSize'))
 									.change(function(){
-										options.set('fontSize',String.fromCharCode(parseInt(this.value,10) + 45));
+										self.set('fontSize',parseInt(this.value,10));
 										$('body').css('font-size',this.value+'pt');
 									})
 								)
 						}
 					}
-				],
-				extraChanMsg = '',
-				getOptionsNum = function(s){
-					var num = -1,
-						def = '';
-					$.each(allOptions,function(i,v){
-						if(v.alt == s || v.id == s){
-							num = v.id;
-							def = v.defaultOption;
-							return;
+				},
+				init:function(def){
+					var opts = ls.get('options');
+					$.each(self.allOptions,function(i,v){
+						var val = v.default;
+						if(opts && opts[i]!==undefined){
+							val = opts[i];
+						}else if(def && def[i]!==undefined){
+							val = def[i];
 						}
+						self.allOptions[i].value = val;
 					});
-					return [num,def];
 				},
-				resultCache = [];
-			return {
-				setDefaults:function(d){
-					defaults = d;
-				},
-				set:function(optionsNum,value){
-					var optionsString = ls.get('OmnomIRCSettings'+settings.net());
-					delete resultCache[optionsNum]; // this may be the string
-					optionsNum = getOptionsNum(optionsNum)[0];
-					delete resultCache[optionsNum]; // and this the id
-					if(optionsNum == -1){
+				set:function(s,v){
+					if(self.allOptions[s]===undefined){
 						return;
 					}
-					if(!optionsString){
-						ls.set('OmnomIRCSettings'+settings.net(),'----------------------------------------');
-						optionsString = ls.get('OmnomIRCSettings'+settings.net());
-					}
-					if(!optionsString){ // we have cookies / local storage disabled, normal chatting will still work, though
-						return;
-					}
-					optionsString = optionsString.substring(0,optionsNum-1)+value+optionsString.substring(optionsNum);
-					ls.set('OmnomIRCSettings'+settings.net(),optionsString);
-					refreshCache = true;
+					self.allOptions[s].value = v;
+					var opts = ls.get('options') || {};
+					opts[s] = v;
+					ls.set('options',opts);
 				},
 				get:function(s){
-					var optionsString = (refreshCache?(cache=ls.get('OmnomIRCSettings'+settings.net())):cache),
-						result,
-						defaultOption;
-					refreshCache = false;
-					
-					if(resultCache[s] !== undefined){
-						return resultCache[s];
+					if(self.allOptions[s]!==undefined){
+						return self.allOptions[s].value;
 					}
-					optionsNum = getOptionsNum(s);
-					defaultOption = optionsNum[1];
-					optionsNum = optionsNum[0];
-					if(optionsNum == -1){
-						return;
-					}
-					if(!optionsString){
-						result = '-';
-					}else{
-						result = optionsString.charAt(optionsNum-1);
-					}
-					if(result=='-'){
-						result = (defaults.charAt(optionsNum-1)!=='' && defaults.charAt(optionsNum-1)!='-'?defaults.charAt(optionsNum-1):defaultOption);
-					}
-					resultCache[s] = result;
-					return result;
 				},
 				setExtraChanMsg:function(s){
-					extraChanMsg = s;
+					self.extraChanMsg = s;
 				},
-				getFullOptionsString:function(){
-					var optionsString = (refreshCache?(cache=ls.get('OmnomIRCSettings'+settings.net())):cache),
-						res = '';
-					for(var i = 0;optionsString.charAt(i)!='';i++){
-						res += (optionsString.charAt(i)!='-'?optionsString.charAt(i):(defaults.charAt(i)!=''?defaults.charAt(i):'-'));
-					}
-					return res;
+				setDefaults:function(def){
+					self.init(def);
 				},
 				getHTML:function(){
 					return $.merge($.map([false,true],function(alternator){
 							return $('<table>')
 								.addClass('optionsTable')
 								.append(
-									$.map(allOptions,function(o){
+									$.map(self.allOptions,function(o,i){
 										if(o.hidden){
 											return;
 										}
@@ -634,22 +602,22 @@ oirc = (function(){
 													.text(o.disp)],
 												(o.handler===undefined?[
 												$('<td>')
-													.addClass('option '+(options.get(o.id,o.defaultOption)=='T'?'selected':''))
+													.addClass('option '+(self.get(i)?'selected':''))
 													.text('Yes')
 													.click(function(){
-														if(options.get(o.id,o.defaultOption)=='F'){
+														if(!self.get(i)){
 															if((o.before!==undefined && o.before()) || o.before===undefined){
-																options.set(o.id,'T');
+																self.set(i,true);
 																$(this).addClass('selected').next().removeClass('selected');
 															}
 														}
 													}),
 												$('<td>')
-													.addClass('option '+(options.get(o.id,o.defaultOption)=='F'?'selected':''))
+													.addClass('option '+(!self.get(i)?'selected':''))
 													.text('No')
 													.click(function(){
-														if(options.get(o.id,o.defaultOption)=='T'){
-															options.set(o.id,'F');
+														if(self.get(i)){
+															self.set(i,false);
 															$(this).addClass('selected').prev().removeClass('selected');
 														}
 													})]:o.handler()))
@@ -663,50 +631,57 @@ oirc = (function(){
 							.text('Reset Defaults')
 							.click(function(e){
 								e.preventDefault();
-								ls.set('OmnomIRCSettings'+settings.net(),'----------------------------------------');
-								ls.set('OmnomIRCChannels'+settings.net(),'');
-								ls.set('OmnomIRCCL'+settings.net(),'');
+								ls.set('options',null);
+								ls.set('checklogin',null);
+								ls.set('channels',null);
 								document.location.reload();
 							})
 					));
 				}
 			};
+			return {
+				set:self.set,
+				get:self.get,
+				setDefaults:self.setDefaults,
+				setExtraChanMsg:self.setExtraChanMsg,
+				getHTML:self.getHTML
+			};
 		})(),
 		instant = (function(){
-			var id = '',
-				update = function(){
-					ls.set('OmnomBrowserTab',id);
-					ls.set('OmnomNewInstant','false');
-				};
-			return {
+			var self = {
+				id:Math.random().toString(36)+(new Date()).getTime().toString(),
+				update:function(){
+					ls.set('browserTab',self.id);
+					ls.set('newInstant',false);
+				},
 				init:function(){
-					id = Math.random().toString(36)+(new Date()).getTime().toString();
-					ls.set('OmnomBrowserTab',id);
-					$(window)
-						.focus(function(){
-							update();
-						})
-						.unload(function(){
-							ls.set('OmnomNewInstant','true');
-						});
+					ls.set('browserTab',self.id);
+					$(window).focus(function(){
+						self.update();
+					}).unload(function(){
+						ls.set('newInstant',true);
+					})
 				},
 				current:function(){
-					if(ls.get('OmnomNewInstant')=='true'){
-						update();
+					if(ls.get('newInstant')){
+						self.update();
 					}
-					return id == ls.get('OmnomBrowserTab');
+					return self.id == ls.get('browserTab');
 				}
+			}
+			return {
+				init:self.init,
+				current:self.current
 			};
 		}()),
 		indicator = (function(){
-			var interval = false,
-				$elem = false,
-				pixels = [];
-			return {
+			var self = {
+				interval:false,
+				$elem:false,
 				start:function(){
-					if(interval===false){
+					if(self.interval===false){
 						pixels = [true,true,true,true,true,false,false,false];
-						$elem = $('<div>')
+						self.$elem = $('<div>')
 							.attr('id','indicator')
 							.css({
 								position:'absolute',
@@ -717,8 +692,8 @@ oirc = (function(){
 								right:0
 							})
 							.appendTo('body');
-						interval = setInterval(function(){
-							$elem.empty().append(
+						self.interval = setInterval(function(){
+							self.$elem.empty().append(
 								$.map(pixels,function(p){
 									return $('<div>')
 										.css({
@@ -740,55 +715,56 @@ oirc = (function(){
 					}
 				},
 				stop:function(){
-					if(interval!==false){
-						clearInterval(interval);
-						interval = false;
-						$elem.remove();
+					if(self.interval!==false){
+						clearInterval(self.interval);
+						self.interval = false;
+						self.$elem.remove();
 					}
 				}
 			};
+			return {
+				start:self.start,
+				stop:self.stop
+			};
 		})(),
 		notification = (function(){
-			var notification_support = window.webkitNotifications!==undefined && window.webkitNotifications!==null && window.webkitNotifications,
-				support = function(){
-					if(notification_support || (typeof Notification!='undefined' && Notification && Notification.permission!='denied')){
-						return true;
-					}
-					return false;
+			var self = {
+				support_webkit:window.webkitNotifications!==undefined && window.webkitNotifications!==null && window.webkitNotifications,
+				support:function(){
+					return typeof Notification!='undefined' && Notification && Notification.permission!='denied';
 				},
-				show = function(s){
+				show:function(s){
 					var n;
-					if(notification_support && window.webkitNotifications.checkPermission() === 0){
-						n = window.webkitNotifications.createNotification('http://www.omnimaga.org/favicon.ico','OmnomIRC Highlight',s);
+					if(self.support_webkit){
+						n = window.webkitNotifications.createNotification('omni.png','OmnomIRC Highlight',s);
 						n.show();
-					}else if(typeof Notification!='undefined' && Notification && Notification.permission=='granted'){
+					}else if(self.support()){
 						n = new Notification('OmnomIRC Highlight',{
-							icon:'http://www.omnimaga.org/favicon.ico',
+							icon:'omni.png',
 							body:s
 						});
 						n.onshow = function(){
 							setTimeout(n.close,30000);
 						};
 					}
-				};
-			return {
+				},
 				request:function(){
-					if(notification_support){
+					if(self.support_webkit){
 						window.webkitNotifications.requestPermission(function(){
 							if (window.webkitNotifications.checkPermission() === 0){
 								show('Notifications Enabled!');
-								options.set(7,'T');
+								options.set(7,true);
 								document.location.reload();
 							}
 						});
-					}else if(typeof Notification!=='undefined' && Notification && Notification.permission!=='denied'){
+					}else if(self.support()){
 						Notification.requestPermission(function(status){
 							if (Notification.permission !== status){
 								Notification.permission = status;
 							}
 							if(status==='granted'){
 								show('Notifications Enabled!');
-								options.set(7,'T');
+								options.set(7,true);
 								document.location.reload();
 							}
 						});
@@ -798,566 +774,304 @@ oirc = (function(){
 				},
 				make:function(s,c){
 					if(instant.current()){
-						if(options.get('browserNotifications')=='T'){
-							show(s);
+						if(options.get('browserNotifications')){
+							self.show(s);
 						}
-						if(options.get('ding')=='T'){
+						if(options.get('ding')){
 							$('#ding')[0].play();
 						}
-						if(c!=channels.getCurrentName()){
+						if(c!=channels.current().handler){
 							channels.highlight(c,true);
 						}
 					}else{
-						if(c!=channels.getCurrentName()){
+						if(c!=channels.current().handler){
 							channels.highlight(c);
 						}
 					}
 				}
 			};
-		})(),
-		ws = (function(){
-			var socket = false,
-				connected = false,
-				use = true,
-				sendBuffer = [],
-				allowLines = false,
-				enabled = false,
-				host = '',
-				port = 0,
-				ssl = true,
-				tryFallback = true,
-				fallback = function(){
-					if(tryFallback){
-						try{
-							tryFallback = false;
-							socket.close();
-						}catch(e){}
-						network.getJSON('omnomirc.php?getcurline&noLoginErrors',function(data){
-							users.reload(); // this is usually a good idea.
-							request.setCurLine(data.curline);
-							use = false;
-							request.start();
-						});
-					}
-				},
-				identify = function(){
-					ws.send($.extend({action:'ident'},settings.getIdentParams()));
-				};
 			return {
-				init:function(){
-					if(!("WebSocket" in window) || !enabled){
-						use = false;
-						return false;
-					}
-					try{
-						socket = new WebSocket((ssl?'wss://':'ws://')+host+':'+port.toString(10));
-					}catch(e){
-						console.log(socket);
-						console.log((ssl?'wss://':'ws://')+host+':'+port.toString(10));
-						console.log(e);
-						fallback();
-					}
-					socket.onopen = function(e){
-						connected = true;
-						for(var i = 0;i < sendBuffer.length;i++){
-							ws.send(sendBuffer[i]);
-						}
-					};
-					socket.onmessage = function(e){
-						try{
-							var data = JSON.parse(e.data);
-							console.log(data);
-							if(allowLines && data.line!==undefined){
-								if(!parser.addLine(data.line)){
-									tryFallback = false;
-									socket.close();
-								}
-							}
-							if(data.relog!==undefined && data.relog!=0){
-								settings.fetch(function(){
-									identify();
-								},true);
-							}
-						}catch(e){};
-					};
-					socket.onclose = function(e){
-						use = false;
-						fallback();
-					};
-					socket.onerror = function(e){
-						socket.close();
-						use = false;
-						fallback();
-					};
-					
-					identify();
-					
-					$(window).on('beforeunload',function(){
-						socket.close();
-					});
-					return true;
-				},
-				set:function(enabledd,hostt,portt,ssll){
-					enabled = enabledd;
-					host = hostt;
-					port = portt;
-					ssl = ssll;
-				},
-				send:function(msg){
-					if(connected){
-						socket.send(JSON.stringify(msg));
-					}else{
-						sendBuffer.push(msg);
-					}
-				},
-				setChan:function(c){
-					ws.send({
-						action:'chan',
-						chan:c
-					});
-				},
-				use:function(){
-					return use;
-				},
-				allowRecLines:function(){
-					allowLines = true;
-				},
-				dissallowRecLines:function(){
-					allowLines = false;
-				}
+				request:self.request,
+				make:self.make
 			};
 		})(),
 		request = (function(){
-			var lastSuccess = (new Date).getTime(),
-				curLine = 0,
-				inRequest = false,
-				handler = false,
-				send = function(){
-					if(channels.getCurrent()==='' || ws.use()){
-						return;
+			var self = {
+				ws:{
+					socket:false,
+					connected:false,
+					use:true,
+					sendBuffer:[],
+					allowLines:false,
+					enabled:false,
+					host:'',
+					port:0,
+					ssl:true,
+					tryFallback:true,
+					fallback:function(){
+						console.log('trying fallback...');
+						if(self.ws.tryFallback){
+							try{
+								self.ws.tryFallback = false;
+								self.ws.socket.close();
+							}catch(e){}
+							network.getJSON('omnomirc.php?getcurline&noLoginErrors',function(data){
+								channels.current().reloadUserlist(); // this is usually a good idea.
+								self.setCurLine(data.curline);
+								use = false;
+								self.old.lastSuccess = (new Date).getTime();
+								self.old.start();
+							});
+						}
+					},
+					identify:function(){
+						self.ws.send($.extend({action:'ident'},settings.getIdentParams()));
+					},
+					init:function(){
+						if(!("WebSocket" in window) || !self.ws.enabled){
+							self.ws.use = false;
+							return false;
+						}
+						
+						try{
+							self.ws.socket = new PooledWebSocket((self.ws.ssl?'wss://':'ws://')+self.ws.host+':'+self.ws.port.toString()+'/'+settings.net());
+						}catch(e){
+							console.log(self.ws.socket);
+							console.log((ssl?'wss://':'ws://')+self.ws.host+':'+self.ws.port.toString());
+							console.log(e);
+							self.ws.fallback();
+						}
+						self.ws.socket.onopen = function(e){
+							self.ws.connected = true;
+							for(var i = 0;i < self.ws.sendBuffer.length;i++){
+								self.ws.send(self.ws.sendBuffer[i]);
+							}
+							self.ws.sendBuffer = [];
+						};
+						self.ws.socket.onmessage = function(e){
+							try{
+								var data = JSON.parse(e.data);
+								console.log(data);
+								if(self.ws.allowLines && data.line!==undefined){
+									if(!parser.addLine(data.line)){
+										self.ws.tryFallback = false;
+										delete self.ws.socket;
+									}
+								}
+								if(data.relog!==undefined && data.relog!=0){
+									settings.fetch(function(){
+										self.ws.identify();
+									},true);
+								}
+							}catch(e){};
+						};
+						self.ws.socket.onclose = function(e){
+							console.log('CLOOOOOOOOOSE');
+							console.log(e);
+							self.ws.use = false;
+							self.ws.fallback();
+						};
+						self.ws.socket.onerror = function(e){
+							console.log('ERRRORRRR');
+							console.log(e);
+							delete self.ws.socket;
+							self.ws.use = false;
+							self.ws.fallback();
+						};
+						
+						self.ws.identify();
+						
+						$(window).on('beforeunload',function(){
+							self.partChan(channels.current().handler);
+							delete self.ws.socket;
+						});
+						
+						return true;
+					},
+					send:function(msg){
+						if(self.ws.connected){
+							self.ws.socket.send(JSON.stringify(msg));
+						}else{
+							self.ws.sendBuffer.push(msg);
+						}
 					}
-					handler = network.getJSON(
-							'Update.php?high='+
-							(parseInt(options.get('charsHigh'),10)+1).toString()+
-							'&channel='+channels.getCurrent(false,true)+
-							'&lineNum='+curLine.toString(),
-						function(data){
-							var newRequest = true;
-							if(channels.getCurrent()===''){
-								return;
-							}
-							handler = false;
-							lastSuccess = (new Date).getTime();
-							if(data.lines!==undefined){
-								$.each(data.lines,function(i,line){
-									return newRequest = parser.addLine(line);
-								});
-							}
-							if(data.banned === true){
-								newRequest = false;
-							}
-							if(newRequest){
-								setTimer();
-							}
-						})
-						.fail(function(){
-							handler = false;
-							if((new Date).getTime() >= lastSuccess + 300000  ){
-								send.internal('<span style="color:#C73232;">OmnomIRC has lost connection to server. Please refresh to reconnect.</span>');
-							}else if(!inRequest){
-								lastSuccess = (new Date).getTime();
-							}else{
-								setTimer();
+				},
+				old:{
+					inRequest:false,
+					handler:false,
+					lastSuccess:(new Date).getTime(),
+					sendRequest:function(){
+						if(!channels.current().loaded()){
+							return;
+						}
+						self.old.handler = network.getJSON(
+								'Update.php?high='+
+								options.get('charsHigh').toString()+
+								'&channel='+channels.current().handlerB64+
+								'&lineNum='+self.curLine.toString(),
+							function(data){
+								var newRequest = true;
+								if(!channels.current().loaded()){
+									return;
+								}
+								self.old.handler = false;
+								self.old.lastSuccess = (new Date).getTime();
+								if(data.lines!==undefined){
+									$.each(data.lines,function(i,line){
+										return newRequest = parser.addLine(line);
+									});
+								}
+								if(data.banned === true){
+									newRequest = false;
+								}
+								if(newRequest){
+									self.old.setTimer();
+								}
+							})
+							.fail(function(){
+								self.old.handler = false;
+								if((new Date).getTime() >= self.old.lastSuccess + 300000){
+									send.internal('<span style="color:#C73232;">OmnomIRC has lost connection to server. Please refresh to reconnect.</span>');
+								}else if(!self.old.inRequest){
+									self.old.lastSuccess = (new Date).getTime();
+								}else{
+									self.old.setTimer();
+								}
+							});
+					},
+					setTimer:function(){
+						if(channels.current().loaded() && self.old.handler===false){
+							setTimeout(function(){
+								self.old.sendRequest();
+							},(page.isBlurred()?2500:200));
+						}else{
+							self.old.stop();
+						}
+					},
+					start:function(){
+						if(!self.old.inRequest){
+							self.old.inRequest = true;
+							self.old.setTimer();
+						}
+					},
+					stop:function(){
+						if(self.old.inRequest){
+							self.old.inRequest = false;
+							try{
+								self.old.handler.abort();
+							}catch(e){}
+						}
+					},
+					send:function(s,fn){
+						self.old.stop();
+						network.getJSON('message.php?message='+base64.encode(s)+'&channel='+channels.current().handlerB64,function(){
+							self.old.start();
+							if(fn!==undefined){
+								fn();
 							}
 						});
-				},
-				setTimer = function(){
-					if(channels.getCurrent()!=='' && handler===false && !ws.use()){
-						setTimeout(function(){
-							send();
-						},(page.isBlurred()?2500:200));
-					}else{
-						request.cancel();
 					}
-				};
-			return {
-				cancel:function(){
-					if(inRequest){
-						inRequest = false;
-						try{
-							handler.abort();
-						}catch(e){}
+				},
+				curLine:0,
+				setChan:function(c){
+					if(self.ws.use){
+						self.ws.send({
+							action:'joinchan',
+							chan:c
+						});
+					}
+				},
+				partChan:function(c){
+					if(self.ws.use){
+						self.ws.send({
+							action:'partchan',
+							chan:c
+						});
+					}
+				},
+				stop:function(){
+					if(self.ws.use){
+						self.ws.allowLines = false;
+					}else{
+						self.old.stop();
 					}
 				},
 				start:function(){
-					if(!(inRequest || ws.use())){
-						inRequest = true;
-						setTimer();
+					if(self.ws.use){
+						self.ws.allowLines = true;
+					}else{
+						self.old.start();
 					}
 				},
 				setCurLine:function(c){
-					curLine = c;
+					if(c > self.curLine){
+						self.curLine = c;
+					}
 				},
-				getCurLine:function(){
-					return curLine;
+				send:function(s,fn){
+					if(self.ws.use){
+						self.ws.send({
+							action:'message',
+							channel:channels.current().handler,
+							message:s
+						});
+						if(fn!==undefined){
+							fn();
+						}
+					}else{
+						self.old.send(s,fn);
+					}
+				},
+				setData:function(enabled,host,port,ssl){
+					self.ws.enabled = enabled;
+					self.ws.host = host;
+					self.ws.port = port;
+					self.ws.ssl = ssl;
+				},
+				init:function(){
+					if(self.ws.enabled){
+						self.ws.init();
+					}else{
+						self.ws.use = false;
+						self.old.lastSuccess = (new Date).getTime();
+						self.old.start();
+					}
 				}
+			};
+			return {
+				setChan:self.setChan,
+				partChan:self.partChan,
+				start:self.start,
+				stop:self.stop,
+				setCurLine:self.setCurLine,
+				send:self.send,
+				setData:self.setData,
+				init:self.init
 			};
 		})(),
 		channels = (function(){
-			var chans = [],
-				current = '',
-				currentb64 = '',
-				currentName = '',
-				save = function(){
-					ls.set('OmnomIRCChannels'+settings.net(),JSON.stringify(chans));
-				},
-				load = function(){
-					try{
-						var chanList = JSON.parse(ls.get('OmnomIRCChannels'+settings.net())),
-							exChans = $.map(chans,function(ch){
-								if((ch.ex && options.get('extraChans')=='T') || !ch.ex){
-									return ch;
+			var Channel = function(i,_parent){
+					var exists = _parent.chans[i]!==undefined,
+						self = {
+							i:i,
+							name:exists?_parent.chans[i].chan.toLowerCase():'',
+							handler:exists?_parent.getHandler(i):-1,
+							handlerB64:exists?_parent.getHandler(i,true):-1,
+							loaded:false,
+							load:function(data,fn){
+								if(data.lines === undefined){ // something went wrong....
+									if(data.message){
+										send.internal(data.message);
+									}else{
+										send.internal('<span style="color:#C73232;"><b>ERROR:</b> couldn\'t join channel</span>');
+									}
+									return false;
 								}
-								return undefined;
-							}),
-							exChansInUse = [];
-						if(chanList!==null && chanList!=[]){
-							chans = $.merge(
-									$.map(chanList,function(v){
-										if(v.id != -1){
-											var valid = false;
-											$.each(chans,function(i,vc){
-												if(vc.id == v.id){
-													exChansInUse.push(v);
-													valid = true;
-													v.chan = vc.chan;
-													return false;
-												}
-											});
-											if(!valid){
-												return undefined;
-											}
-										}
-										return v;
-									}),
-									$.map(exChans,function(v){
-										var oldChan = false;
-										$.each(exChansInUse,function(i,vc){
-											if(vc.id == v.id){
-												oldChan = true;
-												v.chan = vc.chan;
-												return false
-											}
-										});
-										if(oldChan){
-											return undefined;
-										}
-										return v;
-									})
-								);
-							save();
-						}
-					}catch(e){}
-				},
-				draw = function(){
-					$('#ChanList').empty().append(
-						$.map(chans,function(c,i){
-							if((c.ex && options.get('extraChans')=='T') || !c.ex){
-								var mouseX = 0, // new closur as in map
-									startX = 0,
-									initDrag = false,
-									offsetX = 0,
-									canClick = false,
-									width = 0,
-									startDrag = function(elem){
-										width = $(elem).width();
-										canClick = false;
-										$(elem).css({
-												'position':'absolute',
-												'z-index':100,
-												'left':mouseX - offsetX
-											})
-											.after(
-												$('<div>')
-													.attr('id','topicDragPlaceHolder')
-													.css({
-														'display':'inline-block',
-														'width':width
-													})
-											)
-											.addClass('dragging')
-											.find('div').css('display','block').focus();
-										initDrag = false;
-									},
-									mousedownFn = function(e,elem){
-										e.preventDefault();
-										startX = e.clientX;
-										offsetX = startX - $(elem).position().left;
-										initDrag = true;
-									},
-									mousemoveFn = function(e,elem){
-										mouseX = e.clientX;
-										if(initDrag && Math.abs(mouseX - startX) >= 4){
-											initDrag = false;
-											startDrag(elem);
-											e.preventDefault();
-										}else if($(elem).hasClass('dragging')){
-											var newX = mouseX - offsetX;
-											$(elem).css('left',newX);
-											$ne = $('#topicDragPlaceHolder').next('.chanList');
-											$pe = $('#topicDragPlaceHolder').prev('.chanList');
-											if($ne.length > 0 && ($ne.position().left) < (newX + (width/2))){
-												$ne.after($('#topicDragPlaceHolder').remove());
-											}else if($pe.length > 0){
-												if($pe.attr('id') == $(elem).attr('id')){ // we selected our own element!
-													$pe = $pe.prev();
-												}
-												if($pe.length > 0 && $pe.position().left > newX){
-													$pe.before($('#topicDragPlaceHolder').remove());
-												}
-											}
-										}
-									},
-									mouseupFn = function(e,elem){
-										if(initDrag){
-											initDrag = false;
-										}else{
-											$(elem).find('div').css('display','none');
-											$('#topicDragPlaceHolder').replaceWith(elem);
-											chans = $.map($('.chanList'),function(chan,i){
-												if($(chan).find('span').hasClass('curchan')){
-													options.set(4,String.fromCharCode(i+45));
-												}
-												return $(chan).data('json');
-											});
-											save();
-											draw();
-										}
-									};
-								return $('<div>')
-									.data('json',c)
-									.attr('id','chan'+i.toString())
-									.addClass('chanList'+(c.high?' highlightChan':''))
-									.append(
-										$('<span>')
-											.addClass('chan '+(getHandler(i)==current?' curchan':''))
-											.append(
-												(c.chan.substr(0,1)!='#'?
-												$('<span>')
-													.addClass('closeButton')
-													.css({
-														width:9,
-														float:'left'
-													})
-													.mouseup(function(){
-														if(canClick){
-															channels.part(i);
-														}
-													})
-													.text('x')
-												:''),
-												$('<span>').text(c.chan)
-											)
-											.mouseup(function(){
-												if(canClick){
-													channels.join(i);
-												}
-											}),
-										$('<div>')
-											.css({
-												'position':'fixed',
-												'width':'100%',
-												'height':'100%',
-												'z-index':101,
-												'top':0,
-												'left':0,
-												'display':'none'
-											})
-											.mousemove(function(e){
-												mousemoveFn(e,$(this).parent());
-											})
-											.mouseup(function(e){
-												mouseupFn(e,$(this).parent());
-											})
-											.mouseout(function(e){
-												mouseupFn(e,$(this).parent());
-											})
-									)
-									.mousedown(function(e){
-										canClick = true;
-										mousedownFn(e,this);
-									})
-									.mousemove(function(e){
-										mousemoveFn(e,this);
-									})
-									.mouseout(function(e){
-										if(initDrag){
-											startDrag(this);
-										}
-									})
-									.mouseup(function(e){
-										mouseupFn(e,this);
-									});
-							}
-						})
-					);
-				},
-				requestHandler = false,
-				getHandler = function(i,b64){
-					if(chans[i].id!=-1){
-						return chans[i].id;
-					}
-					if(b64){
-						return base64.encode(chans[i].chan);
-					}
-					return chans[i].chan;
-				};
-			return {
-				highlight:function(c,doSave){
-					$.each(chans,function(i,ci){
-						if(c == ci.id || ci.chan.toLowerCase()==c.toString().toLowerCase()){
-							$('#chan'+i.toString()).addClass('highlightChan');
-							chans[i].high = true;
-						}
-					});
-					if(doSave!==undefined && doSave){
-						save();
-					}
-				},
-				openChan:function(s){
-					var addChan = true;
-					s = s.trim();
-					if(s.substr(0,1) != '@' && s.substr(0,1) != '#'){
-						s = '@' + s;
-					}
-					s = s.toLowerCase();
-					$.each(chans,function(i,c){
-						if(c.chan==s){
-							addChan = i;
-						}
-					});
-					if(addChan===true){
-						if(s.substr(0,1)=='#'){
-							send.internal('<span style="color:#C73232;"> Join Error: Cannot join new channels starting with #.</span>');
-							return;
-						}
-						chans.push({
-							chan:s,
-							high:false,
-							ex:false,
-							id:-1,
-							order:-1
-						});
-						save();
-						draw();
-						channels.join(chans.length-1);
-					}else{
-						channels.join(addChan);
-					}
-					tab.load();
-				},
-				openPm:function(s,join){
-					var addChan = true;
-					if(join===undefined){
-						join = false;
-					}
-					s = s.trim();
-					if(s.substr(0,1)=='@' || s.substr(0,1)=='#'){
-						send.internal('<span style="color:#C73232;"> Query Error: Cannot query a channel. Use /join instead.</span>');
-						return;
-					}
-					s = s.toLowerCase();
-					if(s.substr(0,1)!='*'){
-						s = '*'+s;
-					}
-					$.each(chans,function(i,c){
-						if(c.chan==s){
-							addChan = i;
-						}
-					});
-					if(addChan===true){
-						chans.push({
-							chan:s,
-							high:!join,
-							ex:false,
-							id:-1,
-							order:-1
-						});
-						save();
-						draw();
-						if(join){
-							channels.join(chans.length-1);
-						}
-					}else{
-						chans[addChan].high = !join;
-						if(join){
-							channels.join(addChan);
-						}
-					}
-					tab.load();
-				},
-				part:function(i){
-					var select = false;
-					if(i===undefined){
-						$.each(chans,function(ci,c){
-							if(c.chan == current || c.id == current){
-								i = ci;
-							}
-						});
-					}
-					if(isNaN(parseInt(i,10))){
-						$.each(chans,function(ci,c){
-							if(c.chan == i){
-								i = ci;
-							}
-						});
-					}
-					if(isNaN(parseInt(i,10)) || i===undefined){
-						send.internal('<span style="color:#C73232;"> Part Error: I cannot part '+i+'. (You are not in it.)</span>');
-						return;
-					}
-					i = parseInt(i,10);
-					if(chans[i].chan.substr(0,1)=='#'){
-						send.internal('<span style="color:#C73232;"> Part Error: I cannot part '+chans[i].chan+'. (IRC channel.)</span>');
-						return;
-					}
-					if(getHandler(i) == current){
-						select = true;
-					}
-					chans.splice(i,1);
-					save();
-					draw();
-					if(select){
-						channels.join(i-1);
-					}
-				},
-				join:function(i,fn){
-					if(chans[i]!==undefined){
-						indicator.start();
-						request.cancel();
-						ws.dissallowRecLines();
-						$('#message').attr('disabled','true');
-						$('#MessageBox').empty();
-						$('.chan').removeClass('curchan');
-						if(requestHandler!==false){
-							requestHandler.abort();
-						}
-						requestHandler = network.getJSON('Load.php?count=125&channel='+getHandler(i,true),function(data){
-							if(data.lines === undefined){
-								if(data.message){
-									send.internal(data.message);
-								}else{
-									send.internal('<span style="color:#C73232;"><b>ERROR:</b> couldn\'t join channel</span>');
+								options.set('curChan',i);
+								if(data.banned){
+									send.internal('<span style="color:#C73232;"><b>ERROR:</b> banned</span>');
+									return false;
 								}
-								indicator.stop();
-								return;
-							}
-							current = getHandler(i);
-							currentb64 = getHandler(i,true);
-							currentName = chans[i].chan;
-							oldMessages.read();
-							options.set('curChan',String.fromCharCode(i+45));
-							if(!data.banned){
 								if(data.admin){
 									$('#adminLink').css('display','');
 								}else{
@@ -1369,139 +1083,509 @@ oirc = (function(){
 								users.setUsers(data.users);
 								users.draw();
 								$.each(data.lines,function(i,line){
-									parser.addLine(line);
+									parser.addLine(line,true);
 								});
 								scroll.down();
-								requestHandler = false;
-								ws.setChan(getHandler(i));
-								ws.allowRecLines();
-								request.start();
-							}else{
-								send.internal('<span style="color:#C73232;"><b>ERROR:</b> banned</span>');
-								requestHandler = false;
+								self.loaded = true;
+								return true;
+							},
+							part:function(){
+								_parent.part(self.i);
+							},
+							reloadUserlist:function(i){
+								if(!exists){
+									return;
+								}
+								network.getJSON('Load.php?userlist&channel='+self.handlerB64,function(data){
+									if(!data.banned){
+										users.setUsers(data.users);
+										users.draw();
+									}else{
+										send.internal('<span style="color:#C73232;"><b>ERROR:</b> banned</span>');
+									}
+								});
+							},
+							reload:function(){
+								_parent.join(self.i);
+							},
+							setI:function(i){
+								self.i = i;
+							},
+							is:function(i){
+								return i == self.i;
 							}
+						};
+					return {
+						name:self.name,
+						handler:self.handler,
+						handlerB64:self.handlerB64,
+						load:self.load,
+						part:self.part,
+						reloadUserlist:self.reloadUserlist,
+						reload:self.reload,
+						loaded:function(){
+							return self.loaded;
+						},
+						setI:self.setI,
+						is:self.is
+					};
+				},
+				self = {
+					chans:[],
+					current:false,
+					save:function(){
+						ls.set('channels',self.chans);
+					},
+					load:function(){
+						try{
+							var chanList = ls.get('channels'),
+								exChans = $.map(self.chans,function(ch){
+									if((ch.ex && options.get('extraChans')) || !ch.ex){
+										return ch;
+									}
+									return undefined;
+								}),
+								exChansInUse = [];
+							if(chanList!==null && chanList!=[]){
+								self.chans = $.merge(
+										$.map(chanList,function(v){
+											if(v.id != -1 && v.id.toString().substr(0,1)!='*'){
+												var valid = false;
+												$.each(self.chans,function(i,vc){
+													if(vc.id == v.id){
+														exChansInUse.push(v);
+														valid = true;
+														v.chan = vc.chan;
+														return false;
+													}
+												});
+												if(!valid){
+													return undefined;
+												}
+											}
+											return v;
+										}),
+										$.map(exChans,function(v){
+											var oldChan = false;
+											$.each(exChansInUse,function(i,vc){
+												if(vc.id == v.id){
+													oldChan = true;
+													v.chan = vc.chan;
+													return false
+												}
+											});
+											if(oldChan){
+												return undefined;
+											}
+											return v;
+										})
+									);
+								save();
+							}
+						}catch(e){}
+					},
+					draw:function(){
+						var mouseX = 0, // new closur as in map
+							startX = 0,
+							initDrag = false,
+							offsetX = 0,
+							canClick = false,
+							width = 0,
+							startDrag = function(elem){
+								width = $(elem).width();
+								canClick = false;
+								$(elem).css({
+										'position':'absolute',
+										'z-index':100,
+										'left':mouseX - offsetX
+									})
+									.after(
+										$('<div>')
+											.attr('id','topicDragPlaceHolder')
+											.css({
+												'display':'inline-block',
+												'width':width
+											})
+									)
+									.addClass('dragging')
+									.find('div').css('display','block').focus();
+								initDrag = false;
+							},
+							mousedownFn = function(e,elem){
+								e.preventDefault();
+								startX = e.clientX;
+								offsetX = startX - $(elem).position().left;
+								initDrag = true;
+							},
+							mousemoveFn = function(e,elem){
+								mouseX = e.clientX;
+								if(initDrag && Math.abs(mouseX - startX) >= 4){
+									initDrag = false;
+									startDrag(elem);
+									e.preventDefault();
+								}else if($(elem).hasClass('dragging')){
+									var newX = mouseX - offsetX;
+									$(elem).css('left',newX);
+									$ne = $('#topicDragPlaceHolder').next('.chanList');
+									$pe = $('#topicDragPlaceHolder').prev('.chanList');
+									if($ne.length > 0 && ($ne.position().left) < (newX + (width/2))){
+										$ne.after($('#topicDragPlaceHolder').remove());
+									}else if($pe.length > 0){
+										if($pe.attr('id') == $(elem).attr('id')){ // we selected our own element!
+											$pe = $pe.prev();
+										}
+										if($pe.length > 0 && $pe.position().left > newX){
+											$pe.before($('#topicDragPlaceHolder').remove());
+										}
+									}
+								}
+							},
+							mouseupFn = function(e,elem){
+								if(initDrag){
+									initDrag = false;
+								}else{
+									$(elem).find('div').css('display','none');
+									$('#topicDragPlaceHolder').replaceWith(elem);
+									self.chans = $.map($('.chanList'),function(chan,i){
+										if($(chan).find('span').hasClass('curchan')){
+											options.set('curChan',i);
+											self.current.setI(i);
+										}
+										return $(chan).data('json');
+									});
+									self.save();
+									self.draw();
+								}
+							};
+						$('#ChanList').empty().append(
+							$.map(self.chans,function(c,i){
+								if((c.ex && options.get('extraChans')) || !c.ex){
+									return $('<div>')
+										.data('json',c)
+										.attr('id','chan'+i.toString())
+										.addClass('chanList'+(c.high?' highlightChan':''))
+										.append(
+											$('<span>')
+												.addClass('chan '+(self.current.is(i)?' curchan':''))
+												.append(
+													(c.chan.substr(0,1)!='#'?
+													$('<span>')
+														.addClass('closeButton')
+														.css({
+															width:9,
+															float:'left'
+														})
+														.mouseup(function(e){
+															if(canClick){
+																channels.part(i);
+															}
+														})
+														.text('x')
+													:''),
+													$('<span>').text(c.chan)
+												)
+												.mouseup(function(){
+													if(canClick){
+														channels.join(i);
+													}
+												}),
+											$('<div>')
+												.css({
+													'position':'fixed',
+													'width':'100%',
+													'height':'100%',
+													'z-index':101,
+													'top':0,
+													'left':0,
+													'display':'none'
+												})
+												.mousemove(function(e){
+													mousemoveFn(e,$(this).parent());
+												})
+												.mouseup(function(e){
+													mouseupFn(e,$(this).parent());
+												})
+												.mouseout(function(e){
+													mouseupFn(e,$(this).parent());
+												})
+										)
+										.mousedown(function(e){
+											canClick = true;
+											mousedownFn(e,this);
+										})
+										.mousemove(function(e){
+											mousemoveFn(e,this);
+										})
+										.mouseout(function(e){
+											if(initDrag){
+												startDrag(this);
+											}
+										})
+										.mouseup(function(e){
+											mouseupFn(e,this);
+										});
+								}
+							})
+						);
+					},
+					init:function(){
+						self.current = Channel(-1,self);
+						self.load();
+						self.draw();
+					},
+					getHandler:function(i,b64){
+						if(self.chans[i].id!=-1){
+							if((typeof self.chans[i].id)!='number' && b64){
+								return base64.encode(self.chans[i].id);
+							}
+							return self.chans[i].id.toString();
+						}
+						if(b64){
+							return base64.encode(self.chans[i].chan);
+						}
+						return self.chans[i].chan;
+					},
+					requestHandler:false,
+					join:function(i,fn){
+						if(self.chans[i]===undefined){ // this channel doesn't exist!
+							return false;
+						}
+						indicator.start();
+						request.stop();
+						$('#message').attr('disabled','true');
+						$('#MessageBox').empty();
+						$('.chan').removeClass('curchan');
+						if(self.requestHandler!==false){
+							self.requestHandler.abort();
+						}
+						request.partChan(self.current.handler);
+						self.requestHandler = network.getJSON('Load.php?count=125&channel='+self.getHandler(i,true),function(data){
+							self.current = Channel(i,self);
+							if(self.current.load(data,fn)){
+								request.setChan(self.current.handler);
+								request.start();
+								
+								self.chans[i].high = false;
+								self.save();
+								tab.load();
+								oldMessages.read();
+								
+								if(settings.loggedIn()){
+									$('#message').removeAttr('disabled');
+								}
+							}
+							self.requestHandler = false;
 							$('#chan'+i.toString()).removeClass('highlightChan').find('.chan').addClass('curchan');
-							chans[i].high = false;
-							save();
-							tab.load();
+							
 							if(fn!==undefined){
 								fn();
 							}
-							if(settings.loggedIn()){
-								$('#message').removeAttr('disabled');
-							}
 							indicator.stop();
 						});
-					}
-				},
-				reloadUserlist:function(i){
-					if(chans[i]!==undefined){
-						network.getJSON('Load.php?userlist&channel='+getHandler(i,true),function(data){
-							if(!data.banned){
-								users.setUsers(data.users);
-								users.draw();
-							}else{
-								send.internal('<span style="color:#C73232;"><b>ERROR:</b> banned</span>');
+						return true;
+					},
+					highlight:function(c,doSave){
+						$.each(self.chans,function(i,ci){
+							if(c == ci.id || ci.chan.toLowerCase()==c.toString().toLowerCase()){
+								$('#chan'+i.toString()).addClass('highlightChan');
+								self.chans[i].high = true;
 							}
 						});
+						if(doSave!==undefined && doSave){
+							self.save();
+						}
+					},
+					addChan:function(s,join,chanid){
+						var addChan = true;
+						if(chanid === undefined){
+							chanid = -1;
+						}
+						s = s.toLowerCase();
+						$.each(self.chans,function(i,c){
+							if(c.chan==s){
+								addChan = i;
+							}
+						});
+						if(addChan===true){
+							self.chans.push({
+								chan:s,
+								high:!join,
+								ex:false,
+								id:chanid,
+								order:-1
+							});
+							self.save();
+							self.draw();
+							if(join){
+								self.join(self.chans.length-1);
+							}
+						}else{
+							self.chans[addChan].high |= !join;
+							if(join){
+								self.join(addChan);
+							}
+						}
+					},
+					open:function(s){
+						var addChan = true;
+						s = s.trim();
+						if(s.substr(0,1) != '@' && s.substr(0,1) != '#'){
+							s = '@' + s;
+						}
+						// s will now be either prefixed with # or with @
+						self.addChan(s,true);
+					},
+					openPm:function(s,n,join){
+						var addChan = true,
+							callback = function(nick,id){
+								if(join===undefined){
+									join = false;
+								}
+								nick = nick.trim();
+								if(nick.substr(0,1)!='*'){
+									nick = '*'+s;
+								}
+								id = id.trim();
+								if(id.substr(0,1)!='*'){
+									id = '*'+id;
+								}
+								// s will now be prefixed with *
+								self.addChan(nick,join,id);
+							}
+						if(n == ''){
+							network.getJSON('Load.php?openpm='+base64.encode(s),function(data){
+								if(data.chanid){
+									callback(data.channick,data.chanid);
+								}else{
+									send.internal('<span style="color:#C73232;">Query Error: User not found.</span>');
+								}
+							});
+						}else{
+							callback(s,n);
+						}
+					},
+					part:function(i){
+						var select = false;
+						if(parseInt(i,10) == i){ // we convert it to a number so that we don't have to deal with it
+							i = parseInt(i,10);
+						}
+						if((typeof i)!='number'){
+							// a string was passed, we need to get the correct i
+							$.each(self.chans,function(ci,c){
+								if(c.chan == i){
+									i = ci;
+								}
+							});
+						}
+						if((typeof i)!='number' || self.chans[i] === undefined){ // we aren#t in the channel
+							send.internal('<span style="color:#C73232;"> Part Error: I cannot part '+i+'. (You are not in it.)</span>');
+							return;
+						}
+						if(self.chans[i].chan.substr(0,1)=='#'){
+							send.internal('<span style="color:#C73232;"> Part Error: I cannot part '+self.chans[i].chan+'. (IRC channel.)</span>');
+							return;
+						}
+						if(self.current.is(i)){
+							select = true;
+						}
+						self.chans.splice(i,1);
+						self.save();
+						self.draw();
+						if(select){
+							self.join(i-1);
+						}
+					},
+					getNames:function(){
+						return $.map(self.chans,function(c){
+							return c.chan;
+						});
+					},
+					setChans:function(c){
+						self.chans = c;
 					}
+				};
+			return {
+				highlight:self.highlight,
+				join:self.join,
+				current:function(){
+					return self.current;
 				},
-				getCurrent:function(override,b64){
-					if(requestHandler===false || override){
-						return (b64?currentb64:current);
-					}
-					return '';
-				},
-				getCurrentName:function(override){
-					if(requestHandler===false || override){
-						return currentName;
-					}
-					return '';
-				},
-				getNames:function(){
-					return $.map(chans,function(c){
-						return c.chan;
-					});
-				},
-				init:function(){
-					load();
-					draw();
-				},
-				setChans:function(c){
-					chans = c;
-				},
-				getChans:function(){
-					return chans;
-				}
+				open:self.open,
+				openPm:self.openPm,
+				part:self.part,
+				getNames:self.getNames,
+				init:self.init,
+				setChans:self.setChans
 			};
 		})(),
 		tab = (function(){
-			var tabWord = '',
-				tabCount = 0,
-				isInTab = false,
-				startPos = 0,
-				startChar = '',
-				endPos = 0,
-				endChar = '',
-				endPos0 = 0,
-				tabAppendStr = ' ',
-				searchArray = [],
-				node;
-				getCurrentWord = function(){
-					var messageVal = (!wysiwyg.support()?$('#message')[0].value:(node = window.getSelection().anchorNode).nodeValue);
-					if(isInTab){
-						return tabWord;
+			var self = {
+				tabWord:'',
+				tabCount:0,
+				isInTab:false,
+				startPos:0,
+				startChar:'',
+				endPos:0,
+				endChar:'',
+				endPos0:0,
+				tabAppendStr:'',
+				searchArray:[],
+				node:false,
+				getCurrentWord:function(){
+					var messageVal = (!wysiwyg.support()?$('#message')[0].value:(self.node = window.getSelection().anchorNode).nodeValue);
+					if(self.isInTab){
+						return self.tabWord;
 					}
-					startPos = (!wysiwyg.support()?$('#message')[0].selectionStart:window.getSelection().anchorOffset);
-					startChar = messageVal.charAt(startPos);
-					while(startChar != ' ' && --startPos > 0){
-						startChar = messageVal.charAt(startPos);
+					self.startPos = (!wysiwyg.support()?$('#message')[0].selectionStart:window.getSelection().anchorOffset);
+					self.startChar = messageVal.charAt(self.startPos);
+					while(self.startChar != ' ' && --self.startPos > 0){
+						self.startChar = messageVal.charAt(self.startPos);
 					}
-					if(startChar == ' '){
-						startPos++;
+					if(self.startChar == ' '){
+						self.startPos++;
 					}
-					endPos = (!wysiwyg.support()?$('#message')[0].selectionStart:window.getSelection().anchorOffset);
-					endChar = messageVal.charAt(endPos);
-					while(endChar != ' ' && ++endPos <= messageVal.length){
-						endChar = messageVal.charAt(endPos);
+					self.endPos = (!wysiwyg.support()?$('#message')[0].selectionStart:window.getSelection().anchorOffset);
+					self.endChar = messageVal.charAt(self.endPos);
+					while(self.endChar != ' ' && ++self.endPos <= messageVal.length){
+						self.endChar = messageVal.charAt(self.endPos);
 					}
-					endPos0 = endPos;
-					tabWord = messageVal.substr(startPos,endPos - startPos).trim();
-					return tabWord;
+					self.endPos0 = self.endPos;
+					self.tabWord = messageVal.substr(self.startPos,self.endPos - self.startPos).trim();
+					return self.tabWord;
 				},
-				getTabComplete = function(){
-					var messageVal = (!wysiwyg.support()?$('#message')[0].value:node.nodeValue),
+				getTabComplete:function(){
+					var messageVal = (!wysiwyg.support()?$('#message')[0].value:self.node.nodeValue),
 						name;
 					if(messageVal === null){
 						return;
 					}
-					name = search(getCurrentWord(),tabCount);
-					if(!isInTab){
-						tabAppendStr = ' ';
-						if(startPos===0){
-							tabAppendStr = ': ';
+					name = self.search(self.getCurrentWord(),self.tabCount);
+					if(!self.isInTab){
+						self.tabAppendStr = ' ';
+						if(self.startPos===0){
+							self.tabAppendStr = ': ';
 						}
 					}
-					if(name == getCurrentWord()){
-						tabCount = 0;
-						name = search(getCurrentWord(),tabCount);
+					if(name == self.getCurrentWord()){
+						self.tabCount = 0;
+						name = self.search(self.getCurrentWord(),self.tabCount);
 					}
-					messageVal = messageVal.substr(0,startPos)+name+tabAppendStr+messageVal.substr(endPos+1);
+					messageVal = messageVal.substr(0,self.startPos)+name+self.tabAppendStr+messageVal.substr(self.endPos+1);
 					if(!wysiwyg.support()){
 						$('#message')[0].value = messageVal;
 					}else{
 						window.getSelection().anchorNode.nodeValue = messageVal;
-						window.getSelection().getRangeAt(0).setEnd(node,startPos+name.length+tabAppendStr.length);
-						window.getSelection().getRangeAt(0).setStart(node,startPos+name.length+tabAppendStr.length);
+						window.getSelection().getRangeAt(0).setEnd(self.node,self.startPos+name.length+self.tabAppendStr.length);
+						window.getSelection().getRangeAt(0).setStart(self.node,self.startPos+name.length+self.tabAppendStr.length);
 					}
-					endPos = endPos0+name.length+tabAppendStr.length;
+					self.endPos = self.endPos0+name.length+self.tabAppendStr.length;
 				},
-				search = function(start,startAt){
+				search:function(start,startAt){
 					var res = false;
 					if(!startAt){
 						startAt = 0;
 					}
-					$.each(searchArray,function(i,u){
+					$.each(self.searchArray,function(i,u){
 						if(u.toLowerCase().indexOf(start.toLowerCase()) === 0 && startAt-- <= 0 && res === false){
 							res = u;
 						}
@@ -1510,8 +1594,7 @@ oirc = (function(){
 						return res;
 					}
 					return start;
-				};
-			return {
+				},
 				init:function(){
 					$('#message')
 						.keydown(function(e){
@@ -1519,78 +1602,83 @@ oirc = (function(){
 								if(!e.ctrlKey){
 									e.preventDefault();
 									
-									getTabComplete();
-									isInTab = true;
-									tabCount++;
+									self.getTabComplete();
+									self.isInTab = true;
+									self.tabCount++;
 									setTimeout(1,1);
 								}
 							}else{
-								tabWord = '';
-								tabCount = 0;
-								isInTab = false;
+								self.tabWord = '';
+								self.tabCount = 0;
+								self.isInTab = false;
 							}
 						});
 				},
 				load:function(){
-					searchArray = $.merge(users.getNames(),channels.getNames());
+					self.searchArray = $.merge(users.getNames(),channels.getNames());
 				}
+			};
+			return {
+				init:self.init,
+				load:self.load
 			};
 		})(),
 		users = (function(){
-			var usrs = [],
-				exists = function(u){
+			var self = {
+				users:[],
+				exists:function(e){
 					var result = false;
-					$.each(usrs,function(i,us){
+					$.each(self.users,function(i,us){
 						if(us.nick.toLowerCase() == u.nick.toLowerCase() && us.network == u.network){
 							result = true;
 							return false;
 						}
 					});
 					return result;
-				};
-			return {
+				},
 				add:function(u){
-					if(channels.getCurrent()!==''){
-						usrs.push(u);
-						users.draw();
+					if(channels.current().handler!==''){
+						self.users.push(u);
+						self.draw();
 					}
 				},
 				remove:function(u){
-					if(channels.getCurrent()!==''){
-						$.each(usrs,function(i,us){
+					if(channels.current().handler!==''){
+						$.each(self.users,function(i,us){
 							if(us.nick == u.nick && us.network == u.network){
-								usrs.splice(i,1);
+								self.users.splice(i,1);
 								return false;
 							}
 						});
-						users.draw();
+						self.draw();
 					}
 				},
 				draw:function(){
-					usrs.sort(function(a,b){
-						var al=a.nick.toLowerCase(),bl=b.nick.toLowerCase();
+					self.users.sort(function(a,b){
+						var al = a.nick.toLowerCase(),
+							bl = b.nick.toLowerCase();
 						return al==bl?(a==b?0:a<b?-1:1):al<bl?-1:1;
 					});
 					$('#UserList').empty().append(
-						$.map(usrs,function(u){
+						$.map(self.users,function(u){
 							var getInfo,
 								ne = encodeURIComponent(u.nick),
 								n = $('<span>').text(u.nick).html();
 							return $('<span>')
-								.attr('title',(settings.networks()[u.network]!==undefined?settings.networks()[u.network].name:'Unknown Network'))
+								.attr('title',settings.getNetwork(u.network).name)
 								.append(
-									(settings.networks()[u.network]!==undefined?settings.networks()[u.network].userlist.split('NICKENCODE').join(ne).split('NICK').join(n):n),
+									settings.getNetwork(u.network).userlist.split('NICKENCODE').join(ne).split('NICK').join(n),
 									'<br>'
 								)
 								.mouseover(function(){
-									getInfo = network.getJSON('Load.php?userinfo&name='+base64.encode(u.nick)+'&chan='+channels.getCurrent(false,true)+'&online='+u.network.toString(),function(data){
+									getInfo = network.getJSON('Load.php?userinfo&name='+base64.encode(u.nick)+'&chan='+channels.current().handlerB64+'&online='+u.network.toString(),function(data){
 										if(data.last){
 											$('#lastSeenCont').text('Last Seen: '+(new Date(data.last*1000)).toLocaleString());
 										}else{
 											$('#lastSeenCont').text('Last Seen: never');
 										}
 										$('#lastSeenCont').css('display','block');
-									},undefined,false);
+									});
 								})
 								.mouseout(function(){
 									try{
@@ -1603,49 +1691,46 @@ oirc = (function(){
 					);
 				},
 				setUsers:function(u){
-					usrs = u;
+					self.users = u;
 				},
 				getNames:function(){
-					return $.map(usrs,function(u){
+					return $.map(self.users,function(u){
 						return u.nick;
 					});
-				},
-				reload:function(){
-					var num = false;
-					$.each(channels.getChans(),function(i,c){
-						if(c.chan==channels.getCurrent() || c.id==channels.getCurrent()){
-							num = i;
-							return false;
-						}
-					});
-					if(num!==false){
-						channels.reloadUserlist(num);
-					}
 				}
+			};
+			return {
+				add:self.add,
+				remove:self.remove,
+				draw:self.draw,
+				setUsers:self.setUsers,
+				getNames:self.getNames
 			};
 		})(),
 		topic = (function(){
-			var current = '';
-			return {
+			var self = {
 				set:function(t){
 					$('#topic').empty().append(t);
-					current = t;
 				}
+			};
+			return {
+				set:self.set
 			};
 		})(),
 		scroll = (function(){
-			var isDown = false,
-				is_touch = (('ontouchstart' in window) || (navigator.MaxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0)),
-				headerOffset = 0,
-				$mBox = false,
-				$mBoxCont = false,
-				touchScroll = function($elem,fn){
+			var self = {
+				isDown:false,
+				is_touch:(('ontouchstart' in window) || (navigator.MaxTouchPoints > 0) || (navigator.msMaxTouchPoints > 0)),
+				headerOffset:0,
+				$mBox:false,
+				$mBoxCont:false,
+				touchScroll:function($elem,fn){
 					var lastY = -1;
 					$elem.bind('touchstart',function(e){
 						if($(e.target).is('a')){
 							return;
 						}
-						$mBox.css('transition','none');
+						self.$mBox.css('transition','none');
 						e.preventDefault();
 						lastY = e.originalEvent.touches[0].clientY;
 					}).bind('touchmove',function(e){
@@ -1663,12 +1748,12 @@ oirc = (function(){
 						if($(e.target).is('a')){
 							return;
 						}
-						$mBox.css('transition','');
+						self.$mBox.css('transition','');
 						e.preventDefault();
 						lastY = -1;
 					});
 				},
-				enableButtons = function(){
+				enableButtons:function(){
 					var addHook = function(elem,effect,inc){
 							var interval;
 							$(elem)
@@ -1687,7 +1772,7 @@ oirc = (function(){
 										clearInterval(interval);
 									}catch(e){}
 								});
-							if(is_touch){
+							if(self.is_touch){
 								$(elem).bind('touchstart',function(){
 									interval = setInterval(function(){
 										document.getElementById(effect).scrollLeft += inc;
@@ -1705,47 +1790,47 @@ oirc = (function(){
 					addHook('#arrowLeftTopic','topicCont',-9);
 					addHook('#arrowRightTopic','topicCont',9);
 				},
-				moveWindow = function(delta){
-					var oldTop = -parseInt($mBox[0].style.top,10),
-						maxScroll = $mBox.height() - $mBoxCont.height(),
+				moveWindow:function(delta){
+					var oldTop = -parseInt(self.$mBox[0].style.top,10),
+						maxScroll = self.$mBox.height() - self.$mBoxCont.height(),
 						newTop = Math.min(maxScroll,Math.max(0,oldTop - delta));
-					isDown = false;
-					$mBox.css('top',-newTop)
+					self.isDown = false;
+					self.$mBox.css('top',-newTop);
 					if(newTop==maxScroll){
-						isDown = true;
+						self.isDown = true;
 					}
-					if(options.get('scrollBar')=='T'){
-						reCalcBar();
+					if(options.get('scrollBar')){
+						self.reCalcBar();
 					}
 				},
-				enableWheel = function(){
-					$mBoxCont.bind('DOMMouseScroll mousewheel',function(e){
-						var oldTop = $mBox[0].style.top;
-						moveWindow((/Firefox/i.test(navigator.userAgent)?(e.originalEvent.detail*(-20)):(e.originalEvent.wheelDelta/2)));
+				enableWheel:function(){
+					self.$mBoxCont.bind('DOMMouseScroll mousewheel',function(e){
+						var oldTop = self.$mBox[0].style.top;
+						self.moveWindow((/Firefox/i.test(navigator.userAgent)?(e.originalEvent.detail*(-20)):(e.originalEvent.wheelDelta/2)));
 						//if(oldTop != $mBox[0].style.top){
 							e.preventDefault();
 							e.stopPropagation();
 							e.cancelBubble = true;
 						//}
 					});
-					if(is_touch){
-						touchScroll($mBoxCont,function(d){
-							moveWindow(d);
+					if(self.is_touch){
+						self.touchScroll(self.$mBoxCont,function(d){
+							self.moveWindow(d);
 						});
 					}
 				},
-				reCalcBar = function(){
+				reCalcBar:function(){
 					if($('#scrollBar').length!==0){
-						if($mBox.height() <= $mBoxCont.height()){
-							$('#scrollBar').css('top',headerOffset);
+						if(self.$mBox.height() <= self.$mBoxCont.height()){
+							$('#scrollBar').css('top',self.headerOffset);
 						}else{
-							$('#scrollBar').css('top',(parseInt($mBox[0].style.top,10)/($mBoxCont.height() - $mBox.height()))*($('body')[0].offsetHeight-$('#scrollBar')[0].offsetHeight-headerOffset)+headerOffset);
+							$('#scrollBar').css('top',(parseInt(self.$mBox[0].style.top,10)/(self.$mBoxCont.height() - self.$mBox.height()))*($('body')[0].offsetHeight-$('#scrollBar')[0].offsetHeight-self.headerOffset)+self.headerOffset);
 						}
 					}
 				},
-				enableUserlist = function(){
-					var moveUserList = function(delta,self){
-							$(self).css('top',Math.min(0,Math.max(((/Opera/i.test(navigator.userAgent))?-30:0)+document.getElementById('UserListInnerCont').clientHeight-self.scrollHeight,delta+parseInt($('#UserList').css('top'),10))));
+				enableUserlist:function(){
+					var moveUserList = function(delta,_self){
+							$(self).css('top',Math.min(0,Math.max(((/Opera/i.test(navigator.userAgent))?-30:0)+document.getElementById('UserListInnerCont').clientHeight-_self.scrollHeight,delta+parseInt($('#UserList').css('top'),10))));
 						};
 					$('#UserList')
 						.css('top',0)
@@ -1756,54 +1841,73 @@ oirc = (function(){
 							e = e.originalEvent;
 							moveUserList((/Firefox/i.test(navigator.userAgent)?(e.detail*(-20)):(e.wheelDelta/2)),this);
 						});
-					if(is_touch){
-						touchScroll($('#UserList'),function(d){
-							moveUserList(d,this);
+					if(self.is_touch){
+						self.touchScroll($('#UserList'),function(d){
+							self.moveUserList(d,this);
 						});
 					}
 				},
-				showBar = function(){
-					var mouseMoveFn = function(y){
+				showBar:function(){
+					var mouseUpPos = false,
+						mouseDownPos = false,
+						mouseMoveFn = function(y){
 							var newscrollbartop = 0;
 							if($bar.data('isClicked')){
-								newscrollbartop = parseInt($bar.css('top'),10)+(y-$bar.data('prevY'));
+								if(!(mouseUpPos!==false && y <= mouseUpPos) && !(mouseDownPos!==false && y >= mouseDownPos)){
 								
-								$mBox.css('top',-((newscrollbartop-headerOffset)/($('body')[0].offsetHeight-$bar[0].offsetHeight-headerOffset))*($mBox.height() - $mBoxCont.height()));
-								isDown = false;
-								if(newscrollbartop<headerOffset){
-									newscrollbartop = headerOffset;
-									$mBox.css('top',0);
+									newscrollbartop = parseInt($bar.css('top'),10)+(y-$bar.data('prevY'));
+									
+									self.$mBox.css('top',-((newscrollbartop-self.headerOffset)/($('body')[0].offsetHeight-$bar[0].offsetHeight-self.headerOffset))*(self.$mBox.height() - self.$mBoxCont.height()));
+									self.isDown = false;
+									if(newscrollbartop<self.headerOffset){
+										if(mouseUpPos === false){
+											mouseUpPos = y;
+										}
+										newscrollbartop = self.headerOffset;
+										self.$mBox.css('top',0);
+									}else{
+										mouseUpPos = false;
+									}
+									if(newscrollbartop>($('body')[0].offsetHeight-$bar[0].offsetHeight)){
+										if(mouseDownPos === false){
+											mouseDownPos = y;
+										}
+										newscrollbartop = $('body')[0].offsetHeight-$bar[0].offsetHeight;
+										self.$mBox.css('top',self.$mBoxCont.height() - self.$mBox.height());
+										self.isDown = true;
+									}else{
+										mouseDownPos = false;
+									}
+									$bar.css('top',newscrollbartop);
 								}
-								if(newscrollbartop>($('body')[0].offsetHeight-$bar[0].offsetHeight)){
-									newscrollbartop = $('body')[0].offsetHeight-$bar[0].offsetHeight;
-									$mBox.css('top',$mBoxCont.height() - $mBox.height());
-									isDown = true;
-								}
-								$bar.css('top',newscrollbartop);
 							}
 							$bar.data('prevY',y);
 						},
 						mouseDownFn = function(){
 							$bar.data('isClicked',true);
 							$('#scrollArea').css('display','block');
-							$mBox.css('transition','none');
+							self.$mBox.css('transition','none');
+							firstEnter = false;
+							mouseUpPos = false;
+							mouseDownPos = false;
 						},
 						mouseUpFn = function(){
 							$bar.data('isClicked',false);
 							$('#scrollArea').css('display','none');
-							$mBox.css('transition','');
+							self.$mBox.css('transition','');
 						},
 						$bar = $('<div>').attr('id','scrollBar').data({prevY:0,isClicked:false}).appendTo('body')
 							.mousemove(function(e){
 								mouseMoveFn(e.clientY);
 							})
-							.mousedown(function(){
+							.mousedown(function(e){
 								mouseDownFn();
 							})
 							.mouseup(function(){
 								mouseUpFn();
 							}),
-						$tmp;
+						$tmp,
+						firstEnter = false;
 					$bar.css('top',$('body')[0].offsetHeight-$bar[0].offsetHeight);
 					$tmp = $('<div>')
 						.attr('id','scrollArea')
@@ -1823,10 +1927,13 @@ oirc = (function(){
 						.mouseup(function(){
 							mouseUpFn();
 						})
-						.mouseout(function(){
-							mouseUpFn();
+						.mouseenter(function(e){
+							if(e.originalEvent.buttons == 0 && firstEnter){
+								mouseUpFn();
+							}
+							firstEnter = true;
 						});
-					if(is_touch){
+					if(self.is_touch){
 						$tmp.bind('touchend touchcancel touchleave',function(e){
 							mouseUpFn();
 						}).bind('touchmove',function(e){
@@ -1850,17 +1957,17 @@ oirc = (function(){
 						.appendTo('body');
 					$(window).trigger('resize');
 				},
-				showButtons = function(){
+				showButtons:function(){
 					var downIntM,
 						upIntM,
 						downIntMfn = function(){
 							downIntM = setInterval(function(){
-								moveWindow(9);
+								self.moveWindow(9);
 							},50);
 						},
 						upIntMfn = function(){
 							upIntM = setInterval(function(){
-								moveWindow(-9);
+								self.moveWindow(-9);
 							},50);
 						},
 						$tmp;
@@ -1891,23 +1998,23 @@ oirc = (function(){
 									marginLeft:'-10pt'
 								})
 								.mousedown(function(){
-									$mBox.css('transition','none');
+									self.$mBox.css('transition','none');
 									downIntMfn();
 								})
 								.mouseout(function(){
-									$mBox.css('transition','');
+									self.$mBox.css('transition','');
 									try{
 										clearInterval(downIntM);
 									}catch(e){}
 								})
 								.mouseup(function(){
-									$mBox.css('transition','');
+									self.$mBox.css('transition','');
 									try{
 										clearInterval(downIntM);
 									}catch(e){}
 								})
 						);
-					if(is_touch){
+					if(self.is_touch){
 						$tmp.bind('touchstart',function(){
 							downIntMfn();
 						}).bind('touchend touchcancel touchleave',function(e){
@@ -1945,23 +2052,23 @@ oirc = (function(){
 									marginLeft:'-10pt'
 								})
 								.mousedown(function(){
-									$mBox.css('transition','none');
+									self.$mBox.css('transition','none');
 									upIntMfn();
 								})
 								.mouseout(function(){
-									$mBox.css('transition','');
+									self.$mBox.css('transition','');
 									try{
 										clearInterval(upIntM);
 									}catch(e){}
 								})
 								.mouseup(function(){
-									$mBox.css('transition','');
+									self.$mBox.css('transition','');
 									try{
 										clearInterval(upIntM);
 									}catch(e){}
 								})
 						);
-					if(is_touch){
+					if(self.is_touch){
 						$tmp.bind('touchstart',function(){
 							upIntMfn();
 						}).bind('touchend touchcancel touchleave',function(e){
@@ -1971,56 +2078,62 @@ oirc = (function(){
 						});
 					}
 					$tmp.appendTo('body');
-				};
-			return {
+				},
 				down:function(){
-					$mBox.css('top',$mBoxCont.height() - $mBox.height()); // reverse direction on subtraction to gain negativity
-					reCalcBar();
-					isDown = true;
+					self.$mBox.css('top',self.$mBoxCont.height() - self.$mBox.height()); // reverse direction on subtraction to gain negativity
+					self.reCalcBar();
+					self.isDown = true;
 				},
 				up:function(){
-					$mBox.css('top',0);;
-					reCalcBar();
-					isDown = false;
+					self.$mBox.css('top',0);;
+					self.reCalcBar();
+					self.isDown = false;
 				},
 				slide:function(){
-					if(isDown){
-						scroll.down();
+					if(self.isDown){
+						self.down();
 					}
 				},
 				init:function(){
-					$mBox = $('#MessageBox');
-					$mBoxCont = $('#mBoxCont');
-					enableButtons();
-					headerOffset = $('#header').height() - 2;
-					if(options.get('scrollBar')=='T'){
-						showBar();
+					self.$mBox = $('#MessageBox');
+					self.$mBoxCont = $('#mBoxCont');
+					self.enableButtons();
+					self.headerOffset = $('#header').height() - 2;
+					if(options.get('scrollBar')){
+						self.showBar();
 					}else{
-						showButtons();
+						self.showButtons();
 					}
-					if(options.get('scrollWheel')=='T'){
-						enableWheel();
+					if(options.get('scrollWheel')){
+						self.enableWheel();
 					}
-					enableUserlist();
+					self.enableUserlist();
 					$(document).add(window).add('body').add('html').scroll(function(e){
 						e.preventDefault();
 					});
-				},
-				reCalcBar:reCalcBar
+				}
+			};
+			
+			return {
+				down:self.down,
+				up:self.up,
+				slide:self.slide,
+				init:self.init,
+				reCalcBar:self.reCalcBar
 			};
 		})(),
 		wysiwyg = (function(){
-			var sel,
-				menuOpen = false,
-				hideMenu = function(){
+			var self = {
+				sel:false,
+				menuOpen:false,
+				hideMenu:function(){
 					$('#textDecoForm').css('display','none');
-					menuOpen = false;
-				 };
-			return {
+					self.menuOpen = false;
+				},
 				init:function(){
 					$('#message').mouseup(function(e){
-						sel = window.getSelection();
-						if(sel.isCollapsed){
+						self.sel = window.getSelection();
+						if(self.sel.isCollapsed){
 							return;
 						}
 						e.preventDefault();
@@ -2028,23 +2141,23 @@ oirc = (function(){
 							display:'block',
 							left:Math.max(e.pageX-52,0)
 						});
-						menuOpen = true;
+						self.menuOpen = true;
 						
 						
 					});
 					$(document).mousedown(function(e){
-						if(!$(e.target).closest('#textDecoForm').length && menuOpen){
-							hideMenu();
+						if(!$(e.target).closest('#textDecoForm').length && self.menuOpen){
+							self.hideMenu();
 						}
 					})
 					$('#textDecoFormBold').click(function(){
-						sel.getRangeAt(0).surroundContents($('<b>')[0]);
+						self.sel.getRangeAt(0).surroundContents($('<b>')[0]);
 					});
 					$('#textDecoFormItalic').click(function(){
-						sel.getRangeAt(0).surroundContents($('<i>')[0]);
+						self.sel.getRangeAt(0).surroundContents($('<i>')[0]);
 					});
 					$('#textDecoFormUnderline').click(function(){
-						sel.getRangeAt(0).surroundContents($('<u>')[0]);
+						self.sel.getRangeAt(0).surroundContents($('<u>')[0]);
 					});
 				},
 				getMsg:function(){
@@ -2057,23 +2170,29 @@ oirc = (function(){
 					return msg;
 				},
 				support:function(){
-					return (('contentEditable' in document.documentElement) && options.get('wysiwyg')=='T');
+					return (('contentEditable' in document.documentElement) && options.get('wysiwyg'));
 				}
+			};
+			return {
+				init:self.init,
+				getMsg:self.getMsg,
+				support:self.support
 			}
 		})(),
 		page = (function(){
-			var initSmileys = function(){
-					if(options.get('smileys')=='T'){
+			var self = {
+				initSmileys:function(){
+					if(options.get('smileys')){
 						$('#smileyMenuButton')
 							.css('cursor','pointer')
 							.click(function(){
-									if($('#smileyselect').css('display')=='block'){
-										$('#smileyselect').css('display','none');
-										$(this).attr('src','smileys/smiley.gif');
-									}else{
-										$('#smileyselect').css('display','block');
-										$(this).attr('src','smileys/tongue.gif');
-									}
+								if($('#smileyselect').css('display')=='block'){
+									$('#smileyselect').css('display','none');
+									$(this).attr('src','smileys/smiley.gif');
+								}else{
+									$('#smileyselect').css('display','block');
+									$(this).attr('src','smileys/tongue.gif');
+								}
 							});
 					}else{
 						$('#smileyMenuButton')
@@ -2100,19 +2219,18 @@ oirc = (function(){
 						})
 					);
 				},
-				mBoxContWidthOffset = 90,
-				hide_userlist = false,
-				show_scrollbar = true,
-				registerToggle = function(){
-					$('#toggleButton')
-						.click(function(e){
-							e.preventDefault();
-							options.set(5,!(options.get('enable')=='T')?'T':'F');
-							document.location.reload();
-						});
+				mBoxContWidthOffset:90,
+				hide_userlist:false,
+				show_scrollbar:true,
+				registerToggle:function(){
+					$('#toggleButton').click(function(e){
+						e.preventDefault();
+						options.set('enable',!options.get('enable'));
+						document.location.reload();
+					});
 				},
-				isBlurred = false,
-				calcResize = function(allowHeightChange){
+				isBlurred:false,
+				calcResize:function(allowHeightChange){
 					var htmlHeight = window.innerHeight,
 						htmlWidth = window.innerWidth,
 						headerHeight = $('#header').outerHeight(),
@@ -2125,10 +2243,10 @@ oirc = (function(){
 						$('#mBoxCont').css('height',htmlHeight - footerHeight - headerHeight - 0.2*em);
 						$('html,body').height(htmlHeight);
 						
-						$('#message').css('width',htmlWidth*(hide_userlist?1:0.91) - 12*em);
+						$('#message').css('width',htmlWidth*(self.hide_userlist?1:0.91) - 12*em);
 					}
-					if(show_scrollbar){
-						var widthOffset = (htmlWidth/100)*mBoxContWidthOffset;
+					if(self.show_scrollbar){
+						var widthOffset = (htmlWidth/100)*self.mBoxContWidthOffset;
 						if(allowHeightChange){
 							$('#mBoxCont').css('width',widthOffset-1.9*em);
 						}
@@ -2141,14 +2259,14 @@ oirc = (function(){
 					}
 					scroll.down();
 				},
-				init = function(){
+				init:function(){
 					var nua = navigator.userAgent,
 						is_android = ((nua.indexOf('Mozilla/5.0') > -1 && nua.indexOf('Android ') > -1 && nua.indexOf('AppleWebKit') > -1) && !(nua.indexOf('Chrome') > -1)),
 						is_ios = (nua.match(/(iPod|iPhone|iPad)/i) && nua.match(/AppleWebKit/i)),
 						is_mobile_webkit = (nua.match(/AppleWebKit/i) && nua.match(/Android/i));
-					$('body').css('font-size',(options.get('fontSize').charCodeAt(0) - 45).toString(10)+'pt');
-					hide_userlist = options.get('hideUserlist')=='T';
-					show_scrollbar = options.get('scrollBar')=='T';
+					$('body').css('font-size',options.get('fontSize').toString(10)+'pt');
+					self.hide_userlist = options.get('hideUserlist');
+					self.show_scrollbar = options.get('scrollBar');
 					page.changeLinks();
 					if(!wysiwyg.support()){
 						$('#message').replaceWith(
@@ -2170,8 +2288,8 @@ oirc = (function(){
 						});
 						wysiwyg.init();
 					}
-					if(hide_userlist){ // hide userlist is on
-						mBoxContWidthOffset = 99;
+					if(self.hide_userlist){ // hide userlist is on
+						self.mBoxContWidthOffset = 99;
 						$('<style>')
 							.append(
 								'#mBoxCont{width:99%;}',
@@ -2185,36 +2303,38 @@ oirc = (function(){
 					tab.init();
 					instant.init();
 					logs.init();
-					registerToggle();
+					self.registerToggle();
 					if(is_ios){
-						calcResize(true);
+						self.calcResize(true);
 					}
 					$(window).resize(function(){
-						calcResize(!is_ios);
+						self.calcResize(!is_ios);
 					}).trigger('resize').blur(function(){
-						isBlurred = true;
+						self.isBlurred = true;
 					}).focus(function(){
-						isBlurred = false;
+						self.isBlurred = false;
 					});
 					$('#aboutButton').click(function(e){
 						e.preventDefault();
 						$('#about').toggle();
 					});
-				};
-			return {
+				},
 				load:function(){
 					indicator.start();
 					settings.fetch(function(){
-						if(options.get('enable')=='T'){
-							init();
-							initSmileys();
+						if(options.get('enable')){
+							self.init();
+							self.initSmileys();
+							
 							send.init();
 							oldMessages.init();
 							channels.init();
-							ws.init()
-							channels.join(options.get('curChan').charCodeAt(0) - 45);
+							request.init()
+							if(!channels.join(options.get('curChan'))){
+								channels.join(0);
+							}
 						}else{
-							registerToggle();
+							self.registerToggle();
 							$('#mBoxCont').empty().append(
 								'<br>',
 								$('<a>')
@@ -2222,7 +2342,7 @@ oirc = (function(){
 									.text('OmnomIRC is disabled. Click here to enable.')
 									.click(function(e){
 										e.preventDefault();
-										options.set(5,'T');
+										options.set('enable',true);
 										window.location.reload();
 									})
 							);
@@ -2230,9 +2350,6 @@ oirc = (function(){
 							indicator.stop();
 						}
 					});
-				},
-				isBlurred:function(){
-					return isBlurred;
 				},
 				changeLinks:function(){
 					// change links to add network
@@ -2245,55 +2362,64 @@ oirc = (function(){
 					});
 				}
 			};
+			return {
+				load:self.load,
+				isBlurred:function(){
+					return self.isBlurred;
+				},
+				changeLinks:self.changeLinks
+			};
 		})(),
 		statusBar = (function(){
-			var text = '',
-				started = false,
-				start = function(){
-					if(options.get('statusBar')!='T'){
+			var self = {
+				text:'',
+				started:false,
+				start:function(){
+					if(!options.get('statusBar')){
+						self.started = true; // no need to performthe check 9001 times
 						return;
 					}
-					if(!started){
+					if(!self.started){
 						setInterval(function(){
-							window.status = text;
+							window.status = self.text;
 							if(parent){
 								try{
-									parent.window.status = text;
+									parent.window.status = self.text;
 								}catch(e){}
 							}
 						},500);
-						started = true;
+						self.started = true;
 					}
-				};
-			return {
+				},
 				set:function(s){
-					text = s;
-					if(!started){
-						start();
+					self.text = s;
+					if(!self.started){
+						self.start();
 					}
 				}
 			};
+			return {
+				set:self.set
+			};
 		})(),
 		commands = (function(){
-			return {
+			var self = {
 				parse:function(s){
 					var command = s.split(' ')[0].toLowerCase(),
 						parameters = s.substr(command.length+1).toLowerCase().trim();
 					switch(command){
 						case 'j':
 						case 'join':
-							channels.openChan(parameters);
+							channels.open(parameters);
 							return true;
 						case 'q':
 						case 'query':
-							channels.openPm(parameters,true);
+							channels.openPm(parameters,'',true);
 							return true;
 						case 'win':
 						case 'w':
 						case 'window':
-							if(parseInt(parameters,10) < channels.getChans().length && parseInt(parameters,10) >= 0){
-								channels.join(parseInt(parameters,10));
-							}
+							channels.join(parseInt(parameters,10));
 							return true;
 						case 'p':
 						case 'part':
@@ -2318,47 +2444,50 @@ oirc = (function(){
 					}
 				}
 			};
+			return {
+				parse:self.parse
+			};
 		})(),
 		oldMessages = (function(){
-			var messages = [],
-				counter = 0,
-				current = '',
-				setMsg = function(s){
+			var self = {
+				messages:[],
+				counter:0,
+				current:'',
+				setMsg:function(s){
 					if(!wysiwyg.support()){
 						$('#message').val(s);
 					}else{
 						$('#message').html(s);
 					}
 				},
-				getMsg = function(){
+				getMsg:function(){
 					if(!wysiwyg.support()){
 						return $('#message').val();
 					}
 					return $('#message').html();
-				};
-			return {
+				},
 				init:function(){
 					$('#message')
 						.keydown(function(e){
 							if(e.keyCode==38 || e.keyCode==40){
 								e.preventDefault();
-								if(counter==messages.length){
-									current = getMsg();
+								if(self.counter==self.messages.length){
+									self.current = self.getMsg();
 								}
-								if(messages.length!==0){
+								if(self.messages.length!==0){
 									if(e.keyCode==38){ //up
-										if(counter!==0){
-											counter--;
+										if(self.counter!==0){
+											self.counter--;
 										}
-										setMsg(messages[counter]);
+										self.setMsg(self.messages[self.counter]);
 									}else{ //down
-										if(counter!=messages.length){
-											counter++;
+										if(self.counter!=self.messages.length){
+											self.counter++;
 										}
-										if(counter==messages.length){
-											setMsg(current);
+										if(self.counter==self.messages.length){
+											self.setMsg(self.current);
 										}else{
-											setMsg(messages[counter]);
+											self.setMsg(self.messages[self.counter]);
 										}
 									}
 								}
@@ -2366,27 +2495,32 @@ oirc = (function(){
 						});
 				},
 				add:function(s){
-					messages.push(s);
-					if(messages.length>20){
-						messages.shift();
+					self.messages.push(s);
+					if(self.messages.length>20){
+						self.messages.shift();
 					}
-					counter = messages.length;
-					ls.set('oldMessages-'+channels.getCurrent(true,true),messages.join('\n'));
+					self.counter = self.messages.length;
+					ls.set('oldMessages-'+channels.current().handlerB64,self.messages);
 				},
 				read:function(){
-					var temp = ls.get('oldMessages-'+channels.getCurrent(true,true));
-					if(temp){
-						messages = temp.split("\n");
-					}else{
-						messages = [];
+					self.messages = ls.get('oldMessages-'+channels.current().handlerB64);
+					if(!self.messages){
+						self.messages = [];
 					}
-					counter = messages.length;
+					console.log(self.messages);
+					self.counter = self.messages.length;
 				}
+			};
+			return {
+				init:self.init,
+				add:self.add,
+				read:self.read
 			};
 		})(),
 		send = (function(){
-			var sending = false,
-				sendMessage = function(s){
+			var self = {
+				sending:false,
+				sendMessage:function(s){
 					if(s[0] == '/' && commands.parse(s.substr(1))){
 						if(!wysiwyg.support()){
 							$('#message').val('');
@@ -2394,45 +2528,19 @@ oirc = (function(){
 							$('#message').html('');
 						}
 					}else{
-						if(!sending){
-							if(ws.use()){
-								ws.send({
-									action:'message',
-									message:s
-								})
+						if(!self.sending){
+							self.sending = true;
+							request.send(s,function(){
 								if(!wysiwyg.support()){
 									$('#message').val('');
 								}else{
 									$('#message').html('');
 								}
-							}else{
-								sending = true;
-								request.cancel();
-								network.getJSON('message.php?message='+base64.encode(s)+'&channel='+channels.getCurrent(false,true),function(){
-									if(!wysiwyg.support()){
-										$('#message').val('');
-									}else{
-										$('#message').html('');
-									}
-									request.start();
-									sending = false;
-								});
-							}
-							/*if(s.search('goo.gl/QMET')!=-1 || s.search('oHg5SJYRHA0')!=-1 || s.search('dQw4w9WgXcQ')!=-1){
-								$('<div>')
-									.css({
-										position:'absolute',
-										zIndex:39,
-										top:39,
-										left:0
-									})
-									.html('<object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" codebase="http://download.macromedia.com/pub/shockwave/cabs/flash/swflash.cab#version=6,0,29,0"><param name="movie" value="http://134.0.27.190/juju/i-lost-the-ga.me/rickroll.swf"><param name="quality" value="high"><embed src="http://134.0.27.190/juju/i-lost-the-ga.me/rickroll.swf" quality="high" pluginspage="http://www.macromedia.com/go/getflashplayer" type="application/x-shockwave-flash"></embed></object>')
-									.appendTo('body');
-							}*/
+								self.sending = false;
+							});
 						}
 					}
-				};
-			return {
+				},
 				internal:function(s){
 					parser.addLine({
 						curLine:0,
@@ -2441,11 +2549,10 @@ oirc = (function(){
 						name:'',
 						message:s,
 						name2:'',
-						chan:channels.getCurrent()
+						chan:channels.current().handler
 					});
 				},
 				init:function(){
-					
 					$('#sendMessage')
 						.submit(function(e){
 							e.preventDefault();
@@ -2462,7 +2569,7 @@ oirc = (function(){
 								console.log(val);
 								val = parser.parseTextDecorations(val);
 								if(!$('#message').attr('disabled') && val!==''){
-									sendMessage(val);
+									self.sendMessage(val);
 									$('#message').focus(); // fix IE not doing that automatically
 								}
 							}
@@ -2473,61 +2580,66 @@ oirc = (function(){
 					}
 				}
 			};
+			return {
+				internal:self.internal,
+				init:self.init
+			};
 		})(),
 		logs = (function(){
-			var isOpen = false,
-				year = 0,
-				month = 0,
-				day = 0,
-				months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-				getLogUrlParam = function(){
-					return base64.encode(year.toString(10)+'-'+month.toString(10)+'-'+day.toString(10));
+			var self = {
+				isOpen:false,
+				year:0,
+				month:0,
+				day:0,
+				months:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+				getLogUrlParam:function(){
+					return base64.encode(self.year.toString(10)+'-'+self.month.toString(10)+'-'+self.day.toString(10));
 				},
-				updateInputVal = function(){
-					$('#logDate').val(months[month-1]+' '+day.toString(10)+' '+year.toString(10));
+				updateInputVal:function(){
+					$('#logDate').val(self.months[self.month-1]+' '+self.day.toString(10)+' '+self.year.toString(10));
 				},
-				displayDatePicker = function(){
-					var d = new Date(year,month,day),
+				displayDatePicker:function(){
+					var d = new Date(self.year,self.month,self.day),
 						week = ['Sun','Mon','Tue','Wen','Thu','Fri','Sat'],
-						days = (new Date(year,month,0)).getDate(),
-						firstDayOfWeek = (new Date(year,month-1,1)).getDay(),
+						days = (new Date(self.year,self.month,0)).getDate(),
+						firstDayOfWeek = (new Date(self.year,self.month-1,1)).getDay(),
 						i = 0;
-					if(day > days){
-						day = days;
+					if(self.day > days){
+						self.day = days;
 					}
-					updateInputVal();
+					self.updateInputVal();
 					$('#logDatePicker').empty().append(
 						$('<a>').text('<').click(function(e){
 							e.preventDefault();
 							e.stopPropagation();
-							year--;
-							displayDatePicker();
-						}),' ',year.toString(10),' ',
+							self.year--;
+							self.displayDatePicker();
+						}),' ',self.year.toString(10),' ',
 						$('<a>').text('>').click(function(e){
 							e.preventDefault();
 							e.stopPropagation();
-							year++;
-							displayDatePicker();
+							self.year++;
+							self.displayDatePicker();
 						}),'<br>',
 						$('<a>').text('<').click(function(e){
 							e.preventDefault();
 							e.stopPropagation();
-							month--;
-							if(month < 1){
-								month = 12;
-								year--;
+							self.month--;
+							if(self.month < 1){
+								self.month = 12;
+								self.year--;
 							}
-							displayDatePicker();
-						}),' ',months[month-1],' ',
+							self.displayDatePicker();
+						}),' ',self.months[self.month-1],' ',
 						$('<a>').text('>').click(function(e){
 							e.preventDefault();
 							e.stopPropagation();
-							month++;
-							if(month > 12){
-								month = 1;
-								year++;
+							self.month++;
+							if(self.month > 12){
+								self.month = 1;
+								self.year++;
 							}
-							displayDatePicker();
+							self.displayDatePicker();
 						}),'<br>',
 						$('<table>').append(
 							$('<tr>').append(
@@ -2545,10 +2657,10 @@ oirc = (function(){
 											return $('<td>').text(' ');
 										}
 										i++;
-										return $('<td>').text(i).addClass('logDatePickerDay').addClass(i==day?'current':'').data('day',i).click(function(){
+										return $('<td>').text(i).addClass('logDatePickerDay').addClass(i==self.day?'current':'').data('day',i).click(function(){
 											$('.logDatePickerDay.current').removeClass('current');
-											day = $(this).addClass('current').data('day');
-											updateInputVal();
+											self.day = $(this).addClass('current').data('day');
+											self.updateInputVal();
 										});
 									})
 								);
@@ -2557,12 +2669,11 @@ oirc = (function(){
 					);
 					$('#logDatePicker').css('display','block');
 				},
-				open = function(){
+				open:function(){
 					var d = new Date();
 					
 					indicator.start();
-					request.cancel();
-					ws.dissallowRecLines();
+					request.stop();
 					
 					$('#message').attr('disabled','true');
 					users.setUsers([]); //empty userlist
@@ -2571,37 +2682,30 @@ oirc = (function(){
 					$('#logDatePicker').css('display','none');
 					$('#logsHeader').css('display','block');
 					
-					$('#logChanIndicator').text(channels.getCurrentName());
+					$('#logChanIndicator').text(channels.current().name);
 					
-					year = parseInt(d.getFullYear(),10);
-					month = parseInt(d.getMonth()+1,10);
-					day = parseInt(d.getDate(),10);
-					updateInputVal();
+					self.year = parseInt(d.getFullYear(),10);
+					self.month = parseInt(d.getMonth()+1,10);
+					self.day = parseInt(d.getDate(),10);
+					self.updateInputVal();
 					
-					isOpen = true;
-					fetch();
+					self.isOpen = true;
+					self.fetch();
 				},
-				close = function(){
+				close:function(){
 					var num;
 					
-					ws.allowRecLines()
 					
 					$('#chattingHeader').css('display','block');
 					$('#logsHeader').css('display','none');
-					$.each(channels.getChans(),function(i,c){
-						if(c.chan==channels.getCurrent() || c.id==channels.getCurrent()){
-							num = i;
-							return false;
-						}
-					});
-					channels.join(num);
-					isOpen = false;
+					self.isOpen = false;
+					channels.current().reload();
 				},
-				fetchPart = function(n){
-					network.getJSON('Log.php?day='+getLogUrlParam()+'&offset='+parseInt(n,10)+'&channel='+channels.getCurrent(false,true),function(data){
+				fetchPart:function(n){
+					network.getJSON('Log.php?day='+self.getLogUrlParam()+'&offset='+parseInt(n,10)+'&channel='+channels.current().handlerB64,function(data){
 						if(!data.banned){
 							if(data.lines.length>=1000){
-								fetchPart(n+1000);
+								self.fetchPart(n+1000);
 							}
 							$.each(data.lines,function(i,line){
 								parser.addLine(line,true);
@@ -2615,46 +2719,45 @@ oirc = (function(){
 						}
 					});
 				},
-				fetch = function(){
+				fetch:function(){
 					indicator.start();
 					
 					$('#MessageBox').empty();
 					
-					fetchPart(0);
+					self.fetchPart(0);
 				},
-				toggle = function(){
-					if(isOpen){
-						close();
+				toggle:function(){
+					if(self.isOpen){
+						self.close();
 					}else{
-						open();
+						self.open();
 					}
-				};
-			return {
+				},
 				init:function(){
 					$('#logCloseButton')
 						.click(function(e){
 							e.preventDefault();
-							close();
+							self.close();
 						});
 					$('#logGoButton')
 						.click(function(e){
 							e.preventDefault();
-							fetch();
+							self.fetch();
 						});
 					$('#logsButton').click(function(e){
 						e.preventDefault();
-						toggle();
+						self.toggle();
 					});
 					$('#logDate').click(function(e){
 						e.preventDefault();
 						$(this).focusout();
 						if($('#logDatePicker').css('display')!='block'){
-							displayDatePicker();
+							self.displayDatePicker();
 							e.stopPropagation();
 						}
 					});
 					$(document).click(function(e){
-						if(isOpen){
+						if(self.isOpen){
 							var $cont = $('#logDatePicker');
 							if(!$cont.is(e.target) && $cont.has(e.target).length === 0){
 								$cont.css('display','none');
@@ -2662,6 +2765,9 @@ oirc = (function(){
 						}
 					});
 				}
+			};
+			return {
+				init:self.init
 			};
 		})();
 		parser = (function(){
@@ -2681,14 +2787,14 @@ oirc = (function(){
 						sum = 0,
 						i = 0,
 						cn = n,
-						net = settings.networks()[o],
+						net = settings.getNetwork(o),
 						addLink = true;
 					switch(options.get('colordNames')){
 						case '1': // calc
 							while(n[i]){
 								sum += n.charCodeAt(i++);
 							}
-							cn = $('<span>').append($('<span>').addClass('uName-'+rcolors[sum %= 9].toString()).html(n)).html();
+							cn = $('<span>').append($('<span>').addClass('uName-'+rcolors[sum % 9].toString()).html(n)).html();
 							break;
 						case '2': //server
 							if(net!==undefined && net.checkLogin!==undefined){
@@ -2716,12 +2822,14 @@ oirc = (function(){
 					return '<span title="Unknown Network">'+cn+'</span>';
 				},
 				parseSmileys = function(s){
-					var addStuff = '';
 					if(!s){
 						return '';
 					}
+					if(/^[\w\s\d\.,!?]*$/.test(s)){
+						return s;
+					}
 					$.each(smileys,function(i,smiley){
-						s = s.replace(RegExp(smiley.regex,'g'),smiley.replace.split('ADDSTUFF').join(addStuff).split('PIC').join(smiley.pic).split('ALT').join(smiley.alt));
+						s = s.replace(RegExp(smiley.regex,'g'),smiley.replace);
 					});
 					return s;
 				},
@@ -2768,6 +2876,9 @@ oirc = (function(){
 									if(s != arrayResults[i+1]){
 										textDecoration.fg = s.split(':')[0];
 										arrayResults[i+1] = arrayResults[i+1].substr(s.length-1); // -1 due to added colon
+									}else{
+										textDecoration.fg = '-1';
+										textDecoration.bg = '-1';
 									}
 								}else{ // we also changed background
 									textDecoration.fg = s.split(':')[0];
@@ -2824,12 +2935,12 @@ oirc = (function(){
 					return colorStr;
 				},
 				parseHighlight = function(s){
-					if(s.toLowerCase().indexOf(settings.nick().toLowerCase().substr(0,parseInt(options.get('charsHigh'),10)+1)) >= 0 && settings.nick() != ''){
+					if(s.toLowerCase().indexOf(settings.nick().toLowerCase().substr(0,options.get('charsHigh'))) >= 0 && settings.nick() != ''){
 						var style = '';
-						if(options.get('highRed')!='T'){
+						if(!options.get('highRed')){
 							style += 'background:none;padding:none;border:none;';
 						}
-						if(options.get('highBold')=='T'){
+						if(options.get('highBold')){
 							style += 'font-weight:bold;';
 						}
 						return '<span class="highlight" style="'+style+'">'+s+'</span>';
@@ -2843,7 +2954,7 @@ oirc = (function(){
 					s = (s=="\x00"?'':s); //fix 0-string bug
 					s = $('<span>').text(s).html();
 					s = parseLinks(s);
-					if(options.get('smileys')=='T' && noSmileys===false){
+					if(options.get('smileys') && noSmileys===false){
 						s = parseSmileys(s);
 					}
 					s = parseColors(s);
@@ -2851,20 +2962,15 @@ oirc = (function(){
 				},
 				lineHigh = false;
 			return {
-				addLine:function(line,logMode){
-					if(line.curLine > request.getCurLine()){
-						request.setCurLine(line.curLine);
+				addLine:function(line,loadMode){
+					if(loadMode===undefined){
+						loadMode = false;
 					}
-					console.log('====');
-					console.log(line);
-					console.log(channels.getCurrent(true));
+					request.setCurLine(line.curLine);
 					if(
-						line.name === null || line.name === undefined || line.type === null || ignores.indexOf(line.name.toLowerCase()) > -1
-						|| (
-							line.chan.toString().toLowerCase()!=channels.getCurrent(true).toString().toLowerCase()
-							&& ('*'+line.chan).toLowerCase()!=channels.getCurrent(true).toString().toLowerCase()
-							&& line.chan.toString()[0]!='*' && line.chan.toString().toLowerCase()!=settings.nick().toLowerCase()
-						)
+						line.name == null
+						|| ignores.indexOf(line.name.toLowerCase()) > -1
+						|| (line.chan.toString().toLowerCase()!=channels.current().handler.toLowerCase() && line.name2 !== settings.getPmIdent())
 						){
 						return true; // invalid line but we don't want to stop the new requests
 					}
@@ -2873,89 +2979,78 @@ oirc = (function(){
 						message = parseMessage(line.message),
 						tdName = '*',
 						tdMessage = message,
-						addLine = true,
 						statusTxt = '';
 					if(line.network == -1){
-						addLine = false;
+						return true;
 					}
 					if((['message','action','pm','pmaction'].indexOf(line.type)>=0) && line.name.toLowerCase() != '*'){
 						tdMessage = message = parseHighlight(message,line);
 						if(page.isBlurred()){
-							notification.make('('+channels.getCurrentName()+') <'+line.name+'> '+line.message,line.chan);
+							notification.make('('+channels.current().name+') <'+line.name+'> '+line.message,line.chan);
 						}
 					}
 					switch(line.type){
 						case 'reload':
-							addLine = false;
-							if(logMode!==true && channels.getCurrent()!==''){
-								var num;
-								$.each(channels.getChans(),function(i,c){
-									if(c.chan==channels.getCurrent() || c.id==channels.getCurrent()){
-										num = i;
-										return false;
-									}
-								});
-								channels.join(num);
+							if(!loadMode){
+								channels.current().reload();
 								return false;
 							}
-							break;
+							return true;
 						case 'reload_userlist':
-							addLine = false;
-							if(logMode!==true && channels.getCurrent()!==''){
-								users.reload();
-								return true;
+							if(!loadMode){
+								channels.current().reloadUserlist();
 							}
+							return true;
 						case 'relog':
-							addLine = false;
-							if(logMode!==true && channels.getCurrent()!==''){
+							if(!loadMode){
 								settings.fetch(undefined,true);
 							}
-							break;
+							return true;
 						case 'refresh':
-							addLine = false;
-							if(logMode!==true && channels.getCurrent()!==''){
+							if(!loadMode){
 								location.reload(true);
 							}
+							return true;
 							break;
 						case 'join':
-							tdMessage = [name,' has joined '+channels.getCurrentName()];
-							if(logMode!==true){
+							tdMessage = [name,' has joined '+channels.current().name];
+							if(!loadMode){
 								users.add({
 									nick:line.name,
 									network:line.network
 								});
 							}
-							if(addLine && settings.networks()[line.network].type==1 && options.get('oircJoinPart')=='F'){
-								addLine = false;
+							if(settings.getNetwork(line.network).type==1 && !options.get('oircJoinPart')){
+								return true;
 							}
 							break;
 						case 'part':
-							tdMessage = [name,' has left '+channels.getCurrentName()+' (',message,')'];
-							if(logMode!==true){
+							tdMessage = [name,' has left '+channels.current().name+' (',message,')'];
+							if(!loadMode){
 								users.remove({
 									nick:line.name,
 									network:line.network
 								});
 							}
-							if(addLine && settings.networks()[line.network].type==1 && options.get('oircJoinPart')=='F'){
-								addLine = false;
+							if(settings.getNetwork(line.network).type==1 && !options.get('oircJoinPart')){
+								return true;
 							}
 							break;
 						case 'quit':
 							tdMessage = [name,' has quit IRC (',message,')'];
-							if(logMode!==true){
+							if(!loadMode){
 								users.remove({
 									nick:line.name,
 									network:line.network
 								});
 							}
-							if(addLine && settings.networks()[line.network].type==1 && options.get('oircJoinPart')=='F'){
-								addLine = false;
+							if(settings.getNetwork(line.network).type==1 && !options.get('oircJoinPart')){
+								return true;
 							}
 							break;
 						case 'kick':
-							tdMessage = [name,' has kicked ',parseName(line.name2,line.network),' from '+channels.getCurrentName()+' (',message,')'];
-							if(logMode!==true){
+							tdMessage = [name,' has kicked ',parseName(line.name2,line.network),' from '+channels.current().name+' (',message,')'];
+							if(!loadMode){
 								users.remove({
 									nick:line.name2,
 									network:line.network
@@ -2979,11 +3074,11 @@ oirc = (function(){
 								});
 								message = message.join(' ');
 							}
-							tdMessage = [name,' set '+channels.getCurrentName()+' mode ',message];
+							tdMessage = [name,' set '+channels.current().name+' mode ',message];
 							break;
 						case 'nick':
 							tdMessage = [name,' has changed nicks to ',parseName(line.name2,line.network)];
-							if(logMode!==true){
+							if(!loadMode){
 								users.add({
 									nick:line.name2,
 									network:line.network
@@ -2999,101 +3094,106 @@ oirc = (function(){
 							tdMessage = [name,' has changed the topic to ',parseMessage(line.message,true)];
 							break;
 						case 'pm':
-							if(channels.getCurrentName(true).toLowerCase() == '*'+line.name.toLowerCase() || channels.getCurrentName(true).toLowerCase() == '*'+line.chan.toLowerCase()){
+							if(line.chan==channels.current().handler){
 								tdName = name;
 								line.type = 'message';
 							}else{
-								if(channels.getCurrent()!=='' && logMode!==true){
+								if(!loadMode){
 									if(line.name.toLowerCase() == settings.nick().toLowerCase()){
-										addLine = false;
-										channels.openPm(line.chan);
+										channels.openPm(line.chan,settings.getWholePmIdent(line.uid,line.network));
+										return true;
 									}else{
 										tdName = ['(PM)',name];
-										channels.openPm(line.name);
+										channels.openPm(line.name,settings.getWholePmIdent(line.uid,line.network));
 										notification.make('(PM) <'+line.name+'> '+line.message,line.chan);
 									}
 								}else{
-									addLine = false;
+									return true;
 								}
 							}
 							break;
 						case 'pmaction':
-							if(channels.getCurrentName(true).toLowerCase() == '*'+line.name.toLowerCase() || channels.getCurrentName(true).toLowerCase() == '*'+line.chan.toLowerCase()){
+							if(line.chan == channels.current().handler){
 								tdMessage = [name,' ',message];
 								line.type = 'action';
 							}else{
-								if(channels.getCurrent()!=='' && logMode!==true){
+								if(!loadMode){
 									if(line.name.toLowerCase() == settings.nick().toLowerCase()){
-										addLine = false;
-										channels.openPm(line.chan);
+										channels.openPm(line.chan,settings.getWholePmIdent(line.uid,line.network));
+										return true;
 									}else{
 										tdMessage = ['(PM)',name,' ',message];
-										channels.openPm(line.name);
+										channels.openPm(line.name,settings.getWholePmIdent(line.uid,line.network));
 										notification.make('* (PM)'+line.name+' '+line.message,line.chan);
 										line.type = 'pm';
 									}
 								}else{
-									addLine = false;
+									return true;
 								}
 							}
 							break;
 						case 'highlight':
-							if(line.name.toLowerCase() != 'new'){
+							if(line.name.toLowerCase() != '*'){
 								notification.make('('+line.chan+') <'+line.name+'> '+line.message,line.chan);
 							}
-							addLine = false;
-							break;
+							return true;
 						case 'internal':
 							tdMessage = line.message;
 							break;
 						case 'server':
 							break;
 						default:
-							addLine = false;
+							return true;
 					}
-					if(addLine){
-						if(($mBox.find('tr').length>maxLines) && logMode!==true){
-							$mBox.find('tr:first').remove();
-						}
-						
-						
-						if(tdName == '*'){
-							statusTxt = '* ';
-						}else{
-							statusTxt = '<'+line.name+'> ';
-						}
-						if(options.get('times')=='T'){
-							statusTxt = '['+(new Date(line.time*1000)).toLocaleTimeString()+'] '+statusTxt;
-						}
-						statusTxt += $('<span>').append(tdMessage).text();
-						statusBar.set(statusTxt);
-						
-						var $tr = $('<tr>')
-							.addClass((options.get('altLines')=='T' && (lineHigh = !lineHigh)?'lineHigh':''))
-							.addClass(((new Date(lastMessage)).getDay()!=(new Date(line.time*1000)).getDay())?'seperator':'') //new day indicator
-							.append(
-								(options.get('times')=='T'?$('<td>')
-									.addClass('irc-date')
-									.append('['+(new Date(line.time*1000)).toLocaleTimeString()+']'):''),
-								$('<td>')
-									.addClass('name')
-									.append(tdName),
-								$('<td>')
-									.addClass(line.type)
-									.append(tdMessage)
-							);
-						$tr.find('img').load(function(e){
-							scroll.slide();
-						});
-						$mBox.append($tr);
+					if(($mBox.find('tr').length>maxLines) && logMode!==true){
+						$mBox.find('tr:first').remove();
+					}
+					
+					
+					if(tdName == '*'){
+						statusTxt = '* ';
+					}else{
+						statusTxt = '<'+line.name+'> ';
+					}
+					if(options.get('times')){
+						statusTxt = '['+(new Date(line.time*1000)).toLocaleTimeString()+'] '+statusTxt;
+					}
+					statusTxt += $('<span>').append(tdMessage).text();
+					statusBar.set(statusTxt);
+					
+					var $tr = $('<tr>')
+						.addClass((options.get('altLines') && (lineHigh = !lineHigh)?'lineHigh':''))
+						.addClass(((new Date(lastMessage)).getDay()!=(new Date(line.time*1000)).getDay())?'seperator':'') //new day indicator
+						.append(
+							(options.get('times')?$('<td>')
+								.addClass('irc-date')
+								.append('['+(new Date(line.time*1000)).toLocaleTimeString()+']'):''),
+							$('<td>')
+								.addClass('name')
+								.append(tdName),
+							$('<td>')
+								.addClass(line.type)
+								.append(tdMessage)
+						);
+					$tr.find('img').load(function(e){
 						scroll.slide();
-						
-						lastMessage = line.time*1000;
-					}
+					});
+					$mBox.append($tr);
+					scroll.slide();
+					
+					lastMessage = line.time*1000;
+					
 					return true;
 				},
-				setSmileys:function(s){
-					smileys = s;
+				setSmileys:function(sm){
+					var addStuff = '';
+					smileys = [];
+					$.each(sm,function(i,s){
+						smileys.push({
+							regex:s.regex,
+							replace:s.replace.split('ADDSTUFF').join(addStuff).split('PIC').join(s.pic).split('ALT').join(s.alt)
+						});
+					});
 				},
 				getSmileys:function(){
 					return smileys;
@@ -3102,7 +3202,7 @@ oirc = (function(){
 					ignores = a;
 				},
 				parseTextDecorations:function(s){
-					if(s !== '' && options.get('textDeco') == 'T'){
+					if(s !== '' && options.get('textDeco')){
 						if(s[0] == '>'){
 							s = '\x033'+s;
 						}
@@ -3126,12 +3226,12 @@ oirc = (function(){
 							$('#options').height($(window).height() - 75);
 						}
 					});
-					$('body').css('font-size',(options.get('fontSize').charCodeAt(0) - 45).toString(10)+'pt');
+					$('body').css('font-size',options.get('fontSize').toString(10)+'pt');
 					$('#options').append(options.getHTML());
 				});
 				break;
 			case 'admin':
-				admin.init();
+				$.getScript('admin.js');
 				break;
 			//case 'main': // no need, already caught by default.
 			default:
@@ -3151,12 +3251,8 @@ oirc = (function(){
 			}
 		},
 		indicator:{
-			start:function(){
-				indicator.start();
-			},
-			stop:function(){
-				indicator.stop();
-			}
+			start:indicator.start,
+			stop:indicator.stop
 		},
 		network:{
 			getJSON:function(s,fn,async,urlparams){

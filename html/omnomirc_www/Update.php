@@ -1,7 +1,7 @@
 <?PHP
 /*
     OmnomIRC COPYRIGHT 2010,2011 Netham45
-                       2012-2015 Sorunome
+                       2012-2016 Sorunome
 
     This file is part of OmnomIRC.
 
@@ -56,13 +56,8 @@ if(isset($_GET['high'])){
 	$numCharsHighlight = 4;
 }
 $channel = $you->chan;
-$pm = false;
 $nick = $you->nick;
-if($channel[0] == '*' && $nick){ //PM
-	$sender = substr($channel,1);
-	$channel = $nick;
-	$pm = true;
-}
+
 $countBeforeQuit = 0;
 $you->update();
 
@@ -78,41 +73,21 @@ while(true){
 	}
 	$you->update();
 	if($nick){
-		$query = $sql->query_prepare("SELECT * FROM `irc_lines`
+		$query = $sql->query_prepare("SELECT * FROM `{db_prefix}lines`
 			WHERE
 				`line_number` > ?
 			AND
 			(
 				(
-					(
-						`channel` = ?
-						OR
-						(
-							`channel` = ?
-							AND
-							`Online` = ?
-						)
-						OR
-						(
-							`name1` = ?
-							AND
-							`Online` = ?
-						)
-					)
+					`channel` = ?
 					AND
 					`type`!='server'
 				)
 				OR
-				(
-					`type` = 'server'
-					AND
-					channel=?
-					AND
-					name2=?
-				)
-		)",array($curline,$channel,$nick,$you->getNetwork(),$nick,$you->getNetwork(),$nick,$channel));
+				name2=?
+		)",array($curline,$channel,$you->getPmHandler()));
 	}else{
-		$query = $sql->query_prepare("SELECT * FROM `irc_lines` WHERE `line_number` > ? AND (`channel` = '?')",array($curline,$channel));
+		$query = $sql->query_prepare("SELECT * FROM `{db_prefix}lines` WHERE `line_number` > ? AND (`channel` = '?')",array($curline,$channel));
 	}
 	$result = $query[0];
 	$userSql = $you->info();
@@ -135,10 +110,10 @@ while(true){
 		);
 	}
 	if($result['line_number'] === NULL){
-		$temp = $sql->query_prepare("SELECT * FROM `irc_lines` WHERE `line_number` > ? AND locate(?,`message`) != 0 AND NOT (((`type` = 'pm' OR `type` = 'pmaction') AND `name1` <> ? AND `online` = ?) OR (`type` = 'server'))",array($curline,substr($nick,0,4),$nick,$you->getNetwork()));
+		$temp = $sql->query_prepare("SELECT * FROM `{db_prefix}lines` WHERE `line_number` > ? AND locate(?,`message`) != 0 AND NOT (((`type` = 'pm' OR `type` = 'pmaction') AND `name1` <> ? AND `online` = ?) OR (`type` = 'server'))",array($curline,substr($nick,0,4),$nick,$you->getNetwork()));
 		$result = $temp[0];
 		if($result['line_number'] === NULL){
-			$temp = $sql->query_prepare("SELECT MAX(line_number) AS max FROM `irc_lines`");
+			$temp = $sql->query_prepare("SELECT MAX(line_number) AS max FROM `{db_prefix}lines`");
 			$curline = (int)$temp[0]['max'];
 			usleep(500000);
 			continue;

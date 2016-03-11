@@ -1,7 +1,7 @@
 <?php
 /*
     OmnomIRC COPYRIGHT 2010,2011 Netham45
-                       2012-2014 Sorunome
+                       2012-2016 Sorunome
 
     This file is part of OmnomIRC.
 
@@ -48,7 +48,8 @@ function getPage($title,$head,$body,$page){
 				($theme!=-1?'<link rel="stylesheet" type="text/css" href="theme.php?theme='.$theme.'" />':'').
 				'<script type="text/javascript" src="btoa.js"></script>'.
 				'<script type="text/javascript" src="jquery-1.11.3.min.js"></script>'.
-				'<script type="text/javascript" src="omnomirc.min.js"></script>'.
+				'<script type="text/javascript" src="omnomirc'.(!isset($config['settings']['minified'])||$config['settings']['minified']?'.min':'').'.js"></script>'.
+				($config['websockets']['use'] && $config['settings']['useBot']?'<script type="text/javascript" src="pooledwebsocket.min.js"></script>':'').
 				'<title>'.$title.'</title>'.
 				'<script type="text/javascript">document.domain="'.$config['settings']['hostname'].'";</script>'.
 				$head.
@@ -129,11 +130,31 @@ tr td:nth-child(5) {
 </div>
 ','options');
 }elseif(isset($_GET['admin'])){
+$adminlinks = array(
+	'index' => 'Index',
+	'themes' => 'Theme',
+	'channels' => 'Channels',
+	'hotlinks' => 'Hotlinks',
+	'smileys' => 'Smileys',
+	'networks' => 'Networks',
+	'sql' => 'SQL',
+	'ws' => 'WebSockets',
+	'misc' => 'Misc'
+);
+if($config['settings']['experimental']){
+	$adminlinks['ex'] = 'Experimental';
+}
+$nav = '';
+foreach($adminlinks as $l => $n){
+	if($nav!=''){
+		$nav .= ' | ';
+	}
+	$nav .= '<a data-page="'.$l.'">'.$n.'</a>';
+}
 echo getPage('OmnomIRC admin panel','','
 <div id="container">
 <div style="font-weight:bold;">OmnomIRC Admin Panel</div>
-<div id="adminNav"><a data-page="index">Index</a> | <a data-page="themes">Theme</a> | <a data-page="channels">Channels</a> | <a data-page="hotlinks">Hotlinks</a>
-	| <a data-page="smileys">Smileys</a> | <a data-page="networks">Networks</a> | <a data-page="sql">SQL</a> | <a data-page="ws">WebSockets</a> | <a data-page="misc">Misc</a></div>
+<div id="adminNav">'.$nav.'</div>
 <div id="adminContent" style="overflow-y:auto;">Loading...</div>
 </div>
 <div id="adminFooter"><a href="index.php">Back to OmnomIRC</a></div>
@@ -239,12 +260,12 @@ echo getPage('OmnomIRC','
 <div id="about"><div class="popup"><span style="position:absolute;z-index:9002;top:1px;right:2px"><a onclick="document.getElementById(\'about\').style.display=\'none\';">Close</a></span>
 	<div style="text-align:center;"><a href="https://omnomirc.omnimaga.org/" target="_blank"><img src="omnomirc.png" alt="OmnomIRC"></a></div>
 	<p><a href="https://omnomirc.omnimaga.org/" target="_blank">OmnomIRC</a> is developed by <a href="https://www.omnimaga.org" alt="Omnimaga" target="_blank">Omnimaga</a></p>
-	<p>Found an issue/bug? <a href="https://github.com/Sorunome/OmnomIRC2/issues" target="_blank">Report it!</a></p>
+	<p>Found an issue/bug? <a href="https://github.com/Sorunome/OmnomIRC/issues" target="_blank">Report it!</a></p>
 	<h1>Programmers</h1>
 	<ul><li><a href="http://netham45.org/" target="_blank">Netham45</a></li><li><a href="http://www.sorunome.de" target="_blank">Sorunome</a></li><li><a href="http://eeems.ca/" target="_blank">Eeems</a></li></ul>
 	<h1>Style</h1>
 	<ul><li><a href="https://www.omnimaga.org/profile/Darl181" target="_blank">Darl181</a></li></ul>
-	<a href="https://omnomirc.omnimaga.org/" target="_blank">Homepage</a> | <a href="https://github.com/Sorunome/OmnomIRC2" target="_blank">GitHub</a>
+	<a href="https://omnomirc.omnimaga.org/" target="_blank">Homepage</a> | <a href="https://github.com/Sorunome/OmnomIRC" target="_blank">GitHub</a>
 </div></div>
 <div id="smileyselect" class="popup">
 </div>

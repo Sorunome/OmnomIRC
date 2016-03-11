@@ -1,7 +1,7 @@
 <?php
 /*
     OmnomIRC COPYRIGHT 2010,2011 Netham45
-                       2012-2015 Sorunome
+                       2012-2016 Sorunome
 
     This file is part of OmnomIRC.
 
@@ -39,7 +39,7 @@ if(isset($_GET['message'])){
 	$banned = false;
 	if(isset($_GET['update']) && isset($_GET['curline']) && !(isset($_SESSION['content']) && $_SESSION['content']==='')){
 		$curline = (int)$_GET['curline'];
-		$query = $sql->query_prepare("SELECT * FROM `irc_lines` WHERE `line_number` > ? AND (`channel` = ? OR (`channel` = ?  AND `online` = ?)) ORDER BY `line_number` ASC",array((int)$curline,$you->chan,$you->nick,$you->getNetwork()));
+		$query = $sql->query_prepare("SELECT * FROM `{db_prefix}lines` WHERE `line_number` > ? AND (`channel` = ? OR (`channel` = ?  AND `online` = ?)) ORDER BY `line_number` ASC",array((int)$curline,$you->chan,$you->nick,$you->getNetwork()));
 		$lines = $omnomirc->getLines($query);
 	}else{
 		$curline = 0;

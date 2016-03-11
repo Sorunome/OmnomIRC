@@ -1,6 +1,6 @@
 /*
 	OmnomIRC COPYRIGHT 2010,2011 Netham45
-					   2012-2015 Sorunome
+					   2012-2016 Sorunome
 
 	This file is part of OmnomIRC.
 
@@ -47,6 +47,13 @@ body{
 	font-size:9pt;
 	line-height:1.2em;
 	font-family:verdana,sans-serif;
+	-webkit-touch-callout:none;
+	-webkit-user-select:none;
+	-khtml-user-select:none;
+	-moz-user-select:none;
+	-ms-user-select:none;
+	-o-user-select:none;
+	user-select:none;
 	*height:100%
 }
 a {
@@ -100,6 +107,13 @@ a:hover {
 	border-spacing:0;
 	height:inherit;
 	transition:top 0.4s ease;
+	-webkit-touch-callout:text;
+	-webkit-user-select:text;
+	-khtml-user-select:text;
+	-moz-user-select:text;
+	-ms-user-select:text;
+	-o-user-select:text;
+	user-select:text;
 }
 #MessageBox td {
 	white-space: pre-wrap;	   /* css-3 */
@@ -217,8 +231,7 @@ td.action > a:nth-child(1) > span {
 #ChanListButtons {
 	width:98%;
 	overflow:hidden;
-	display:inline;
-	position:relative;
+	position:absolute;
 	left:0;
 	padding-bottom:0.2em;
 	margin: 0 0.2em;
@@ -233,16 +246,14 @@ td.action > a:nth-child(1) > span {
 	width:96%;
 	overflow-x:hidden;
 	display:block;
-	position:relative;
-	left:2.3em;
-	top:-1.3em;
+	margin-left:2.3em;
 }
 .chanList {
 	margin:0;
 	display:inline-block;
 	color:#22C;
 }
-.chanList.highlightChan{
+.chanList.highlightChan > .chan{
 	color:#CC2222;
 }
 .chan{
@@ -270,10 +281,8 @@ td.action > a:nth-child(1) > span {
 	padding-top:0.3em;
 }
 .chan.curchan {
-	height:108%;
 	font-weight:bolder;
 	color:#FFF;
-	padding-bottom:0.4em;
 	height:100%;
 	cursor: pointer;
 	
@@ -517,13 +526,6 @@ td.action > a:nth-child(1) > span {
 #smileyMenuButton {
 	margin-bottom: -0.3em;
 	margin-right: 0.4em;
-}
-#smileyselect, #smileyselect * {
-	-webkit-user-select:none;
-	-moz-user-select:none;
-	-ms-user-select:none;
-	-o-user-select:none;
-	user-select:none;
 }
 
 #smileyselect {

@@ -21,10 +21,11 @@ class Sqli{
 		return $mysqli;
 	}
 	public function query(){
+		global $config;
 		//ini_set('memory_limit','-1');
 		$mysqli = $this->connectSql();
 		$params = func_get_args();
-		$query = $params[0];
+		$query = str_replace('{db_prefix}',$config['sql']['prefix'],$params[0]);
 		$args = Array();
 		for($i=1;$i<count($params);$i++)
 			$args[$i-1] = $mysqli->real_escape_string($params[$i]);
@@ -132,6 +133,11 @@ if(!isset($_GET['server'])){
 									"type":"password",
 									"id":"sqlPasswd"
 								}),
+								"<br>Prefix:",
+								$("<input>").attr({
+									"type":"text",
+									"id":"sqlPrefix"
+								}),
 								"<br>",
 								$("<button>").text("submit").click(function(e){
 									e.preventDefault();
@@ -139,7 +145,8 @@ if(!isset($_GET['server'])){
 										"server":$("#sqlServer").val(),
 										"db":$("#sqlDb").val(),
 										"user":$("#sqlUser").val(),
-										"passwd":$("#sqlPasswd").val()
+										"passwd":$("#sqlPasswd").val(),
+										"prefix":$("#sqlPrefix").val()
 									});
 								})
 							);
@@ -266,6 +273,7 @@ if(!isset($_GET['server'])){
 			$config['sql']['db'] = $_POST['db'];
 			$config['sql']['user'] = $_POST['user'];
 			$config['sql']['passwd'] = $_POST['passwd'];
+			$config['sql']['prefix'] = $_POST['prefix'];
 			$sql->query("SELECT 1"); // test query
 			// if the query failed we are already dead
 			writeConfig();
@@ -300,7 +308,7 @@ if(!isset($_GET['server'])){
 			$config['channels'][0]['networks'][0]['name'] = $_POST['chan'];
 			
 			if($_POST['defaultOp'] !== ''){
-				$sql->query("INSERT INTO `irc_userstuff` (`name`,`network`,`globalOp`) VALUES ('%s',1,1)",strtolower($_POST['defaultOp']));
+				$sql->query("INSERT INTO `{db_prefix}userstuff` (`name`,`network`,`globalOp`) VALUES ('%s',1,1)",strtolower($_POST['defaultOp']));
 			}
 			
 			$config['settings']['hostname'] = (isset($_SERVER['HTTP_HOST'])?$_SERVER['HTTP_HOST']:$_SERVER['SERVER_NAME']);

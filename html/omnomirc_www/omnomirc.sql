@@ -1,8 +1,8 @@
 SET time_zone = "+00:00";
 
 
-DROP TABLE IF EXISTS `irc_lines`;
-CREATE TABLE IF NOT EXISTS `irc_lines` (
+DROP TABLE IF EXISTS `{db_prefix}lines`;
+CREATE TABLE IF NOT EXISTS `{db_prefix}lines` (
   `line_number` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `name1` varchar(45) NOT NULL,
   `name2` varchar(45) DEFAULT NULL,
@@ -16,8 +16,8 @@ CREATE TABLE IF NOT EXISTS `irc_lines` (
   KEY `time` (`time`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;
 
-DROP TABLE IF EXISTS `irc_lines_old`;
-CREATE TABLE IF NOT EXISTS `irc_lines_old` (
+DROP TABLE IF EXISTS `{db_prefix}lines_old`;
+CREATE TABLE IF NOT EXISTS `{db_prefix}lines_old` (
   `line_number` int(10) unsigned NOT NULL AUTO_INCREMENT,
   `name1` varchar(45) NOT NULL,
   `name2` varchar(45) DEFAULT NULL,
@@ -31,8 +31,8 @@ CREATE TABLE IF NOT EXISTS `irc_lines_old` (
   KEY `time` (`time`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;
 
-DROP TABLE IF EXISTS `irc_permissions`;
-CREATE TABLE IF NOT EXISTS `irc_permissions` (
+DROP TABLE IF EXISTS `{db_prefix}permissions`;
+CREATE TABLE IF NOT EXISTS `{db_prefix}permissions` (
   `generic_autoincrementing_prikey` int(11) NOT NULL AUTO_INCREMENT,
   `username` varchar(120) DEFAULT NULL,
   `channel` varchar(120) NOT NULL,
@@ -41,8 +41,8 @@ CREATE TABLE IF NOT EXISTS `irc_permissions` (
   PRIMARY KEY (`generic_autoincrementing_prikey`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8 ;
 
-DROP TABLE IF EXISTS `irc_channels`;
-CREATE TABLE IF NOT EXISTS `irc_channels` (
+DROP TABLE IF EXISTS `{db_prefix}channels`;
+CREATE TABLE IF NOT EXISTS `{db_prefix}channels` (
   `channum` int(11) NOT NULL AUTO_INCREMENT,
   `chan` varchar(45) NOT NULL DEFAULT '',
   `topic` varchar(1024) NOT NULL DEFAULT '',
@@ -52,8 +52,8 @@ CREATE TABLE IF NOT EXISTS `irc_channels` (
   PRIMARY KEY (`channum`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;
 
-DROP TABLE IF EXISTS `irc_users`;
-CREATE TABLE IF NOT EXISTS `irc_users` (
+DROP TABLE IF EXISTS `{db_prefix}users`;
+CREATE TABLE IF NOT EXISTS `{db_prefix}users` (
   `usernum` int(11) NOT NULL AUTO_INCREMENT,
   `username` varchar(45) NOT NULL,
   `channel` varchar(45) NOT NULL,
@@ -65,8 +65,8 @@ CREATE TABLE IF NOT EXISTS `irc_users` (
   PRIMARY KEY (`usernum`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;
 
-DROP TABLE IF EXISTS `irc_userstuff`;
-CREATE TABLE IF NOT EXISTS `irc_userstuff` (
+DROP TABLE IF EXISTS `{db_prefix}userstuff`;
+CREATE TABLE IF NOT EXISTS `{db_prefix}userstuff` (
   `usernum` int(11) NOT NULL AUTO_INCREMENT,
   `name` varchar(45) NOT NULL,
   `network` int(11) NOT NULL,
@@ -78,8 +78,8 @@ CREATE TABLE IF NOT EXISTS `irc_userstuff` (
   PRIMARY KEY (`usernum`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;
 
-DROP TABLE IF EXISTS `irc_vars`;
-CREATE TABLE IF NOT EXISTS `irc_vars` (
+DROP TABLE IF EXISTS `{db_prefix}vars`;
+CREATE TABLE IF NOT EXISTS `{db_prefix}vars` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `name` text NOT NULL,
   `value` text NOT NULL,
@@ -88,21 +88,21 @@ CREATE TABLE IF NOT EXISTS `irc_vars` (
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 ;
 
 
-ALTER TABLE `irc_lines`
+ALTER TABLE `{db_prefix}lines`
  ADD KEY `name1` (`name1`), ADD KEY `name2` (`name2`), ADD KEY `channel` (`channel`), ADD KEY `type` (`type`);
 
-ALTER TABLE `irc_lines_old`
+ALTER TABLE `{db_prefix}lines_old`
  ADD KEY `name1` (`name1`), ADD KEY `name2` (`name2`), ADD KEY `channel` (`channel`);
 
-ALTER TABLE `irc_users`
+ALTER TABLE `{db_prefix}users`
  ADD KEY `channel` (`channel`), ADD KEY `isOnline` (`isOnline`), ADD KEY `username` (`username`), ADD KEY `online` (`online`), UNIQUE `unique_trigger` ( `username` , `channel` , `online` ) COMMENT '';
 
-ALTER TABLE `irc_userstuff` ADD UNIQUE (`uid` ,`network`) COMMENT '';
+ALTER TABLE `{db_prefix}userstuff` ADD UNIQUE (`uid` ,`network`) COMMENT '';
 
 
 
 DROP EVENT IF EXISTS `Clean up Userstuff`;
-CREATE EVENT `Clean up Userstuff` ON SCHEDULE EVERY 1 DAY STARTS '2013-10-31 00:00:00' ON COMPLETION NOT PRESERVE ENABLE COMMENT 'Clean up the db' DO DELETE FROM irc_userstuff
+CREATE EVENT `Clean up Userstuff` ON SCHEDULE EVERY 1 DAY STARTS '2013-10-31 00:00:00' ON COMPLETION NOT PRESERVE ENABLE COMMENT 'Clean up the db' DO DELETE FROM {db_prefix}userstuff
 	WHERE (ignores = '' OR ignores IS NULL)
 	AND (ops = '' OR ops IS NULL)
 	AND (bans = '' OR bans IS NULL)
@@ -111,18 +111,18 @@ CREATE EVENT `Clean up Userstuff` ON SCHEDULE EVERY 1 DAY STARTS '2013-10-31 00:
 	AND globalBan = '0';
 
 DROP EVENT IF EXISTS `Clean up Userslist`;
-CREATE EVENT `Clean up Userslist` ON SCHEDULE EVERY 1 DAY STARTS '2013-10-31 00:00:00' ON COMPLETION NOT PRESERVE ENABLE COMMENT 'Clean up the Userlist' DO DELETE FROM irc_users
+CREATE EVENT `Clean up Userslist` ON SCHEDULE EVERY 1 DAY STARTS '2013-10-31 00:00:00' ON COMPLETION NOT PRESERVE ENABLE COMMENT 'Clean up the Userlist' DO DELETE FROM {db_prefix}users
 	WHERE (lastMsg = '' OR lastMsg IS NULL)
 	AND isOnline='0';
 
 DELIMITER $$
 DROP EVENT IF EXISTS `Flush Logs Nightly`$$
 CREATE EVENT `Flush Logs Nightly` ON SCHEDULE EVERY 1 DAY STARTS '2013-10-31 00:00:00' ON COMPLETION NOT PRESERVE ENABLE COMMENT 'Flushes the logs into the archive table' DO BEGIN
-	SET @time := (select max(`time`) from `irc_lines`);
-	INSERT INTO `irc_lines_old` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`Online`,`uid`)
+	SET @time := (select max(`time`) from `{db_prefix}lines`);
+	INSERT INTO `{db_prefix}lines_old` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`Online`,`uid`)
 	SELECT `name1`,`name2`,`message`,`type`,`channel`,`time`,`Online`,`uid`
-	FROM `irc_lines` WHERE `time` < @time ORDER BY `line_number` ASC;
-	DELETE FROM `irc_lines` WHERE `time` < @time;
+	FROM `{db_prefix}lines` WHERE `time` < @time ORDER BY `line_number` ASC;
+	DELETE FROM `{db_prefix}lines` WHERE `time` < @time;
 END$$
 DELIMITER ;
 SET GLOBAL event_scheduler = "ON";

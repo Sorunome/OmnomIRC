@@ -1,7 +1,7 @@
 <?php
 /*
     OmnomIRC COPYRIGHT 2010,2011 Netham45
-                       2012-2015 Sorunome
+                       2012-2016 Sorunome
 
     This file is part of OmnomIRC.
 
@@ -123,13 +123,24 @@ if(isset($_GET['js'])){
 		'checkLoginUrl' => $cl,
 		'defaults' => $defaults,
 		'websockets' => array(
-			'use' => $config['websockets']['use'],
-			'host' => $config['websockets']['host'],
+			'use' => $config['websockets']['use'] && $config['settings']['useBot'],
+			'host' => $config['websockets']['host']?$config['websockets']['host']:$config['settings']['hostname'],
 			'port' => $config['websockets']['port'],
 			'ssl' => $config['websockets']['ssl']
 		),
 		'extraChanMsg' => $extraChanMsg
 	));
+}elseif(isset($_GET['admincfg'])){
+	include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
+	header('Content-type: application/json');
+	if($you->isGlobalOp()){
+		echo json_encode(array(
+			'betaUpdates' => isset($config['settings']['betaUpdates'])&&$config['settings']['betaUpdates']
+		));
+	}else{
+		$json->addError('permission denied');
+		echo $json->get();
+	}
 }elseif(isset($_GET['channels'])){
 	include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 	header('Content-type: application/json');

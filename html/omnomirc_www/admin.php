@@ -1,7 +1,7 @@
 <?php
 /*
     OmnomIRC COPYRIGHT 2010,2011 Netham45
-                       2012-2015 Sorunome
+                       2012-2016 Sorunome
 
     This file is part of OmnomIRC.
 
@@ -47,12 +47,10 @@ exit;
 			}
 			$json->add('message',$m."\nconfig written");
 		}
-		if($config['settings']['useBot'] && ($socket = @socket_create(AF_INET,SOCK_STREAM,SOL_TCP)) && ($result = @socket_connect($socket,'localhost',$config['settings']['botPort']))){
-			$sendToBotBuffer = json_encode(array(
-				't' => 'server_updateconfig'
-			))."\n";
-			socket_write($socket,$sendToBotBuffer,strlen($sendToBotBuffer));
-			socket_close($socket);
+		if(!INTERNAL && $config['settings']['useBot']){
+			global $relay;
+			$relay->sendLine('','','server_updateconfig','');
+			$relay->commitBuffer();
 		}
 	}else{
 		$json->addError('Couldn\'t write config');
@@ -73,6 +71,22 @@ if(isset($_GET['finishUpdate'])){
 		header('Location: index.php');
 	}else{
 		header('Location: index.php?admin&network='.$you->getNetwork().'#releaseNotes');
+	}
+}
+if(INTERNAL){
+	if(isset($_GET['internalAction'])){
+		switch($_GET['internalAction']){
+			case 'activateBot':
+				$config['settings']['useBot'] = true;
+				break;
+			case 'deactivateBot':
+				$config['settings']['useBot'] = false;
+				break;
+			case 'setWsPort':
+				$config['websockets']['port'] = (int)$_GET['port'];
+				break;
+		}
+		writeConfig(true);
 	}
 }
 if($you->isGlobalOp()){
@@ -114,7 +128,36 @@ if($you->isGlobalOp()){
 				$json->add('sql',array(
 					'server' => $config['sql']['server'],
 					'db' => $config['sql']['db'],
-					'user' => $config['sql']['user']
+					'user' => $config['sql']['user'],
+					'prefix' => $config['sql']['prefix'],
+					'passwd' => ''
+				));
+				$json->add('pattern',array(
+					array(
+						'name' => 'Server',
+						'type' => 'text',
+						'var' => 'server'
+					),
+					array(
+						'name' => 'Database',
+						'type' => 'text',
+						'var' => 'db'
+					),
+					array(
+						'name' => 'User',
+						'type' => 'text',
+						'var' => 'user'
+					),
+					array(
+						'name' => 'Password',
+						'type' => 'text',
+						'var' => 'passwd'
+					),
+					array(
+						'name' => 'Database Prefix',
+						'type' => 'text',
+						'var' => 'prefix'
+					)
 				));
 				break;
 			case 'smileys':
@@ -134,6 +177,43 @@ if($you->isGlobalOp()){
 					}
 				}
 				$json->add('networks',$config['networks']);
+				
+				// time to fetch which network types we have!
+				$networkTypes = array(
+					1 => array(
+						'id' => 1,
+						'name' => 'OmnomIRC',
+						'defaultCfg' => array(
+							'checkLogin' => 'link to checkLogin file',
+							'theme' => -1,
+							'defaults' => '',
+							'opGroups' => [],
+							'guests' => 0,
+							'editPattern' => false
+						)
+					)
+				);
+				if($config['settings']['useBot']){
+					if($socket = $relay->getSocket()){
+						$s = json_encode(array('t' => 'server_getRelayTypes'))."\n";
+						socket_write($socket,$s,strlen($s));
+						$b = '';
+						socket_set_option($socket,SOL_SOCKET,SO_RCVTIMEO,array('sec' => 2,'usec' => 0));
+						while($buf = socket_read($socket,2048)){
+							$b .= $buf;
+							if(strpos($b,"\n")!==false){
+								break;
+							}
+						}
+						socket_close($socket);
+						if($a = json_decode($b,true)){
+							foreach($a as $b){
+								$networkTypes[$b['id']] = $b;
+							}
+						}
+					}
+				}
+				$json->add('networkTypes',$networkTypes);
 				break;
 			case 'checkLogin':
 				$success = false;
@@ -148,15 +228,124 @@ if($you->isGlobalOp()){
 				break;
 			case 'ws':
 				$json->add('websockets',$config['websockets']);
+				$json->add('pattern',array(
+					array(
+						'name' => 'Enable Websockets',
+						'type' => 'checkbox',
+						'var' => 'use'
+					),
+					array(
+						'name' => 'SSL',
+						'type' => 'checkbox',
+						'var' => 'ssl',
+						'pattern' => array(
+							array(
+								'name' => 'Certificate File',
+								'type' => 'text',
+								'var' => 'certfile'
+							),
+							array(
+								'name' => 'Private Key File',
+								'type' => 'text',
+								'var' => 'keyfile'
+							)
+						)
+					),
+					array(
+						'name' => 'Advanced settings',
+						'type' => 'more',
+						'pattern' => array(
+							array(
+								'name' => 'Host (only set if different from setting in "misc")',
+								'type' => 'text',
+								'var' => 'host'
+							),
+							array(
+								'name' => 'Enable Port-poking (will disable internal port)',
+								'type' => 'checkbox',
+								'var' => 'portpoking'
+							),
+							array(
+								'name' => 'External Port',
+								'type' => 'number',
+								'var' => 'port'
+							),
+							array(
+								'name' => 'Internal Port (e.g. for apache forwarding)',
+								'type' => 'text',
+								'var' => 'intport'
+							)
+						)
+					)
+				));
 				break;
 			case 'misc':
 				$json->add('misc',array(
-					'useBot' => $config['settings']['useBot'],
-					'botPort' => $config['settings']['botPort'],
+					'botSocket' => $config['settings']['botSocket'],
 					'hostname' => $config['settings']['hostname'],
 					'curidFilePath' => $config['settings']['curidFilePath'],
 					'signatureKey' => $config['security']['sigKey'],
-					'ircPasswd' => $config['security']['ircPwd']
+					'ircPasswd' => $config['security']['ircPwd'],
+					'experimental' => $config['settings']['experimental']
+				));
+				$json->add('pattern',array(
+					array(
+						'name' => 'bot socket',
+						'type' => 'text',
+						'var' => 'botSocket'
+					),
+					array(
+						'name' => 'hostname',
+						'type' => 'text',
+						'var' => 'hostname'
+					),
+					array(
+						'name' => 'curid file path',
+						'type' => 'text',
+						'var' => 'curidFilePath'
+					),
+					array(
+						'name' => 'signature key',
+						'type' => 'text',
+						'var' => 'signatureKey'
+					),
+					array(
+						'name' => 'irc password',
+						'type' => 'text',
+						'var' => 'ircPasswd'
+					),
+					array(
+						'type' => 'newline'
+					),
+					array(
+						'name' => 'Turn on experimental settings (not recommended)',
+						'type' => 'checkbox',
+						'var' => 'experimental'
+					)
+				));
+				break;
+			case 'ex':
+				$json->add('ex',array(
+					'useBot' => $config['settings']['useBot'],
+					'minified' => !isset($config['settings']['minified'])||$config['settings']['minified'],
+					'betaUpdates' => isset($config['settings']['betaUpdates'])&&$config['settings']['betaUpdates']
+				));
+				$json->add('pattern',array(
+					array(
+						'name' => 'use bot',
+						'type' => 'checkbox',
+						'var' => 'useBot'
+					),
+					array(
+						'name' => 'use minfied sources',
+						'type' => 'checkbox',
+						'var' => 'minified'
+					),
+					array(
+						'name' => 'fetch beta updates',
+						'type' => 'checkbox',
+						'var' => 'betaUpdates'
+					)
 				));
 				break;
 			case 'releaseNotes':
@@ -200,6 +389,26 @@ if($you->isGlobalOp()){
 				$json->add('message','Themes saved!');
 				break;
 			case 'channels':
+				$remChans = array();
+				foreach($config['channels'] as $c){
+					$found = false;
+					foreach($jsonData as $cc){
+						if($c['id'] == $cc['id']){
+							$found = true;
+							break;
+						}
+					}
+					if(!$found){
+						$remChans[] = $c['id'];
+					}
+				}
+				foreach($remChans as $removeChan){
+					$sql->query_prepare('DELETE FROM {db_prefix}channels WHERE `chan`=?',array($removeChan));
+					$sql->query_prepare('DELETE FROM {db_prefix}lines WHERE `channel`=?',array($removeChan));
+					$sql->query_prepare('DELETE FROM {db_prefix}lines_old WHERE `channel`=?',array($removeChan));
+					$sql->query_prepare('DELETE FROM {db_prefix}permissions WHERE `channel`=?',array($removeChan));
+					$sql->query_prepare('DELETE FROM {db_prefix}users WHERE `channel`=?',array($removeChan));
+				}
 				$config['channels'] = $jsonData;
 				writeConfig();
 				break;
@@ -208,13 +417,18 @@ if($you->isGlobalOp()){
 				$json->add('message','Config saved!');
 				break;
 			case 'sql':
-				$config['sql']['server'] = $jsonData['server'];
-				$config['sql']['db'] = $jsonData['db'];
-				$config['sql']['user'] = $jsonData['user'];
-				$config['sql']['passwd'] = $jsonData['passwd'];
-				$sql_connection=@mysqli_connect($config['sql']['server'],$config['sql']['user'],$config['sql']['passwd'],$config['sql']['db']);
-				if (mysqli_connect_errno($sql_connection)!=0){
-					$json->addError('Could not connect to SQL DB: '.mysqli_connect_errno($sql_connection).' '.mysqli_connect_error($sql_connection));
+				$config['sql']['prefix'] = $jsonData['prefix'];
+				if($jsonData['passwd'] != '' || $config['sql']['server'] != $jsonData['server'] || $config['sql']['user'] != $jsonData['user'] || $config['sql']['db'] != $jsonData['db']){
+					$config['sql']['server'] = $jsonData['server'];
+					$config['sql']['db'] = $jsonData['db'];
+					$config['sql']['user'] = $jsonData['user'];
+					$config['sql']['passwd'] = $jsonData['passwd'];
+					$sql_connection=@mysqli_connect($config['sql']['server'],$config['sql']['user'],$config['sql']['passwd'],$config['sql']['db']);
+					if (mysqli_connect_errno($sql_connection)!=0){
+						$json->addError('Could not connect to SQL DB: '.mysqli_connect_errno($sql_connection).' '.mysqli_connect_error($sql_connection));
+					}else{
+						writeConfig();
+					}
 				}else{
 					writeConfig();
 				}
@@ -264,12 +478,18 @@ if($you->isGlobalOp()){
 				writeConfig();
 				break;
 			case 'misc':
-				$config['settings']['useBot'] = $jsonData['useBot'];
-				$config['settings']['botPort'] = $jsonData['botPort'];
+				$config['settings']['botSocket'] = $jsonData['botSocket'];
 				$config['settings']['hostname'] = $jsonData['hostname'];
 				$config['settings']['curidFilePath'] = $jsonData['curidFilePath'];
 				$config['security']['sigKey'] = $jsonData['signatureKey'];
 				$config['security']['ircPwd'] = $jsonData['ircPasswd'];
+				$config['settings']['experimental'] = $jsonData['experimental'];
+				writeConfig();
+				break;
+			case 'ex':
+				$config['settings']['useBot'] = $jsonData['useBot'];
+				$config['settings']['minified'] = $jsonData['minified'];
+				$config['settings']['betaUpdates'] = $jsonData['betaUpdates'];
 				writeConfig();
 				break;
 			default:
