@@ -119,8 +119,8 @@ class Relay(oirc.OircRelay):
 			colorAddingCache[n['id']] = colorAdding
 		return colorAddingCache
 	def newBot(self,t,cfg):
-		bot_class = type('Bot_OIRC_anon',(Bot_OIRC,),{'handle':self.handle})
-		return bot_class(cfg[t]['server'],cfg[t]['port'],cfg[t]['nick'],cfg[t]['nickserv'],cfg[t]['ssl'],self.channels,t=='main',self.id,
+		bot_class = self.getHandle(Bot_OIRC)
+		return bot_class(cfg[t]['server'],cfg[t]['port'],cfg[t]['nick'],cfg[t]['nickserv'],cfg[t]['ssl'],t=='main',
 						self.haveTopicBot,cfg['topic']['nick'],cfg['colornicks'],self.getColorCache())
 	def initRelay(self):
 		self.relayType = relayType
@@ -172,7 +172,7 @@ class Relay(oirc.OircRelay):
 				self.topicBot.sendTopic(s,c)
 			else:
 				self.bot.sendTopic(s,c)
-	def joinThread():
+	def joinThread(self):
 		try:
 			self.bot.join()
 		except:
@@ -184,41 +184,27 @@ class Relay(oirc.OircRelay):
 
 
 #irc bot
-class Bot_OIRC(irc.Bot):
-	def __init__(self,server,port,nick,ns,dssl,idchans,main,i,tbe,tn,colornicks,colorCache):
+class Bot_OIRC(irc.Bot,oirc.OircRelayHandle):
+	def __init__(self,server,port,nick,ns,dssl,main,tbe,tn,colornicks,colorCache):
 		chans = []
-		for ii,c in idchans.items():
+		for ii,c in self.channels.items():
 			chans.append(c.lower())
 		
-		logstr = '(ircbot) '
-		if main:
-			logstr += '( '+str(i)+')'
-		else:
-			logstr += '(T'+str(i)+')'
-		irc.Bot.__init__(self,server,port,nick,dssl,ns,chans,logstr)
+		irc.Bot.__init__(self,server,port,nick,dssl,ns,chans)
 		
 		self.topicbotExists = tbe
-		self.i = i
 		self.topicNick = tn
 		self.colornicks = colornicks
 		self.colorAddingCache = colorCache
-		self.idchans = idchans
 		self.userlist = {}
 		self.main = main
-	def idToChan(self,i):
-		if i in self.idchans:
-			return self.idchans[i]
-		try:
-			if int(i) in self.idchans:
-				return self.idchans[int(i)]
-		except:
-			return -1
-		return -1
-	def chanToId(self,c):
-		for i,ch in self.idchans.items():
-			if c.lower() == ch.lower():
-				return i
-		return -1
+		if not main:
+			self.log_prefix = '[Topicbot] '
+	def log(self,s,level='info'): # re-write the bot handler
+		if level=='error':
+			self.log_error(s)
+		else:
+			self.log_info(s)
 	def send_safe(self,s):
 		if self.main:
 			self.send(s)
@@ -240,16 +226,16 @@ class Bot_OIRC(irc.Bot):
 			self.send('NICK %s' % (nick),True)
 		
 		self.colorAddingCache = colorCache
-		self.idchans = idchans
+		self.channels = idchans
 		chans = []
-		for i,c in self.idchans.items():
+		for i,c in self.channels.items():
 			chans.append(c.lower())
 		self.updateChans(chans)
 	def sendTopic(self,s,c):
 		c = self.idToChan(c)
-		if c != -1 and (self.topicbotExists ^ self.main):
+		if c != '' and (self.topicbotExists ^ self.main):
 			self.s.sendall(bytes('TOPIC %s :%s\r\n' % (c,s),'utf-8'))
-			self.log('>> '+c+' '+s)
+			self.log_info('>> '+c+' '+s)
 	def colorizeNick(self,n):
 		rcolors = ['03','04','06','08','09','10','11','12','13']
 		i = 0
@@ -258,7 +244,7 @@ class Bot_OIRC(irc.Bot):
 		return '\x03'+rcolors[i % 9]+n+'\x0F'
 	def sendLine(self,n1,n2,t,m,c,s): #name 1, name 2, type, message, channel, source
 		c = self.idToChan(c)
-		if c != -1:
+		if c != '':
 			colorAdding = ''
 			if s in self.colorAddingCache:
 				colorAdding = self.colorAddingCache[s]
@@ -289,7 +275,7 @@ class Bot_OIRC(irc.Bot):
 	def addLine(self,n1,n2,t,m,c):
 		c = self.chanToId(c)
 		if c != -1:
-			self.handle.sendToOther(n1,n2,t,m,c,self.i)
+			self.handle.sendToOther(n1,n2,t,m,c,self.id)
 	def addUser(self,u,c):
 		c = self.chanToId(c)
 		if c != -1:
@@ -297,20 +283,20 @@ class Bot_OIRC(irc.Bot):
 				self.userlist[c].append(u)
 			else:
 				self.userlist[c] = [u]
-			self.handle.addUser(u,c,self.i)
+			self.handle.addUser(u,c,self.id)
 	def removeUser(self,u,c):
 		c = self.chanToId(c)
 		if c != -1:
 			if c in self.userlist:
 				self.userlist[c].remove(u)
-			self.handle.removeUser(u,c,self.i)
+			self.handle.removeUser(u,c,self.id)
 	def handleQuit(self,n,m):
 		for c,us in self.userlist.items():
 			removedUsers = []
 			for u in us:
 				if u==n:
 					c = self.idToChan(c) # userlist array uses ids
-					if c != -1:
+					if c != '':
 						self.removeUser(n,c)
 						if not n in removedUsers:
 							self.addLine(n,'','quit',m,c)
@@ -322,7 +308,7 @@ class Bot_OIRC(irc.Bot):
 			for u in us:
 				if u==old:
 					c = self.idToChan(c) # userlist array uses ids
-					if c != -1:
+					if c != '':
 						self.removeUser(old,c)
 						self.addUser(new,c)
 						if not new in changedNicks:
@@ -336,7 +322,7 @@ class Bot_OIRC(irc.Bot):
 				return
 			if not (cid in self.userlist and nick in self.userlist[cid]):
 				return
-			users = self.handle.sql.query("SELECT `username` FROM `{db_prefix}users` WHERE `channel`=%s AND `isOnline`=1 AND `online`<>%s AND `username` IS NOT NULL",[cid,self.i])
+			users = self.handle.sql.query("SELECT `username` FROM `{db_prefix}users` WHERE `channel`=%s AND `isOnline`=1 AND `online`<>%s AND `username` IS NOT NULL",[cid,self.id])
 			userchunks = []
 			chunk = []
 			for u in users:
@@ -349,7 +335,7 @@ class Bot_OIRC(irc.Bot):
 			for c in userchunks:
 				self.send_safe('PRIVMSG '+nick+' :OIRCUSERS '+chan+' '+c)
 		except:
-			traceback.print_exc()
+			self.log_error(traceback.format_exc())
 			return
 	def doMain(self,line):
 		for i in range(len(line)):
@@ -392,7 +378,7 @@ class Bot_OIRC(irc.Bot):
 		elif line[1]=='TOPIC':
 			if nick.lower()!=self.nick.lower() and nick.lower().rstrip('_')!=self.topicNick.lower().rstrip('_'):
 				self.addLine(nick,'','topic',message,chan)
-				self.handle.sendTopicToOther(message,self.chanToId(chan),self.i)
+				self.handle.sendTopicToOther(message,self.chanToId(chan),self.id)
 		elif line[1]=='NICK':
 			self.handleNickChange(nick,line[2][1:])
 		elif line[1]=='352':
@@ -405,7 +391,7 @@ class Bot_OIRC(irc.Bot):
 	def delUsersInChan(self,c):
 		c = self.chanToId(c)
 		if c != -1:
-			self.handle.removeAllUsersChan(c,self.i)
+			self.handle.removeAllUsersChan(c,self.id)
 	def getUsersInChan(self,c):
 		self.delUsersInChan(c)
 		self.send_safe('WHO %s' % c)

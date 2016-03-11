@@ -20,7 +20,7 @@
 #	You should have received a copy of the GNU General Public License
 #	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 
-import server,traceback,signal,json,time,pymysql,sys,re,oirc_include as oirc,os
+import server,traceback,signal,json,time,datetime,pymysql,sys,re,oirc_include as oirc,os
 
 try:
 	import memcache
@@ -81,7 +81,7 @@ class Sql:
 		try:
 			return self.db.cursor()
 		except:
-			print('(sql) creating new SQL connection...')
+			handle.log('sql','info','creating new SQL connection...')
 			try:
 				self.db = pymysql.connect(
 					host=config.json['sql']['server'],
@@ -123,9 +123,8 @@ class Sql:
 			cur.close()
 			return rows
 		except Exception as inst:
-			print(config.json['sql'])
-			print('(sql) Error',inst)
-			traceback.print_exc()
+			handle.log('sql','error',str(inst))
+			handle.log('sql','error',traceback.format_exc())
 			return False
 	def getVar(self,var):
 		res = self.query('SELECT value,type FROM {db_prefix}vars WHERE name=%s',[var])
@@ -183,13 +182,13 @@ class OIRCLink(server.ServerHandler):
 					handle.updateRelayTypes()
 				elif data['t'] == 'server_getRelayTypes':
 					s = json.dumps(handle.getRelayTypesData())+'\n'
-					print('(oirc) Sending out network information...',s)
+					handle.log('oirc_link','info','Sending out network information... '+str(s))
 					self.socket.sendall(bytes(s,'utf-8'))
 				else:
-					print('(oirc)>> '+str(data))
+					handle.log('oirc_link','info','>> '+str(data))
 					handle.sendToOther(data['n1'],data['n2'],data['t'],data['m'],data['c'],data['s'],data['uid'],False)
 			except:
-				traceback.print_exc()
+				handle.log('oirc_link','error',traceback.format_exc())
 		return True
 
 
@@ -205,13 +204,23 @@ class Main():
 		self.sql = sql
 		self.updateRelayTypes()
 		self.updateChanIds()
+	def log(self,id,level,message,prefix = ''):
+		id = str(id)
+		with open(FILEROOT+'/logs/'+id+'.'+level,'a+') as f:
+			f.write(datetime.datetime.now().strftime("[%a, %d %b %Y %H:%M:%S.%f] ")+prefix+message+'\n')
+		if level == 'error':
+			self.log(id,'info',message,'ERROR: ')
+	def log_info(self,s):
+		self.log('handle','info',s)
+	def log_error(self,s):
+		self.log('handle','error',s)
 	def updateRelayTypes(self):
 		for f in os.listdir('.'):
 			relay_file = re.match(r'^relay_(\w+)\.py$',f)
 			if relay_file:
 				relay_file = relay_file.group(1)
 				try:
-					print('(handle) Found relay',relay_file,'importing...')
+					self.log_info('Found relay "'+relay_file+'", importing...')
 					relay = __import__('relay_'+relay_file)
 					self.relayTypes[relay.relayType] = {
 						'module':relay,
@@ -222,8 +231,8 @@ class Main():
 						'editPattern':relay.editPattern
 					}
 				except Exception as inst:
-					print('(handle) Error importing relay',relay,':',inst)
-					traceback.print_exc()
+					self.log_error('Error importing relay "'+relay_file+'": '+str(inst))
+					self.log_error(traceback.format_exc())
 	def getRelayTypesData(self):
 		a = []
 		for i,v in self.relayTypes.items():
@@ -242,8 +251,8 @@ class Main():
 			f.write(str(sql.query("SELECT MAX(line_number) AS max FROM {db_prefix}lines")[0]['max']))
 			f.close()
 		except Exception as inst:
-			print('(handle) curline error',inst)
-			traceback.print_exc()
+			self.log_error('curline error: '+str(inst))
+			self.log_error(traceback.format_exc())
 	def addUser(self,u,c,i,uid=-1):
 		temp = sql.query("SELECT usernum,isOnline FROM {db_prefix}users WHERE username=%s AND channel=%s AND online=%s",[u,c,int(i)])
 		if(len(temp)==0):
@@ -298,11 +307,12 @@ class Main():
 		except:
 			oircOnly = True
 		
-		print('(handle) (relay) '+str({'name1':n1,'name2':n2,'type':t,'message':m,'channel':c,'source':s,'uid':uid}))
+		self.log_info('(relay) '+str({'name1':n1,'name2':n2,'type':t,'message':m,'channel':c,'source':s,'uid':uid}))
 		
 		if not oircOnly:
 			oircOnly = (t in ('join','part','quit') and uid!=-1)
 			if not str(c) in self.chanIds:
+				self.log_error('(relay)')
 				print('(handle) (relay) Invalid channel '+str(c)+', dropping message')
 				return
 		
@@ -391,7 +401,7 @@ class Main():
 		for c in config.json['channels']:
 			self.chanIds.append(str(c['id']))
 	def updateConfig(self):
-		print('(handle) Got signal to update config!')
+		self.log_info('Got signal to update config!')
 		oldInternalSock = config.json['settings']['botSocket']
 		config.readFile()
 		self.updateChanIds()
@@ -414,7 +424,7 @@ class Main():
 					if size_before < len(self.relays):
 						self.relays[len(self.relays)-1].startRelay_wrap() # start it straigt away!
 	def sigquit(self,e,s):
-		print('(handle) sigquit')
+		self.log_info('sigquit')
 		self.quit()
 	def startOircLink(self):
 		sock = config.json['settings']['botSocket']
@@ -423,7 +433,7 @@ class Main():
 		else:
 			res = re.match(r'^([\w\.]+):(\d+)',sock)
 			if not res:
-				print('(handle) ERROR: invalid internal socket ',sock)
+				self.log_error('ERROR: invalid internal socket '+sock)
 				return False
 			self.oircLink = server.Server(res.group(1),int(res.group(2)),OIRCLink)
 		self.oircLink.start()
@@ -448,7 +458,7 @@ class Main():
 				time.sleep(30)
 				r = oirc.execPhp('omnomirc.php',{'cleanUsers':''});
 				if not r['success']:
-					print('(handle) Something went wrong updating users...',r)
+					self.log_error('Something went wrong updating users...'+str(r))
 		except KeyboardInterrupt:
 			print('(handle) KeyboardInterrupt, exiting...')
 			self.quit()
@@ -468,11 +478,15 @@ class Main():
 		sys.exit(code)
 
 if __name__ == "__main__":
+	FILEROOT = os.path.dirname(os.path.realpath(__file__))
 	print('Starting OmnomIRC bot...')
+	if not os.path.exists(FILEROOT+'/logs'):
+		os.makedirs(FILEROOT+'/logs')
+	
 	config = Config()
 	oirc.execPhp('admin.php',{'internalAction':'activateBot'})
 	sql = Sql()
+	handle = Main()
 	config.can_postload = True
 	config.postLoad()
-	handle = Main()
 	handle.serve()

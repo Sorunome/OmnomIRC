@@ -37,7 +37,7 @@ class Bot(threading.Thread):
 		self.logstr = logstr
 		
 		self.lastTriedNick = time.time()
-	def log(self,s):
+	def log(self,s,level='info'):
 		if self.logstr != '':
 			print(self.logstr+s)
 	def updateChans(self,ch):
@@ -75,7 +75,7 @@ class Bot(threading.Thread):
 				self.s.sendall(bytes('%s\r\n' % s.encode('utf-8'),'utf-8'))
 				self.log('>> '+s.encode('utf-8'))
 		except:
-			traceback.print_exc()
+			self.log(traceback.format_exc(),'error')
 			if not self.stopnow and not overrideRestart:
 				self.restart = True
 				self.stopThread()
@@ -126,8 +126,8 @@ class Bot(threading.Thread):
 					self.quitMsg = 'No pings (1)'
 					self.log(' Restarting due to no pings')
 			except Exception as inst:
-				print(inst)
-				traceback.print_exc()
+				self.log(str(int),'error')
+				self.log(traceback.format_exc(),'error')
 				time.sleep(0.1)
 				if self.lastLineTime+90 <= time.time(): # allow up to 60 seconds lag
 					self.stopnow = True
@@ -166,8 +166,8 @@ class Bot(threading.Thread):
 					self.handleNickTaken(line)
 				except Exception as inst:
 					self.log(' parse Error')
-					print(inst)
-					traceback.print_exc()
+					self.log(str(inst))
+					self.log(traceback.format_exc(),'error')
 		if self.stopnow:
 			if self.quitMsg!='':
 				self.send('QUIT :%s' % self.quitMsg,True)

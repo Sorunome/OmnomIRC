@@ -31,9 +31,13 @@ editPattern = False
 
 class Relay(oirc.OircRelay):
 	relayType = 1
+	def log_info(self,s):
+		self.handle.log('websockets','info',s)
+	def log_error(self,s):
+		self.handle.log('websockets','error',s)
 	def errhandler(self):
 		if self.config['portpoking']:
-			print('(websockets) port in use, trying different port...')
+			self.log_info('Port in use, trying different port...')
 			self.config['port'] += 1
 			if self.config['port'] > 65535 or self.config['port'] < 10000:
 				self.config['port'] = 10000
@@ -42,7 +46,6 @@ class Relay(oirc.OircRelay):
 			self.startRelay()
 	def initRelay(self):
 		self.relayType = relayType
-		ws_handler = type('WebSocketsHandler_anon',(WebSocketsHandler,),{'handle':self.handle})
 		port = self.config['intport']
 		host = self.config['host']
 		if host == '':
@@ -55,9 +58,9 @@ class Relay(oirc.OircRelay):
 				host = port
 				port = 0
 		if self.config['ssl']:
-			self.server = server.SSLServer(host,port,ws_handler,errhandler = self.errhandler,certfile = self.config['certfile'],keyfile = self.config['keyfile'])
+			self.server = server.SSLServer(host,port,self.getHandle(WebSocketsHandler),errhandler = self.errhandler,certfile = self.config['certfile'],keyfile = self.config['keyfile'])
 		else:
-			self.server = server.Server(host,port,ws_handler,errhandler = self.errhandler)
+			self.server = server.Server(host,port,self.getHandle(WebSocketsHandler),errhandler = self.errhandler)
 	def startRelay(self):
 		self.server.start()
 	def updateRelay(self,cfg,chans):
@@ -105,7 +108,7 @@ def b64encode_wrap(s):
 	return oirc.makeUnicode(b64encode(bytes(s,'utf-8')))
 
 # websockethandler skeleton from https://gist.github.com/jkp/3136208
-class WebSocketsHandler(server.ServerHandler):
+class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 	magic = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
 	sig = ''
 	network = -1
@@ -117,10 +120,12 @@ class WebSocketsHandler(server.ServerHandler):
 	chans = {}
 	msgStack = []
 	pmHandler = '**'
+	def get_log_prefix(self):
+		return '['+str(self.client_address)+'] [Network: '+str(self.network)+'] '
 	def setup(self):
-		print('(websockets) connection established'+str(self.client_address))
+		self.get_log_prefix = self.get_log_prefix()
+		self.log_info('connection established, new web-client')
 		self.handshake_done = False
-		print('(websockets) New Web-Client')
 		return True
 	def recieve(self):
 		if not self.handshake_done:
@@ -131,13 +136,13 @@ class WebSocketsHandler(server.ServerHandler):
 		try:
 			b1,b2 = self.socket.recv(2)
 		except:
-			print('(websockets) nothing to recieve')
+			self.log_info('nothing to recieve')
 			return False
 		if b1 & 0x0F == 0x8:
-			print('(websockets) Client asked to close connection')
+			self.log_info('Client asked to close connection')
 			return False
 		if not b1 & 0x80:
-			print('(websockets) Client must always be masked')
+			self.log_info('Client must always be masked')
 			return False
 		length = b2 & 127
 		if length == 126:
@@ -151,7 +156,7 @@ class WebSocketsHandler(server.ServerHandler):
 		try:
 			return self.on_message(json.loads(oirc.makeUnicode(decoded)))
 		except Exception as inst:
-			traceback.print_exc()
+			self.log_error(traceback.format_exc())
 			return True
 	def send_message(self, message):
 		try:
@@ -184,7 +189,7 @@ class WebSocketsHandler(server.ServerHandler):
 			else:
 				return
 		if c!='':
-			print('(websockets) ('+str(self.network)+')>> '+str({'chan':c,'nick':self.nick,'message':m,'type':t}))
+			self.log_info('>> '+str({'chan':c,'nick':self.nick,'message':m,'type':t}))
 			self.handle.sendToOther(self.nick,'',t,m,c,self.network,self.uid)
 	def join(self,c): # updates nick in userlist
 		c = str(c)
@@ -228,12 +233,12 @@ class WebSocketsHandler(server.ServerHandler):
 			if len(buf) < 1024:
 				break
 		
-		print('(websockets) Handshaking...')
+		self.log_info('Handshaking...')
 		key = re.search('\n[sS]ec-[wW]eb[sS]ocket-[kK]ey[\s]*:[\s]*(.*)\r?\n?',data)
 		if key:
 			key = key.group(1).strip()
 		else:
-			print('(websockets) Missing Key!')
+			self.log_info('Missing Key!')
 			return False
 		digest = b64encode(sha1((key + self.magic).encode('latin_1')).digest()).strip().decode('latin_1')
 		response = 'HTTP/1.1 101 Switching Protocols\r\n'
@@ -277,6 +282,7 @@ class WebSocketsHandler(server.ServerHandler):
 							self.uid = m['id']
 							self.network = m['network']
 							self.pmHandler = '['+str(self.network)+','+str(self.uid)+']'
+							self.get_log_prefix = self.get_log_prefix()
 							for a in self.msgStack: # let's pop the whole stack!
 								self.on_message(a)
 							self.msgStack = []
@@ -343,7 +349,7 @@ class WebSocketsHandler(server.ServerHandler):
 			traceback.print_exc()
 		return True
 	def close(self):
-		print('(websockets) connection closed')
+		self.log_info('connection closed')
 		try:
 			for c in self.chans:
 				self.chans[c] = 1 # we want to quit right away

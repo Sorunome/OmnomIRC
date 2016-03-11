@@ -96,3 +96,40 @@ class OircRelay:
 		return
 	def joinThread(self):
 		return
+	def log_info(self,s):
+		self.handle.log(self.id,'info',s)
+	def log_error(self,s):
+		self.handle.log(self.id,'error',s)
+	def getHandle(self,c):
+		c.id = self.id
+		c.handle = self.handle
+		c.channels = self.channels
+		return c
+
+class OircRelayHandle:
+	id = -1
+	handle = False
+	channels = False
+	log_prefix = ''
+	def idToChan(self,i):
+		if i in self.channels:
+			return self.channels[i]
+		try:
+			if int(i) in self.channels:
+				return self.channels[int(i)]
+		except:
+			return ''
+		return ''
+	def chanToId(self,c):
+		for i,ch in self.channels.items():
+			if c.lower() == ch.lower():
+				return i
+		return -1
+	def log_info(self,s):
+		self.handle.log(self.id,'info',self.log_prefix+s)
+	def log_error(self,s):
+		self.handle.log(self.id,'error',self.log_prefix+s)
+	def addLine(self,n1,n2,t,m,c):
+		c = self.chanToId(c)
+		if c != -1:
+			self.handle.sendToOther(n1,n2,t,m,c,self.id)
