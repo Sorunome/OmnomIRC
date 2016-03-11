@@ -19,9 +19,9 @@
 #
 #	You should have received a copy of the GNU General Public License
 #	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
-import chardet,subprocess,json,re
+import chardet,subprocess,json,re,os
 
-f = open('documentroot.cfg')
+f = open(os.path.dirname(os.path.realpath(__file__))+'/documentroot.cfg')
 DOCUMENTROOT = f.readlines()[0].strip()
 f.close()
 
@@ -101,10 +101,9 @@ class OircRelay:
 	def log_error(self,s):
 		self.handle.log(self.id,'error',s)
 	def getHandle(self,c):
-		c.id = self.id
 		c.handle = self.handle
 		c.channels = self.channels
-		return c
+		return type(str(self.id)+'_class_anon',(c,),{'id':self.id})
 
 class OircRelayHandle:
 	id = -1

@@ -92,13 +92,32 @@ class Sql:
 					charset='utf8',
 					cursorclass=pymysql.cursors.DictCursor)
 			except:
-				self.db = pymysql.connect(
-					host=config.json['sql']['server'],
-					user=config.json['sql']['user'],
-					password=config.json['sql']['passwd'],
-					db=config.json['sql']['db'],
-					charset='utf8',
-					cursorclass=pymysql.cursors.DictCursor)
+				try:
+					self.db = pymysql.connect(
+						host=config.json['sql']['server'],
+						user=config.json['sql']['user'],
+						password=config.json['sql']['passwd'],
+						db=config.json['sql']['db'],
+						charset='utf8',
+						cursorclass=pymysql.cursors.DictCursor)
+				except:
+					try:
+						self.db = pymysql.connect(
+							host=config.json['sql']['server'],
+							user=config.json['sql']['user'],
+							passwd=config.json['sql']['passwd'],
+							db=config.json['sql']['db'],
+							unix_socket='/var/run/mysqld/mysqld.sock',
+							charset='utf8',
+							cursorclass=pymysql.cursors.DictCursor)
+					except:
+						self.db = pymysql.connect(
+							host=config.json['sql']['server'],
+							user=config.json['sql']['user'],
+							passwd=config.json['sql']['passwd'],
+							db=config.json['sql']['db'],
+							charset='utf8',
+							cursorclass=pymysql.cursors.DictCursor)
 			return self.db.cursor()
 	def query(self,q,p = []):
 		global config

@@ -20,7 +20,7 @@
 #	You should have received a copy of the GNU General Public License
 #	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 
-import irc,oirc_include as oirc
+import irc,json,oirc_include as oirc
 
 relayType = 3
 defaultCfg = {

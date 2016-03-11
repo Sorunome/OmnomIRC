@@ -125,7 +125,7 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 	def get_log_prefix(self):
 		return '['+str(self.client_address)+'] [Network: '+str(self.network)+'] '
 	def setup(self):
-		self.get_log_prefix = self.get_log_prefix()
+		self.log_prefix = self.get_log_prefix()
 		self.log_info('connection established, new web-client')
 		self.handshake_done = False
 		return True
@@ -284,7 +284,7 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 							self.uid = m['id']
 							self.network = m['network']
 							self.pmHandler = '['+str(self.network)+','+str(self.uid)+']'
-							self.get_log_prefix = self.get_log_prefix()
+							self.log_prefix = self.get_log_prefix()
 							for a in self.msgStack: # let's pop the whole stack!
 								self.on_message(a)
 							self.msgStack = []
