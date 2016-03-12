@@ -20,11 +20,10 @@
 #	You should have received a copy of the GNU General Public License
 #	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 
-import server,traceback,signal,json,time,datetime,pymysql,sys,re,oirc_include as oirc,os
+import server,traceback,signal,json,time,datetime,pymysql,sys,re,os,argparse,oirc_include as oirc
 
-RSP_STARTFAIL = 1
-RSP_RESTART = 2
-
+RSP_RESTART = 1
+RSP_STARTFAIL = 2
 try:
 	import memcache
 	memcached = memcache.Client(['127.0.0.1:11211'],debug=0)
@@ -232,8 +231,11 @@ class Main():
 		self.updateChanIds()
 	def log(self,id,level,message,prefix = ''):
 		id = str(id)
-		with open(FILEROOT+'/logs/'+id+'.'+level,'a+') as f:
-			f.write(datetime.datetime.now().strftime("[%a, %d %b %Y %H:%M:%S.%f] ")+prefix+message+'\n')
+		with open(args.logpath+'/'+id+'.'+level,'a+') as f:
+			s = datetime.datetime.now().strftime("[%a, %d %b %Y %H:%M:%S.%f] ")+prefix+message
+			f.write(s+'\n')
+			if args.verbose and level == 'info': # we want all the prefixes and stuff
+				print(s)
 		if level == 'error':
 			self.log(id,'info',message,'ERROR: ')
 	def log_info(self,s):
@@ -523,6 +525,15 @@ class Main():
 
 if __name__ == "__main__":
 	FILEROOT = os.path.dirname(os.path.realpath(__file__))
+	
+	parser = argparse.ArgumentParser()
+	parser.prog = 'omnomirc.sh' # we want this to be run via the shellscript
+	parser.add_argument('-v','--verbose',help='increase output verbosity',action='store_true')
+	parser.add_argument('-l','--logpath',help='file log location')
+	args = parser.parse_args()
+	if args.logpath == None:
+		args.logpath = FILEROOT+'/logs'
+	
 	print('Starting OmnomIRC bot...')
 	if not os.path.exists(FILEROOT+'/logs'):
 		os.makedirs(FILEROOT+'/logs')

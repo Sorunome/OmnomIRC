@@ -9,7 +9,7 @@
 ### END INIT INFO
 
 ####Config####
-SCRIPT="/home/oirc/bot.sh"
+SCRIPT="/home/oirc/omnomirc.sh"
 RUNAS=oirc
 
 PIDFILE=/var/run/omnomirc.pid
