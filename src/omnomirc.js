@@ -42,6 +42,7 @@ oirc = (function(){
 							self.hostname = data.hostname;
 							channels.setChans(data.channels);
 							parser.setSmileys(data.smileys);
+							page.setSmileys(data.smileys);
 							self.networks = {};
 							$.each(data.networks,function(i,n){
 								self.networks[n.id] = n;
@@ -291,8 +292,8 @@ oirc = (function(){
 									recall();
 								},true);
 							}
+							self.didRelog = true;
 						}
-						self.didRelog = true;
 					}else{
 						if(data.relog!==undefined){
 							self.didRelog = false; // relog successfull, new try!
@@ -637,6 +638,13 @@ oirc = (function(){
 								document.location.reload();
 							})
 					));
+				},
+				getAll:function(){
+					var a = {};
+					$.each(self.allOptions,function(i,v){
+						a[i] = v.value;
+					});
+					return a;
 				}
 			};
 			return {
@@ -644,7 +652,8 @@ oirc = (function(){
 				get:self.get,
 				setDefaults:self.setDefaults,
 				setExtraChanMsg:self.setExtraChanMsg,
-				getHTML:self.getHTML
+				getHTML:self.getHTML,
+				getAll:self.getAll
 			};
 		})(),
 		instant = (function(){
@@ -808,6 +817,7 @@ oirc = (function(){
 					port:0,
 					ssl:true,
 					tryFallback:true,
+					didRelog:false,
 					fallback:function(){
 						console.log('trying fallback...');
 						if(self.ws.tryFallback){
@@ -834,10 +844,17 @@ oirc = (function(){
 						}
 						
 						try{
-							self.ws.socket = new PooledWebSocket((self.ws.ssl?'wss://':'ws://')+self.ws.host+':'+self.ws.port.toString()+'/'+settings.net());
+							var path = window.location.pathname.split('/');
+							path.pop();
+							if(path.length > 1 && path[path.length-1] === ''){
+								path.pop();
+							}
+							path.push('ws');
+							path.push(settings.net());
+							self.ws.socket = new PooledWebSocket((self.ws.ssl?'wss://':'ws://')+self.ws.host+':'+self.ws.port.toString()+path.join('/'));
 						}catch(e){
 							console.log(self.ws.socket);
-							console.log((ssl?'wss://':'ws://')+self.ws.host+':'+self.ws.port.toString());
+							console.log((self.ws.ssl?'wss://':'ws://')+self.ws.host+':'+self.ws.port.toString()+path.join('/'));
 							console.log(e);
 							self.ws.fallback();
 						}
@@ -859,9 +876,15 @@ oirc = (function(){
 									}
 								}
 								if(data.relog!==undefined && data.relog!=0){
-									settings.fetch(function(){
-										self.ws.identify();
-									},true);
+									if(!self.ws.didRelog){
+										self.ws.didRelog = true;
+										settings.fetch(function(){
+											if(settings.loggedIn()){
+												self.ws.identify();
+												self.ws.didRelog = false;
+											}
+										},true);
+									}
 								}
 							}catch(e){};
 						};
@@ -2198,8 +2221,10 @@ oirc = (function(){
 						$('#smileyMenuButton')
 							.attr('src','smileys/smiley_grey.png');
 					}
-					$('#smileyselect').append(
-						$.map(parser.getSmileys(),function(s){
+				},
+				setSmileys:function(sm){
+					$('#smileyselect').empty().append(
+						$.map(sm,function(s){
 							return [(s.inMenu?($('<img>')
 								.attr({
 									src:s.pic,
@@ -2367,7 +2392,8 @@ oirc = (function(){
 				isBlurred:function(){
 					return self.isBlurred;
 				},
-				changeLinks:self.changeLinks
+				changeLinks:self.changeLinks,
+				setSmileys:self.setSmileys
 			};
 		})(),
 		statusBar = (function(){
@@ -3191,12 +3217,9 @@ oirc = (function(){
 					$.each(sm,function(i,s){
 						smileys.push({
 							regex:s.regex,
-							replace:s.replace.split('ADDSTUFF').join(addStuff).split('PIC').join(s.pic).split('ALT').join(s.alt)
+							replace:s.replace.split('ADDSTUFF').join(addStuff).split('PIC').join(s.pic).split('ALT').join(s.alt),
 						});
 					});
-				},
-				getSmileys:function(){
-					return smileys;
 				},
 				setIgnoreList:function(a){
 					ignores = a;
@@ -3263,8 +3286,8 @@ oirc = (function(){
 			}
 		},
 		options:{
-			getFullOptionsString:function(){
-				return options.getFullOptionsString();
+			getAll:function(){
+				return options.getAll();
 			}
 		}
 	}

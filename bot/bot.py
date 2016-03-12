@@ -22,6 +22,9 @@
 
 import server,traceback,signal,json,time,datetime,pymysql,sys,re,oirc_include as oirc,os
 
+RSP_STARTFAIL = 1
+RSP_RESTART = 2
+
 try:
 	import memcache
 	memcached = memcache.Client(['127.0.0.1:11211'],debug=0)
@@ -193,18 +196,21 @@ class OIRCLink(server.ServerHandler):
 		for line in temp:
 			try:
 				data = json.loads(line)
+				handle.log('oirc_link','info','>> '+str(data))
+				
 				if data['t'] == 'server_updateconfig':
 					handle.updateConfig()
 				elif data['t'] == 'server_delete_modebuffer':
 					handle.deleteModeBuffer(data['c'])
 				elif data['t'] == 'server_updaterelaytypes':
 					handle.updateRelayTypes()
+				elif data['t'] == 'server_restart':
+					handle.quit(RSP_RESTART)
 				elif data['t'] == 'server_getRelayTypes':
 					s = json.dumps(handle.getRelayTypesData())+'\n'
 					handle.log('oirc_link','info','Sending out network information... '+str(s))
 					self.socket.sendall(bytes(s,'utf-8'))
 				else:
-					handle.log('oirc_link','info','>> '+str(data))
 					handle.sendToOther(data['n1'],data['n2'],data['t'],data['m'],data['c'],data['s'],data['uid'],False)
 			except:
 				handle.log('oirc_link','error',traceback.format_exc())
@@ -218,6 +224,7 @@ class Main():
 	bots = []
 	modeBuffer = {}
 	chanIds = []
+	live = True
 	def __init__(self):
 		self.config = config
 		self.sql = sql
@@ -445,6 +452,12 @@ class Main():
 	def sigquit(self,e,s):
 		self.log_info('sigquit')
 		self.quit()
+	def sigterm(self,e,s):
+		self.log_info('sigterm')
+		self.quit()
+	def sigint(self,e,s):
+		self.log_info('sigint')
+		self.quit()
 	def startOircLink(self):
 		sock = config.json['settings']['botSocket']
 		if sock.startswith('unix:'):
@@ -459,6 +472,9 @@ class Main():
 		return True
 	def serve(self):
 		signal.signal(signal.SIGQUIT,self.sigquit)
+		signal.signal(signal.SIGTERM,self.sigterm)
+		signal.signal(signal.SIGINT,self.sigint)
+		
 		self.calcNetwork = -1
 		
 		
@@ -467,13 +483,12 @@ class Main():
 				self.addRelay(n)
 		
 		if not self.startOircLink():
-			self.exit(42)
-		
+			self.quit(RSP_STARTFAIL)
 		try:
 			for r in self.relays:
 				r.startRelay_wrap()
 			
-			while True:
+			while self.live:
 				time.sleep(30)
 				r = oirc.execPhp('omnomirc.php',{'cleanUsers':''});
 				if not r['success']:
@@ -483,17 +498,27 @@ class Main():
 			self.quit()
 		except:
 			traceback.print_exc()
-	def quit(self,code=1):
+		self.log_info('That\'s it, I\'m dying')
+	def quit(self,code=0):
 		global config
+		self.live = False
 		for r in self.relays:
 			r.stopRelay_wrap()
 		for r in self.relays:
-			r.joinThread()
-		self.oircLink.stop()
-		self.oircLink.join()
+			try:
+				r.joinThread()
+			except:
+				pass
+		
 		sql.close()
 		
 		oirc.execPhp('admin.php',{'internalAction':'deactivateBot'})
+		try:
+			self.oircLink.stop()
+			self.oircLink.join()
+		except:
+			os._exit(code) # we are within the thread!
+			pass
 		sys.exit(code)
 
 if __name__ == "__main__":

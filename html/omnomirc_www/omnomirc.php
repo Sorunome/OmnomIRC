@@ -424,31 +424,51 @@ class GlobalVars{
 	}
 	public function get($s){
 		global $sql;
-		$res = $sql->query_prepare("SELECT value,type FROM {db_prefix}vars WHERE name=?",array($s));
-		$res = $res[0];
-		switch((int)$res['type']){ //convert to types, else return false
-			case 0:
-				return (string)$res['value'];
-			case 1:
-				return (int)$res['value'];
-			case 2:
-				return (float)$res['value'];
-			case 3:
-				$json = json_decode($res['value']);
-				if(json_last_error()){
-					return false;
-				}
-				return $json;
-			case 4:
-				return (bool)$res['value'];
-			case 5:
-				$json = json_decode($res['value'],true);
-				if(json_last_error()){
-					return false;
-				}
-				return $json;
+		$params = $s;
+		if(!is_array($params)){
+			$params = array($params);
 		}
-		return false;
+		$ret = array();
+		foreach($params as $p){
+			$ret[$p] = NULL;
+		}
+		foreach($sql->query_prepare("SELECT value,type,name FROM {db_prefix}vars WHERE ".implode(' OR ',array_fill(0,count($params),'name=?')),$params) as $res){
+			if(!$res['name']){
+				continue;
+			}
+			$val = NULL;
+			switch((int)$res['type']){ //convert to types, else return null
+				case 0:
+					$val = (string)$res['value'];
+					break;
+				case 1:
+					$val = (int)$res['value'];
+					break;
+				case 2:
+					$val = (float)$res['value'];
+					break;
+				case 3:
+					$json = json_decode($res['value']);
+					if(!json_last_error()){
+						$val = $json;
+					}
+					break;
+				case 4:
+					$val = (bool)$res['value'];
+					break;
+				case 5:
+					$json = json_decode($res['value'],true);
+					if(!json_last_error()){
+						$val = $json;
+					}
+					break;
+			}
+			$ret[$res['name']] = $val;
+		}
+		if(!is_array($s)){
+			return $ret[$s];
+		}
+		return $ret;
 	}
 }
 $vars = new GlobalVars();

@@ -166,11 +166,18 @@ if($you->isGlobalOp()){
 			case 'networks':
 				foreach($config['networks'] as &$n){
 					if($n['type'] == 1){
-						$m = $vars->get('extra_chan_msg_'.(string)$n['id']);
+						$v = $vars->get(array('extra_chan_msg_'.(string)$n['id'],'defaults_'.(string)$n['id']));
+						$m = $v['extra_chan_msg_'.(string)$n['id']];
 						if($m!==NULL){
 							$n['config']['extraChanMsg'] = $m;
 						}else{
 							$n['config']['extraChanMsg'] = '';
+						}
+						$m = $v['defaults_'.(string)$n['id']];
+						if($m!==NULL){
+							$n['config']['defaults'] = $m;
+						}else{
+							$n['config']['defaults'] = array();
 						}
 					}elseif($n['config'] === true){
 						$n['config'] = $vars->get('net_config_'.(string)$n['id']);
@@ -186,8 +193,8 @@ if($you->isGlobalOp()){
 						'defaultCfg' => array(
 							'checkLogin' => 'link to checkLogin file',
 							'theme' => -1,
-							'defaults' => '',
-							'opGroups' => [],
+							'defaults' => array(),
+							'opGroups' => array(),
 							'guests' => 0,
 							'editPattern' => false
 						)
@@ -457,6 +464,10 @@ if($you->isGlobalOp()){
 						if(isset($n['config']['extraChanMsg'])){
 							$vars->set('extra_chan_msg_'.(string)$n['id'],$n['config']['extraChanMsg']);
 							unset($n['config']['extraChanMsg']);
+						}
+						if(isset($n['config']['defaults'])){
+							$vars->set('defaults_'.(string)$n['id'],$n['config']['defaults']);
+							unset($n['config']['defaults']);
 						}
 						if(isset($n['config']['checkLoginHook'])){
 							$res = json_decode(file_get_contents($n['config']['checkLogin'].'?server='.getCheckLoginChallenge().'&action=set&var=hook&val='.base64_url_encode($n['config']['checkLoginHook'])),true);

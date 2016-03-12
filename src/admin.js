@@ -586,7 +586,8 @@
 												}).trigger('now'),
 												'<br>',
 												$('<button>').text('Use Current settings as defaults').click(function(){
-														net.config.defaults = oirc.options.getFullOptionsString();
+														net.config.defaults = oirc.options.getAll();
+														alert('Defaults set');
 													}),
 												'<br>',
 												$('<select>').append(

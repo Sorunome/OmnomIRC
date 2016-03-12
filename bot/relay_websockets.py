@@ -55,13 +55,13 @@ class Relay(oirc.OircRelay):
 		else:
 			host = 'localhost'
 			if port.startswith('unix:'):
-				host = port
+				host = port[5:]
 				port = 0
+		c = self.getHandle(WebSocketsHandler)
+		c.id = 'websockets'
 		if self.config['ssl']:
-			self.server = server.SSLServer(host,port,self.getHandle(WebSocketsHandler),errhandler = self.errhandler,certfile = self.config['certfile'],keyfile = self.config['keyfile'])
+			self.server = server.SSLServer(host,port,c,errhandler = self.errhandler,certfile = self.config['certfile'],keyfile = self.config['keyfile'])
 		else:
-			c = self.getHandle(WebSocketsHandler)
-			c.id = 'websockets'
 			self.server = server.Server(host,port,c,errhandler = self.errhandler)
 	def startRelay(self):
 		self.server.start()

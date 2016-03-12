@@ -229,7 +229,6 @@ td.action > a:nth-child(1) > span {
 	box-shadow: inset 0 -0.1em #6699ff;  
 }
 #ChanListButtons {
-	width:98%;
 	overflow:hidden;
 	position:absolute;
 	left:0;
