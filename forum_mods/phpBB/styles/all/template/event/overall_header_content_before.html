@@ -19,4 +19,42 @@
 		</ul>
 	</div>
 </div>
+<script type="text/javascript">
+(function(){
+	var doFlash = false,
+		intervalHandler = false,
+		originalTitle = "",
+		startFlash = function(){
+			if(!doFlash){
+				var alternator = true;
+				doFlash = true;
+				originalTitle = document.title;
+				intervalHandler = setInterval(function(){
+					document.title = (alternator?"[ @] ":"[@ ] ")+originalTitle;
+					alternator = !alternator;
+				},500);
+			}
+		},
+		stopFlash = function(){
+			if(intervalHandler){
+				clearInterval(intervalHandler);
+				intervalHandler = false;
+				document.title = originalTitle;
+			}
+			doFlash = false;
+		};
+	window.addEventListener("message",function(e){
+		if(e.origin === "{OIRC_DOMAIN}"){
+			switch(e.data){
+				case "startFlash":
+					startFlash();
+					break;
+				case "stopFlash":
+					stopFlash();
+					break;
+			}
+		}
+	},false);
+})();
+</script>
 <!-- ENDIF -->

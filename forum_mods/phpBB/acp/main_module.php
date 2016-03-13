@@ -82,6 +82,8 @@ class main_module
 				if($updateFrameUrl)
 				{
 					$config->set('oirc_frameurl',$oirc_config['oircUrl'].'/index.php?network='.$oirc_config['network']);
+					$u = parse_url($oirc_config['oircUrl']);
+					$config->set('oirc_domain',$u['scheme'].'://'.$u['host']);
 				}
 				writeConfig();
 			}
