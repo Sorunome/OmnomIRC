@@ -29,5 +29,44 @@ if((isset($oirc_userpages[CURRENT_PAGE]) && $oirc_userpages[CURRENT_PAGE]) || (!
 				<iframe id="ircbox" src="'.Settings::pluginGet('oirc_frameurl').'" style="width:100%;height:'.Settings::pluginGet('oirc_height').'px;border-style:none;"></iframe>
 			</td>
 		</tr>
-	</table>');
+	</table>
+	<script type="text/javascript">
+	(function(){
+		var doFlash = false,
+			intervalHandler = false,
+			originalTitle = "",
+			startFlash = function(){
+				if(!doFlash){
+					var alternator = true;
+					doFlash = true;
+					originalTitle = document.title;
+					intervalHandler = setInterval(function(){
+						document.title = (alternator?"[ @] ":"[@ ] ")+originalTitle;
+						alternator = !alternator;
+					},500);
+				}
+			},
+			stopFlash = function(){
+				if(intervalHandler){
+					clearInterval(intervalHandler);
+					intervalHandler = false;
+					document.title = originalTitle;
+				}
+				doFlash = false;
+			};
+		window.addEventListener("message",function(e){
+			if(e.origin === "'.Settings::pluginGet('oirc_domain').'"){
+				switch(e.data){
+					case "startFlash":
+						startFlash();
+						break;
+					case "stopFlash":
+						stopFlash();
+						break;
+				}
+			}
+		},false);
+	})();
+	</script>
+	');
 }
