@@ -676,7 +676,7 @@ var oirc = (function(){
 					}
 					return self.id == ls.get('browserTab');
 				}
-			}
+			};
 			return {
 				init:self.init,
 				current:self.current
