@@ -18,8 +18,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-oirc = (function(){
+'use strict';
+var oirc = (function(){
 	var OMNOMIRCSERVER = 'https://omnomirc.omnimaga.org',
 		settings = (function(){
 			var self = {
@@ -688,7 +688,7 @@ oirc = (function(){
 				$elem:false,
 				start:function(){
 					if(self.interval===false){
-						pixels = [true,true,true,true,true,false,false,false];
+						var pixels = [true,true,true,true,true,false,false,false];
 						self.$elem = $('<div>')
 							.attr('id','indicator')
 							.css({
@@ -2794,7 +2794,7 @@ oirc = (function(){
 			return {
 				init:self.init
 			};
-		})();
+		})(),
 		parser = (function(){
 			var self = {
 				smileys:[],
@@ -3016,7 +3016,6 @@ oirc = (function(){
 						case 'reload':
 							if(!loadMode){
 								channels.current().reload();
-								return false;
 							}
 							return true;
 						case 'reload_userlist':
@@ -3224,7 +3223,7 @@ oirc = (function(){
 					});
 				},
 				setIgnoreList:function(a){
-					ignores = a;
+					self.ignores = a;
 				},
 				parseTextDecorations:function(s){
 					if(s !== '' && options.get('textDeco')){
@@ -3263,7 +3262,12 @@ oirc = (function(){
 				});
 				break;
 			case 'admin':
-				$.getScript('admin.js');
+				$('head').append(
+					$('<script>').attr({
+						type:'text/javascript',
+						src:'admin.js'
+					})
+				);
 				break;
 			//case 'main': // no need, already caught by default.
 			default:

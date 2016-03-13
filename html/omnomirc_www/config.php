@@ -125,7 +125,6 @@ if(isset($_GET['js'])){
 			'port' => $config['websockets']['port'],
 			'ssl' => $config['websockets']['ssl'] || $config['websockets']['fssl']
 		),
-		'v' => $v,
 		'extraChanMsg' => $v['extra_chan_msg_'.(string)$net]?$v['extra_chan_msg_'.(string)$net]:''
 	));
 }elseif(isset($_GET['admincfg'])){

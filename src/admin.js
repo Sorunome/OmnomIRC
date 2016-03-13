@@ -18,7 +18,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
  */
-
+'use strict';
 (function(){
 	var adminconfig = [],
 		sendEdit = function(page,json,fn){
@@ -124,7 +124,7 @@
 					return [prop.name+':&nbsp;',$input,'<br>',($more?$more:'')];
 				})
 			);
-		}
+		},
 		makeThemesPage = function(themes){
 			$('#adminContent').append(
 				'<div style="font-weight:bold">Theme Settings</div>',
@@ -382,7 +382,7 @@
 			$('#adminContent').append(
 				'<div style="font-weight:bold">Hotlinks Settings</div>',
 				$.map(hotlinks,function(h,i){
-					$attrSettings = $('<div>');
+					var $attrSettings = $('<div>');
 					drawAttrSettings($attrSettings,i);
 					return $('<div>').css({
 							'display':'inline-block',

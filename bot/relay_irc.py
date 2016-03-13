@@ -28,14 +28,14 @@ defaultCfg = {
 		'nick':'OmnomIRC',
 		'server':'irc server',
 		'port':6667,
-		'nickserv':'nickserv password',
+		'nickserv':'',
 		'ssl':False
 	},
 	'topic':{
 		'nick':'',
 		'server':'irc server',
 		'port':6667,
-		'nickserv':'nickserv password',
+		'nickserv':'',
 		'ssl':False
 	},
 	'colornicks':False
@@ -71,6 +71,11 @@ editPattern = [
 		'var':'main/ssl'
 	},
 	{
+		'name':'Nickserv (leave emtpy for none)',
+		'type':'text',
+		'var':'main/nickserv'
+	},
+	{
 		'name':'Advanced settings',
 		'type':'more',
 		'pattern':[
@@ -79,7 +84,7 @@ editPattern = [
 				'type':'info'
 			},
 			{
-				'name':'Nick',
+				'name':'Nick (leave emtpy for no seperate topic bot)',
 				'type':'text',
 				'var':'topic/nick'
 			},
@@ -97,6 +102,11 @@ editPattern = [
 				'name':'SSL',
 				'type':'checkbox',
 				'var':'topic/ssl'
+			},
+			{
+				'name':'Nickserv (leave emtpy for none)',
+				'type':'text',
+				'var':'topic/nickserv'
 			}
 		]
 	}
