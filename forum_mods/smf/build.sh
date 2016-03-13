@@ -1,6 +1,6 @@
 #!/bin/bash
 echo "Generating SMF mod ..."
-sed 's/<file name=\"\$sourcedir\/Subs-Post.php\">/<file name=\"\$boarddir\/mobiquo\/include\/Subs-Post.php\" error=\"skip\">/' forum/install.xml > tapatalk/install_tapatalk.xml
+sed 's/<file name=\"\$sourcedir\/Subs-Post.php\">/<file name=\"\$boarddir\/mobiquo\/include\/Subs-Post.php\">/' forum/install.xml > tapatalk/install_tapatalk.xml
 mkdir forum/checkLogin
 cp ../../html/checkLogin/index.php forum/checkLogin
 sed 's/generic/smf/' ../../html/checkLogin/config.json.php > forum/checkLogin/config.json.php

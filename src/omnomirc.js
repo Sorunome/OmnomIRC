@@ -820,25 +820,41 @@ var oirc = (function(){
 						}
 					}
 				},
-				stopFlash:function(){
-					if(top == window){ // no firame, we have to do the flashing manually
-						if(self.intervalHandler){
-							clearInterval(self.intervalHandler);
-							self.intervalHandler = false;
-							document.title = self.originalTitle;
+				stopFlash:function(noTransmit){
+					if(noTransmit === undefined){
+						noTransmit = false;
+					}
+					if(self.doFlash){
+						if(top == window){ // no firame, we have to do the flashing manually
+							if(self.intervalHandler){
+								clearInterval(self.intervalHandler);
+								self.intervalHandler = false;
+								document.title = self.originalTitle;
+							}
+						}else{ // let the forum mod do the flashing!
+							if(self.target!==undefined){
+								self.target.postMessage('stopFlash','*');
+							}
 						}
-					}else{ // let the forum mod do the flashing!
-						if(self.target!==undefined){
-							self.target.postMessage('stopFlash','*');
+						self.doFlash = false;
+						if(!noTransmit){
+							ls.set('stopFlash',Math.random().toString(36)+(new Date()).getTime().toString());
 						}
 					}
-					self.doFlash = false;
+				},
+				init:function(){
+					$(window).on('storage',function(e){
+						if(e.originalEvent.key == settings.net()+'stopFlash'){
+							self.stopFlash(true);
+						}
+					});
 				}
 			};
 			return {
 				request:self.request,
 				make:self.make,
-				stopFlash:self.stopFlash
+				stopFlash:self.stopFlash,
+				init:self.init
 			};
 		})(),
 		request = (function(){
@@ -2365,6 +2381,7 @@ var oirc = (function(){
 					tab.init();
 					instant.init();
 					logs.init();
+					notification.init();
 					self.registerToggle();
 					if(is_ios){
 						self.calcResize(true);
