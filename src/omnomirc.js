@@ -3005,7 +3005,8 @@ oirc = (function(){
 						message = parseMessage(line.message),
 						tdName = '*',
 						tdMessage = message,
-						statusTxt = '';
+						statusTxt = '',
+						lineDate = new Date(line.time*1000);
 					if(line.network == -1){
 						return true;
 					}
@@ -3182,18 +3183,23 @@ oirc = (function(){
 						statusTxt = '<'+line.name+'> ';
 					}
 					if(options.get('times')){
-						statusTxt = '['+(new Date(line.time*1000)).toLocaleTimeString()+'] '+statusTxt;
+						statusTxt = '['+lineDate.toLocaleTimeString()+'] '+statusTxt;
 					}
 					statusTxt += $('<span>').append(tdMessage).text();
 					statusBar.set(statusTxt);
-					
+					if((new Date(lastMessage)).getDay()!=lineDate.getDay()){
+						$mBox.append($('<tr>').addClass('dateSeperator').append($('<td>')
+							.addClass((options.get('altLines') && (lineHigh = !lineHigh)?'lineHigh':''))
+							.attr('colspan',options.get('times')?3:2)
+							.text(lineDate.toLocaleDateString())
+						));
+					}
 					var $tr = $('<tr>')
 						.addClass((options.get('altLines') && (lineHigh = !lineHigh)?'lineHigh':''))
-						.addClass(((new Date(lastMessage)).getDay()!=(new Date(line.time*1000)).getDay())?'seperator':'') //new day indicator
 						.append(
 							(options.get('times')?$('<td>')
 								.addClass('irc-date')
-								.append('['+(new Date(line.time*1000)).toLocaleTimeString()+']'):''),
+								.append('['+lineDate.toLocaleTimeString()+']'):''),
 							$('<td>')
 								.addClass('name')
 								.append(tdName),

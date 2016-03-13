@@ -130,10 +130,11 @@ a:hover {
 	border:0.1em solid rgba(255, 0, 0, 0.3);
 	border-radius: 0.3em;
 }
-.seperator > td {
-	border-top-style:solid;
-	border-top-width:0.1em !important;
-	border-top-color:#999999;
+.dateSeperator > td {
+	border-style:solid none;
+	border-width:0.1em !important;
+	border-color:#999999;
+	text-align:center;
 }
 .irc-date {
 	color: #000000;
