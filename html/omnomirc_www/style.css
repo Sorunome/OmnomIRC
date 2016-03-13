@@ -43,7 +43,7 @@ body{
 	overflow:hidden;
 	margin:0;
 	padding:0;
-	background-color: #DFEFFF;
+	background: #DFEFFF;
 	font-size:9pt;
 	line-height:1.2em;
 	font-family:verdana,sans-serif;
@@ -84,7 +84,7 @@ a:hover {
 .popup {
 	display:none;
 	position:absolute;
-	background-color:#A1C2FF;
+	background:#A1C2FF;
 	border:0.1em solid #69F;
 	border-radius:0.3em;
 	padding:0.3em;
@@ -189,23 +189,23 @@ td.action > a:nth-child(1) > span {
 .fg-dkGray,		.fg-14										{color: #4C4C4C;}
 .fg-ltGray,		.fg-15										{color: #959595;}
 
-.bg--1							{background-color:transparent;}
-.bg-white,		.bg-0,.bg-00	{background-color: #ffffff;}
-.bg-black,		.bg-1,.bg-01	{background-color: #000000;}
-.bg-dkBlue,		.bg-2,.bg-02	{background-color: #3636B2;}
-.bg-dkgreen,	.bg-3,.bg-03	{background-color: #2A8C2A;}
-.bg-red,		.bg-4,.bg-04	{background-color: #C33B3B;}
-.bg-dkRed,		.bg-5,.bg-05	{background-color: #800000;}
-.bg-dkPurple,	.bg-6,.bg-06	{background-color: #80267F;}
-.bg-orange,		.bg-7,.bg-07	{background-color: #FF7f00;}
-.bg-yellow,		.bg-8,.bg-08	{background-color: #FFFF00;}
-.bg-green,		.bg-9,.bg-09	{background-color: #3DCC3D;}
-.bg-teal,		.bg-10			{background-color: #008080;}
-.bg-ltBlue,		.bg-11			{background-color: #2F8C74;}
-.bg-blue,		.bg-12			{background-color: #4545E6;}
-.bg-pink,		.bg-13			{background-color: #B037B0;}
-.bg-dkGray,		.bg-14			{background-color: #4C4C4C;}
-.bg-ltGray,		.bg-15			{background-color: #959595;}
+.bg--1							{background:transparent;}
+.bg-white,		.bg-0,.bg-00	{background: #ffffff;}
+.bg-black,		.bg-1,.bg-01	{background: #000000;}
+.bg-dkBlue,		.bg-2,.bg-02	{background: #3636B2;}
+.bg-dkgreen,	.bg-3,.bg-03	{background: #2A8C2A;}
+.bg-red,		.bg-4,.bg-04	{background: #C33B3B;}
+.bg-dkRed,		.bg-5,.bg-05	{background: #800000;}
+.bg-dkPurple,	.bg-6,.bg-06	{background: #80267F;}
+.bg-orange,		.bg-7,.bg-07	{background: #FF7f00;}
+.bg-yellow,		.bg-8,.bg-08	{background: #FFFF00;}
+.bg-green,		.bg-9,.bg-09	{background: #3DCC3D;}
+.bg-teal,		.bg-10			{background: #008080;}
+.bg-ltBlue,		.bg-11			{background: #2F8C74;}
+.bg-blue,		.bg-12			{background: #4545E6;}
+.bg-pink,		.bg-13			{background: #B037B0;}
+.bg-dkGray,		.bg-14			{background: #4C4C4C;}
+.bg-ltGray,		.bg-15			{background: #959595;}
 
 .uName-19	{color: #000000;}
 .uName-20	{color: #800000;}
@@ -261,7 +261,7 @@ td.action > a:nth-child(1) > span {
 	cursor:pointer;
 	height:100%;
 	
-	background-color: transparent;
+	background: transparent;
 	padding: 0.2em;
 	border-radius:0.4em 0.4em 0 0;
 	border:0.1em solid rgba(102, 153, 255, 0.3);
@@ -277,8 +277,11 @@ td.action > a:nth-child(1) > span {
 	vertical-align:inherit;
 }
 .chan:hover {
-	background-color:rgba(202, 228, 255, 0.5);
+	background:rgba(202, 228, 255, 0.5);
 	padding-top:0.3em;
+}
+.chan.curchan:hover {
+	background:#cae4ff;
 }
 .chan.curchan {
 	font-weight:bolder;
@@ -423,15 +426,15 @@ td.action > a:nth-child(1) > span {
 	overflow-x:hidden;
 	overflow-y:hidden;
 	height: calc(100% - 4em);
-	background-color: #CAE4FF;
+	background: #CAE4FF;
 	border-top:0.1em solid #6699FF;
-	transition: 1s 1s background-color;
+	transition: 1s 1s background;
 	cursor:default;
 	padding:0;
 }
 #UserListInnerCont:hover {
-	background-color: #DFEFFF;
-	transition: 0.5s 0.25s background-color;
+	background: #DFEFFF;
+	transition: 0.5s 0.25s background;
 }
 #UserList {
 	position:relative;
@@ -498,19 +501,19 @@ td.action > a:nth-child(1) > span {
 	cursor:pointer;
 	border-radius:0.2em;
 	border:0.1em solid #6699ff;
-	background-color: #CAE4FF;
+	background: #CAE4FF;
 	box-shadow: none;
-	transition: background-color 1s 1s, box-shadow 1s 1s;
+	transition: background 1s 1s, box-shadow 1s 1s;
 }
 #scrollBar:hover {
-	background-color: #DFEFFF;
+	background: #DFEFFF;
 	box-shadow: none;
-	transition: background-color .5s .25s, box-shadow 1s 0s;
+	transition: background .5s .25s, box-shadow 1s 0s;
 }
 #scrollBar:active {
-	background-color: #DFEFFF;
+	background: #DFEFFF;
 	box-shadow: 0 0 0.4em #6699FF;
-	transition: background-color 0s 0s, box-shadow 0s 0s;
+	transition: background 0s 0s, box-shadow 0s 0s;
 }
 #scrollBarLine {
 	position: absolute;
@@ -518,7 +521,7 @@ td.action > a:nth-child(1) > span {
 	width: 0.6em;
 	border: 0.1em solid #6699FF;
 	border-top:none;
-	background-color: #CAE4FF;
+	background: #CAE4FF;
 }
 /*scrollbar end*/
 
@@ -543,7 +546,7 @@ td.action > a:nth-child(1) > span {
 	margin-top:0.3em;
 }
 #message,input,select{
-	background-color:#FFF;
+	background:#FFF;
 	color:#000;
 	border:0.1em solid #6699FF;
 }
@@ -551,7 +554,7 @@ span#message {
 	display:inline-block;
 	height:1em;
 	padding:0.3em 0.2em 0.2em 0.2em;
-	background-color:#ffffff;
+	background:#ffffff;
 	border:0.1em solid black;
 	border-radius:0.2em;
 	font-size:1.2em;
@@ -559,7 +562,7 @@ span#message {
 }
 #textDecoForm{
 	position:absolute;
-	background-color:#A1C2FF;
+	background:#A1C2FF;
 	border:0.1em solid #69F;
 	border-radius:0.5em;
 	bottom:3em;
@@ -569,15 +572,15 @@ span#message {
 	margin:0 0.3em;
 }
 #send,button{
-	background-color:#A1C2FF;
+	background:#A1C2FF;
 	border:0.1em solid #69F;
 	border-radius:0.3em;
 	cursor:pointer;
-	transition: background-color 1s 0s;
+	transition: background 1s 0s;
 }
 #send:hover,button:hover {
-	background-color:#DFEFFF;
-	transition: background-color 1s 0s;
+	background:#DFEFFF;
+	transition: background 1s 0s;
 }
 /*input end*/
 
@@ -635,7 +638,7 @@ span#message {
 	cursor:pointer;
 }
 .errorPopup {
-	background-color:#FFFFFF;
+	background:#FFFFFF;
 	z-index:50;
 	position:absolute;
 	top:0;

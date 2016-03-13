@@ -555,18 +555,6 @@ oirc = (function(){
 						}
 					}
 				},
-				init:function(def){
-					var opts = ls.get('options');
-					$.each(self.allOptions,function(i,v){
-						var val = v.default;
-						if(opts && opts[i]!==undefined){
-							val = opts[i];
-						}else if(def && def[i]!==undefined){
-							val = def[i];
-						}
-						self.allOptions[i].value = val;
-					});
-				},
 				set:function(s,v){
 					if(self.allOptions[s]===undefined){
 						return;
@@ -585,7 +573,16 @@ oirc = (function(){
 					self.extraChanMsg = s;
 				},
 				setDefaults:function(def){
-					self.init(def);
+					var opts = ls.get('options');
+					$.each(self.allOptions,function(i,v){
+						var val = v.default;
+						if(opts && opts[i]!==undefined){
+							val = opts[i];
+						}else if(def && def[i]!==undefined){
+							val = def[i];
+						}
+						self.allOptions[i].value = val;
+					});
 				},
 				getHTML:function(){
 					return $.merge($.map([false,true],function(alternator){
@@ -642,7 +639,9 @@ oirc = (function(){
 				getAll:function(){
 					var a = {};
 					$.each(self.allOptions,function(i,v){
-						a[i] = v.value;
+						if(v.hidden===undefined || !v.hidden){
+							a[i] = v.value;
+						}
 					});
 					return a;
 				}
@@ -2797,12 +2796,14 @@ oirc = (function(){
 			};
 		})();
 		parser = (function(){
-			var smileys = [],
-				maxLines = 200,
-				lastMessage = 0,
-				ignores = [],
-				cacheServerNicks = {},
-				parseName = function(n,o,uid){
+			var self = {
+				smileys:[],
+				maxLines:200,
+				lastMessage:0,
+				ignores:[],
+				cacheServerNicks:{},
+				lineHigh:false,
+				parseName:function(n,o,uid){
 					if(uid === undefined){
 						uid = -1;
 					}
@@ -2825,12 +2826,12 @@ oirc = (function(){
 						case '2': //server
 							if(net!==undefined && net.checkLogin!==undefined){
 								addLink = false;
-								if(cacheServerNicks[o.toString()+':'+uid.toString()]===undefined){
+								if(self.cacheServerNicks[o.toString()+':'+uid.toString()]===undefined){
 									network.getJSON(net.checkLogin+'?c='+uid.toString(10)+'&n='+ne,function(data){
-										cacheServerNicks[o.toString()+':'+uid.toString()] = data.nick;
+										self.cacheServerNicks[o.toString()+':'+uid.toString()] = data.nick;
 									},false,false);
 								}
-								cn = cacheServerNicks[o.toString()+':'+uid.toString()];
+								cn = self.cacheServerNicks[o.toString()+':'+uid.toString()];
 							}else{
 								cn = n;
 							}
@@ -2847,19 +2848,19 @@ oirc = (function(){
 					}
 					return '<span title="Unknown Network">'+cn+'</span>';
 				},
-				parseSmileys = function(s){
+				parseSmileys:function(s){
 					if(!s){
 						return '';
 					}
 					if(/^[\w\s\d\.,!?]*$/.test(s)){
 						return s;
 					}
-					$.each(smileys,function(i,smiley){
+					$.each(self.smileys,function(i,smiley){
 						s = s.replace(RegExp(smiley.regex,'g'),smiley.replace);
 					});
 					return s;
 				},
-				parseLinks = function(text){
+				parseLinks:function(text){
 					if (!text || text === null || text === undefined){
 						return '';
 					}
@@ -2876,7 +2877,7 @@ oirc = (function(){
 							.replace(RegExp("(^|.)\x01("+ier+"+)","g"),'$1<a target="_top" href="$2">$2</a>')
 							.replace(RegExp("(^|.)\x04("+ier+"+)","g"),'$1<a target="_top" href="http://$2">$2</a>');
 				},
-				parseColors = function(colorStr){
+				parseColors:function(colorStr){
 					var arrayResults = [],
 						s,
 						textDecoration = {
@@ -2960,34 +2961,29 @@ oirc = (function(){
 					colorStr = colorStr.replace(/(\x03|\x02|\x1F|\x09|\x0F)/g,'');
 					return colorStr;
 				},
-				parseHighlight = function(s){
-					if(s.toLowerCase().indexOf(settings.nick().toLowerCase().substr(0,options.get('charsHigh'))) >= 0 && settings.nick() != ''){
-						var style = '';
-						if(!options.get('highRed')){
-							style += 'background:none;padding:none;border:none;';
-						}
-						if(options.get('highBold')){
-							style += 'font-weight:bold;';
-						}
-						return '<span class="highlight" style="'+style+'">'+s+'</span>';
+				parseHighlight:function(s){
+					var style = '';
+					if(!options.get('highRed')){
+						style += 'background:none;padding:none;border:none;';
 					}
-					return s;
+					if(options.get('highBold')){
+						style += 'font-weight:bold;';
+					}
+					return '<span class="highlight" style="'+style+'">'+s+'</span>';
 				},
-				parseMessage = function(s,noSmileys){
+				parseMessage:function(s,noSmileys){
 					if(noSmileys==undefined || !noSmileys){
 						noSmileys = false;
 					}
 					s = (s=="\x00"?'':s); //fix 0-string bug
-					s = $('<span>').text(s).html();
-					s = parseLinks(s);
+					s = $('<span>').text(s).html(); // html escape
+					s = self.parseLinks(s);
 					if(options.get('smileys') && noSmileys===false){
-						s = parseSmileys(s);
+						s = self.parseSmileys(s);
 					}
-					s = parseColors(s);
+					s = self.parseColors(s);
 					return s;
 				},
-				lineHigh = false;
-			return {
 				addLine:function(line,loadMode){
 					if(loadMode===undefined){
 						loadMode = false;
@@ -2995,14 +2991,14 @@ oirc = (function(){
 					request.setCurLine(line.curLine);
 					if(
 						line.name == null
-						|| ignores.indexOf(line.name.toLowerCase()) > -1
+						|| self.ignores.indexOf(line.name.toLowerCase()) > -1
 						|| (line.chan.toString().toLowerCase()!=channels.current().handler.toLowerCase() && line.name2 !== settings.getPmIdent())
 						){
 						return true; // invalid line but we don't want to stop the new requests
 					}
 					var $mBox = $('#MessageBox'),
-						name = parseName(line.name,line.network,line.uid),
-						message = parseMessage(line.message),
+						name = self.parseName(line.name,line.network,line.uid),
+						message = self.parseMessage(line.message),
 						tdName = '*',
 						tdMessage = message,
 						statusTxt = '',
@@ -3010,8 +3006,8 @@ oirc = (function(){
 					if(line.network == -1){
 						return true;
 					}
-					if((['message','action','pm','pmaction'].indexOf(line.type)>=0) && line.name.toLowerCase() != '*'){
-						tdMessage = message = parseHighlight(message,line);
+					if(settings.nick() != '' && (['message','action','pm','pmaction'].indexOf(line.type)>=0) && line.name.toLowerCase() != '*' && message.toLowerCase().indexOf(settings.nick().toLowerCase().substr(0,options.get('charsHigh'))) >= 0){
+						tdMessage = message = self.parseHighlight(message);
 						if(page.isBlurred()){
 							notification.make('('+channels.current().name+') <'+line.name+'> '+line.message,line.chan);
 						}
@@ -3117,8 +3113,8 @@ oirc = (function(){
 							}
 							break;
 						case 'topic':
-							topic.set(parseMessage(line.message,true));
-							tdMessage = [name,' has changed the topic to ',parseMessage(line.message,true)];
+							topic.set(self.parseMessage(line.message,true));
+							tdMessage = [name,' has changed the topic to ',self.parseMessage(line.message,true)];
 							break;
 						case 'pm':
 							if(line.chan==channels.current().handler){
@@ -3172,7 +3168,7 @@ oirc = (function(){
 						default:
 							return true;
 					}
-					if(($mBox.find('tr').length>maxLines) && logMode!==true){
+					if(($mBox.find('tr').length>self.maxLines) && logMode!==true){
 						$mBox.find('tr:first').remove();
 					}
 					
@@ -3187,15 +3183,15 @@ oirc = (function(){
 					}
 					statusTxt += $('<span>').append(tdMessage).text();
 					statusBar.set(statusTxt);
-					if((new Date(lastMessage)).getDay()!=lineDate.getDay()){
+					if((new Date(self.lastMessage)).getDay()!=lineDate.getDay()){
 						$mBox.append($('<tr>').addClass('dateSeperator').append($('<td>')
-							.addClass((options.get('altLines') && (lineHigh = !lineHigh)?'lineHigh':''))
+							.addClass((options.get('altLines') && (self.lineHigh = !self.lineHigh)?'lineHigh':''))
 							.attr('colspan',options.get('times')?3:2)
 							.text(lineDate.toLocaleDateString())
 						));
 					}
 					var $tr = $('<tr>')
-						.addClass((options.get('altLines') && (lineHigh = !lineHigh)?'lineHigh':''))
+						.addClass((options.get('altLines') && (self.lineHigh = !self.lineHigh)?'lineHigh':''))
 						.append(
 							(options.get('times')?$('<td>')
 								.addClass('irc-date')
@@ -3213,15 +3209,15 @@ oirc = (function(){
 					$mBox.append($tr);
 					scroll.slide();
 					
-					lastMessage = line.time*1000;
+					self.lastMessage = line.time*1000;
 					
 					return true;
 				},
 				setSmileys:function(sm){
 					var addStuff = '';
-					smileys = [];
+					self.smileys = [];
 					$.each(sm,function(i,s){
-						smileys.push({
+						self.smileys.push({
 							regex:s.regex,
 							replace:s.replace.split('ADDSTUFF').join(addStuff).split('PIC').join(s.pic).split('ALT').join(s.alt),
 						});
@@ -3241,6 +3237,13 @@ oirc = (function(){
 					}
 					return s;
 				}
+			};
+			return {
+				addLine:self.addLine,
+				setSmileys:self.setSmileys,
+				setIgnoreList:self.setIgnoreList,
+				parseTextDecorations:self.parseTextDecorations
+				
 			};
 		})();
 	$(function(){

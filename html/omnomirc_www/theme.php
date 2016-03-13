@@ -114,10 +114,14 @@ if(isset($_GET['theme']) && ($themes = $vars->get('themes')) && isset($themes[$_
 	}
 
 	.chan.curchan {
-		background-color: $bg2;
+		background: $bg2;
 		border-color: ".hex2rgba($border,0.8).";
 		border-bottom-color: $bg2;
 		color: $tablink;
+	}
+
+	.chan.curchan:hover {
+		background: $bg2;
 	}
 
 	.chan:hover {
@@ -130,7 +134,7 @@ if(isset($_GET['theme']) && ($themes = $vars->get('themes')) && isset($themes[$_
 	#scrollBar:hover,
 	#scrollBar:active,
 	#UserListInnerCont:hover{
-		background-color: $bg;
+		background: $bg;
 	}
 	body,
 	#UserListInnerCont,
@@ -148,20 +152,20 @@ if(isset($_GET['theme']) && ($themes = $vars->get('themes')) && isset($themes[$_
 		text-shadow:0 0 4px ".hex2rgba($link,0.8).";
 	}
 	span#message,input#message,input,select{
-		background-color:$form;
+		background:$form;
 		color:$text;
 		border:1px solid $border;
 	}
 	button,#send{
-		background-color:$btn;
+		background:$btn;
 		color:$text;
 		border:1px solid $border;
 	}
 	.logDatePickerDay.current{
-		background-color:$btn;
+		background:$btn;
 	}
 	button:hover,#send:hover,.logDatePickerDay:hover{
-		background-color:$btnhover;
+		background:$btnhover;
 	}
 	.optionsTable .option{
 		color:$link;
