@@ -796,11 +796,49 @@ var oirc = (function(){
 							channels.highlight(c);
 						}
 					}
+					self.startFlash();
+				},
+				doFlash:false,
+				intervalHandler:false,
+				originalTitle:'',
+				target:top.postMessage?top:(top.document.postMessage?top.document:undefined),
+				startFlash:function(){
+					if(self.doFlash){
+						return;
+					}
+					self.doFlash = true;
+					if(top == window){ // no firame, we have to do the flashing manually
+						var alternator = false;
+						self.originalTitle = document.title;
+						self.intervalHandler = setInterval(function(){
+							document.title = (alternator?'[ @] ':'[@ ] ')+self.originalTitle;
+							alternator = !alternator;
+						},500);
+					}else{ // let the forum mod do the flashing!
+						if(self.target!==undefined){
+							self.target.postMessage('startFlash','*');
+						}
+					}
+				},
+				stopFlash:function(){
+					if(top == window){ // no firame, we have to do the flashing manually
+						if(self.intervalHandler){
+							clearInterval(self.intervalHandler);
+							self.intervalHandler = false;
+							document.title = self.originalTitle;
+						}
+					}else{ // let the forum mod do the flashing!
+						if(self.target!==undefined){
+							self.target.postMessage('stopFlash','*');
+						}
+					}
+					self.doFlash = false;
 				}
 			};
 			return {
 				request:self.request,
-				make:self.make
+				make:self.make,
+				stopFlash:self.stopFlash
 			};
 		})(),
 		request = (function(){
@@ -2253,7 +2291,7 @@ var oirc = (function(){
 						document.location.reload();
 					});
 				},
-				isBlurred:false,
+				isBlurred:true,
 				calcResize:function(allowHeightChange){
 					var htmlHeight = window.innerHeight,
 						htmlWidth = window.innerWidth,
@@ -2337,6 +2375,7 @@ var oirc = (function(){
 						self.isBlurred = true;
 					}).focus(function(){
 						self.isBlurred = false;
+						notification.stopFlash();
 					});
 					$('#aboutButton').click(function(e){
 						e.preventDefault();
@@ -3008,7 +3047,7 @@ var oirc = (function(){
 					}
 					if(settings.nick() != '' && (['message','action','pm','pmaction'].indexOf(line.type)>=0) && line.name.toLowerCase() != '*' && message.toLowerCase().indexOf(settings.nick().toLowerCase().substr(0,options.get('charsHigh'))) >= 0){
 						tdMessage = message = self.parseHighlight(message);
-						if(page.isBlurred()){
+						if(!loadMode && page.isBlurred()){
 							notification.make('('+channels.current().name+') <'+line.name+'> '+line.message,line.chan);
 						}
 					}
