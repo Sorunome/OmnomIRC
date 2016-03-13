@@ -728,7 +728,7 @@
 						(!info.updaterReady?
 							$('<a>').text('Click here to download the updater script').click(function(e){
 								e.preventDefault();
-								sendEdit('getUpdater',{path:oirc.OMNOMIRCSERVER+data.updater},function(){
+								sendEdit('getUpdater',{path:data.updater},function(){
 									loadPage('index');
 								});
 							})

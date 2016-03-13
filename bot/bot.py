@@ -20,9 +20,9 @@
 #	You should have received a copy of the GNU General Public License
 #	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 
-import server,traceback,signal,json,time,datetime,pymysql,sys,re,os,argparse,oirc_include as oirc
+import server,traceback,signal,json,time,datetime,pymysql,sys,re,os,argparse,requests,oirc_include as oirc
 
-RSP_RESTART = 1
+RSP_RESTART = 101
 RSP_STARTFAIL = 2
 try:
 	import memcache
@@ -209,6 +209,14 @@ class OIRCLink(server.ServerHandler):
 					s = json.dumps(handle.getRelayTypesData())+'\n'
 					handle.log('oirc_link','info','Sending out network information... '+str(s))
 					self.socket.sendall(bytes(s,'utf-8'))
+				elif data['t'] == 'server_updateFile':
+					try:
+						r = requests.get('https://omnomirc.omnimaga.org/'+data['n1'])
+						with open(FILEROOT+'/'+data['n2'],'wb+') as f:
+							f.write(r.content)
+						self.socket.sendall(bytes('success','utf-8'))
+					except:
+						self.socket.sendall(bytes('error','utf-8'))
 				else:
 					handle.sendToOther(data['n1'],data['n2'],data['t'],data['m'],data['c'],data['s'],data['uid'],False)
 			except:
@@ -231,8 +239,8 @@ class Main():
 		self.updateChanIds()
 	def log(self,id,level,message,prefix = ''):
 		id = str(id)
-		with open(args.logpath+'/'+id+'.'+level,'a+') as f:
-			s = datetime.datetime.now().strftime("[%a, %d %b %Y %H:%M:%S.%f] ")+prefix+message
+		with open(args.logpath+'/omnomirc.'+level,'a+') as f:
+			s = datetime.datetime.now().strftime('[%a, %d %b %Y %H:%M:%S.%f]')+' ['+id+'] '+prefix+message
 			f.write(s+'\n')
 			if args.verbose and level == 'info': # we want all the prefixes and stuff
 				print(s)

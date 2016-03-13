@@ -123,7 +123,7 @@ if(isset($_GET['js'])){
 			'use' => $config['websockets']['use'] && $config['settings']['useBot'],
 			'host' => $config['websockets']['host']?$config['websockets']['host']:$config['settings']['hostname'],
 			'port' => $config['websockets']['port'],
-			'ssl' => $config['websockets']['ssl']
+			'ssl' => $config['websockets']['ssl'] || $config['websockets']['fssl']
 		),
 		'v' => $v,
 		'extraChanMsg' => $v['extra_chan_msg_'.(string)$net]?$v['extra_chan_msg_'.(string)$net]:''

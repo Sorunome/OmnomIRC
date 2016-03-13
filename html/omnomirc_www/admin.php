@@ -278,9 +278,14 @@ if($you->isGlobalOp()){
 								'var' => 'port'
 							),
 							array(
-								'name' => 'Internal Port (e.g. for apache forwarding)',
+								'name' => 'Internal Port (e.g. for nginx/apache forwarding)',
 								'type' => 'text',
 								'var' => 'intport'
+							),
+							array(
+								'name' => 'Force client-sided ssl (e.g. for nginx/apache forwarding)',
+								'type' => 'checkbox',
+								'var' => 'fssl'
 							)
 						)
 					)
@@ -366,7 +371,7 @@ if($you->isGlobalOp()){
 		switch($_GET['set']){
 			case 'getUpdater':
 				if(isset($jsonData['path'])){
-					if($file = file_get_contents($jsonData['path'])){
+					if($file = file_get_contents('https://omnomirc.omnimaga.org/'.$jsonData['path'])){
 						if(file_put_contents(realpath(dirname(__FILE__)).'/updater.php',$file)){
 							$json->add('message','Downloaded updater');
 						}else{

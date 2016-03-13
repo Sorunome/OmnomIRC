@@ -7,7 +7,7 @@ python3 bot.py "$@" &
 pid=$!
 wait $pid
 wait $pid
-while [ $? = 1 ]; do
+while [ $? = 101 ]; do
 	echo "You aren't getting me down this easily, I've been told to restart!"
 	python3 bot.py "$@" &
 	pid=$!
