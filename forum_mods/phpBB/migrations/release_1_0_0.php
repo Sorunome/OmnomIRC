@@ -82,10 +82,10 @@ class release_1_0_0 extends \phpbb\db\migration\migration
 		return array(
 			'add_columns' => array(
 				$this->table_prefix.'users' => array(
-					'oirc_pages' => array('TEXT',''),
+					'oirc_pages' => array('VCHAR:1024',''),
 				),
 				$this->table_prefix.'forums' => array(
-					'oirc_chan' => array('TEXT',''),
+					'oirc_chan' => array('VCHAR:1024',''),
 				),
 			),
 		);
