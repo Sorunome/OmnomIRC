@@ -668,6 +668,7 @@
 											specificConfig = {
 												'checkLogin':'link to checkLogin file',
 												'checkLoginAbs':'',
+												'spLinks':[],
 												'theme':-1,
 												'defaults':{},
 												'guests':0
