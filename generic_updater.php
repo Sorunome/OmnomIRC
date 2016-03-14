@@ -1,12 +1,12 @@
 <?php
-//UPDATER FROMVERSION=2.9.1.4
+//UPDATER FROMVERSION=SED_INSERT_FROMVERSION
 error_reporting(0);
-$NEWVERSION='2.9.2';
+$NEWVERSION=SED_INSERT_NEWVERSION;
 
-$files = array(/* new files to update */);
-$clfiles = array(/* list of files for checkLogin to update */);
+$files = array(SED_INSERT_FILES);
+$clfiles = array(SED_INSERT_CLFILES);
 $updateHooks = false; // do we need to update hooks? true for all, array for specific hooks
-$botFiles = array(/* files for the bot to update */);
+$botFiles = array(SED_INSERT_BOTFILES);
 
 
 
