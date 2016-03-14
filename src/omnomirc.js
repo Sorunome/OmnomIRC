@@ -3127,7 +3127,7 @@ var oirc = (function(){
 							}
 							break;
 						case 'kick':
-							tdMessage = [name,' has kicked ',parseName(line.name2,line.network),' from '+channels.current().name+' (',message,')'];
+							tdMessage = [name,' has kicked ',self.parseName(line.name2,line.network),' from '+channels.current().name+' (',message,')'];
 							if(!loadMode){
 								users.remove({
 									nick:line.name2,
@@ -3147,7 +3147,7 @@ var oirc = (function(){
 								$.each(message,function(i,v){
 									var n = $('<span>').html(v).text();
 									if(n.indexOf('+')==-1 && n.indexOf('-')==-1){
-										message[i] = parseName(v,line.network);
+										message[i] = self.parseName(v,line.network);
 									}
 								});
 								message = message.join(' ');
@@ -3155,7 +3155,7 @@ var oirc = (function(){
 							tdMessage = [name,' set '+channels.current().name+' mode ',message];
 							break;
 						case 'nick':
-							tdMessage = [name,' has changed nicks to ',parseName(line.name2,line.network)];
+							tdMessage = [name,' has changed nicks to ',self.parseName(line.name2,line.network)];
 							if(!loadMode){
 								users.add({
 									nick:line.name2,
