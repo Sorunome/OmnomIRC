@@ -172,7 +172,6 @@ echo getPage('OmnomIRC admin panel','','
 $hotlinksHTML = '';
 $i = true;
 
-
 foreach($vars->get('hotlinks') as $link){
 	if($i){
 		$hotlinksHTML .= '<tr>';

@@ -4,11 +4,13 @@ error_reporting(0);
 $NEWVERSION='2.9.2';
 $DOWNLOADDIR = 'https://omnomirc.omnimaga.org/'.$NEWVERSION;
 
-$files = array('',/* now files to updater, first element must be empty */);
+$files = array(/* new files to update */);
 $clfiles = array(/* list of files for checkLogin to update */);
 $updateHooks = false; // do we need to update hooks? true for all, array for specific hooks
 $updateBot = false; // do we need to update the bot?
 
+
+array_unshift($files);
 include_once(realpath(dirname(__FILE__)).'/config.php');
 
 function lastUpdateStuff(){
@@ -140,7 +142,7 @@ exit;
 ?>
 '.json_encode($config);
 	if(!file_put_contents(realpath(dirname(__FILE__)).'/config.json.php',$file)){
-		die('{"errors":["ERROR: Coulnd\'t write config, please make file config.json.php writeable for PHP (yes that is a new file, feel free to create it and chmod 777 it)"],"step":1}');
+		die('{"errors":["ERROR: Couldn\'t write config, please make file config.json.php writeable for PHP"],"step":1}');
 	}
 }
 function getPage($title,$head,$body){

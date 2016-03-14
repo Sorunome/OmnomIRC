@@ -56,6 +56,7 @@ if(isset($_GET['js'])){
 	include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 	header('Content-type: application/json');
 	
+	
 	$cl = getCheckLoginUrl();
 	if(isset($_GET['clonly'])){
 		echo json_encode(array(
@@ -92,7 +93,6 @@ if(isset($_GET['js'])){
 	
 	$net = $networks->getNetworkId();
 	
-	$extraChanMsg = '';
 	
 	$dispNetworks = array();
 	foreach($config['networks'] as $n){
@@ -107,28 +107,25 @@ if(isset($_GET['js'])){
 			$addNet['checkLogin'] = $n['config']['checkLogin'];
 		}
 		$dispNetworks[] = $addNet;
-		if($n['id'] == $net){
-			$msg = $vars->get('extra_chan_msg_'.(string)$n['id']);
-			if($msg!==NULL){
-				$extraChanMsg = $msg;
-			}
-		}
 	}
+	
+	$v = $vars->get(array('extra_chan_msg_'.(string)$net,'defaults_'.(string)$net,'smileys'));
+	
 	echo json_encode(array(
 		'hostname' => $config['settings']['hostname'],
 		'channels' => $channels,
-		'smileys' => $vars->get('smileys'),
+		'smileys' => $v['smileys'],
 		'networks' => $dispNetworks,
 		'network' => $you->getNetwork(),
 		'checkLoginUrl' => $cl,
-		'defaults' => $defaults,
+		'defaults' => $v['defaults_'.(string)$net]?$v['defaults_'.(string)$net]:array(),
 		'websockets' => array(
 			'use' => $config['websockets']['use'] && $config['settings']['useBot'],
 			'host' => $config['websockets']['host']?$config['websockets']['host']:$config['settings']['hostname'],
 			'port' => $config['websockets']['port'],
-			'ssl' => $config['websockets']['ssl']
+			'ssl' => $config['websockets']['ssl'] || $config['websockets']['fssl']
 		),
-		'extraChanMsg' => $extraChanMsg
+		'extraChanMsg' => $v['extra_chan_msg_'.(string)$net]?$v['extra_chan_msg_'.(string)$net]:''
 	));
 }elseif(isset($_GET['admincfg'])){
 	include_once(realpath(dirname(__FILE__)).'/omnomirc.php');

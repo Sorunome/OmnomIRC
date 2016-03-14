@@ -196,6 +196,7 @@ if(!function_exists('generateOircSigURL')){
 
 global $title;
 $boardurl = 'http'.($_SERVER['SERVER_PORT'] == 443?'s':'').'://'.(isset($_SERVER['HTTP_HOST'])?$_SERVER['HTTP_HOST']:$_SERVER['SERVER_NAME']).$_SERVER['SCRIPT_NAME'];
+
 $settings = array(
 	'oirc_title' => array(
 		'type' => 'text',
@@ -270,9 +271,14 @@ $settings = array(
 	'oirc_frameurl' => array(
 		'type' => 'text',
 		'name' => 'DO NOT EDIT THIS!!!!',
-		'default' => $oirc_config['oircUrl'].'/index.php?network='.$oirc_config['network']
+		'default' => ''
 	),
 	'oirc_disppages' => array(
+		'type' => 'text',
+		'name' => 'DO NOT EDIT THIS!!!!',
+		'default' => ''
+	),
+	'oirc_domain' => array(
 		'type' => 'text',
 		'name' => 'DO NOT EDIT THIS!!!!',
 		'default' => ''
@@ -339,6 +345,9 @@ print '
 #oirc_frameurl,label[for="oirc_frameurl"],#oirc_disppages,label[for="oirc_disppages"]{
 	visibility:hidden;
 }
+#oirc_domain,label[for="oirc_domain"]{
+	display:none;
+}
 </style>
 <table class="outline margin width75" id="oirc_admin_pannel">
 	<tr class="header1">
@@ -386,6 +395,8 @@ if(isset($_POST['_plugin'])){
 		$oirc_config['oircUrl'] = $_POST['oirc_config_oircUrl'];
 	}
 	$_POST['oirc_frameurl'] = $oirc_config['oircUrl'].'/index.php?network='.$oirc_config['network'];
+	$u = parse_url($oirc_config['oircUrl']);
+	$_POST['oirc_domain'] = $u['scheme'].'://'.$u['host'];
 	if(!writeConfig()){
 		Alert(__("Please make sure that the OmnomIRC config file is writable!"));
 	}

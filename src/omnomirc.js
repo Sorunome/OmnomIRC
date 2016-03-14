@@ -18,8 +18,8 @@
  *  You should have received a copy of the GNU General Public License
  *  along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-oirc = (function(){
+'use strict';
+var oirc = (function(){
 	var OMNOMIRCSERVER = 'https://omnomirc.omnimaga.org',
 		settings = (function(){
 			var self = {
@@ -42,6 +42,7 @@ oirc = (function(){
 							self.hostname = data.hostname;
 							channels.setChans(data.channels);
 							parser.setSmileys(data.smileys);
+							page.setSmileys(data.smileys);
 							self.networks = {};
 							$.each(data.networks,function(i,n){
 								self.networks[n.id] = n;
@@ -291,8 +292,8 @@ oirc = (function(){
 									recall();
 								},true);
 							}
+							self.didRelog = true;
 						}
-						self.didRelog = true;
 					}else{
 						if(data.relog!==undefined){
 							self.didRelog = false; // relog successfull, new try!
@@ -554,18 +555,6 @@ oirc = (function(){
 						}
 					}
 				},
-				init:function(def){
-					var opts = ls.get('options');
-					$.each(self.allOptions,function(i,v){
-						var val = v.default;
-						if(opts && opts[i]!==undefined){
-							val = opts[i];
-						}else if(def && def[i]!==undefined){
-							val = def[i];
-						}
-						self.allOptions[i].value = val;
-					});
-				},
 				set:function(s,v){
 					if(self.allOptions[s]===undefined){
 						return;
@@ -584,7 +573,16 @@ oirc = (function(){
 					self.extraChanMsg = s;
 				},
 				setDefaults:function(def){
-					self.init(def);
+					var opts = ls.get('options');
+					$.each(self.allOptions,function(i,v){
+						var val = v.default;
+						if(opts && opts[i]!==undefined){
+							val = opts[i];
+						}else if(def && def[i]!==undefined){
+							val = def[i];
+						}
+						self.allOptions[i].value = val;
+					});
 				},
 				getHTML:function(){
 					return $.merge($.map([false,true],function(alternator){
@@ -637,6 +635,15 @@ oirc = (function(){
 								document.location.reload();
 							})
 					));
+				},
+				getAll:function(){
+					var a = {};
+					$.each(self.allOptions,function(i,v){
+						if(v.hidden===undefined || !v.hidden){
+							a[i] = v.value;
+						}
+					});
+					return a;
 				}
 			};
 			return {
@@ -644,7 +651,8 @@ oirc = (function(){
 				get:self.get,
 				setDefaults:self.setDefaults,
 				setExtraChanMsg:self.setExtraChanMsg,
-				getHTML:self.getHTML
+				getHTML:self.getHTML,
+				getAll:self.getAll
 			};
 		})(),
 		instant = (function(){
@@ -668,7 +676,7 @@ oirc = (function(){
 					}
 					return self.id == ls.get('browserTab');
 				}
-			}
+			};
 			return {
 				init:self.init,
 				current:self.current
@@ -680,7 +688,7 @@ oirc = (function(){
 				$elem:false,
 				start:function(){
 					if(self.interval===false){
-						pixels = [true,true,true,true,true,false,false,false];
+						var pixels = [true,true,true,true,true,false,false,false];
 						self.$elem = $('<div>')
 							.attr('id','indicator')
 							.css({
@@ -788,11 +796,65 @@ oirc = (function(){
 							channels.highlight(c);
 						}
 					}
+					self.startFlash();
+				},
+				doFlash:false,
+				intervalHandler:false,
+				originalTitle:'',
+				target:top.postMessage?top:(top.document.postMessage?top.document:undefined),
+				startFlash:function(){
+					if(self.doFlash){
+						return;
+					}
+					self.doFlash = true;
+					if(top == window){ // no firame, we have to do the flashing manually
+						var alternator = false;
+						self.originalTitle = document.title;
+						self.intervalHandler = setInterval(function(){
+							document.title = (alternator?'[ @] ':'[@ ] ')+self.originalTitle;
+							alternator = !alternator;
+						},500);
+					}else{ // let the forum mod do the flashing!
+						if(self.target!==undefined){
+							self.target.postMessage('startFlash','*');
+						}
+					}
+				},
+				stopFlash:function(noTransmit){
+					if(noTransmit === undefined){
+						noTransmit = false;
+					}
+					if(self.doFlash){
+						if(top == window){ // no firame, we have to do the flashing manually
+							if(self.intervalHandler){
+								clearInterval(self.intervalHandler);
+								self.intervalHandler = false;
+								document.title = self.originalTitle;
+							}
+						}else{ // let the forum mod do the flashing!
+							if(self.target!==undefined){
+								self.target.postMessage('stopFlash','*');
+							}
+						}
+						self.doFlash = false;
+						if(!noTransmit){
+							ls.set('stopFlash',Math.random().toString(36)+(new Date()).getTime().toString());
+						}
+					}
+				},
+				init:function(){
+					$(window).on('storage',function(e){
+						if(e.originalEvent.key == settings.net()+'stopFlash'){
+							self.stopFlash(true);
+						}
+					});
 				}
 			};
 			return {
 				request:self.request,
-				make:self.make
+				make:self.make,
+				stopFlash:self.stopFlash,
+				init:self.init
 			};
 		})(),
 		request = (function(){
@@ -808,6 +870,7 @@ oirc = (function(){
 					port:0,
 					ssl:true,
 					tryFallback:true,
+					didRelog:false,
 					fallback:function(){
 						console.log('trying fallback...');
 						if(self.ws.tryFallback){
@@ -834,10 +897,17 @@ oirc = (function(){
 						}
 						
 						try{
-							self.ws.socket = new PooledWebSocket((self.ws.ssl?'wss://':'ws://')+self.ws.host+':'+self.ws.port.toString()+'/'+settings.net());
+							var path = window.location.pathname.split('/');
+							path.pop();
+							if(path.length > 1 && path[path.length-1] === ''){
+								path.pop();
+							}
+							path.push('ws');
+							path.push(settings.net());
+							self.ws.socket = new PooledWebSocket((self.ws.ssl?'wss://':'ws://')+self.ws.host+':'+self.ws.port.toString()+path.join('/'));
 						}catch(e){
 							console.log(self.ws.socket);
-							console.log((ssl?'wss://':'ws://')+self.ws.host+':'+self.ws.port.toString());
+							console.log((self.ws.ssl?'wss://':'ws://')+self.ws.host+':'+self.ws.port.toString()+path.join('/'));
 							console.log(e);
 							self.ws.fallback();
 						}
@@ -859,9 +929,15 @@ oirc = (function(){
 									}
 								}
 								if(data.relog!==undefined && data.relog!=0){
-									settings.fetch(function(){
-										self.ws.identify();
-									},true);
+									if(!self.ws.didRelog){
+										self.ws.didRelog = true;
+										settings.fetch(function(){
+											if(settings.loggedIn()){
+												self.ws.identify();
+												self.ws.didRelog = false;
+											}
+										},true);
+									}
 								}
 							}catch(e){};
 						};
@@ -2198,8 +2274,10 @@ oirc = (function(){
 						$('#smileyMenuButton')
 							.attr('src','smileys/smiley_grey.png');
 					}
-					$('#smileyselect').append(
-						$.map(parser.getSmileys(),function(s){
+				},
+				setSmileys:function(sm){
+					$('#smileyselect').empty().append(
+						$.map(sm,function(s){
 							return [(s.inMenu?($('<img>')
 								.attr({
 									src:s.pic,
@@ -2229,7 +2307,7 @@ oirc = (function(){
 						document.location.reload();
 					});
 				},
-				isBlurred:false,
+				isBlurred:true,
 				calcResize:function(allowHeightChange){
 					var htmlHeight = window.innerHeight,
 						htmlWidth = window.innerWidth,
@@ -2303,6 +2381,7 @@ oirc = (function(){
 					tab.init();
 					instant.init();
 					logs.init();
+					notification.init();
 					self.registerToggle();
 					if(is_ios){
 						self.calcResize(true);
@@ -2313,6 +2392,7 @@ oirc = (function(){
 						self.isBlurred = true;
 					}).focus(function(){
 						self.isBlurred = false;
+						notification.stopFlash();
 					});
 					$('#aboutButton').click(function(e){
 						e.preventDefault();
@@ -2367,7 +2447,8 @@ oirc = (function(){
 				isBlurred:function(){
 					return self.isBlurred;
 				},
-				changeLinks:self.changeLinks
+				changeLinks:self.changeLinks,
+				setSmileys:self.setSmileys
 			};
 		})(),
 		statusBar = (function(){
@@ -2769,14 +2850,16 @@ oirc = (function(){
 			return {
 				init:self.init
 			};
-		})();
+		})(),
 		parser = (function(){
-			var smileys = [],
-				maxLines = 200,
-				lastMessage = 0,
-				ignores = [],
-				cacheServerNicks = {},
-				parseName = function(n,o,uid){
+			var self = {
+				smileys:[],
+				maxLines:200,
+				lastMessage:0,
+				ignores:[],
+				cacheServerNicks:{},
+				lineHigh:false,
+				parseName:function(n,o,uid){
 					if(uid === undefined){
 						uid = -1;
 					}
@@ -2799,12 +2882,12 @@ oirc = (function(){
 						case '2': //server
 							if(net!==undefined && net.checkLogin!==undefined){
 								addLink = false;
-								if(cacheServerNicks[o.toString()+':'+uid.toString()]===undefined){
+								if(self.cacheServerNicks[o.toString()+':'+uid.toString()]===undefined){
 									network.getJSON(net.checkLogin+'?c='+uid.toString(10)+'&n='+ne,function(data){
-										cacheServerNicks[o.toString()+':'+uid.toString()] = data.nick;
+										self.cacheServerNicks[o.toString()+':'+uid.toString()] = data.nick;
 									},false,false);
 								}
-								cn = cacheServerNicks[o.toString()+':'+uid.toString()];
+								cn = self.cacheServerNicks[o.toString()+':'+uid.toString()];
 							}else{
 								cn = n;
 							}
@@ -2821,19 +2904,19 @@ oirc = (function(){
 					}
 					return '<span title="Unknown Network">'+cn+'</span>';
 				},
-				parseSmileys = function(s){
+				parseSmileys:function(s){
 					if(!s){
 						return '';
 					}
 					if(/^[\w\s\d\.,!?]*$/.test(s)){
 						return s;
 					}
-					$.each(smileys,function(i,smiley){
+					$.each(self.smileys,function(i,smiley){
 						s = s.replace(RegExp(smiley.regex,'g'),smiley.replace);
 					});
 					return s;
 				},
-				parseLinks = function(text){
+				parseLinks:function(text){
 					if (!text || text === null || text === undefined){
 						return '';
 					}
@@ -2850,7 +2933,7 @@ oirc = (function(){
 							.replace(RegExp("(^|.)\x01("+ier+"+)","g"),'$1<a target="_top" href="$2">$2</a>')
 							.replace(RegExp("(^|.)\x04("+ier+"+)","g"),'$1<a target="_top" href="http://$2">$2</a>');
 				},
-				parseColors = function(colorStr){
+				parseColors:function(colorStr){
 					var arrayResults = [],
 						s,
 						textDecoration = {
@@ -2934,34 +3017,29 @@ oirc = (function(){
 					colorStr = colorStr.replace(/(\x03|\x02|\x1F|\x09|\x0F)/g,'');
 					return colorStr;
 				},
-				parseHighlight = function(s){
-					if(s.toLowerCase().indexOf(settings.nick().toLowerCase().substr(0,options.get('charsHigh'))) >= 0 && settings.nick() != ''){
-						var style = '';
-						if(!options.get('highRed')){
-							style += 'background:none;padding:none;border:none;';
-						}
-						if(options.get('highBold')){
-							style += 'font-weight:bold;';
-						}
-						return '<span class="highlight" style="'+style+'">'+s+'</span>';
+				parseHighlight:function(s){
+					var style = '';
+					if(!options.get('highRed')){
+						style += 'background:none;padding:none;border:none;';
 					}
-					return s;
+					if(options.get('highBold')){
+						style += 'font-weight:bold;';
+					}
+					return '<span class="highlight" style="'+style+'">'+s+'</span>';
 				},
-				parseMessage = function(s,noSmileys){
+				parseMessage:function(s,noSmileys){
 					if(noSmileys==undefined || !noSmileys){
 						noSmileys = false;
 					}
 					s = (s=="\x00"?'':s); //fix 0-string bug
-					s = $('<span>').text(s).html();
-					s = parseLinks(s);
+					s = $('<span>').text(s).html(); // html escape
+					s = self.parseLinks(s);
 					if(options.get('smileys') && noSmileys===false){
-						s = parseSmileys(s);
+						s = self.parseSmileys(s);
 					}
-					s = parseColors(s);
+					s = self.parseColors(s);
 					return s;
 				},
-				lineHigh = false;
-			return {
 				addLine:function(line,loadMode){
 					if(loadMode===undefined){
 						loadMode = false;
@@ -2969,23 +3047,24 @@ oirc = (function(){
 					request.setCurLine(line.curLine);
 					if(
 						line.name == null
-						|| ignores.indexOf(line.name.toLowerCase()) > -1
+						|| self.ignores.indexOf(line.name.toLowerCase()) > -1
 						|| (line.chan.toString().toLowerCase()!=channels.current().handler.toLowerCase() && line.name2 !== settings.getPmIdent())
 						){
 						return true; // invalid line but we don't want to stop the new requests
 					}
 					var $mBox = $('#MessageBox'),
-						name = parseName(line.name,line.network,line.uid),
-						message = parseMessage(line.message),
+						name = self.parseName(line.name,line.network,line.uid),
+						message = self.parseMessage(line.message),
 						tdName = '*',
 						tdMessage = message,
-						statusTxt = '';
+						statusTxt = '',
+						lineDate = new Date(line.time*1000);
 					if(line.network == -1){
 						return true;
 					}
-					if((['message','action','pm','pmaction'].indexOf(line.type)>=0) && line.name.toLowerCase() != '*'){
-						tdMessage = message = parseHighlight(message,line);
-						if(page.isBlurred()){
+					if(settings.nick() != '' && (['message','action','pm','pmaction'].indexOf(line.type)>=0) && line.name.toLowerCase() != '*' && message.toLowerCase().indexOf(settings.nick().toLowerCase().substr(0,options.get('charsHigh'))) >= 0){
+						tdMessage = message = self.parseHighlight(message);
+						if(!loadMode && page.isBlurred()){
 							notification.make('('+channels.current().name+') <'+line.name+'> '+line.message,line.chan);
 						}
 					}
@@ -2993,7 +3072,6 @@ oirc = (function(){
 						case 'reload':
 							if(!loadMode){
 								channels.current().reload();
-								return false;
 							}
 							return true;
 						case 'reload_userlist':
@@ -3049,7 +3127,7 @@ oirc = (function(){
 							}
 							break;
 						case 'kick':
-							tdMessage = [name,' has kicked ',parseName(line.name2,line.network),' from '+channels.current().name+' (',message,')'];
+							tdMessage = [name,' has kicked ',self.parseName(line.name2,line.network),' from '+channels.current().name+' (',message,')'];
 							if(!loadMode){
 								users.remove({
 									nick:line.name2,
@@ -3069,7 +3147,7 @@ oirc = (function(){
 								$.each(message,function(i,v){
 									var n = $('<span>').html(v).text();
 									if(n.indexOf('+')==-1 && n.indexOf('-')==-1){
-										message[i] = parseName(v,line.network);
+										message[i] = self.parseName(v,line.network);
 									}
 								});
 								message = message.join(' ');
@@ -3077,7 +3155,7 @@ oirc = (function(){
 							tdMessage = [name,' set '+channels.current().name+' mode ',message];
 							break;
 						case 'nick':
-							tdMessage = [name,' has changed nicks to ',parseName(line.name2,line.network)];
+							tdMessage = [name,' has changed nicks to ',self.parseName(line.name2,line.network)];
 							if(!loadMode){
 								users.add({
 									nick:line.name2,
@@ -3090,8 +3168,8 @@ oirc = (function(){
 							}
 							break;
 						case 'topic':
-							topic.set(parseMessage(line.message,true));
-							tdMessage = [name,' has changed the topic to ',parseMessage(line.message,true)];
+							topic.set(self.parseMessage(line.message,true));
+							tdMessage = [name,' has changed the topic to ',self.parseMessage(line.message,true)];
 							break;
 						case 'pm':
 							if(line.chan==channels.current().handler){
@@ -3145,7 +3223,7 @@ oirc = (function(){
 						default:
 							return true;
 					}
-					if(($mBox.find('tr').length>maxLines) && logMode!==true){
+					if(($mBox.find('tr').length>self.maxLines) && logMode!==true){
 						$mBox.find('tr:first').remove();
 					}
 					
@@ -3156,18 +3234,23 @@ oirc = (function(){
 						statusTxt = '<'+line.name+'> ';
 					}
 					if(options.get('times')){
-						statusTxt = '['+(new Date(line.time*1000)).toLocaleTimeString()+'] '+statusTxt;
+						statusTxt = '['+lineDate.toLocaleTimeString()+'] '+statusTxt;
 					}
 					statusTxt += $('<span>').append(tdMessage).text();
 					statusBar.set(statusTxt);
-					
+					if((new Date(self.lastMessage)).getDay()!=lineDate.getDay()){
+						$mBox.append($('<tr>').addClass('dateSeperator').append($('<td>')
+							.addClass((options.get('altLines') && (self.lineHigh = !self.lineHigh)?'lineHigh':''))
+							.attr('colspan',options.get('times')?3:2)
+							.text(lineDate.toLocaleDateString())
+						));
+					}
 					var $tr = $('<tr>')
-						.addClass((options.get('altLines') && (lineHigh = !lineHigh)?'lineHigh':''))
-						.addClass(((new Date(lastMessage)).getDay()!=(new Date(line.time*1000)).getDay())?'seperator':'') //new day indicator
+						.addClass((options.get('altLines') && (self.lineHigh = !self.lineHigh)?'lineHigh':''))
 						.append(
 							(options.get('times')?$('<td>')
 								.addClass('irc-date')
-								.append('['+(new Date(line.time*1000)).toLocaleTimeString()+']'):''),
+								.append('['+lineDate.toLocaleTimeString()+']'):''),
 							$('<td>')
 								.addClass('name')
 								.append(tdName),
@@ -3181,25 +3264,22 @@ oirc = (function(){
 					$mBox.append($tr);
 					scroll.slide();
 					
-					lastMessage = line.time*1000;
+					self.lastMessage = line.time*1000;
 					
 					return true;
 				},
 				setSmileys:function(sm){
 					var addStuff = '';
-					smileys = [];
+					self.smileys = [];
 					$.each(sm,function(i,s){
-						smileys.push({
+						self.smileys.push({
 							regex:s.regex,
-							replace:s.replace.split('ADDSTUFF').join(addStuff).split('PIC').join(s.pic).split('ALT').join(s.alt)
+							replace:s.replace.split('ADDSTUFF').join(addStuff).split('PIC').join(s.pic).split('ALT').join(s.alt),
 						});
 					});
 				},
-				getSmileys:function(){
-					return smileys;
-				},
 				setIgnoreList:function(a){
-					ignores = a;
+					self.ignores = a;
 				},
 				parseTextDecorations:function(s){
 					if(s !== '' && options.get('textDeco')){
@@ -3212,6 +3292,13 @@ oirc = (function(){
 					}
 					return s;
 				}
+			};
+			return {
+				addLine:self.addLine,
+				setSmileys:self.setSmileys,
+				setIgnoreList:self.setIgnoreList,
+				parseTextDecorations:self.parseTextDecorations
+				
 			};
 		})();
 	$(function(){
@@ -3231,7 +3318,12 @@ oirc = (function(){
 				});
 				break;
 			case 'admin':
-				$.getScript('admin.js');
+				$('head').append(
+					$('<script>').attr({
+						type:'text/javascript',
+						src:'admin.js'
+					})
+				);
 				break;
 			//case 'main': // no need, already caught by default.
 			default:
@@ -3263,8 +3355,8 @@ oirc = (function(){
 			}
 		},
 		options:{
-			getFullOptionsString:function(){
-				return options.getFullOptionsString();
+			getAll:function(){
+				return options.getAll();
 			}
 		}
 	}

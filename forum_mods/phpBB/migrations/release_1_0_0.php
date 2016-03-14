@@ -27,7 +27,7 @@ class release_1_0_0 extends \phpbb\db\migration\migration
 		global $oirc_config,$only_include_oirc;
 		$only_include_oirc = true;
 		include_once(realpath(dirname(__FILE__)).'/../checkLogin/index.php');
-		
+		$u = parse_url($oirc_config['oircUrl']);
 		return array(
 			array('config.add', array('oirc_height', 280)),
 			array('config.add', array('oirc_title', 'OmnomIRC Chat')),
@@ -38,6 +38,7 @@ class release_1_0_0 extends \phpbb\db\migration\migration
 			array('config.add', array('oirc_postnotification', '{COLOR}10New post by {COLOR}03{NAME} {COLOR}10in {COLOR}04{TOPIC} {COLOR}12'.generate_board_url().'/viewtopic.php?p={POSTID}#p{POSTID}')),
 			array('config.add', array('oirc_editnotification', '{COLOR}10Edit by {COLOR}03{NAME} {COLOR}10on {COLOR}04{TOPIC} {COLOR}12'.generate_board_url().'/viewtopic.php?p={POSTID}#p{POSTID}')),
 			array('config.add', array('oirc_frameurl', $oirc_config['oircUrl'].'/index.php?network='.$oirc_config['network'])),
+			array('config.add', array('oirc_domain', $u['scheme'].'://'.$u['host'])),
 			array('config.add', array('oirc_config_installed', $oirc_config['installed'])),
 			array('config.add', array('oirc_config_sigKey', $oirc_config['sigKey'])),
 			array('config.add', array('oirc_config_network', $oirc_config['network'])),
@@ -81,10 +82,10 @@ class release_1_0_0 extends \phpbb\db\migration\migration
 		return array(
 			'add_columns' => array(
 				$this->table_prefix.'users' => array(
-					'oirc_pages' => array('TEXT',''),
+					'oirc_pages' => array('VCHAR:1024',''),
 				),
 				$this->table_prefix.'forums' => array(
-					'oirc_chan' => array('TEXT',''),
+					'oirc_chan' => array('VCHAR:1024',''),
 				),
 			),
 		);
