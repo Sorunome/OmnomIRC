@@ -212,11 +212,12 @@ class OIRCLink(server.ServerHandler):
 				elif data['t'] == 'server_updateFile':
 					try:
 						r = requests.get('https://omnomirc.omnimaga.org/'+data['n1'])
+						r.raise_for_status()
 						with open(FILEROOT+'/'+data['n2'],'wb+') as f:
 							f.write(r.content)
-						self.socket.sendall(bytes('success','utf-8'))
+						self.socket.sendall(bytes('success\n','utf-8'))
 					except:
-						self.socket.sendall(bytes('error','utf-8'))
+						self.socket.sendall(bytes('error\n','utf-8'))
 				else:
 					handle.sendToOther(data['n1'],data['n2'],data['t'],data['m'],data['c'],data['s'],data['uid'],False)
 			except:
