@@ -93,9 +93,10 @@ if(isset($_GET['js'])){
 	
 	$net = $networks->getNetworkId();
 	
+	$spLinks = array();
 	
 	$dispNetworks = array();
-	foreach($config['networks'] as $n){
+	foreach($networks->getNetsarray() as $n){
 		$addNet = array(
 			'id' => $n['id'],
 			'normal' => $n['normal'],
@@ -107,6 +108,9 @@ if(isset($_GET['js'])){
 			$addNet['checkLogin'] = $n['config']['checkLogin'];
 		}
 		$dispNetworks[] = $addNet;
+		if($n['id'] == $you->getNetwork()){
+			$spLinks = $n['config']['spLinks'];
+		}
 	}
 	
 	$v = $vars->get(array('extra_chan_msg_'.(string)$net,'defaults_'.(string)$net,'smileys'));
@@ -119,6 +123,7 @@ if(isset($_GET['js'])){
 		'network' => $you->getNetwork(),
 		'checkLoginUrl' => $cl,
 		'defaults' => $v['defaults_'.(string)$net]?$v['defaults_'.(string)$net]:array(),
+		'spLinks' => $spLinks,
 		'websockets' => array(
 			'use' => $config['websockets']['use'] && $config['settings']['useBot'],
 			'host' => $config['websockets']['host']?$config['websockets']['host']:$config['settings']['hostname'],

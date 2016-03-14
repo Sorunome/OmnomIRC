@@ -1,17 +1,14 @@
 <?php
-//UPDATER FROMVERSION=2.9.1.4
+//UPDATER FROMVERSION=SED_INSERT_FROMVERSION
 error_reporting(0);
-$NEWVERSION='2.9.2';
-$DOWNLOADDIR = 'https://omnomirc.omnimaga.org/'.$NEWVERSION;
+$NEWVERSION='SED_INSERT_NEWVERSION';
 
-$files = array(/* new files to update */);
-$clfiles = array(/* list of files for checkLogin to update */);
+$files = array(SED_INSERT_FILES);
+$clfiles = array(SED_INSERT_CLFILES);
 $updateHooks = false; // do we need to update hooks? true for all, array for specific hooks
-$updateBot = false; // do we need to update the bot?
+$botFiles = array(SED_INSERT_BOTFILES);
 
 
-array_unshift($files);
-include_once(realpath(dirname(__FILE__)).'/config.php');
 
 function lastUpdateStuff(){
 	global $config,$NEWVERSION,$DOWNLOADDIR,$sql;
@@ -21,10 +18,17 @@ function lastUpdateStuff(){
 	
 	// extra code will go here
 	
-	updateCheckLogins();
+	
 	writeConfig();
 	return $msg;
 }
+
+
+$DOWNLOADDIR = 'https://omnomirc.omnimaga.org/'.$NEWVERSION;
+$DOWNLOADDIR_PATH = '/'.$NEWVERSION;
+
+array_unshift($files,'');
+include_once(realpath(dirname(__FILE__)).'/config.php');
 
 function updateCheckLogins(){
 	global $config,$clfiles,$updateHooks,$DOWNLOADDIR;
@@ -50,8 +54,11 @@ function updateCheckLogins(){
 			}
 			foreach($clfilesNetwork as $cf){
 				$resp = json_decode(file_get_contents($n['config']['checkLogin'].'?server='.getCheckLoginChallenge().'&action=update&a='.base64_url_encode($DOWNLOADDIR.'/checkLogin/'.$cf.'.s').'&b='.base64_url_encode($cf)),true);
-				if(!$resp['auth'] || !$resp['success']){
-					$msg .= "ERROR: Couldn't update checkLogin file $cf for network ".$n['name'].'<br>';
+				if((isset($resp['auth']) && !$resp['auth']) || !$resp['success']){
+					if(!isset($resp['message'])){
+						$resp['message'] = '';
+					}
+					$msg .= "ERROR: Couldn't update checkLogin file $cf for network ".$n['name'].': '.$resp['message'].'<br>';
 				}
 			}
 		}
@@ -133,6 +140,24 @@ class Sqli{
 }
 $sql = new Sqli();
 
+function getSocket(){
+	global $config;
+	$sock = $config['settings']['botSocket'];
+	$socket = false;
+	if(substr($sock,0,5) == 'unix:'){
+		$socket = socket_create(AF_UNIX,SOCK_STREAM,0);
+		socket_connect($socket,substr($sock,5));
+	}else{
+		$matches = array();
+		preg_match('/^([\\w\\.]+):(\\d+)/',$sock,$matches);
+		if($matches){
+			$socket = socket_create(AF_INET,SOCK_STREAM,SOL_TCP);
+			socket_connect($socket,$matches[1],$matches[2]);
+		}
+	}
+	return $socket;
+}
+
 function writeConfig(){
 	global $config;
 		$file = '<?php
@@ -179,9 +204,12 @@ if(!isset($_GET['server'])){
 	echo getPage('OmnomIRC Installer Updater '.$NEWVERSION,'
 	<script type="text/javascript">
 		(function($){
-			var downloadFile = function(fileName,step){
+			var downloadFile = function(fileName,step,suffix){
+					if(suffix === undefined){
+						suffix = "";
+					}
 					$("#container").append(
-						"Downloading "+fileName+"..."
+						"Downloading "+fileName+suffix+"..."
 					);
 					getStep(step,{});
 				},
@@ -200,7 +228,9 @@ if(!isset($_GET['server'])){
 					);
 				},
 				files = '.json_encode($files).',
+				botFiles = '.json_encode($botFiles).'
 				doStep = function(step,data){
+					var offset_after_files = ((files.length + botFiles.length)*2);
 					$("#container").empty();
 					if(data.errors!==undefined){
 						$.map(data.errors,function(err){
@@ -221,15 +251,36 @@ if(!isset($_GET['server'])){
 						downloadFile(files[step/2],step);
 					}else if(step%2 == 1 && (files.length*2)>step){
 						downloadFileFailed(step+1);
-					}else if((files.length*2) == step){
+					}else if(step%2 == 0 && ((files.length + botFiles.length)*2)>step){
+						downloadFile(botFiles[(step/2) - files.length],step," for bot");
+					}else if(step%2 == 1 && ((files.length + botFiles.length)*2)>step){
+						downloadFileFailed(step+1);
+					}else if(offset_after_files == step){
 						$("#container").append(
 							"Updating config..."
 						);
 						getStep(step,{});
-					}else if((files.length*2)+1 == step){
+					}else if(offset_after_files+1 == step || offset_after_files+3 == step){
 						$("#container").append(
-							(data.msg!=""?data.msg+"<br><br>":""),
-							'.($updateBot?'"Please update your IRC bot file, you can download the new version <a href=\''.$DOWNLOADDIR.'/bot.py\'>here</a><br>",':'').'
+							data.msg,
+							$("<button>").text("continue").click(function(e){
+								e.preventDefault();
+								getStep(step+1,{});
+							})
+						);
+					}else if(offset_after_files+2 == step){
+						$("#container").append(
+							"Updating checkLogin files..."
+						);
+						getStep(step,{});
+					}else if(offset_after_files+4 == step){
+						$("#container").append(
+							"Restarting bot if needed..."
+						);
+						getStep(step,{});
+					}else if(offset_after_files+5 == step){
+						$("#container").append(
+							(data.msg?data.msg+"<br><br>":""),
 							"To finish the update hit the button below.",
 							"<br>",
 							$("<a>").attr("href","admin.php?finishUpdate'.(isset($_GET['network'])?'&network='.$_GET['network']:'').'").append(
@@ -258,18 +309,19 @@ if(!isset($_GET['server'])){
 	header('Content-Type: application/json');
 	
 	$step = (int)$_GET['step'];
+	$offset_after_files = (sizeof($files) + sizeof($botFiles))*2;
 	if($step == 1){
 		writeConfig();
 		echo '{"step":2}';
 	}elseif($step%2 == 0 && sizeof($files)*2 > $step){
-		$file = file_get_contents($DOWNLOADDIR.'/'.$files[$step/2].'.s');
+		$file = file_get_contents($DOWNLOADDIR.'/html/'.$files[$step/2].'.s');
 		if(!$file || $file == ''){
 			echo '{"errors":["ERROR: no route to download server"],"step":1}';
 			die();
 		}
 		if(!file_put_contents(realpath(dirname(__FILE__)).'/'.$files[$step/2],$file)){
-			echo json_encode(Array(
-				'errors' => Array(
+			echo json_encode(array(
+				'errors' => array(
 						'Unable to write to '.$files[$step/2].', please download <a href="'.$DOWNLOADDIR.'/'.$files[$step/2].'.s">the file</a> manually or change permissions and retry.'
 					),
 				'step' => $step+1
@@ -277,12 +329,66 @@ if(!isset($_GET['server'])){
 			die();
 		}
 		echo '{"step":'.($step+2).'}';
-	}elseif(sizeof($files)*2 == $step){
+	}elseif($step%2 == 0 && (sizeof($files)+sizeof($botFiles))*2 > $step){
+		$success = false;
+		if($config['settings']['useBot']){
+			if($socket = getSocket()){
+				$fname = $botFiles[($step/2)-count($files)];
+				$s = json_encode(array(
+					't' => 'server_updateFile',
+					'n1' => $DOWNLOADDIR_PATH.'/bot/'.$fname.'.s',
+					'n2' => $fname
+				))."\n";
+				socket_write($socket,$s,strlen($s));
+				$b = '';
+				socket_set_option($socket,SOL_SOCKET,SO_RCVTIMEO,array('sec' => 2,'usec' => 0));
+				while($buf = socket_read($socket,2048)){
+					$b .= $buf;
+					if(strpos($b,"\n")!==false){
+						break;
+					}
+				}
+				socket_close($socket);
+				if(strpos($b,'success') !== false){
+					$success = true;
+				}
+			}
+		}
+		if(!$success && $step == sizeof($files)*2){ // first bot file to be downloaded!
+			echo json_encode(array(
+				'errors' => array(
+					'No bot found! Either you are not running it, or it wasn\'t reachable. You can check that it is running, retry, or, if you are not running it just hit continue.',
+					'If you are running the bot, maybe the files aren\'t writable for it'
+				),
+				'step' => $step+1
+			));
+		}else{
+			echo '{"step":'.($step+2).'}';
+		}
+	
+	}elseif($offset_after_files == $step){
 		$msg = lastUpdateStuff();
 		echo json_encode(Array(
-			'step' => $step+1,
+			'step' => $step+($msg == ''?2:1),
 			'msg' => $msg
 		));
+	}elseif($offset_after_files+2 == $step){
+		$msg = updateCheckLogins();
+		echo json_encode(Array(
+			'step' => $step+($msg == ''?2:1),
+			'msg' => $msg
+		));
+	}elseif($offset_after_files+4 == $step){
+		if(sizeof($botFiles) > 0 && $config['settings']['useBot']){
+			if($socket = getSocket()){
+				$s = json_encode(array(
+					't' => 'server_restart'
+				))."\n";
+				socket_write($socket,$s,strlen($s));
+				socket_close($socket);
+			}
+		}
+		echo '{"step":'.($step+1).'}';
 	}else{
 		die('{"errors":["Unkown updater step"],"step":1}');
 	}

@@ -80,7 +80,7 @@ if(!isset($_GET['userlist'])){
 	array_push($lines,array(
 		'curLine' => (int)file_get_contents($config['settings']['curidFilePath']),
 		'type' => 'topic',
-		'network' => -1,
+		'network' => 0,
 		'time' => time(),
 		'name' => '',
 		'message' => $channels->getTopic($channel),

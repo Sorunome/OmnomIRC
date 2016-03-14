@@ -42,6 +42,7 @@ var oirc = (function(){
 							self.hostname = data.hostname;
 							channels.setChans(data.channels);
 							parser.setSmileys(data.smileys);
+							parser.setSpLinks(data.spLinks);
 							page.setSmileys(data.smileys);
 							self.networks = {};
 							$.each(data.networks,function(i,n){
@@ -1505,7 +1506,11 @@ var oirc = (function(){
 					open:function(s){
 						var addChan = true;
 						s = s.trim();
-						if(s.substr(0,1) != '@' && s.substr(0,1) != '#'){
+						if(s.substr(0,1) == '#'){
+							send.internal('<span style="color:#C73232;">Join Error: Cannot join new channels starting with #.</span>');
+							return;
+						}
+						if(s.substr(0,1) != '@'){
 							s = '@' + s;
 						}
 						// s will now be either prefixed with # or with @
@@ -1529,6 +1534,10 @@ var oirc = (function(){
 								self.addChan(nick,join,id);
 							}
 						if(n == ''){
+							if(s.substr(0,1)=='@' || s.substr(0,1)=='#'){
+								send.internal('<span style="color:#C73232;">Query Error: Cannot query a channel. Use /join instead.</span>');
+								return;
+							}
 							network.getJSON('Load.php?openpm='+base64.encode(s),function(data){
 								if(data.chanid){
 									callback(data.channick,data.chanid);
@@ -2859,6 +2868,7 @@ var oirc = (function(){
 				ignores:[],
 				cacheServerNicks:{},
 				lineHigh:false,
+				spLinks:[],
 				parseName:function(n,o,uid){
 					if(uid === undefined){
 						uid = -1;
@@ -2920,10 +2930,9 @@ var oirc = (function(){
 					if (!text || text === null || text === undefined){
 						return '';
 					}
-					var a = ['ourl.ca','omnimaga.org','www.omnimaga.org'];
 					var ier = "[^\\s\x01\x02\x03\x04\x0f\x16\x1d\x1f\"]"; // irc end regex
 					text = text.replace(RegExp("(\x01|\x04)","g"),"");
-					$.map(a,function(url){
+					$.map(self.spLinks,function(url){
 						url = url.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
 						text = text.replace(RegExp("(^|\\s)(((f|ht)(tp|tps):\/\/)"+url+ier+"*)","g"),'$1\x01$2')
 									.replace(RegExp("(^|\\s)("+url+ier+"*)","g"),'$1\x04$2');
@@ -3046,7 +3055,7 @@ var oirc = (function(){
 					}
 					request.setCurLine(line.curLine);
 					if(
-						line.name == null
+						line.name === null
 						|| self.ignores.indexOf(line.name.toLowerCase()) > -1
 						|| (line.chan.toString().toLowerCase()!=channels.current().handler.toLowerCase() && line.name2 !== settings.getPmIdent())
 						){
@@ -3169,6 +3178,9 @@ var oirc = (function(){
 							break;
 						case 'topic':
 							topic.set(self.parseMessage(line.message,true));
+							if(line.name ==='' && line.network === 0 && loadMode){
+								return true;
+							}
 							tdMessage = [name,' has changed the topic to ',self.parseMessage(line.message,true)];
 							break;
 						case 'pm':
@@ -3223,7 +3235,7 @@ var oirc = (function(){
 						default:
 							return true;
 					}
-					if(($mBox.find('tr').length>self.maxLines) && logMode!==true){
+					if(($mBox.find('tr').length>self.maxLines) && loadMode!==true){
 						$mBox.find('tr:first').remove();
 					}
 					
@@ -3278,6 +3290,9 @@ var oirc = (function(){
 						});
 					});
 				},
+				setSpLinks:function(a){
+					self.spLinks = a;
+				},
 				setIgnoreList:function(a){
 					self.ignores = a;
 				},
@@ -3296,9 +3311,9 @@ var oirc = (function(){
 			return {
 				addLine:self.addLine,
 				setSmileys:self.setSmileys,
+				setSpLinks:self.setSpLinks,
 				setIgnoreList:self.setIgnoreList,
 				parseTextDecorations:self.parseTextDecorations
-				
 			};
 		})();
 	$(function(){

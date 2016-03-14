@@ -182,18 +182,23 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 				return self.close()
 		return True
 	def addLine(self,t,m,c):
+		n2 = ''
 		if isinstance(c,str) and len(c) > 0 and c[0]=='*':
-			c = c[1:]
 			if t=='message':
 				t = 'pm'
 			elif t=='action':
 				t = 'pmaction'
 			else:
 				return
+			n2 = c[1:].replace(self.pmHandler,'')
+			
 		if c!='':
 			self.log_info('>> '+str({'chan':c,'nick':self.nick,'message':m,'type':t}))
-			self.handle.sendToOther(self.nick,'',t,m,c,self.network,self.uid)
+			self.handle.sendToOther(self.nick,n2,t,m,c,self.network,self.uid)
 	def join(self,c): # updates nick in userlist
+		if isinstance(c,str) and not c[0] in '*#@':
+			self.log_info('Tried to join invalid channel: '+str(c))
+			return
 		c = str(c)
 		if c in self.chans:
 			self.chans[c] += 1

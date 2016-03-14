@@ -212,11 +212,12 @@ class OIRCLink(server.ServerHandler):
 				elif data['t'] == 'server_updateFile':
 					try:
 						r = requests.get('https://omnomirc.omnimaga.org/'+data['n1'])
+						r.raise_for_status()
 						with open(FILEROOT+'/'+data['n2'],'wb+') as f:
 							f.write(r.content)
-						self.socket.sendall(bytes('success','utf-8'))
+						self.socket.sendall(bytes('success\n','utf-8'))
 					except:
-						self.socket.sendall(bytes('error','utf-8'))
+						self.socket.sendall(bytes('error\n','utf-8'))
 				else:
 					handle.sendToOther(data['n1'],data['n2'],data['t'],data['m'],data['c'],data['s'],data['uid'],False)
 			except:
@@ -232,12 +233,22 @@ class Main():
 	modeBuffer = {}
 	chanIds = []
 	live = True
+	networksCache = {}
 	def __init__(self):
 		self.config = config
 		self.sql = sql
 		self.updateRelayTypes()
 		self.updateChanIds()
 	def log(self,id,level,message,prefix = ''):
+		if isinstance(id,int):
+			if not id in self.networksCache:
+				for n in config.json['networks']:
+					if n['id'] == id:
+						self.networksCache[id] = n['name']
+						break
+				if not id in self.networksCache:
+					self.networksCache[id] = str(id)
+			id = self.networksCache[id]
 		id = str(id)
 		with open(args.logpath+'/omnomirc.'+level,'a+') as f:
 			s = datetime.datetime.now().strftime('[%a, %d %b %Y %H:%M:%S.%f]')+' ['+id+'] '+prefix+message
