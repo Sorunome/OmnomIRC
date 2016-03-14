@@ -535,7 +535,7 @@
 							}
 							return [$('<span>').text(net.name),' ',$('<a>').text('edit').click(function(e){
 								e.preventDefault();
-								var $netSpecific = $('<b>').text('Unkown network type');
+								var $netSpecific = $('<b>').text('Unkown network type, perhaps the bot isn\'t running?');
 								switch(net.type){
 									case 0:
 										$netSpecific.text('Server Network');
@@ -543,33 +543,6 @@
 									case 1:
 										$netSpecific = $('<span>').append(
 												$('<b>').text('OmnomIRC network'),
-												'<br>checkLogin:',
-												$('<input>').attr('type','text').val(net.config.checkLogin).change(function(){net.config.checkLogin = this.value;}),
-												'<br>checkLogin hook:',
-												$('<span>').text('loading...').on('now',function(){
-													var _self = this;
-													oirc.network.getJSON('admin.php?get=checkLogin&i='+i.toString(10),function(data){
-														var s = '';
-														if(data.success === false){
-															s = 'ERROR: couldn\'t reach checkLogin server, perhaps the changed URL needs to be saved?';
-														}else if(data.auth === false){
-															s = 'ERROR: couldn\'t identify with checkLogin server, perhaps sigKey is false?';
-														}
-														if(s!==''){
-															$(_self).replaceWith($('<span>').append(s));
-															return;
-														}
-														$(_self).replaceWith(
-															$('<select>').append(
-																$.map(data.checkLogin.hooks,function(v){
-																	return $('<option>').val(v).text(v);
-																})
-															).val(data.checkLogin.hook).change(function(){
-																net.config.checkLoginHook = this.value;
-															})
-														);
-													});
-												}).trigger('now'),
 												'<br>Theme:',
 												$('<span>').text('loading...').on('now',function(){
 													var _self = this;
@@ -597,7 +570,43 @@
 													net.config.guests = parseInt(this.value,10);
 												}),
 												'<br>Extra Channels Message:<br>',
-												$('<textarea>').text(net.config.extraChanMsg?net.config.extraChanMsg:'').change(function(){net.config.extraChanMsg = this.value;})
+												$('<textarea>').text(net.config.extraChanMsg?net.config.extraChanMsg:'').change(function(){net.config.extraChanMsg = this.value;}),'<br>',
+												$('<a>').text('Show advanced settings').click(function(e){
+													e.preventDefault();
+													$(this).replaceWith($('<span>').append(
+														'<br>checkLogin hook:',
+														$('<span>').text('loading...').on('now',function(){
+															var _self = this;
+															oirc.network.getJSON('admin.php?get=checkLogin&i='+i.toString(10),function(data){
+																var s = '';
+																if(data.success === false){
+																	s = 'ERROR: couldn\'t reach checkLogin server, perhaps the changed URL needs to be saved?';
+																}else if(data.auth === false){
+																	s = 'ERROR: couldn\'t identify with checkLogin server, perhaps sigKey is false?';
+																}
+																if(s!==''){
+																	$(_self).replaceWith($('<span>').append(s));
+																	return;
+																}
+																$(_self).replaceWith(
+																	$('<select>').append(
+																		$.map(data.checkLogin.hooks,function(v){
+																			return $('<option>').val(v).text(v);
+																		})
+																	).val(data.checkLogin.hook).change(function(){
+																		net.config.checkLoginHook = this.value;
+																	})
+																);
+															});
+														}).trigger('now'),
+														'<br>checkLogin:',
+														$('<input>').attr('type','text').val(net.config.checkLogin).change(function(){net.config.checkLogin = this.value;}),
+														'<br>checkLogin absolute path, if on same server (empty for skip):',
+														$('<input>').attr('type','text').val(net.config.checkLoginAbs).change(function(){net.config.checkLoginAbs = this.value;}),
+														'<br>Same-page links (comma-seperated):',
+														$('<input>').attr('type','text').val(net.config.spLinks.join(',')).change(function(){net.config.spLinks = this.value.split(',');})
+													));
+												})
 											);
 										break;
 									default:
@@ -658,9 +667,9 @@
 										case 1: // omnomirc
 											specificConfig = {
 												'checkLogin':'link to checkLogin file',
+												'checkLoginAbs':'',
 												'theme':-1,
-												'defaults':'',
-												'opGroups':[],
+												'defaults':{},
 												'guests':0
 											};
 											break;
@@ -696,6 +705,7 @@
 										makeNetworksPage(nets,netTypes);
 									}
 								}else{
+									alert('Invalid network type');
 									$(this).val(-1);
 								}
 							})

@@ -232,12 +232,22 @@ class Main():
 	modeBuffer = {}
 	chanIds = []
 	live = True
+	networksCache = {}
 	def __init__(self):
 		self.config = config
 		self.sql = sql
 		self.updateRelayTypes()
 		self.updateChanIds()
 	def log(self,id,level,message,prefix = ''):
+		if isinstance(id,int):
+			if not id in self.networksCache:
+				for n in config.json['networks']:
+					if n['id'] == id:
+						self.networksCache[id] = n['name']
+						break
+				if not id in self.networksCache:
+					self.networksCache[id] = str(id)
+			id = self.networksCache[id]
 		id = str(id)
 		with open(args.logpath+'/omnomirc.'+level,'a+') as f:
 			s = datetime.datetime.now().strftime('[%a, %d %b %Y %H:%M:%S.%f]')+' ['+id+'] '+prefix+message
