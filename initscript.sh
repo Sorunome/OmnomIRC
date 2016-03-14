@@ -7,15 +7,15 @@
 # Default-Stop:      0 1 6
 # Description:       OmnomIRC Bot
 ### END INIT INFO
-
+ 
 ####Config####
-SCRIPT="/home/oirc/omnomirc.sh"
-RUNAS=oirc
-
+FOLDER="/bot"
+RUNAS=bot
+ 
 PIDFILE=/var/run/omnomirc.pid
 LOGFILE=/var/log/omnomirc.log
 CURIDFILE=/run/omnomirc_curid
-
+ 
 ####Script####
 start() {
   if [ -f /var/run/$PIDNAME ] && kill -0 $(cat /var/run/$PIDNAME); then
@@ -25,11 +25,12 @@ start() {
   echo 'Starting service…' >&2
   echo "0" > $CURIDFILE
   chmod 777 $CURIDFILE
-  local CMD="$SCRIPT &> \"$LOGFILE\" & echo \$!"
+  cd $FOLDER
+  local CMD="./omnomirc.sh &> \"$LOGFILE\" & echo \$!"
   su -c "$CMD" $RUNAS > "$PIDFILE"
   echo 'Service started' >&2
 }
-
+ 
 stop() {
   if [ ! -f "$PIDFILE" ] || ! kill -0 $(cat "$PIDFILE"); then
     echo 'Service not running' >&2
@@ -42,7 +43,7 @@ stop() {
   rm -f "$PIDFILE"
   echo 'Service stopped' >&2
 }
-
+ 
 uninstall() {
   echo -n "Are you really sure you want to uninstall this service? That cannot be undone. [yes|No] "
   local SURE
@@ -55,7 +56,7 @@ uninstall() {
     rm -fv "$0"
   fi
 }
-
+ 
 case "$1" in
   start)
     start
