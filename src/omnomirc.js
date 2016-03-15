@@ -3057,7 +3057,7 @@ var oirc = (function(){
 					if(
 						line.name === null
 						|| self.ignores.indexOf(line.name.toLowerCase()) > -1
-						|| (line.chan.toString().toLowerCase()!=channels.current().handler.toLowerCase() && line.name2 !== settings.getPmIdent())
+						|| (line.type!='highlight' && line.chan.toString().toLowerCase()!=channels.current().handler.toLowerCase() && line.name2 !== settings.getPmIdent())
 						){
 						return true; // invalid line but we don't want to stop the new requests
 					}
