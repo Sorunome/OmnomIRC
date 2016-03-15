@@ -2930,14 +2930,14 @@ var oirc = (function(){
 					if (!text || text === null || text === undefined){
 						return '';
 					}
-					var ier = "[^\\s\x01\x02\x03\x04\x0f\x16\x1d\x1f\"]"; // irc end regex
+					var ier = "[^\\s\x01\x04<\"]"; // url end regex
 					text = text.replace(RegExp("(\x01|\x04)","g"),"");
 					$.map(self.spLinks,function(url){
 						url = url.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
-						text = text.replace(RegExp("(^|\\s)(((f|ht)(tp|tps):\/\/)"+url+ier+"*)","g"),'$1\x01$2')
-									.replace(RegExp("(^|\\s)("+url+ier+"*)","g"),'$1\x04$2');
+						text = text.replace(RegExp("(^|[^\\w/])((?:(?:f|ht)tps?:\/\/)"+url+ier+"*)","g"),'$1\x01$2')
+									.replace(RegExp("(^|[^\\w/])("+url+ier+"*)","g"),'$1\x04$2');
 					});
-					return text.replace(RegExp("(^|[^a-zA-Z0-9_\x01\x04]|\x03\\d{1,2}(|,\\d{1,2}))(((f|ht)(tp|tps):\/\/)"+ier+"+)","g"),'$1<a target="_blank" href="$3">$3</a>')
+					return text.replace(RegExp("(^|[^a-zA-Z0-9_\x01\x04])((?:(?:f|ht)tps?:\/\/)"+ier+"+)","g"),'$1<a target="_blank" href="$2">$2</a>')
 							.replace(RegExp("(^|[^a-zA-Z0-9_\x01\x04/])(www\\."+ier+"+)","g"),'$1<a target="_blank" href="http://$2">$2</a>')
 							.replace(RegExp("(^|.)\x01("+ier+"+)","g"),'$1<a target="_top" href="$2">$2</a>')
 							.replace(RegExp("(^|.)\x04("+ier+"+)","g"),'$1<a target="_top" href="http://$2">$2</a>');
@@ -3042,11 +3042,11 @@ var oirc = (function(){
 					}
 					s = (s=="\x00"?'':s); //fix 0-string bug
 					s = $('<span>').text(s).html(); // html escape
-					s = self.parseLinks(s);
 					if(options.get('smileys') && noSmileys===false){
 						s = self.parseSmileys(s);
 					}
 					s = self.parseColors(s);
+					s = self.parseLinks(s);
 					return s;
 				},
 				addLine:function(line,loadMode){
