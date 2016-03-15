@@ -3,7 +3,7 @@ read -p "Old OmnomIRC version:" oldversion
 read -p "New OmnomIRC version:" newversion
 
 echo "building sourcefiles..."
-./build.sh all
+./build.sh
 echo "done"
 echo "committing git..."
 git commit -am "version bump to $newversion"

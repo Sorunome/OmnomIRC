@@ -11,14 +11,14 @@
 ]]></search>
 			<add><![CDATA[
 		// Send the new topic to OmnomIRC start
-		if(!empty($modSettings['oirc_topics']) && !empty($modSettings['oirc_topicnotification']))
+		if($msgOptions['approved'] && !empty($modSettings['oirc_topics']) && !empty($modSettings['oirc_topicnotification']))
 		{
 			$chan = getOircSendToChan($topicOptions['board']);
 			if($chan !== false)
 			{
 				sendToOmnomIRC(strtr($modSettings['oirc_topicnotification'],array(
 					'{COLOR}' => "\x03",
-					'{NAME}' => $posterOptions['name'],
+					'{NAME}' => getDisplayName($posterOptions['id']),
 					'{TOPIC}' => html_entity_decode($msgOptions['subject']),
 					'{SUBJECT}' => html_entity_decode($msgOptions['subject']),
 					'{TOPICID}' => $topicOptions['id'],
@@ -35,7 +35,7 @@
 ]]></search>
 			<add><![CDATA[
 		// Send the new post to OmnomIRC start
-		if(!empty($modSettings['oirc_posts']) && !empty($modSettings['oirc_postnotification']))
+		if($msgOptions['approved'] && !empty($modSettings['oirc_posts']) && !empty($modSettings['oirc_postnotification']))
 		{
 			$chan = getOircSendToChan($topicOptions['board']);
 			if($chan !== false)
@@ -46,7 +46,7 @@
 				}
 				sendToOmnomIRC(strtr($modSettings['oirc_postnotification'],array(
 					'{COLOR}' => "\x03",
-					'{NAME}' => $posterOptions['name'],
+					'{NAME}' => getDisplayName($posterOptions['id']),
 					'{TOPIC}' => html_entity_decode($topicname),
 					'{SUBJECT}' => html_entity_decode($msgOptions['subject']),
 					'{TOPICID}' => $topicOptions['id'],
@@ -84,6 +84,63 @@
 	}
 	// Send the new edit to OmnomIRC end
 ]]></add>
+		</operation>
+		<operation>
+			<search position="replace"><![CDATA[function approvePosts($msgs, $approve = true)
+{
+	global $sourcedir, $smcFunc;]]></search>
+			<add><![CDATA[function approvePosts($msgs, $approve = true)
+{
+	global $sourcedir, $smcFunc, $modSettings;]]></add>
+		</operation>
+		<operation>
+			<search position="before"><![CDATA[// If it's the first message then the topic state changes!
+		if ($row['id_msg'] == $row['id_first_msg'])
+		{]]></search>
+			<add><![CDATA[
+			if($approve && !empty($modSettings['oirc_topics']) && !empty($modSettings['oirc_topicnotification'])) // new topic notification
+			{
+				$chan = getOircSendToChan($row['id_board']);
+				if($chan !== false)
+				{
+					sendToOmnomIRC(strtr($modSettings['oirc_topicnotification'],array(
+						'{COLOR}' => "\x03",
+						'{NAME}' => $row['poster_name'],
+						'{TOPIC}' => html_entity_decode($row['subject']),
+						'{SUBJECT}' => html_entity_decode($row['subject']),
+						'{TOPICID}' => $row['id_topic'],
+						'{POSTID}' => $row['id_msg']
+					)),$chan);
+				}
+			}
+]]></add>
+		</operation>
+		<operation>
+			<search position="before"><![CDATA[		}
+		else
+		{
+			$topic_changes[$row['id_topic']]['replies'] += $approve ? 1 : -1;]]></search>
+			<add><![CDATA[
+			if($approve && !empty($modSettings['oirc_posts']) && !empty($modSettings['oirc_postnotification']))
+			{
+				$chan = getOircSendToChan($row['id_board']);
+				if($chan !== false)
+				{
+					$topicname = '';
+					if(strpos($modSettings['oirc_postnotification'],'{TOPIC}') !== false){
+						$topicname = getTopicName($row['id_topic']);
+					}
+					sendToOmnomIRC(strtr($modSettings['oirc_postnotification'],array(
+						'{COLOR}' => "\x03",
+						'{NAME}' => $row['poster_name'],
+						'{TOPIC}' => html_entity_decode($topicname),
+						'{SUBJECT}' => html_entity_decode($row['subject']),
+						'{TOPICID}' => $row['id_topic'],
+						'{POSTID}' => $row['id_msg']
+					)),$chan);
+				}
+			}
+			]]></add>
 		</operation>
 	</file>
 
