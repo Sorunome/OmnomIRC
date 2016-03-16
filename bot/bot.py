@@ -211,6 +211,8 @@ class OIRCLink(server.ServerHandler):
 					self.socket.sendall(bytes(s,'utf-8'))
 				elif data['t'] == 'server_updateFile':
 					try:
+						if '..' in data['n2']:
+							raise Exception('invalid local file path')
 						r = requests.get('https://omnomirc.omnimaga.org/'+data['n1'])
 						r.raise_for_status()
 						with open(FILEROOT+'/'+data['n2'],'wb+') as f:

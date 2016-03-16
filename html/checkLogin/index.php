@@ -127,7 +127,10 @@ if(isset($_GET['op'])){
 			case 'update':
 				$msg = '';
 				if($s = @file_get_contents('https://omnomirc.omnimaga.org/'.base64_url_decode($_GET['a']))){
-					if(!(@file_put_contents(realpath(dirname(__FILE__)).'/'.base64_url_decode($_GET['b']),$s))){
+					$p = base64_url_decode($_GET['b']);
+					if(strpos($p,'..')!==false){
+						$msg = 'Invalid local file path';
+					}elseif(!(@file_put_contents(realpath(dirname(__FILE__)).'/'.$p,$s))){
 						$msg = 'Couldn\'t save file';
 					}
 				}else{
