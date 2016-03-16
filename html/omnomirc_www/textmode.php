@@ -18,6 +18,7 @@
     You should have received a copy of the GNU General Public License
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
+namespace oirc;
 session_start();
 if(isset($_GET['login'])){
 	$_SESSION['content'] = '';

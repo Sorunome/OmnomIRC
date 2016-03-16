@@ -18,6 +18,7 @@
     You should have received a copy of the GNU General Public License
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
+namespace oirc;
 error_reporting(E_ALL);
 ini_set('display_errors','1');
 

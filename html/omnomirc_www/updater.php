@@ -1,4 +1,5 @@
 <?php
+namespace oirc;
 error_reporting(0);
 $installScriptVersion = '2.10.0.1';
 include_once(realpath(dirname(__FILE__)).'/config.php');

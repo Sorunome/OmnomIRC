@@ -86,7 +86,7 @@ class Bot(threading.Thread):
 			import ssl
 			self.s = ssl.wrap_socket(self.s)
 		self.s.connect((self.server,self.port))
-		self.send('USER %s %s %s :%s' % (self.nick,'host','server',self.nick))
+		self.send('USER %s %s %s :%s' % ('ircbot','host','server','ircbot'))
 		self.send('NICK %s' % (self.nick))
 	def handleNickTaken(self,line):
 		for i in range(len(line)):

@@ -18,7 +18,7 @@
     You should have received a copy of the GNU General Public License
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
-
+namespace oirc;
 function getConfig(){
 	$cfg = explode("\n",file_get_contents(realpath(dirname(__FILE__)).'/config.json.php'));
 	$searchingJson = true;

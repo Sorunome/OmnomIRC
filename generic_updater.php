@@ -1,5 +1,6 @@
 <?php
 //UPDATER FROMVERSION=SED_INSERT_FROMVERSION
+namespace oirc;
 error_reporting(0);
 $NEWVERSION='SED_INSERT_NEWVERSION';
 

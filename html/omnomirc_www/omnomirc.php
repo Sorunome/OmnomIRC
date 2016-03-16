@@ -18,6 +18,7 @@
 	You should have received a copy of the GNU General Public License
 	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
+namespace oirc;
 
 class Json{
 	private $json;
@@ -118,12 +119,12 @@ class Cache{
 	public function __construct($host = 'localhost',$port = 11211){
 		global $json;
 		if(class_exists('Memcached')){
-			$this->handle = new Memcached;
+			$this->handle = new \Memcached;
 			$this->handle->addServer($host,$port);
-			$this->handle->setOption(Memcached::OPT_COMPRESSION,false); // else python won't be able to do anything
+			$this->handle->setOption(\Memcached::OPT_COMPRESSION,false); // else python won't be able to do anything
 			$this->mode = 1;
 		}elseif(class_exists('Memcache')){
-			$this->handle = new Memcache;
+			$this->handle = new \Memcache;
 			$this->handle->connect($host,$port);
 			$this->handle->setCompressThreshold(0,1); // disable compression
 			$this->mode = 2;
@@ -165,7 +166,7 @@ function refValues($arr){
 	}
 	return $arr;
 }
-class Sqli{
+class Sql{
 	private $mysqliConnection;
 	private $stmt;
 	private $numQueries = 0;
@@ -174,7 +175,7 @@ class Sqli{
 		if(isset($this->mysqliConnection)){
 			return $this->mysqliConnection;
 		}
-		$mysqli = new mysqli($config['sql']['server'],$config['sql']['user'],$config['sql']['passwd'],$config['sql']['db']);
+		$mysqli = new \mysqli($config['sql']['server'],$config['sql']['user'],$config['sql']['passwd'],$config['sql']['db']);
 		if($mysqli->connect_errno){
 			die('Could not connect to SQL DB: '.$mysqli->connect_errno.' '.$mysqli->connect_error);
 		}
@@ -320,7 +321,7 @@ class Sqli{
 		return $this->numQueries;
 	}
 }
-$sql = new Sqli();
+$sql = new Sql();
 class GlobalVars{
 	public function set($s,$c,$t = NULL){ //set a global variable
 		global $sql;
