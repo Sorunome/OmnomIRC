@@ -842,14 +842,16 @@ class You{
 			return false;
 		}
 		$userSql = $this->info();
-		if($userSql['globalOp']==1){
+		if($userSql['globalOp']){
 			$this->globalOps = true;
 			return true;
 		}
 		$net = $networks->get($this->getNetwork());
-		$cl = $net['config']['checkLogin'];
-		$returnPosition = json_decode(trim(file_get_contents($cl.'?op='.$this->id)),true);
-		
+		if($net['config']['checkLoginAbs'] !== ''){
+			$returnPosition = json_decode(trim(shell_exec('php '.escapeshellarg($net['config']['checkLoginAbs']).'/index.php op='.(int)$this->id)),true);
+		}else{
+			$returnPosition = json_decode(trim(file_get_contents($net['config']['checkLogin'].'?op='.$this->id)),true);
+		}
 		if(isset($returnPosition['op']) && $returnPosition['op']){
 			$this->globalOps = true;
 			return true;

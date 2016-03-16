@@ -1,4 +1,15 @@
 <?php
+if(isset($argv) && php_sapi_name() == 'cli'){
+	// parse command line args into $_GET
+	foreach($argv as $a){
+		if(($p = strpos($a,'='))!==false){
+			$_GET[substr($a,0,$p)] = substr($a,$p+1) or true;
+		}
+	}
+	define('INTERNAL',true);
+}else{
+	define('INTERNAL',false);
+}
 function getConfig(){
 	$cfg = explode("\n",file_get_contents(realpath(dirname(__FILE__)).'/config.json.php'));
 	$searchingJson = true;
