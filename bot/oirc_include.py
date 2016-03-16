@@ -102,8 +102,7 @@ class OircRelay:
 		self.handle.log(self.id,'error',s)
 	def getHandle(self,c):
 		c.handle = self.handle
-		c.channels = self.channels
-		return type(str(self.id)+'_class_anon',(c,),{'id':self.id})
+		return type(str(self.id)+'_class_anon',(c,),{'id':self.id,'channels':self.channels})
 
 class OircRelayHandle:
 	id = -1

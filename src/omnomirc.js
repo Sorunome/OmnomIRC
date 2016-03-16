@@ -57,32 +57,18 @@ var oirc = (function(){
 						
 						self.checkLoginUrl = data.checkLoginUrl;
 						
-						set = ls.get('checklogin');
-						if(!set || clOnly){
-							network.getJSON(self.checkLoginUrl+'&network='+self.net.toString()+'&jsoncallback=?',function(data){
-								self.nick = data.nick;
-								self.signature = data.signature;
-								self.uid = data.uid;
-								self.pmIdent = '['+self.net.toString()+','+self.uid.toString()+']';
-								ls.set('checklogin',{
-									nick:self.nick,
-									signature:self.signature,
-									uid:self.uid
-								});
-								if(fn!==undefined){
-									fn();
-								}
-							},!clOnly,false);
-						}else{
-							self.nick = set.nick;
-							self.signature = set.signature;
-							self.uid = set.uid;
+						network.getJSON(self.checkLoginUrl+'&network='+self.net.toString()+'&jsoncallback=?',function(data){
+							self.nick = data.nick;
+							self.signature = data.signature;
+							self.uid = data.uid;
 							self.pmIdent = '['+self.net.toString()+','+self.uid.toString()+']';
+							
 							if(fn!==undefined){
 								fn();
 							}
-						}
-					},!clOnly,false);
+						},true,false);
+						
+					},true,false);
 				},
 				getUrlParams:function(){
 					return 'nick='+base64.encode(self.nick)+'&signature='+base64.encode(self.signature)+'&time='+(+new Date()).toString()+'&id='+self.uid+'&network='+self.net+(self.nick!=''?'&noLoginErrors':'');
@@ -890,6 +876,7 @@ var oirc = (function(){
 					},
 					identify:function(){
 						self.ws.send($.extend({action:'ident'},settings.getIdentParams()));
+						self.ws.send({action:'charsHigh','chars':options.get('charsHigh')});
 					},
 					init:function(){
 						if(!("WebSocket" in window) || !self.ws.enabled){

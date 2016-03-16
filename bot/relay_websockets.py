@@ -20,7 +20,7 @@
 #	You should have received a copy of the GNU General Public License
 #	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 
-import server,traceback,re,struct,json,time,bot,errno,oirc_include as oirc
+import server,traceback,re,struct,json,time,errno,oirc_include as oirc
 from base64 import b64encode
 from hashlib import sha1
 
@@ -35,6 +35,18 @@ class Relay(oirc.OircRelay):
 		self.handle.log('websockets','info',s)
 	def log_error(self,s):
 		self.handle.log('websockets','error',s)
+	def getNetChans(self):
+		retn = {}
+		for n in self.handle.config.json['networks']:
+			if n['enabled']:
+				chans = []
+				for c in self.handle.config.json['channels']:
+					if c['enabled']:
+						for cc in c['networks']:
+							if cc['id'] == n['id']:
+								chans.append(c['id'])
+				retn[n['id']] = chans
+		return retn
 	def errhandler(self):
 		if self.config['portpoking']:
 			self.log_info('Port in use, trying different port...')
@@ -59,6 +71,7 @@ class Relay(oirc.OircRelay):
 				port = 0
 		c = self.getHandle(WebSocketsHandler)
 		c.id = 'websockets'
+		c.netChans = self.getNetChans()
 		if self.config['ssl']:
 			self.server = server.SSLServer(host,port,c,errhandler = self.errhandler,certfile = self.config['certfile'],keyfile = self.config['keyfile'])
 		else:
@@ -75,6 +88,9 @@ class Relay(oirc.OircRelay):
 		else:
 			self.config = cfg
 			self.channels = chans
+			nc = self.getNetChans()
+			for client in self.server.inputHandlers:
+				client.netChans = nc
 	def stopRelay(self):
 		if hasattr(self.server,'inputHandlers'):
 			for client in self.server.inputHandlers:
@@ -84,19 +100,22 @@ class Relay(oirc.OircRelay):
 	def relayMessage(self,n1,n2,t,m,c,s,uid): #self.server.inputHandlers
 		c = str(c)
 		if hasattr(self.server,'inputHandlers'):
+			m_lower = m.lower()
 			for client in self.server.inputHandlers:
 				try:
-					if ((not client.banned) and
-						(
-							(
-								c in client.chans
-								and
-								t!='server'
-							)
-							or
-							str(n2) == client.pmHandler
-						)):
-						client.sendLine(n1,n2,t,m,c,s,uid)
+					if not client.banned:
+						if (
+								(
+									c in client.chans
+									and
+									t!='server'
+								)
+								or
+								str(n2) == client.pmHandler
+							):
+							client.sendLine(n1,n2,t,m,c,s,uid)
+						elif t!='pm' and t!='pmaction' and client.charsHigh in m_lower:
+							client.sendLine(n1,n2,'highlight',m,c,s,uid)
 				except Exception as inst:
 					print(inst)
 					traceback.print_exc()
@@ -119,9 +138,14 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 	identified = False
 	globalop = False
 	banned = True
+	charsHigh = ''
 	chans = {}
 	msgStack = []
 	pmHandler = '**'
+	def setCharsHigh(self,i):
+		self.charsHigh = self.nick[:i].lower()
+		if self.charsHigh == '':
+			self.charsHigh = self.nick.lower()
 	def get_log_prefix(self):
 		return '['+str(self.client_address)+'] [Network: '+str(self.network)+'] '
 	def setup(self):
@@ -197,6 +221,9 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 			self.handle.sendToOther(self.nick,n2,t,m,c,self.network,self.uid)
 	def join(self,c): # updates nick in userlist
 		if isinstance(c,str) and not c[0] in '*#@':
+			self.log_info('Tried to join invalid channel: '+str(c))
+			return
+		elif not (self.network in self.netChans) or not (c in self.netChans[self.network]):
 			self.log_info('Tried to join invalid channel: '+str(c))
 			return
 		c = str(c)
@@ -303,26 +330,7 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 						self.identified = False
 						self.pmHandler = '**'
 						self.nick = ''
-				elif m['action'] == 'joinchan':
-					c = m['chan']
-					try:
-						c = str(int(c))
-					except:
-						c = b64encode_wrap(c)
-					r = oirc.execPhp('omnomirc.php',{
-						'ident':'',
-						'nick':b64encode_wrap(self.nick),
-						'signature':b64encode_wrap(self.sig),
-						'time':str(int(time.time())),
-						'id':self.uid,
-						'network':self.network,
-						'channel':c
-					})
-					self.checkRelog(r,m)
-					if not r['isbanned'] and self.identified:
-						self.join(r['channel'])
-				elif m['action'] == 'partchan':
-					self.part(m['chan'])
+					self.setCharsHigh(4)
 				elif self.identified:
 					if m['action'] == 'message' and m['channel'] in self.chans and not self.banned:
 						msg = m['message']
@@ -352,6 +360,28 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 										self.checkRelog(r,m)
 							else: # normal message
 								self.addLine('message',msg,m['channel'])
+					elif m['action'] == 'joinchan':
+						c = m['chan']
+						try:
+							c = str(int(c))
+						except:
+							c = b64encode_wrap(c)
+						r = oirc.execPhp('omnomirc.php',{
+							'ident':'',
+							'nick':b64encode_wrap(self.nick),
+							'signature':b64encode_wrap(self.sig),
+							'time':str(int(time.time())),
+							'id':self.uid,
+							'network':self.network,
+							'channel':c
+						})
+						self.checkRelog(r,m)
+						if not r['isbanned'] and self.identified:
+							self.join(r['channel'])
+					elif m['action'] == 'partchan':
+						self.part(m['chan'])
+					elif m['action'] == 'charsHigh':
+						self.setCharsHigh(int(m['chars']))
 		except:
 			traceback.print_exc()
 		return True

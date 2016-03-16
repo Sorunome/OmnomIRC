@@ -29,7 +29,7 @@ function hook_get_color_nick($n,$id){
 	$row = $db->sql_fetchrow($result);
 	$db->sql_freeresult($result);
 	if($row){
-		return '<a target="_top"'.substr(get_username_string('full',$row['user_id'],$row['username'],$row['user_colour'],$n,generate_board_url().'/memberlist.'.$phpEx.'?'),2);
+		return '<a target="_top"'.substr(get_username_string('full',$row['user_id'],$row['username'],$row['user_colour'],$n,generate_board_url().'/memberlist.'.$phpEx.'?mode=viewprofile&'),2);
 	}
 	return $n;
 }
