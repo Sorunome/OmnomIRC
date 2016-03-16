@@ -90,7 +90,7 @@ function errorHandler($errno,$errstr,$errfile,$errline){
 	}
 }
 if(!(isset($textmode) && $textmode===true)){
-	set_error_handler('errorHandler',E_ALL);
+	set_error_handler('oirc\errorHandler',E_ALL);
 	header('Content-Type: application/json');
 }
 header('Last-Modified: Thu, 01-Jan-1970 00:00:01 GMT');
