@@ -964,6 +964,7 @@ var oirc = (function(){
 					inRequest:false,
 					handler:false,
 					lastSuccess:(new Date).getTime(),
+					fnCallback:undefined,
 					sendRequest:function(){
 						if(!channels.current().loaded()){
 							return;
@@ -994,6 +995,11 @@ var oirc = (function(){
 							})
 							.fail(function(){
 								self.old.handler = false;
+								if(self.fnCallback!=undefined){
+									self.fnCallback();
+									self.fnCallback = undefined;
+									return;
+								}
 								if((new Date).getTime() >= self.old.lastSuccess + 300000){
 									send.internal('<span style="color:#C73232;">OmnomIRC has lost connection to server. Please refresh to reconnect.</span>');
 								}else if(!self.old.inRequest){
@@ -1004,7 +1010,7 @@ var oirc = (function(){
 							});
 					},
 					setTimer:function(){
-						if(channels.current().loaded() && self.old.handler===false){
+						if(self.old.inRequest && channels.current().loaded() && self.old.handler===false){
 							setTimeout(function(){
 								self.old.sendRequest();
 							},(page.isBlurred()?2500:200));
@@ -1018,21 +1024,27 @@ var oirc = (function(){
 							self.old.setTimer();
 						}
 					},
-					stop:function(){
+					stop:function(fn){
 						if(self.old.inRequest){
 							self.old.inRequest = false;
-							try{
+							if(self.old.handler){
+								self.fnCallback = fn;
 								self.old.handler.abort();
-							}catch(e){}
+							}else if(fn!==undefined){
+								fn();
+							}
+						}else if(fn!==undefined){
+							fn();
 						}
 					},
 					send:function(s,fn){
-						self.old.stop();
-						network.getJSON('message.php?message='+base64.encode(s)+'&channel='+channels.current().handlerB64,function(){
-							self.old.start();
-							if(fn!==undefined){
-								fn();
-							}
+						self.old.stop(function(){
+							network.getJSON('message.php?message='+base64.encode(s)+'&channel='+channels.current().handlerB64,function(){
+								self.old.start();
+								if(fn!==undefined){
+									fn();
+								}
+							});
 						});
 					}
 				},
@@ -1053,11 +1065,12 @@ var oirc = (function(){
 						});
 					}
 				},
-				stop:function(){
+				stop:function(fn){
 					if(self.ws.use){
 						self.ws.allowLines = false;
+						fn();
 					}else{
-						self.old.stop();
+						self.old.stop(fn);
 					}
 				},
 				start:function(){
@@ -1415,36 +1428,37 @@ var oirc = (function(){
 							return false;
 						}
 						indicator.start();
-						request.stop();
-						$('#message').attr('disabled','true');
-						$('#MessageBox').empty();
-						$('.chan').removeClass('curchan');
-						if(self.requestHandler!==false){
-							self.requestHandler.abort();
-						}
-						request.partChan(self.current.handler);
-						self.requestHandler = network.getJSON('Load.php?count=125&channel='+self.getHandler(i,true),function(data){
-							self.current = Channel(i,self);
-							if(self.current.load(data,fn)){
-								request.setChan(self.current.handler);
-								request.start();
-								
-								self.chans[i].high = false;
-								self.save();
-								tab.load();
-								oldMessages.read();
-								
-								if(settings.loggedIn()){
-									$('#message').removeAttr('disabled');
+						request.stop(function(){
+							$('#message').attr('disabled','true');
+							$('#MessageBox').empty();
+							$('.chan').removeClass('curchan');
+							if(self.requestHandler!==false){
+								self.requestHandler.abort();
+							}
+							request.partChan(self.current.handler);
+							self.requestHandler = network.getJSON('Load.php?count=125&channel='+self.getHandler(i,true),function(data){
+								self.current = Channel(i,self);
+								if(self.current.load(data,fn)){
+									request.setChan(self.current.handler);
+									request.start();
+									
+									self.chans[i].high = false;
+									self.save();
+									tab.load();
+									oldMessages.read();
+									
+									if(settings.loggedIn()){
+										$('#message').removeAttr('disabled');
+									}
 								}
-							}
-							self.requestHandler = false;
-							$('#chan'+i.toString()).removeClass('highlightChan').find('.chan').addClass('curchan');
-							
-							if(fn!==undefined){
-								fn();
-							}
-							indicator.stop();
+								self.requestHandler = false;
+								$('#chan'+i.toString()).removeClass('highlightChan').find('.chan').addClass('curchan');
+								
+								if(fn!==undefined){
+									fn();
+								}
+								indicator.stop();
+							});
 						});
 						return true;
 					},
@@ -2750,24 +2764,25 @@ var oirc = (function(){
 					var d = new Date();
 					
 					indicator.start();
-					request.stop();
+					request.stop(function(){
 					
-					$('#message').attr('disabled','true');
-					users.setUsers([]); //empty userlist
-					users.draw();
-					$('#chattingHeader').css('display','none');
-					$('#logDatePicker').css('display','none');
-					$('#logsHeader').css('display','block');
-					
-					$('#logChanIndicator').text(channels.current().name);
-					
-					self.year = parseInt(d.getFullYear(),10);
-					self.month = parseInt(d.getMonth()+1,10);
-					self.day = parseInt(d.getDate(),10);
-					self.updateInputVal();
-					
-					self.isOpen = true;
-					self.fetch();
+						$('#message').attr('disabled','true');
+						users.setUsers([]); //empty userlist
+						users.draw();
+						$('#chattingHeader').css('display','none');
+						$('#logDatePicker').css('display','none');
+						$('#logsHeader').css('display','block');
+						
+						$('#logChanIndicator').text(channels.current().name);
+						
+						self.year = parseInt(d.getFullYear(),10);
+						self.month = parseInt(d.getMonth()+1,10);
+						self.day = parseInt(d.getDate(),10);
+						self.updateInputVal();
+						
+						self.isOpen = true;
+						self.fetch();
+					});
 				},
 				close:function(){
 					var num;
