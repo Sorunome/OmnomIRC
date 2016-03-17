@@ -87,7 +87,7 @@ while(true){
 				name2=?
 		)",array($curline,$channel,$you->getPmHandler()));
 	}else{
-		$query = $sql->query_prepare("SELECT * FROM `{db_prefix}lines` WHERE `line_number` > ? AND (`channel` = '?')",array($curline,$channel));
+		$query = $sql->query_prepare("SELECT * FROM `{db_prefix}lines` WHERE `line_number` > ? AND `channel` = ? AND `type`!='server'",array($curline,$channel));
 	}
 	$result = $query[0];
 	$userSql = $you->info();

@@ -1315,7 +1315,7 @@ if(isset($_GET['ident'])){
 	$json->add('isglobalbanned',$you->isGlobalBanned());
 	$banned = $you->isBanned();
 	$json->add('isbanned',$banned);
-	$json->add('mayview',$banned);
+	$json->add('mayview',!$banned);
 	$json->add('channel',$you->chan);
 	echo $json->get();
 	exit;
