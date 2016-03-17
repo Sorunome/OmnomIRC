@@ -124,9 +124,9 @@ class OircRelayHandle:
 				return i
 		return -1
 	def log_info(self,s):
-		self.handle.log(self.id,'info',self.log_prefix+s)
+		self.handle.log(self.id,'info',self.log_prefix+str(s))
 	def log_error(self,s):
-		self.handle.log(self.id,'error',self.log_prefix+s)
+		self.handle.log(self.id,'error',self.log_prefix+str(s))
 	def addLine(self,n1,n2,t,m,c):
 		c = self.chanToId(c)
 		if c != -1:

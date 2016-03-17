@@ -71,7 +71,7 @@ var oirc = (function(){
 					},true,false);
 				},
 				getUrlParams:function(){
-					return 'nick='+base64.encode(self.nick)+'&signature='+base64.encode(self.signature)+'&time='+(+new Date()).toString()+'&id='+self.uid+'&network='+self.net+(self.nick!=''?'&noLoginErrors':'');
+					return 'nick='+base64.encode(self.nick)+'&signature='+base64.encode(self.signature)+'&time='+(+new Date()).toString()+'&id='+self.uid+'&network='+self.net+'&noLoginErrors';
 				},
 				getNetwork:function(i){
 					if(self.networks[i]!==undefined){
@@ -197,7 +197,6 @@ var oirc = (function(){
 				warnings:[],
 				errorsOpen:false,
 				warningsOpen:false,
-				didRelog:false,
 				removeSig:function(s){
 					try{
 						var parts = s.split('signature='),
@@ -271,15 +270,8 @@ var oirc = (function(){
 							settings.fetch(function(){
 								recall();
 							},true);
-						}else if(data.relog==3){
-							if(self.didRelog){ // that's it, no more trying!
-								fn(data);
-							}else{
-								settings.fetch(function(){
-									recall();
-								},true);
-							}
-							self.didRelog = true;
+						}else{ // that's it, we'r out
+							fn(data);
 						}
 					}else{
 						if(data.relog!==undefined){
@@ -868,7 +860,7 @@ var oirc = (function(){
 							network.getJSON('omnomirc.php?getcurline&noLoginErrors',function(data){
 								channels.current().reloadUserlist(); // this is usually a good idea.
 								self.setCurLine(data.curline);
-								use = false;
+								self.ws.use = false;
 								self.old.lastSuccess = (new Date).getTime();
 								self.old.start();
 							});
@@ -916,7 +908,7 @@ var oirc = (function(){
 										delete self.ws.socket;
 									}
 								}
-								if(data.relog!==undefined && data.relog!=0){
+								if(data.relog!==undefined && data.relog!=0 && data.relog < 3){
 									if(!self.ws.didRelog){
 										self.ws.didRelog = true;
 										settings.fetch(function(){
@@ -1723,17 +1715,28 @@ var oirc = (function(){
 					return result;
 				},
 				add:function(u){
-					if(channels.current().handler!=='' && self.users.indexOf(u) == -1){
-						self.users.push(u);
-						self.draw();
+					if(channels.current().handler!==''){
+						var add = true;
+						$.each(self.users,function(i,us){
+							if(us.nick == u.nick && us.network == u.network){
+								add = false;
+								return false;
+							}
+						});
+						if(add){
+							self.users.push(u);
+							self.draw();
+						}
 					}
 				},
 				remove:function(u){
 					if(channels.current().handler!==''){
-						var i = self.users.indexOf(u);
-						if(i != -1){
-							self.users.splice(i,1);
-						}
+						$.each(self.users,function(i,us){
+							if(us.nick == u.nick && us.network == u.network){
+								self.users.splice(i,1);
+								return false;
+							}
+						});
 						self.draw();
 					}
 				},

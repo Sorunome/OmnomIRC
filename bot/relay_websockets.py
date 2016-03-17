@@ -114,11 +114,11 @@ class Relay(oirc.OircRelay):
 								str(n2) == client.pmHandler
 							):
 							client.sendLine(n1,n2,t,m,c,s,uid)
-						elif t!='pm' and t!='pmaction' and client.charsHigh in m_lower:
+						elif client.identified and t!='pm' and t!='pmaction' and client.charsHigh in m_lower:
 							client.sendLine(n1,n2,'highlight',m,c,s,uid)
 				except Exception as inst:
-					print(inst)
-					traceback.print_exc()
+					self.log_error(inst)
+					self.log_error(traceback.format_exc())
 	def joinThread(self):
 		self.server.join()
 
@@ -201,7 +201,7 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 				self.socket.send(struct.pack(">Q",length))
 			self.socket.send(bytes(message,'utf-8'))
 		except IOError as e:
-			traceback.print_exc()
+			self.log_error(traceback.format_exc())
 			if e.errno == errno.EPIPE:
 				return self.close()
 		return True
@@ -288,10 +288,12 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 		if 'relog' in r:
 			self.send_message(json.dumps({'relog':r['relog']}))
 			if r['relog']==2:
+				self.log_info('Pushing message to msg stack')
 				self.msgStack.append(m)
 	def on_message(self,m):
 		try:
 			if 'action' in m:
+				self.log_info('>> '+str(m))
 				if m['action'] == 'ident':
 					try:
 						r = oirc.execPhp('omnomirc.php',{
@@ -303,27 +305,30 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 							'network':m['network']
 						})
 					except:
-						traceback.print_exc()
+						self.log_error(traceback.format_exc())
 						self.identified = False
 						self.send_message(json.dumps({'relog':3}))
 						return True
 					try:
-						self.banned = r['isbanned']
+						self.log_info('ident callback: '+str(r))
+						self.banned = r['isglobalbanned']
+						self.network = r['network']
+						self.log_prefix = self.get_log_prefix()
 						if r['loggedin']:
 							self.identified = True
 							self.nick = m['nick']
 							self.sig = m['signature']
 							self.uid = m['id']
-							self.network = m['network']
 							self.pmHandler = '['+str(self.network)+','+str(self.uid)+']'
-							self.log_prefix = self.get_log_prefix()
-							for a in self.msgStack: # let's pop the whole stack!
-								self.on_message(a)
-							self.msgStack = []
+							self.log_info('Identified as user')
 						else:
 							self.identified = False
 							self.nick = ''
 							self.pmHandler = '**'
+							self.log_info('Identified as guest')
+						for a in self.msgStack: # let's pop the whole stack!
+							self.on_message(a)
+						self.msgStack = []
 						if 'relog' in r:
 							self.send_message(json.dumps({'relog':r['relog']}))
 					except:
@@ -331,36 +336,8 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 						self.pmHandler = '**'
 						self.nick = ''
 					self.setCharsHigh(4)
-				elif self.identified:
-					if m['action'] == 'message' and m['channel'] in self.chans and not self.banned:
-						msg = m['message']
-						if len(msg) <= 256 and len(msg) > 0:
-							if msg[0] == '/':
-								if len(msg) > 1 and msg[1]=='/': # normal message, erase trailing /
-									self.addLine('message',msg[1:],m['channel'])
-								else:
-									if len(msg) > 4 and msg[0:4].lower() == '/me ': # /me message
-										self.addLine('action',msg[4:],m['channel'])
-									else:
-										c = m['channel']
-										try:
-											c = str(int(c))
-										except:
-											c = b64encode_wrap(c)
-										
-										r = oirc.execPhp('message.php',{
-											'message':b64encode_wrap(msg),
-											'channel':c,
-											'nick':b64encode_wrap(self.nick),
-											'signature':b64encode_wrap(self.sig),
-											'time':str(int(time.time())),
-											'id':self.uid,
-											'network':self.network
-										})
-										self.checkRelog(r,m)
-							else: # normal message
-								self.addLine('message',msg,m['channel'])
-					elif m['action'] == 'joinchan':
+				elif not self.banned:
+					if m['action'] == 'joinchan':
 						c = m['chan']
 						try:
 							c = str(int(c))
@@ -376,14 +353,46 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 							'channel':c
 						})
 						self.checkRelog(r,m)
-						if not r['isbanned'] and self.identified:
-							self.join(r['channel'])
+						try:
+							if r['mayview']:
+								self.join(r['channel'])
+						except:
+							self.log_info('tried to join channel '+c)
 					elif m['action'] == 'partchan':
 						self.part(m['chan'])
-					elif m['action'] == 'charsHigh':
-						self.setCharsHigh(int(m['chars']))
+					elif self.identified:
+						if m['action'] == 'message' and m['channel'] in self.chans and not self.banned:
+							msg = m['message']
+							if len(msg) <= 256 and len(msg) > 0:
+								if msg[0] == '/':
+									if len(msg) > 1 and msg[1]=='/': # normal message, erase trailing /
+										self.addLine('message',msg[1:],m['channel'])
+									else:
+										if len(msg) > 4 and msg[0:4].lower() == '/me ': # /me message
+											self.addLine('action',msg[4:],m['channel'])
+										else:
+											c = m['channel']
+											try:
+												c = str(int(c))
+											except:
+												c = b64encode_wrap(c)
+											
+											r = oirc.execPhp('message.php',{
+												'message':b64encode_wrap(msg),
+												'channel':c,
+												'nick':b64encode_wrap(self.nick),
+												'signature':b64encode_wrap(self.sig),
+												'time':str(int(time.time())),
+												'id':self.uid,
+												'network':self.network
+											})
+											self.checkRelog(r,m)
+								else: # normal message
+									self.addLine('message',msg,m['channel'])
+						elif m['action'] == 'charsHigh':
+							self.setCharsHigh(int(m['chars']))
 		except:
-			traceback.print_exc()
+			self.log_error(traceback.format_exc())
 		return True
 	def close(self):
 		self.log_info('connection closed')

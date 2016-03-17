@@ -242,6 +242,7 @@ class Main():
 		self.updateRelayTypes()
 		self.updateChanIds()
 	def log(self,id,level,message,prefix = ''):
+		message = str(message)
 		if isinstance(id,int):
 			if not id in self.networksCache:
 				for n in config.json['networks']:

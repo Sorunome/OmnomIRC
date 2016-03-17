@@ -754,6 +754,12 @@ class You{
 			echo $json->get();
 			die();
 		}
+		if($channel[0] == '*' && !$this->loggedIn){
+			$json->add('message','<span style="color:#C73232;"><b>ERROR:</b> Pm not available for guests</span>');
+			$json->addError('Pm not available for guests');
+			echo $json->get();
+			die();
+		}
 		$json->add('chan',$channel);
 		if($channel[0] == '*' && $this->getPmHandler() != '' && (!preg_match('/^(\[\d+,\d+\]){2}$/',ltrim($channel,'*')) || strpos($channel,$this->getPmHandler())===false)){
 			$json->addError('Invalid PM channel');
@@ -879,6 +885,11 @@ class You{
 		$this->ops = false;
 		return false;
 	}
+	public function isGlobalBanned(){
+		global $networks,$channels;
+		$userSql = $this->info();
+		return $userSql['globalBan']=='1';
+	}
 	public function isBanned(){
 		global $networks,$channels;
 		$userSql = $this->info();
@@ -887,7 +898,7 @@ class You{
 		}
 		if(!$this->isLoggedIn()){
 			$n = $networks->get($this->network);
-			if($n!==NULL && $n['config']['guests'] == 0){
+			if($n===NULL || $n['config']['guests'] == 0){
 				return true;
 			}
 		}
@@ -1301,7 +1312,10 @@ if(isset($_GET['ident'])){
 	header('Content-Type:application/json');
 	$json->add('loggedin',$you->isLoggedIn());
 	$json->add('isglobalop',$you->isGlobalOp());
-	$json->add('isbanned',$you->isBanned());
+	$json->add('isglobalbanned',$you->isGlobalBanned());
+	$banned = $you->isBanned();
+	$json->add('isbanned',$banned);
+	$json->add('mayview',$banned);
 	$json->add('channel',$you->chan);
 	echo $json->get();
 	exit;
