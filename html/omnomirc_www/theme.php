@@ -95,6 +95,9 @@ if(isset($_GET['theme']) && ($themes = $vars->get('themes')) && isset($themes[$_
 		border-color: $border;
 		color: $text;
 	}
+	.dateSeperator > td {
+		border-color: $border;
+	}
 	.popup {
 		background: $popupbg;
 		border-color: $popupborder;

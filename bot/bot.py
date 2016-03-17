@@ -296,7 +296,10 @@ class Main():
 	def updateCurline(self):
 		global config,sql
 		try:
-			f = open(config.json['settings']['curidFilePath'],'w')
+			fp = config.json['settings']['curidFilePath']
+			if fp[:1]!='/':
+				fp = oirc.DOCUMENTROOT + '/' + fp
+			f = open(fp,'w')
 			f.write(str(sql.query("SELECT MAX(line_number) AS max FROM {db_prefix}lines")[0]['max']))
 			f.close()
 		except Exception as inst:

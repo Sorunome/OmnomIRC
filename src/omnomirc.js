@@ -1723,19 +1723,17 @@ var oirc = (function(){
 					return result;
 				},
 				add:function(u){
-					if(channels.current().handler!==''){
+					if(channels.current().handler!=='' && self.users.indexOf(u) == -1){
 						self.users.push(u);
 						self.draw();
 					}
 				},
 				remove:function(u){
 					if(channels.current().handler!==''){
-						$.each(self.users,function(i,us){
-							if(us.nick == u.nick && us.network == u.network){
-								self.users.splice(i,1);
-								return false;
-							}
-						});
+						var i = self.users.indexOf(u);
+						if(i != -1){
+							self.users.splice(i,1);
+						}
 						self.draw();
 					}
 				},

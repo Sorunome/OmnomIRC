@@ -621,7 +621,11 @@ class Relay{
 				}
 			}
 			$this->sendBuffer = array();
-			file_put_contents($config['settings']['curidFilePath'],$sql->insertId());
+			if(substr($config['settings']['curidFilePath'],0,1) == '/'){
+				file_put_contents($config['settings']['curidFilePath'],$sql->insertId());
+			}else{
+				file_put_contents(realpath(dirname(__FILE__)).'/'.$config['settings']['curidFilePath'],$sql->insertId());
+			}
 		}
 	}
 }
