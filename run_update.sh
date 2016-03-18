@@ -48,4 +48,5 @@ done
 echo "Uploading updater..."
 ./make_updater.sh "$oldversion" "$newversion" > $tmp
 scp $tmp "sorunome.de:/var/www/omnomirc.omnimaga.org/$newversion/updater.php.s"
+ssh sorunome.de "chmod go+r /var/www/omnomirc.omnimaga.org/$newversion/updater.php.s"
 rm $tmp
