@@ -1940,7 +1940,7 @@ var oirc = (function(){
 				},
 				enableUserlist:function(){
 					var moveUserList = function(delta,_self){
-							$(self).css('top',Math.min(0,Math.max(((/Opera/i.test(navigator.userAgent))?-30:0)+document.getElementById('UserListInnerCont').clientHeight-_self.scrollHeight,delta+parseInt($('#UserList').css('top'),10))));
+							$(_self).css('top',Math.min(0,Math.max(((/Opera/i.test(navigator.userAgent))?-30:0)+document.getElementById('UserListInnerCont').clientHeight-_self.scrollHeight,delta+parseInt($('#UserList').css('top'),10))));
 						};
 					$('#UserList')
 						.css('top',0)
