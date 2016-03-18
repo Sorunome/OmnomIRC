@@ -759,8 +759,8 @@ class You{
 			echo $json->get();
 			die();
 		}
-		if($channel[0] == '*' && !$this->loggedIn){
-			$json->add('message','<span style="color:#C73232;"><b>ERROR:</b> Pm not available for guests</span>');
+		if(($channel[0] == '*' || $channel[0] == '@') && (!$this->loggedIn || $this->id == -1)){
+			$json->add('message','<span style="color:#C73232;"><b>ERROR:</b> Pm/oirc chans not available for guests</span>');
 			$json->addError('Pm not available for guests');
 			echo $json->get();
 			die();

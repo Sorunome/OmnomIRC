@@ -1122,6 +1122,11 @@ var oirc = (function(){
 						self.old.lastSuccess = (new Date).getTime();
 						self.old.start();
 					}
+				},
+				identify:function(){
+					if(self.ws.enabled){
+						self.ws.identify();
+					}
 				}
 			};
 			return {
@@ -1132,7 +1137,8 @@ var oirc = (function(){
 				setCurLine:self.setCurLine,
 				send:self.send,
 				setData:self.setData,
-				init:self.init
+				init:self.init,
+				identify:self.identify
 			};
 		})(),
 		channels = (function(){
@@ -2373,6 +2379,7 @@ var oirc = (function(){
 									loginFail();
 								}else{
 									settings.setIdent(name,data.signature,-1);
+									request.identify();
 									$('#pickUsernamePopup').hide();
 									$('#message').removeAttr('disabled');
 									send.val('');
@@ -2390,6 +2397,7 @@ var oirc = (function(){
 												ls.set('guestName','');
 												ls.set('guestSig','');
 												settings.setIdent('','',-1);
+												request.identify();
 												loginFail();
 											}
 										}),
