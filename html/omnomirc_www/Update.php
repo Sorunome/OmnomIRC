@@ -18,7 +18,7 @@
     You should have received a copy of the GNU General Public License
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
-
+namespace oirc;
 include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 
 $net = $networks->get($you->getNetwork());
@@ -87,7 +87,7 @@ while(true){
 				name2=?
 		)",array($curline,$channel,$you->getPmHandler()));
 	}else{
-		$query = $sql->query_prepare("SELECT * FROM `{db_prefix}lines` WHERE `line_number` > ? AND (`channel` = '?')",array($curline,$channel));
+		$query = $sql->query_prepare("SELECT * FROM `{db_prefix}lines` WHERE `line_number` > ? AND `channel` = ? AND `type`!='server'",array($curline,$channel));
 	}
 	$result = $query[0];
 	$userSql = $you->info();
@@ -181,4 +181,3 @@ while(true){
 	echo $json->get();
 	break;
 }
-?>

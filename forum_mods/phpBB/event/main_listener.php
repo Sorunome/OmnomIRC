@@ -16,6 +16,8 @@ class main_listener implements EventSubscriberInterface
 			'core.posting_modify_submit_post_after' => 'report_post',
 			'core.acp_manage_forums_display_form' => 'acp_generate_forum_data',
 			'core.acp_manage_forums_validate_data' => 'acp_validate_forum_data',
+			'core.approve_posts_after' => 'approve_post',
+			'core.approve_topics_after' => 'approve_topic'
 		);
 	}
 	
@@ -98,9 +100,9 @@ class main_listener implements EventSubscriberInterface
 	}
 	public function report_post($event)
 	{
-		global $user,$config;
+		global $user,$config,$db;
 		
-		$chan = $event->get_data()['post_data']['oirc_chan'];
+		$chan = $event['post_data']['oirc_chan'];
 		
 		if(!$chan || $chan == '' || $chan == -1)
 		{
@@ -113,6 +115,18 @@ class main_listener implements EventSubscriberInterface
 		
 		$data = $event['data'];
 		
+		$sql = $db->sql_build_query('SELECT', array(
+			'SELECT' => 'post_visibility',
+			'FROM' => array(POSTS_TABLE => 'p'),
+			'WHERE' => $db->sql_in_set('post_id',$data['post_id'])
+		));
+		$result = $db->sql_query($sql);
+		$row = $db->sql_fetchrow($result);
+		$db->sql_freeresult($result);
+		
+		if(!$row['post_visibility']){
+			return;
+		}
 		if($data['topic_first_post_id'] != 0)
 		{
 			if(!$data['post_edit_user'])
@@ -157,6 +171,83 @@ class main_listener implements EventSubscriberInterface
 					'{POSTID}' => $data['post_id']
 				)),$chan);
 			}
+		}
+	}
+	public function approve_post($event)
+	{
+		global $config;
+		$data = $event->get_data();
+		if($data['action'] == 'approve')
+		{
+			foreach($data['post_info'] as $post)
+			{
+				$chan = $post['oirc_chan'];
+				if(!$chan || $chan == '' || $chan == -1)
+				{
+					continue;
+				}
+				if($chan == '00')
+				{
+					$chan = 0;
+				}
+				if($post['post_id'] == $post['topic_first_post_id']) // we report the topic
+				{
+					if($config['oirc_topics'])
+					{
+						$this->sendToOmnomIRC(strtr($config['oirc_topicnotification'],array(
+							'{COLOR}' => "\x03",
+							'{NAME}' => $post['username'],
+							'{TOPIC}' => $post['topic_title'],
+							'{SUBJECT}' => $post['post_subject'],
+							'{TOPICID}' => $post['topic_id'],
+							'{POSTID}' => $post['post_id']
+						)),$chan);
+					}
+				}
+				else
+				{
+					if($config['oirc_posts'])
+					{
+						$this->sendToOmnomIRC(strtr($config['oirc_postnotification'],array(
+							'{COLOR}' => "\x03",
+							'{NAME}' => $post['username'],
+							'{TOPIC}' => $post['topic_title'],
+							'{SUBJECT}' => $post['post_subject'],
+							'{TOPICID}' => $post['topic_id'],
+							'{POSTID}' => $post['post_id']
+						)),$chan);
+					}
+				}
+			}
+		}
+	}
+	public function approve_topic($event)
+	{
+		global $config;
+		if(!$config['oirc_topics'])
+		{
+			return;
+		}
+		$data = $event->get_data();
+		foreach($data['topic_info'] as $topic)
+		{
+			$chan = $topic['oirc_chan'];
+			if(!$chan || $chan == '' || $chan == -1)
+			{
+				continue;
+			}
+			if($chan == '00')
+			{
+				$chan = 0;
+			}
+			$this->sendToOmnomIRC(strtr($config['oirc_topicnotification'],array(
+				'{COLOR}' => "\x03",
+				'{NAME}' => $topic['topic_first_poster_name'],
+				'{TOPIC}' => $topic['topic_title'],
+				'{SUBJECT}' => $topic['topic_title'],
+				'{TOPICID}' => $topic['topic_id'],
+				'{POSTID}' => $topic['topic_first_post_id']
+			)),$chan);
 		}
 	}
 	public function acp_generate_forum_data($event)
@@ -213,6 +304,7 @@ class main_listener implements EventSubscriberInterface
 		</script>';
 		
 		$data['template_data']['OIRC_CHANPICKERHTML'] = $chanpickerhtml;
+		
 		$event->set_data($data);
 	}
 	function acp_validate_forum_data($event)

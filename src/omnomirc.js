@@ -32,6 +32,8 @@ var oirc = (function(){
 				net:'',
 				networks:{},
 				pmIdent:false,
+				guestLevel:0,
+				isGuest:true,
 				fetch:function(fn,clOnly){
 					if(clOnly===undefined){
 						clOnly = false;
@@ -44,6 +46,7 @@ var oirc = (function(){
 							parser.setSmileys(data.smileys);
 							parser.setSpLinks(data.spLinks);
 							page.setSmileys(data.smileys);
+							self.guestLevel = data.guests;
 							self.networks = {};
 							$.each(data.networks,function(i,n){
 								self.networks[n.id] = n;
@@ -57,35 +60,27 @@ var oirc = (function(){
 						
 						self.checkLoginUrl = data.checkLoginUrl;
 						
-						set = ls.get('checklogin');
-						if(!set || clOnly){
-							network.getJSON(self.checkLoginUrl+'&network='+self.net.toString()+'&jsoncallback=?',function(data){
-								self.nick = data.nick;
-								self.signature = data.signature;
-								self.uid = data.uid;
-								self.pmIdent = '['+self.net.toString()+','+self.uid.toString()+']';
-								ls.set('checklogin',{
-									nick:self.nick,
-									signature:self.signature,
-									uid:self.uid
-								});
-								if(fn!==undefined){
-									fn();
-								}
-							},!clOnly,false);
-						}else{
-							self.nick = set.nick;
-							self.signature = set.signature;
-							self.uid = set.uid;
+						network.getJSON(self.checkLoginUrl+'&network='+self.net.toString()+'&jsoncallback=?',function(data){
+							self.nick = data.nick;
+							self.signature = data.signature;
+							self.uid = data.uid;
 							self.pmIdent = '['+self.net.toString()+','+self.uid.toString()+']';
+							self.isGuest = data.signature === '';
+							
 							if(fn!==undefined){
 								fn();
 							}
-						}
-					},!clOnly,false);
+						},true,false);
+						
+					},true,false);
+				},
+				setIdent:function(nick,sig,uid){
+					self.nick = nick;
+					self.signature = sig;
+					self.uid = uid;
 				},
 				getUrlParams:function(){
-					return 'nick='+base64.encode(self.nick)+'&signature='+base64.encode(self.signature)+'&time='+(+new Date()).toString()+'&id='+self.uid+'&network='+self.net+(self.nick!=''?'&noLoginErrors':'');
+					return 'nick='+base64.encode(self.nick)+'&signature='+base64.encode(self.signature)+'&time='+(+new Date()).toString()+'&id='+self.uid+'&network='+self.net+'&noLoginErrors';
 				},
 				getNetwork:function(i){
 					if(self.networks[i]!==undefined){
@@ -111,6 +106,9 @@ var oirc = (function(){
 				loggedIn:function(){
 					return self.signature !== '';
 				},
+				guestLevel:function(){
+					return self.guestLevel;
+				},
 				getWholePmIdent:function(uid,net){
 					var otherhandler = '['+net.toString()+','+uid.toString()+']';
 					if(net < self.net){
@@ -126,6 +124,7 @@ var oirc = (function(){
 			};
 			return {
 				fetch:self.fetch,
+				setIdent:self.setIdent,
 				getUrlParams:self.getUrlParams,
 				getIdentParams:self.getIdentParams,
 				getNetwork:self.getNetwork,
@@ -136,8 +135,12 @@ var oirc = (function(){
 					return self.net;
 				},
 				loggedIn:self.loggedIn,
+				guestLevel:self.guestLevel,
 				getPmIdent:function(){
 					return self.pmIdent;
+				},
+				isGuest:function(){
+					return self.isGuest;
 				},
 				getWholePmIdent:self.getWholePmIdent
 			};
@@ -211,7 +214,6 @@ var oirc = (function(){
 				warnings:[],
 				errorsOpen:false,
 				warningsOpen:false,
-				didRelog:false,
 				removeSig:function(s){
 					try{
 						var parts = s.split('signature='),
@@ -285,15 +287,8 @@ var oirc = (function(){
 							settings.fetch(function(){
 								recall();
 							},true);
-						}else if(data.relog==3){
-							if(self.didRelog){ // that's it, no more trying!
-								fn(data);
-							}else{
-								settings.fetch(function(){
-									recall();
-								},true);
-							}
-							self.didRelog = true;
+						}else{ // that's it, we'r out
+							fn(data);
 						}
 					}else{
 						if(data.relog!==undefined){
@@ -879,10 +874,10 @@ var oirc = (function(){
 								self.ws.tryFallback = false;
 								self.ws.socket.close();
 							}catch(e){}
-							network.getJSON('omnomirc.php?getcurline&noLoginErrors',function(data){
+							network.getJSON('misc.php?getcurline&noLoginErrors',function(data){
 								channels.current().reloadUserlist(); // this is usually a good idea.
 								self.setCurLine(data.curline);
-								use = false;
+								self.ws.use = false;
 								self.old.lastSuccess = (new Date).getTime();
 								self.old.start();
 							});
@@ -890,6 +885,7 @@ var oirc = (function(){
 					},
 					identify:function(){
 						self.ws.send($.extend({action:'ident'},settings.getIdentParams()));
+						self.ws.send({action:'charsHigh','chars':options.get('charsHigh')});
 					},
 					init:function(){
 						if(!("WebSocket" in window) || !self.ws.enabled){
@@ -929,7 +925,7 @@ var oirc = (function(){
 										delete self.ws.socket;
 									}
 								}
-								if(data.relog!==undefined && data.relog!=0){
+								if(data.relog!==undefined && data.relog!=0 && data.relog < 3){
 									if(!self.ws.didRelog){
 										self.ws.didRelog = true;
 										settings.fetch(function(){
@@ -977,6 +973,7 @@ var oirc = (function(){
 					inRequest:false,
 					handler:false,
 					lastSuccess:(new Date).getTime(),
+					fnCallback:undefined,
 					sendRequest:function(){
 						if(!channels.current().loaded()){
 							return;
@@ -1007,6 +1004,11 @@ var oirc = (function(){
 							})
 							.fail(function(){
 								self.old.handler = false;
+								if(self.fnCallback!=undefined){
+									self.fnCallback();
+									self.fnCallback = undefined;
+									return;
+								}
 								if((new Date).getTime() >= self.old.lastSuccess + 300000){
 									send.internal('<span style="color:#C73232;">OmnomIRC has lost connection to server. Please refresh to reconnect.</span>');
 								}else if(!self.old.inRequest){
@@ -1017,7 +1019,7 @@ var oirc = (function(){
 							});
 					},
 					setTimer:function(){
-						if(channels.current().loaded() && self.old.handler===false){
+						if(self.old.inRequest && channels.current().loaded() && self.old.handler===false){
 							setTimeout(function(){
 								self.old.sendRequest();
 							},(page.isBlurred()?2500:200));
@@ -1031,21 +1033,27 @@ var oirc = (function(){
 							self.old.setTimer();
 						}
 					},
-					stop:function(){
+					stop:function(fn){
 						if(self.old.inRequest){
 							self.old.inRequest = false;
-							try{
+							if(self.old.handler){
+								self.fnCallback = fn;
 								self.old.handler.abort();
-							}catch(e){}
+							}else if(fn!==undefined){
+								fn();
+							}
+						}else if(fn!==undefined){
+							fn();
 						}
 					},
 					send:function(s,fn){
-						self.old.stop();
-						network.getJSON('message.php?message='+base64.encode(s)+'&channel='+channels.current().handlerB64,function(){
-							self.old.start();
-							if(fn!==undefined){
-								fn();
-							}
+						self.old.stop(function(){
+							network.getJSON('message.php?message='+base64.encode(s)+'&channel='+channels.current().handlerB64,function(){
+								self.old.start();
+								if(fn!==undefined){
+									fn();
+								}
+							});
 						});
 					}
 				},
@@ -1066,11 +1074,12 @@ var oirc = (function(){
 						});
 					}
 				},
-				stop:function(){
+				stop:function(fn){
 					if(self.ws.use){
 						self.ws.allowLines = false;
+						fn();
 					}else{
-						self.old.stop();
+						self.old.stop(fn);
 					}
 				},
 				start:function(){
@@ -1113,6 +1122,11 @@ var oirc = (function(){
 						self.old.lastSuccess = (new Date).getTime();
 						self.old.start();
 					}
+				},
+				identify:function(){
+					if(self.ws.enabled){
+						self.ws.identify();
+					}
 				}
 			};
 			return {
@@ -1123,7 +1137,8 @@ var oirc = (function(){
 				setCurLine:self.setCurLine,
 				send:self.send,
 				setData:self.setData,
-				init:self.init
+				init:self.init,
+				identify:self.identify
 			};
 		})(),
 		channels = (function(){
@@ -1428,36 +1443,37 @@ var oirc = (function(){
 							return false;
 						}
 						indicator.start();
-						request.stop();
-						$('#message').attr('disabled','true');
-						$('#MessageBox').empty();
-						$('.chan').removeClass('curchan');
-						if(self.requestHandler!==false){
-							self.requestHandler.abort();
-						}
-						request.partChan(self.current.handler);
-						self.requestHandler = network.getJSON('Load.php?count=125&channel='+self.getHandler(i,true),function(data){
-							self.current = Channel(i,self);
-							if(self.current.load(data,fn)){
-								request.setChan(self.current.handler);
-								request.start();
-								
-								self.chans[i].high = false;
-								self.save();
-								tab.load();
-								oldMessages.read();
-								
-								if(settings.loggedIn()){
-									$('#message').removeAttr('disabled');
+						request.stop(function(){
+							$('#message').attr('disabled','true');
+							$('#MessageBox').empty();
+							$('.chan').removeClass('curchan');
+							if(self.requestHandler!==false){
+								self.requestHandler.abort();
+							}
+							request.partChan(self.current.handler);
+							self.requestHandler = network.getJSON('Load.php?count=125&channel='+self.getHandler(i,true),function(data){
+								self.current = Channel(i,self);
+								if(self.current.load(data,fn)){
+									request.setChan(self.current.handler);
+									request.start();
+									
+									self.chans[i].high = false;
+									self.save();
+									tab.load();
+									oldMessages.read();
+									
+									if(settings.loggedIn()){
+										$('#message').removeAttr('disabled');
+									}
 								}
-							}
-							self.requestHandler = false;
-							$('#chan'+i.toString()).removeClass('highlightChan').find('.chan').addClass('curchan');
-							
-							if(fn!==undefined){
-								fn();
-							}
-							indicator.stop();
+								self.requestHandler = false;
+								$('#chan'+i.toString()).removeClass('highlightChan').find('.chan').addClass('curchan');
+								
+								if(fn!==undefined){
+									fn();
+								}
+								indicator.stop();
+							});
 						});
 						return true;
 					},
@@ -1538,7 +1554,7 @@ var oirc = (function(){
 								send.internal('<span style="color:#C73232;">Query Error: Cannot query a channel. Use /join instead.</span>');
 								return;
 							}
-							network.getJSON('Load.php?openpm='+base64.encode(s),function(data){
+							network.getJSON('misc.php?openpm='+base64.encode(s),function(data){
 								if(data.chanid){
 									callback(data.channick,data.chanid);
 								}else{
@@ -1723,8 +1739,17 @@ var oirc = (function(){
 				},
 				add:function(u){
 					if(channels.current().handler!==''){
-						self.users.push(u);
-						self.draw();
+						var add = true;
+						$.each(self.users,function(i,us){
+							if(us.nick == u.nick && us.network == u.network){
+								add = false;
+								return false;
+							}
+						});
+						if(add){
+							self.users.push(u);
+							self.draw();
+						}
 					}
 				},
 				remove:function(u){
@@ -1756,7 +1781,7 @@ var oirc = (function(){
 									'<br>'
 								)
 								.mouseover(function(){
-									getInfo = network.getJSON('Load.php?userinfo&name='+base64.encode(u.nick)+'&chan='+channels.current().handlerB64+'&online='+u.network.toString(),function(data){
+									getInfo = network.getJSON('misc.php?userinfo&name='+base64.encode(u.nick)+'&chan='+channels.current().handlerB64+'&online='+u.network.toString(),function(data){
 										if(data.last){
 											$('#lastSeenCont').text('Last Seen: '+(new Date(data.last*1000)).toLocaleString());
 										}else{
@@ -2330,7 +2355,7 @@ var oirc = (function(){
 						$('#mBoxCont').css('height',htmlHeight - footerHeight - headerHeight - 0.2*em);
 						$('html,body').height(htmlHeight);
 						
-						$('#message').css('width',htmlWidth*(self.hide_userlist?1:0.91) - 12*em);
+						$('#message').css('width',htmlWidth*(self.hide_userlist?1:0.91) - 12*em - ($('#loginForm').width()));
 					}
 					if(self.show_scrollbar){
 						var widthOffset = (htmlWidth/100)*self.mBoxContWidthOffset;
@@ -2346,25 +2371,84 @@ var oirc = (function(){
 					}
 					scroll.down();
 				},
+				initGuestLogin:function(){
+					var tryLogin = function(name,remember){
+							network.getJSON('misc.php?identName='+base64.encode(name),function(data){
+								if(!data.success){
+									alert('ERROR'+(data.message?': '+data.message:''));
+									loginFail();
+								}else{
+									settings.setIdent(name,data.signature,-1);
+									request.identify();
+									$('#pickUsernamePopup').hide();
+									$('#message').removeAttr('disabled');
+									send.val('');
+									if(remember){
+										ls.set('guestName',name);
+										ls.set('guestSig',data.signature);
+									}else{
+										ls.set('guestName','');
+									}
+									$('#loginForm > button').hide();
+									$('#guestName').text(name+' (guest) (').append(
+										$('<a>').text('logout').click(function(e){
+											e.preventDefault();
+											if(confirm('Are you sure? You won\'t be able to take this nick for half an hour!')){
+												ls.set('guestName','');
+												ls.set('guestSig','');
+												settings.setIdent('','',-1);
+												request.identify();
+												loginFail();
+											}
+										}),
+										')'
+									).show();
+									$(window).trigger('resize');
+								}
+							});
+						},
+						loginFail = function(){
+							send.val('You need to pick a username if you want to chat!');
+							$('#message').attr('disabled',true);
+							$('#loginForm > button').show();
+							$('#guestName').hide();
+							$(window).trigger('resize');
+						}
+					if(ls.get('guestName')){
+						settings.setIdent(ls.get('guestName'),ls.get('guestSig'),-1);
+						tryLogin(ls.get('guestName'),true);
+					}else{
+						loginFail();
+					}
+					$('#loginForm').show();
+					$('#loginForm > button').click(function(e){
+						e.preventDefault();
+						$('#pickUsernamePopup').toggle();
+					});
+					$('#pickUsernamePopup > button').click(function(e){
+						tryLogin($('#pickUsernamePopup > input[type="text"]').val(),$('#pickUsernamePopup > input[type="checkbox"]')[0].checked);
+						
+					});
+				},
 				init:function(){
 					var nua = navigator.userAgent,
 						is_android = ((nua.indexOf('Mozilla/5.0') > -1 && nua.indexOf('Android ') > -1 && nua.indexOf('AppleWebKit') > -1) && !(nua.indexOf('Chrome') > -1)),
 						is_ios = (nua.match(/(iPod|iPhone|iPad)/i) && nua.match(/AppleWebKit/i)),
 						is_mobile_webkit = (nua.match(/AppleWebKit/i) && nua.match(/Android/i));
+					
 					$('body').css('font-size',options.get('fontSize').toString(10)+'pt');
 					self.hide_userlist = options.get('hideUserlist');
 					self.show_scrollbar = options.get('scrollBar');
 					page.changeLinks();
 					if(!wysiwyg.support()){
 						$('#message').replaceWith(
-							$('<input>')
-								.attr({
-									'type':'text',
-									'id':'message',
-									'accesskey':'i',
-									'maxlen':'256',
-									'autocomplete':'off'
-								})
+							$('<input>').attr({
+								'type':'text',
+								'id':'message',
+								'accesskey':'i',
+								'maxlen':'256',
+								'autocomplete':'off'
+							})
 						);
 					}else{
 						$('#message').keydown(function(e){
@@ -2374,6 +2458,13 @@ var oirc = (function(){
 							}
 						});
 						wysiwyg.init();
+					}
+					
+					if(!settings.loggedIn()){
+						send.val('You need to login if you want to chat!');
+						if(settings.guestLevel() >= 2){ // display the stuff for login form
+							self.initGuestLogin();
+						}
 					}
 					if(self.hide_userlist){ // hide userlist is on
 						self.mBoxContWidthOffset = 99;
@@ -2418,7 +2509,8 @@ var oirc = (function(){
 							send.init();
 							oldMessages.init();
 							channels.init();
-							request.init()
+							request.init();
+							
 							if(!channels.join(options.get('curChan'))){
 								channels.join(0);
 							}
@@ -2543,13 +2635,6 @@ var oirc = (function(){
 				messages:[],
 				counter:0,
 				current:'',
-				setMsg:function(s){
-					if(!wysiwyg.support()){
-						$('#message').val(s);
-					}else{
-						$('#message').html(s);
-					}
-				},
 				getMsg:function(){
 					if(!wysiwyg.support()){
 						return $('#message').val();
@@ -2557,32 +2642,31 @@ var oirc = (function(){
 					return $('#message').html();
 				},
 				init:function(){
-					$('#message')
-						.keydown(function(e){
-							if(e.keyCode==38 || e.keyCode==40){
-								e.preventDefault();
-								if(self.counter==self.messages.length){
-									self.current = self.getMsg();
-								}
-								if(self.messages.length!==0){
-									if(e.keyCode==38){ //up
-										if(self.counter!==0){
-											self.counter--;
-										}
-										self.setMsg(self.messages[self.counter]);
-									}else{ //down
-										if(self.counter!=self.messages.length){
-											self.counter++;
-										}
-										if(self.counter==self.messages.length){
-											self.setMsg(self.current);
-										}else{
-											self.setMsg(self.messages[self.counter]);
-										}
+					$('#message').keydown(function(e){
+						if(e.keyCode==38 || e.keyCode==40){
+							e.preventDefault();
+							if(self.counter==self.messages.length){
+								self.current = self.getMsg();
+							}
+							if(self.messages.length!==0){
+								if(e.keyCode==38){ //up
+									if(self.counter!==0){
+										self.counter--;
+									}
+									self.setMsg(self.messages[self.counter]);
+								}else{ //down
+									if(self.counter!=self.messages.length){
+										self.counter++;
+									}
+									if(self.counter==self.messages.length){
+										send.val(self.current);
+									}else{
+										send.val(self.messages[self.counter]);
 									}
 								}
 							}
-						});
+						}
+					});
 				},
 				add:function(s){
 					self.messages.push(s);
@@ -2612,20 +2696,12 @@ var oirc = (function(){
 				sending:false,
 				sendMessage:function(s){
 					if(s[0] == '/' && commands.parse(s.substr(1))){
-						if(!wysiwyg.support()){
-							$('#message').val('');
-						}else{
-							$('#message').html('');
-						}
+						self.val('');
 					}else{
 						if(!self.sending){
 							self.sending = true;
 							request.send(s,function(){
-								if(!wysiwyg.support()){
-									$('#message').val('');
-								}else{
-									$('#message').html('');
-								}
+								self.val('');
 								self.sending = false;
 							});
 						}
@@ -2643,36 +2719,39 @@ var oirc = (function(){
 					});
 				},
 				init:function(){
-					$('#sendMessage')
-						.submit(function(e){
-							e.preventDefault();
-							if(settings.loggedIn()){
-								var val = '';
-								if(!wysiwyg.support()){
-									val = $('#message').val();
-									
-									oldMessages.add(val);
-								}else{
-									oldMessages.add($('#message').html());
-									val = wysiwyg.getMsg();
-								}
-								console.log(val);
-								val = parser.parseTextDecorations(val);
-								if(!$('#message').attr('disabled') && val!==''){
-									self.sendMessage(val);
-									$('#message').focus(); // fix IE not doing that automatically
-								}
+					$('#sendMessage').submit(function(e){
+						e.preventDefault();
+						if(settings.loggedIn()){
+							var val = '';
+							if(!wysiwyg.support()){
+								val = $('#message').val();
+								
+								oldMessages.add(val);
+							}else{
+								oldMessages.add($('#message').html());
+								val = wysiwyg.getMsg();
 							}
-						});
-					if(!settings.loggedIn()){
-						$('#message')
-							.val('You need to login if you want to chat!');
+							console.log(val);
+							val = parser.parseTextDecorations(val);
+							if(!$('#message').attr('disabled') && val!==''){
+								self.sendMessage(val);
+								$('#message').focus(); // fix IE not doing that automatically
+							}
+						}
+					});
+				},
+				val:function(s){
+					if(!wysiwyg.support()){
+						$('#message').val(s);
+					}else{
+						$('#message').html(s);
 					}
 				}
 			};
 			return {
 				internal:self.internal,
-				init:self.init
+				init:self.init,
+				val:self.val
 			};
 		})(),
 		logs = (function(){
@@ -2763,24 +2842,25 @@ var oirc = (function(){
 					var d = new Date();
 					
 					indicator.start();
-					request.stop();
+					request.stop(function(){
 					
-					$('#message').attr('disabled','true');
-					users.setUsers([]); //empty userlist
-					users.draw();
-					$('#chattingHeader').css('display','none');
-					$('#logDatePicker').css('display','none');
-					$('#logsHeader').css('display','block');
-					
-					$('#logChanIndicator').text(channels.current().name);
-					
-					self.year = parseInt(d.getFullYear(),10);
-					self.month = parseInt(d.getMonth()+1,10);
-					self.day = parseInt(d.getDate(),10);
-					self.updateInputVal();
-					
-					self.isOpen = true;
-					self.fetch();
+						$('#message').attr('disabled','true');
+						users.setUsers([]); //empty userlist
+						users.draw();
+						$('#chattingHeader').css('display','none');
+						$('#logDatePicker').css('display','none');
+						$('#logsHeader').css('display','block');
+						
+						$('#logChanIndicator').text(channels.current().name);
+						
+						self.year = parseInt(d.getFullYear(),10);
+						self.month = parseInt(d.getMonth()+1,10);
+						self.day = parseInt(d.getDate(),10);
+						self.updateInputVal();
+						
+						self.isOpen = true;
+						self.fetch();
+					});
 				},
 				close:function(){
 					var num;
@@ -2890,7 +2970,7 @@ var oirc = (function(){
 							cn = $('<span>').append($('<span>').addClass('uName-'+rcolors[sum % 9].toString()).html(n)).html();
 							break;
 						case '2': //server
-							if(net!==undefined && net.checkLogin!==undefined){
+							if(net!==undefined && net.checkLogin!==undefined && uid!=-1){
 								addLink = false;
 								if(self.cacheServerNicks[o.toString()+':'+uid.toString()]===undefined){
 									network.getJSON(net.checkLogin+'?c='+uid.toString(10)+'&n='+ne,function(data){
@@ -2930,14 +3010,14 @@ var oirc = (function(){
 					if (!text || text === null || text === undefined){
 						return '';
 					}
-					var ier = "[^\\s\x01\x02\x03\x04\x0f\x16\x1d\x1f\"]"; // irc end regex
+					var ier = "[^\\s\x01\x04<\"]"; // url end regex
 					text = text.replace(RegExp("(\x01|\x04)","g"),"");
 					$.map(self.spLinks,function(url){
 						url = url.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
-						text = text.replace(RegExp("(^|\\s)(((f|ht)(tp|tps):\/\/)"+url+ier+"*)","g"),'$1\x01$2')
-									.replace(RegExp("(^|\\s)("+url+ier+"*)","g"),'$1\x04$2');
+						text = text.replace(RegExp("(^|[^\\w/])((?:(?:f|ht)tps?:\/\/)"+url+ier+"*)","g"),'$1\x01$2')
+									.replace(RegExp("(^|[^\\w/])("+url+ier+"*)","g"),'$1\x04$2');
 					});
-					return text.replace(RegExp("(^|[^a-zA-Z0-9_\x01\x04]|\x03\\d{1,2}(|,\\d{1,2}))(((f|ht)(tp|tps):\/\/)"+ier+"+)","g"),'$1<a target="_blank" href="$3">$3</a>')
+					return text.replace(RegExp("(^|[^a-zA-Z0-9_\x01\x04])((?:(?:f|ht)tps?:\/\/)"+ier+"+)","g"),'$1<a target="_blank" href="$2">$2</a>')
 							.replace(RegExp("(^|[^a-zA-Z0-9_\x01\x04/])(www\\."+ier+"+)","g"),'$1<a target="_blank" href="http://$2">$2</a>')
 							.replace(RegExp("(^|.)\x01("+ier+"+)","g"),'$1<a target="_top" href="$2">$2</a>')
 							.replace(RegExp("(^|.)\x04("+ier+"+)","g"),'$1<a target="_top" href="http://$2">$2</a>');
@@ -3042,11 +3122,11 @@ var oirc = (function(){
 					}
 					s = (s=="\x00"?'':s); //fix 0-string bug
 					s = $('<span>').text(s).html(); // html escape
-					s = self.parseLinks(s);
 					if(options.get('smileys') && noSmileys===false){
 						s = self.parseSmileys(s);
 					}
 					s = self.parseColors(s);
+					s = self.parseLinks(s);
 					return s;
 				},
 				addLine:function(line,loadMode){
@@ -3057,7 +3137,7 @@ var oirc = (function(){
 					if(
 						line.name === null
 						|| self.ignores.indexOf(line.name.toLowerCase()) > -1
-						|| (line.chan.toString().toLowerCase()!=channels.current().handler.toLowerCase() && line.name2 !== settings.getPmIdent())
+						|| (line.type!='highlight' && line.chan.toString().toLowerCase()!=channels.current().handler.toLowerCase() && line.name2 !== settings.getPmIdent())
 						){
 						return true; // invalid line but we don't want to stop the new requests
 					}

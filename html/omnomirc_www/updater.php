@@ -1,6 +1,7 @@
 <?php
+namespace oirc;
 error_reporting(0);
-$installScriptVersion = '2.10.0.1';
+$installScriptVersion = '2.10.1';
 include_once(realpath(dirname(__FILE__)).'/config.php');
 // IMPORTANT!!!! sqli object ONLY FOR INSTALLATION SCRIPT
 class Sqli{
@@ -10,7 +11,7 @@ class Sqli{
 		if(isset($this->mysqliConnection)){
 			return $this->mysqliConnection;
 		}
-		$mysqli = new mysqli($config['sql']['server'],$config['sql']['user'],$config['sql']['passwd'],$config['sql']['db']);
+		$mysqli = new \mysqli($config['sql']['server'],$config['sql']['user'],$config['sql']['passwd'],$config['sql']['db']);
 		if($mysqli->connect_errno){
 			die('{"errors":["ERROR: Couldn\'t connect to SQL. Maybe insufficiant Database priviliges?"],"step":2}');
 		}
@@ -325,4 +326,3 @@ if(!isset($_GET['server'])){
 			die('{"errors":["Unkown installation step"],"step":1}');
 	}
 }
-?>

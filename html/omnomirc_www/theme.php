@@ -18,6 +18,7 @@
     You should have received a copy of the GNU General Public License
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
+namespace oirc;
 include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 
 function hex2rgba($color, $opacity = false) {
@@ -88,11 +89,15 @@ if(isset($_GET['theme']) && ($themes = $vars->get('themes')) && isset($themes[$_
 	#UserListInnerCont,
 	#logsHeader,
 	#textDecoForm,
+	#pickUsernamePopup,
 	#logDatePicker,
 	.lineHigh {
 		background: $bg2;
 		border-color: $border;
 		color: $text;
+	}
+	.dateSeperator > td {
+		border-color: $border;
 	}
 	.popup {
 		background: $popupbg;
@@ -175,4 +180,3 @@ if(isset($_GET['theme']) && ($themes = $vars->get('themes')) && isset($themes[$_
 		text-shadow:0 0 4px ".hex2rgba($link,0.8).";
 	}";
 }
-?>

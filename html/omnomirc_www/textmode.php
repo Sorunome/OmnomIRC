@@ -18,6 +18,7 @@
     You should have received a copy of the GNU General Public License
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
+namespace oirc;
 session_start();
 if(isset($_GET['login'])){
 	$_SESSION['content'] = '';
@@ -45,8 +46,8 @@ if(isset($_GET['message'])){
 		$curline = 0;
 		if($you->isBanned()){
 			$banned = true;
-			$lines = Array(
-				Array(
+			$lines = array(
+				array(
 						'curLine' => (int)$curMax,
 						'type' => 'server',
 						'network' => 0,
@@ -77,22 +78,16 @@ if(isset($_GET['message'])){
 				$line .= $starBeginning.htmlspecialchars($result['message']).'</td>';
 				break;
 			case 'join':
-				if($result['Online']=='0'){
-					$line .= $starBeginning."joined $channel</td>";
-				}
+				$line .= $starBeginning."joined $channel</td>";
 				break;
 			case 'part':
-				if($result['Online']=='0'){
-					$line .= $starBeginning."part $channel (" . htmlspecialchars($result['message']).')</td>';
-				}
+				$line .= $starBeginning."part $channel (" . htmlspecialchars($result['message']).')</td>';
 				break;
 			case 'kick':
 				$line .= $starBeginning.'kicked '.htmlspecialchars($result['name2']).' ('.htmlspecialchars($result['message']).')</td>';
 				break;
 			case 'quit':
-				if($result['Online']=='0'){
-					$line .= $starBeginning.'quit ('.htmlspecialchars($result['message']).')</td>';
-				}
+				$line .= $starBeginning.'quit ('.htmlspecialchars($result['message']).')</td>';
 				break;
 			case 'mode':
 				$line .= $starBeginning.'has set '.htmlspecialchars($result['message']).'</td>';
@@ -118,6 +113,6 @@ if(isset($_GET['message'])){
 			}
 		}
 	}
-	echo "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />".($banned?'':("<meta http-equiv=\"refresh\" content=\"5;url=textmode.php?update=".time()."&curline=".$curline."&".$you->getUrlParams()."\">"))."</head><body><a href=\"textmode.php?message&curline=".$curline."&".$you->getUrlParams()."\" autofocus>Click here to write a message</a><br>Channel: ".($you->channelName())."<table>".$_SESSION['content']."</table></body></html>";
+	echo "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />".($banned?'':("<meta http-equiv=\"refresh\" content=\"5;url=textmode.php?update=".time()."&curline=".$curline."&".$you->getUrlParams()."\">"))."</head>
+	<body>".($you->isLoggedIn()?"<a href=\"textmode.php?message&curline=".$curline."&".$you->getUrlParams()."\" autofocus>Click here to write a message</a>":"You need to log in if you want to chat!")."<br>Channel: ".($you->channelName())."<table>".$_SESSION['content']."</table></body></html>";
 }
-?>

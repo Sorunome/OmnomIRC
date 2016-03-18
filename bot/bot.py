@@ -211,6 +211,8 @@ class OIRCLink(server.ServerHandler):
 					self.socket.sendall(bytes(s,'utf-8'))
 				elif data['t'] == 'server_updateFile':
 					try:
+						if '..' in data['n2']:
+							raise Exception('invalid local file path')
 						r = requests.get('https://omnomirc.omnimaga.org/'+data['n1'])
 						r.raise_for_status()
 						with open(FILEROOT+'/'+data['n2'],'wb+') as f:
@@ -240,6 +242,7 @@ class Main():
 		self.updateRelayTypes()
 		self.updateChanIds()
 	def log(self,id,level,message,prefix = ''):
+		message = str(message)
 		if isinstance(id,int):
 			if not id in self.networksCache:
 				for n in config.json['networks']:
@@ -294,7 +297,10 @@ class Main():
 	def updateCurline(self):
 		global config,sql
 		try:
-			f = open(config.json['settings']['curidFilePath'],'w')
+			fp = config.json['settings']['curidFilePath']
+			if fp[:1]!='/':
+				fp = oirc.DOCUMENTROOT + '/' + fp
+			f = open(fp,'w')
 			f.write(str(sql.query("SELECT MAX(line_number) AS max FROM {db_prefix}lines")[0]['max']))
 			f.close()
 		except Exception as inst:
@@ -511,7 +517,7 @@ class Main():
 			
 			while self.live:
 				time.sleep(30)
-				r = oirc.execPhp('omnomirc.php',{'cleanUsers':''});
+				r = oirc.execPhp('misc.php',{'cleanUsers':''});
 				if not r['success']:
 					self.log_error('Something went wrong updating users...'+str(r))
 		except KeyboardInterrupt:

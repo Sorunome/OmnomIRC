@@ -1,5 +1,6 @@
 <?php
 //UPDATER FROMVERSION=SED_INSERT_FROMVERSION
+namespace oirc;
 error_reporting(0);
 $NEWVERSION='SED_INSERT_NEWVERSION';
 
@@ -31,7 +32,7 @@ array_unshift($files,'');
 include_once(realpath(dirname(__FILE__)).'/config.php');
 
 function updateCheckLogins(){
-	global $config,$clfiles,$updateHooks,$DOWNLOADDIR;
+	global $config,$clfiles,$updateHooks,$DOWNLOADDIR_PATH;
 	$validHooks = array('abxd','generic','mybb','phpbb3','smf');
 	$msg = '';
 	foreach($config['networks'] as &$n){
@@ -53,7 +54,7 @@ function updateCheckLogins(){
 				}
 			}
 			foreach($clfilesNetwork as $cf){
-				$resp = json_decode(file_get_contents($n['config']['checkLogin'].'?server='.getCheckLoginChallenge().'&action=update&a='.base64_url_encode($DOWNLOADDIR.'/checkLogin/'.$cf.'.s').'&b='.base64_url_encode($cf)),true);
+				$resp = json_decode(file_get_contents($n['config']['checkLogin'].'?server='.getCheckLoginChallenge().'&action=update&a='.base64_url_encode($DOWNLOADDIR_PATH.'/checkLogin/'.$cf.'.s').'&b='.base64_url_encode($cf)),true);
 				if((isset($resp['auth']) && !$resp['auth']) || !$resp['success']){
 					if(!isset($resp['message'])){
 						$resp['message'] = '';

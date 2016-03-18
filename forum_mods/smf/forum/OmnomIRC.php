@@ -61,6 +61,19 @@ function getTopicName($id)
 	return $topicName;
 }
 
+function getDisplayName($id)
+{
+	global $smcFunc;
+	$request = $smcFunc['db_query']('',"SELECT real_name FROM {db_prefix}members WHERE id_member = {int:id_member} LIMIT 1",array('id_member' => (int)$id));
+	$temp = $smcFunc['db_fetch_assoc']($request);
+	$smcFunc['db_free_result']($request);
+	if(isset($temp['real_name']))
+	{
+		return $temp['real_name'];
+	}
+	return '';
+}
+
 function getOircSendToChan($id_board)
 {
 	global $smcFunc;

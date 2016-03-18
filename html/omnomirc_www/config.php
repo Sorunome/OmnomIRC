@@ -18,7 +18,7 @@
     You should have received a copy of the GNU General Public License
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
-
+namespace oirc;
 function getConfig(){
 	$cfg = explode("\n",file_get_contents(realpath(dirname(__FILE__)).'/config.json.php'));
 	$searchingJson = true;
@@ -96,6 +96,7 @@ if(isset($_GET['js'])){
 	$spLinks = array();
 	
 	$dispNetworks = array();
+	$guests = 0;
 	foreach($networks->getNetsarray() as $n){
 		$addNet = array(
 			'id' => $n['id'],
@@ -110,6 +111,7 @@ if(isset($_GET['js'])){
 		$dispNetworks[] = $addNet;
 		if($n['id'] == $you->getNetwork()){
 			$spLinks = $n['config']['spLinks'];
+			$guests = $n['config']['guests'];
 		}
 	}
 	
@@ -124,6 +126,7 @@ if(isset($_GET['js'])){
 		'checkLoginUrl' => $cl,
 		'defaults' => $v['defaults_'.(string)$net]?$v['defaults_'.(string)$net]:array(),
 		'spLinks' => $spLinks,
+		'guests' => $guests,
 		'websockets' => array(
 			'use' => $config['websockets']['use'] && $config['settings']['useBot'],
 			'host' => $config['websockets']['host']?$config['websockets']['host']:$config['settings']['hostname'],
@@ -159,4 +162,3 @@ if(isset($_GET['js'])){
 		echo $json->get();
 	}
 }
-?>

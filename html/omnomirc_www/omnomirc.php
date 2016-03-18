@@ -18,6 +18,7 @@
 	You should have received a copy of the GNU General Public License
 	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
+namespace oirc;
 
 class Json{
 	private $json;
@@ -89,7 +90,7 @@ function errorHandler($errno,$errstr,$errfile,$errline){
 	}
 }
 if(!(isset($textmode) && $textmode===true)){
-	set_error_handler('errorHandler',E_ALL);
+	set_error_handler('oirc\errorHandler',E_ALL);
 	header('Content-Type: application/json');
 }
 header('Last-Modified: Thu, 01-Jan-1970 00:00:01 GMT');
@@ -116,19 +117,17 @@ class Cache{
 	private $mode = 0;
 	private $handle = false;
 	public function __construct($host = 'localhost',$port = 11211){
-		global $json;
 		if(class_exists('Memcached')){
-			$this->handle = new Memcached;
+			$this->handle = new \Memcached;
 			$this->handle->addServer($host,$port);
-			$this->handle->setOption(Memcached::OPT_COMPRESSION,false); // else python won't be able to do anything
+			$this->handle->setOption(\Memcached::OPT_COMPRESSION,false); // else python won't be able to do anything
 			$this->mode = 1;
 		}elseif(class_exists('Memcache')){
-			$this->handle = new Memcache;
+			$this->handle = new \Memcache;
 			$this->handle->connect($host,$port);
 			$this->handle->setCompressThreshold(0,1); // disable compression
 			$this->mode = 2;
 		}
-		$json->add('memcache_mode',$this->mode);
 	}
 	public function get($var){
 		switch($this->mode){
@@ -165,7 +164,7 @@ function refValues($arr){
 	}
 	return $arr;
 }
-class Sqli{
+class Sql{
 	private $mysqliConnection;
 	private $stmt;
 	private $numQueries = 0;
@@ -174,7 +173,7 @@ class Sqli{
 		if(isset($this->mysqliConnection)){
 			return $this->mysqliConnection;
 		}
-		$mysqli = new mysqli($config['sql']['server'],$config['sql']['user'],$config['sql']['passwd'],$config['sql']['db']);
+		$mysqli = new \mysqli($config['sql']['server'],$config['sql']['user'],$config['sql']['passwd'],$config['sql']['db']);
 		if($mysqli->connect_errno){
 			die('Could not connect to SQL DB: '.$mysqli->connect_errno.' '.$mysqli->connect_error);
 		}
@@ -320,7 +319,7 @@ class Sqli{
 		return $this->numQueries;
 	}
 }
-$sql = new Sqli();
+$sql = new Sql();
 class GlobalVars{
 	public function set($s,$c,$t = NULL){ //set a global variable
 		global $sql;
@@ -477,17 +476,23 @@ class Secure{
 		global $config;
 		return $t.'|'.hash_hmac('sha512',$s.$u,$n.$config['security']['sigKey'].$t);
 	}
+	private function sign_guest($s,$u,$n,$t){
+		global $config;
+		return $t.'|'.hash_hmac('sha512',$u.$s,$config['security']['sigKey'].$n.$t);
+	}
 	public function checkSig($sig,$nick,$uid,$network){
-		global $json;
+		global $json,$networks;
 		$sigParts = explode('|',$sig);
 		$ts = time();
 		$hard = 60*60*24;
 		$soft = 60*5;
+		$nets = $networks->getNetsarray();
+		$doGuest = isset($nets[$network]['config']['guests']) && $nets[$network]['config']['guests'] >= 2;
 		if($sig != '' && $nick != '' && isset($sigParts[1]) && ((int)$sigParts[0])==$sigParts[0]){
 			$sts = (int)$sigParts[0];
 			$sigs = $sigParts[1];
 			if($sts > ($ts - $hard - $soft) && $sts < ($ts + $hard + $soft)){
-				if($this->sign($nick,$uid,$network,(string)$sts) == $sig){
+				if($this->sign($nick,$uid,$network,(string)$sts) == $sig || ($doGuest && $this->sign_guest($nick,$uid,$network,(string)$sts) == $sig)){
 					if(!($sts > ($ts - $hard) && $sts < ($ts + $hard))){
 						$json->doRelog(1);
 					}
@@ -496,7 +501,7 @@ class Secure{
 				$json->doRelog(3);
 				return false;
 			}else{
-				if($this->sign($nick,$uid,$network,(string)$sts) == $sig){
+				if($this->sign($nick,$uid,$network,(string)$sts) == $sig || ($doGuest && $this->sign_guest($nick,$uid,$network,(string)$sts) == $sig)){
 					$json->doRelog(2);
 				}else{
 					$json->doRelog(3);
@@ -506,6 +511,9 @@ class Secure{
 		}
 		$json->doRelog(3);
 		return false;
+	}
+	public function getGuestSig($nick,$network){
+		return $this->sign_guest($nick,'-1',$network,(string)time());
 	}
 }
 $security = new Secure();
@@ -620,7 +628,11 @@ class Relay{
 				}
 			}
 			$this->sendBuffer = array();
-			file_put_contents($config['settings']['curidFilePath'],$sql->insertId());
+			if(substr($config['settings']['curidFilePath'],0,1) == '/'){
+				file_put_contents($config['settings']['curidFilePath'],$sql->insertId());
+			}else{
+				file_put_contents(realpath(dirname(__FILE__)).'/'.$config['settings']['curidFilePath'],$sql->insertId());
+			}
 		}
 	}
 }
@@ -684,8 +696,6 @@ class You{
 		
 		$this->network = $networks->getNetworkId();
 		
-		
-		$json->add('network',$this->network);
 		if($this->network == 0){ // server network, do aditional validating
 			if(!isset($_GET['serverident']) || !$security->checkSig($this->sig,$this->nick,$this->id,$this->network)){
 				$json->addError('Login attempt as server');
@@ -749,7 +759,13 @@ class You{
 			echo $json->get();
 			die();
 		}
-		$json->add('chan',$channel);
+		if(($channel[0] == '*' || $channel[0] == '@') && (!$this->loggedIn || $this->id == -1)){
+			$json->add('message','<span style="color:#C73232;"><b>ERROR:</b> Pm/oirc chans not available for guests</span>');
+			$json->addError('Pm not available for guests');
+			echo $json->get();
+			die();
+		}
+		
 		if($channel[0] == '*' && $this->getPmHandler() != '' && (!preg_match('/^(\[\d+,\d+\]){2}$/',ltrim($channel,'*')) || strpos($channel,$this->getPmHandler())===false)){
 			$json->addError('Invalid PM channel');
 			echo $json->get();
@@ -789,7 +805,7 @@ class You{
 	}
 	public function update(){
 		global $sql,$users,$relay,$config;
-		if($this->chan[0]=='*'){
+		if($this->chan[0]=='*' || $this->nick == ''){
 			return;
 		} // INSERT INTO `{db_prefix}users` (`username`,`channel`,`online`,`time`) VALUES ('Sorunome',0,1,9001) ON DUPLICATE KEY UPDATE `time`=UNIX_TIMESTAMP(CURRENT_TIMESTAMP)
 		$result = $sql->query_prepare("SELECT usernum,time,isOnline,uid FROM `{db_prefix}users` WHERE `username`=? AND `channel`=? AND `online`=?",array($this->nick,$this->chan,$this->getNetwork()));
@@ -841,14 +857,16 @@ class You{
 			return false;
 		}
 		$userSql = $this->info();
-		if($userSql['globalOp']==1){
+		if($userSql['globalOp']){
 			$this->globalOps = true;
 			return true;
 		}
 		$net = $networks->get($this->getNetwork());
-		$cl = $net['config']['checkLogin'];
-		$returnPosition = json_decode(trim(file_get_contents($cl.'?op='.$this->id)),true);
-		
+		if($net['config']['checkLoginAbs'] !== ''){
+			$returnPosition = json_decode(trim(shell_exec('php '.escapeshellarg($net['config']['checkLoginAbs']).'/index.php op='.(int)$this->id)),true);
+		}else{
+			$returnPosition = json_decode(trim(file_get_contents($net['config']['checkLogin'].'?op='.$this->id)),true);
+		}
 		if(isset($returnPosition['op']) && $returnPosition['op']){
 			$this->globalOps = true;
 			return true;
@@ -872,6 +890,11 @@ class You{
 		$this->ops = false;
 		return false;
 	}
+	public function isGlobalBanned(){
+		global $networks,$channels;
+		$userSql = $this->info();
+		return $userSql['globalBan']=='1';
+	}
 	public function isBanned(){
 		global $networks,$channels;
 		$userSql = $this->info();
@@ -880,7 +903,7 @@ class You{
 		}
 		if(!$this->isLoggedIn()){
 			$n = $networks->get($this->network);
-			if($n!==NULL && $n['config']['guests'] == 0){
+			if($n===NULL || $n['config']['guests'] == 0){
 				return true;
 			}
 		}
@@ -1007,7 +1030,7 @@ class OmnomIRC{
 	}
 	public function getUid($nick,$net){
 		global $sql;
-		$res = $sql->query_prepare("SELECT `uid` FROM `{db_prefix}userstuff` WHERE LOWER(`name`)=LOWER(?) AND `network`=?",array($nick,(int)$net));
+		$res = $sql->query_prepare("SELECT `uid` FROM `{db_prefix}userstuff` WHERE LOWER(`name`)=LOWER(?) AND `network`=? AND `uid`<>-1",array($nick,(int)$net));
 		return ($res[0]['uid'] === NULL ? NULL : (int)$res[0]['uid']);
 	}
 }
@@ -1289,30 +1312,3 @@ class Channels{
 	}
 }
 $channels = new Channels();
-
-if(isset($_GET['ident'])){
-	header('Content-Type:application/json');
-	$json->add('loggedin',$you->isLoggedIn());
-	$json->add('isglobalop',$you->isGlobalOp());
-	$json->add('isbanned',$you->isBanned());
-	$json->add('channel',$you->chan);
-	echo $json->get();
-	exit;
-}
-if(isset($_GET['getcurline'])){
-	header('Content-Type:application/json');
-	$json->clear();
-	$json->add('curline',(int)file_get_contents($config['settings']['curidFilePath']));
-	echo $json->get();
-	exit;
-}
-if(isset($_GET['cleanUsers'])){
-	header('Content-Type:application/json');
-	$users->clean();
-	$relay->commitBuffer();
-	$json->clear();
-	$json->add('success',true);
-	echo $json->get();
-	exit;
-}
-?>
