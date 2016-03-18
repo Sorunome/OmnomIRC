@@ -31,6 +31,7 @@
 	userlist
 	scrollbar
 	smiley select
+	login form
 	input
 	options
 	error/warning icons
@@ -538,12 +539,31 @@ td.action > a:nth-child(1) > span {
 }
 #smileyselect img {
 	cursor:pointer;
-};
+}
 /*smiley select end*/
+
+/*login form start*/
+#loginForm {
+	display:inline-block;
+	margin:0;
+	padding:0;
+}
+#pickUsernamePopup {
+	position:absolute;
+	background:#A1C2FF;
+	border:0.1em solid #69F;
+	border-radius:0.5em;
+	bottom:3em;
+	padding:0.3em;
+}
+#pickUsernamePopup > input {
+	width:10em;
+}
+/*login form end*/
 
 /*input start*/
 #message{
-	margin-top:0.3em;
+	margin-top:0.2em;
 }
 #message,input,select{
 	background:#FFF;

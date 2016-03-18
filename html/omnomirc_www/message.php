@@ -114,7 +114,7 @@ if(substr($parts[0],0,1)=='/'){
 			$channel = '*'.$you->getWholePmHandler($message);
 			if($channel == '*'){
 				$sendPm = true;
-				$returnmessage = "\x034ERROR: User not found";
+				$returnmessage = "\x034\x02ERROR:\x02 User not found";
 			}else{
 				$you->setChan($channel);
 				$_SESSION['content'] = '';
@@ -127,7 +127,7 @@ if(substr($parts[0],0,1)=='/'){
 				if($channel == '*'){
 					$sendNormal = false;
 					$sendPm = true;
-					$returnmessage = "\x034ERROR: User not found";
+					$returnmessage = "\x034\x02ERROR:\x02 User not found";
 				}else{
 					$message = '';
 					unset($parts[0]);
@@ -138,7 +138,7 @@ if(substr($parts[0],0,1)=='/'){
 			}else{
 				$sendNormal = false;
 				$sendPm = true;
-				$returnmessage = "\x034ERROR: can't PM a channel";
+				$returnmessage = "\x034\x02ERROR:\x02 can't PM a channel";
 			}
 			break;
 		case 'ignore':
@@ -150,11 +150,11 @@ if(substr($parts[0],0,1)=='/'){
 			$userSql = $you->info();
 			if(strpos($userSql['ignores'],$ignoreuser."\n")===false){
 				$userSql['ignores'].=$ignoreuser."\n";
-				$sql->query_prepare("UPDATE `irc_userstuff` SET ignores=? WHERE name=LOWER(?)",array($userSql["ignores"],$nick));
+				$sql->query_prepare("UPDATE `{db_prefix}userstuff` SET ignores=? WHERE name=LOWER(?) AND network=? AND uid=?",array($userSql["ignores"],$nick,$you->getNetwork(),$you->getUid()));
 				$returnmessage = "\x033Now ignoring $ignoreuser.";
 				$reload = true;
 			}else{
-				$returnmessage = "\x034ERROR: couldn't ignore $ignoreuser: already ignoring.";
+				$returnmessage = "\x034\x02ERROR:\x02 couldn't ignore $ignoreuser: already ignoring.";
 			}
 			break;
 		case 'unignore':
@@ -183,7 +183,7 @@ if(substr($parts[0],0,1)=='/'){
 				if($ignoreuser=='*'){
 					$returnmessage = "\x033You are no longer ignoring anybody.";
 				}
-				$sql->query_prepare("UPDATE `{db_prefix}userstuff` SET ignores=? WHERE name=LOWER(?)",array($userSql["ignores"],$nick));
+				$sql->query_prepare("UPDATE `{db_prefix}userstuff` SET ignores=? WHERE name=LOWER(?) AND network=? AND uid=?",array($userSql["ignores"],$nick,$you->getNetwork(),$you->getUid()));
 				$reload = true;
 			}else{
 				$returnmessage = "\x034ERROR: You weren't ignoring $ignoreuser";
@@ -247,7 +247,7 @@ if(substr($parts[0],0,1)=='/'){
 				if($channels->addOp($channel,$userToOp,$you->getNetwork())){
 					$relay->sendLine($nick,'','mode',"+o $userToOp");
 				}else{
-					$returnmessage = "\x034ERROR: couldn't op $userToOp: already op or user not found.";
+					$returnmessage = "\x034\x02ERROR:\x02 couldn't op $userToOp: already op or user not found.";
 					$sendPm = true;
 				}
 			}else{
@@ -263,7 +263,7 @@ if(substr($parts[0],0,1)=='/'){
 				if($channels->remOp($channel,$userToOp,$you->getNetwork())){
 					$relay->sendLine($nick,'','mode',"-o $userToOp");
 				}else{
-					$returnmessage = "\x034ERROR: couldn't deop $userToOp: no op or user not found.";
+					$returnmessage = "\x034\x02ERROR:\x02 couldn't deop $userToOp: no op or user not found.";
 					$sendPm = true;
 				}
 			}else{
@@ -279,7 +279,7 @@ if(substr($parts[0],0,1)=='/'){
 				if($channels->addBan($channel,$userToOp,$you->getNetwork())){
 					$relay->sendLine($nick,'','mode',"+b $userToOp");
 				}else{
-					$returnmessage = "\x034ERROR: couldn't ban $userToOp: already banned or user not found.";
+					$returnmessage = "\x034\x02ERROR:\x02 couldn't ban $userToOp: already banned or user not found.";
 					$sendPm = true;
 				}
 			}else{
@@ -296,7 +296,7 @@ if(substr($parts[0],0,1)=='/'){
 				if($channels->remBan($channel,$userToOp,$you->getNetwork())){
 					$relay->sendLine($nick,'','mode',"-b $userToOp");
 				}else{
-					$returnmessage = "\x034ERROR: couldn't deban $userToOp: no ban or user not found.";
+					$returnmessage = "\x034\x02ERROR:\x02 couldn't deban $userToOp: no ban or user not found.";
 					$sendPm = true;
 				}
 			}else{
@@ -311,7 +311,7 @@ if(substr($parts[0],0,1)=='/'){
 			}else{
 				$sendNormal = false;
 				$sendPm = true;
-				$returnmessage = "\x02ERROR:\x02 Invalid command: ".$parts[0].' or did you mean /'.$parts[0].' ?';
+				$returnmessage = "\x034\x02ERROR:\x02 Invalid command: ".$parts[0].' or did you mean /'.$parts[0].' ?';
 			}
 			break;
 	}
@@ -353,7 +353,6 @@ if($sendNormal){
 			$memcached->set('oirc_lines_'.$channel,false,1);
 		}
 	}
-	$json->add('cache',$cache);
 }
 if($sendPm){
 	$relay->sendLine('OmnomIRC',$you->getPmHandler(),'server',$returnmessage,$nick);
@@ -371,4 +370,3 @@ if(isset($_GET['textmode'])){
 	$json->add('success',true);
 	echo $json->get();
 }
-?>

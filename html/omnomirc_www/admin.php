@@ -520,4 +520,3 @@ if($you->isGlobalOp()){
 	$json->add('denied',true);
 }
 echo $json->get();
-?>

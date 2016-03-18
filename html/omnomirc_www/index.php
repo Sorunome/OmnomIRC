@@ -239,11 +239,18 @@ echo getPage('OmnomIRC','
 
 <div id="footer">
 	<img id="smileyMenuButton" src="smileys/smiley.gif" style="margin-left:2px;margin-right:2px;">
-	<span><div id="textDecoForm" style="display:none;">
+	<div id="textDecoForm" style="display:none;">
 		<button id="textDecoFormBold" style="font-weight:bold;">B</button>
 		<button id="textDecoFormItalic" style="font-style:italic;">I</button>
 		<button id="textDecoFormUnderline" style="text-decoration:underline;">U</button>
-	</div></span>
+	</div>
+	<div id="loginForm" style="display:none;">
+		<button style="display:none;">Pick Username</button>
+		<div id="pickUsernamePopup" style="display:none;">
+			Username: <input type="text"> <button>Go</button><br>Remember: <input type="checkbox" checked="checked">
+		</div>
+		<span id="guestName" style="display:none;"></span>
+	</div>
 	<form style="Display:inline;" name="irc" action="javascript:void(0)" id="sendMessage">
 		<span contenteditable="true" accesskey="i" id="message"></span>
 		<input type="submit" value="Send" id="send" />
@@ -274,4 +281,3 @@ echo getPage('OmnomIRC','
 ','main');
 
 }
-?>

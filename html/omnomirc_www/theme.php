@@ -89,6 +89,7 @@ if(isset($_GET['theme']) && ($themes = $vars->get('themes')) && isset($themes[$_
 	#UserListInnerCont,
 	#logsHeader,
 	#textDecoForm,
+	#pickUsernamePopup,
 	#logDatePicker,
 	.lineHigh {
 		background: $bg2;
@@ -179,4 +180,3 @@ if(isset($_GET['theme']) && ($themes = $vars->get('themes')) && isset($themes[$_
 		text-shadow:0 0 4px ".hex2rgba($link,0.8).";
 	}";
 }
-?>

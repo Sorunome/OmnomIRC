@@ -565,7 +565,8 @@
 												'<br>',
 												$('<select>').append(
 													$('<option>').val(0).text('Deny Guest Access'),
-													$('<option>').val(1).text('Guests are read-only')
+													$('<option>').val(1).text('Guests are read-only'),
+													$('<option>').val(2).text('Guests may chat')
 												).val(net.config.guests?net.config.guests:0).change(function(e){
 													net.config.guests = parseInt(this.value,10);
 												}),

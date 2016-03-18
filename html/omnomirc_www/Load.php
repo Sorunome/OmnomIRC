@@ -20,31 +20,8 @@
 */
 namespace oirc;
 include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
-if(isset($_GET['userinfo'])){
-	$json->clear();
-	if($you->isBanned()){
-		$json->addError('banned');
-	}elseif(isset($_GET['name']) && isset($_GET['chan']) && isset($_GET['online'])){
-		$temp = $sql->query_prepare("SELECT `lastMsg` FROM `{db_prefix}users` WHERE username=? AND channel=? AND online=?",array(base64_url_decode($_GET['name']),(preg_match('/^[0-9]+$/',$_GET['chan'])?$_GET['chan']:base64_url_decode($_GET['chan'])),(int)$_GET['online']));
-		$json->add('last',(int)$temp[0]['lastMsg']);
-	}else{
-		$json->addError('Bad parameters');
-	}
-	echo $json->get();
-	exit;
-}
-if(isset($_GET['openpm'])){
-	$json->clear();
-	if($you->isBanned()){
-		$json->addError('banned');
-	}else{
-		$temp = $sql->query_prepare("SELECT `name`,`network`,`uid` FROM `{db_prefix}userstuff` WHERE LOWER(`name`)=LOWER(?) AND `network`=?",array(base64_url_decode($_GET['openpm']),isset($_GET['checknet'])?$_GET['checknet']:$you->getNetwork()));
-		$json->add('chanid','*'.$you->getWholePmHandler($temp[0]['name'],$temp[0]['network']));
-		$json->add('channick',$temp[0]['name']);
-	}
-	echo $json->get();
-	exit;
-}
+header('Content-Type:application/json');
+
 $net = $networks->get($you->getNetwork());
 if(!$you->isLoggedIn() && $net['config']['guests'] == 0){
 	$json->add('message','You need to log in to be able to view chat!');
@@ -106,4 +83,3 @@ if($you->isLoggedIn()){
 	}
 }
 echo $json->get();
-?>

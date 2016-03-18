@@ -517,7 +517,7 @@ class Main():
 			
 			while self.live:
 				time.sleep(30)
-				r = oirc.execPhp('omnomirc.php',{'cleanUsers':''});
+				r = oirc.execPhp('misc.php',{'cleanUsers':''});
 				if not r['success']:
 					self.log_error('Something went wrong updating users...'+str(r))
 		except KeyboardInterrupt:

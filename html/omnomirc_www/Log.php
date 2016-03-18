@@ -98,4 +98,3 @@ $json->add('lines',$lines);
 
 
 echo $json->get();
-?>

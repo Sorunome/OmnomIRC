@@ -32,6 +32,8 @@ var oirc = (function(){
 				net:'',
 				networks:{},
 				pmIdent:false,
+				guestLevel:0,
+				isGuest:true,
 				fetch:function(fn,clOnly){
 					if(clOnly===undefined){
 						clOnly = false;
@@ -44,6 +46,7 @@ var oirc = (function(){
 							parser.setSmileys(data.smileys);
 							parser.setSpLinks(data.spLinks);
 							page.setSmileys(data.smileys);
+							self.guestLevel = data.guests;
 							self.networks = {};
 							$.each(data.networks,function(i,n){
 								self.networks[n.id] = n;
@@ -62,6 +65,7 @@ var oirc = (function(){
 							self.signature = data.signature;
 							self.uid = data.uid;
 							self.pmIdent = '['+self.net.toString()+','+self.uid.toString()+']';
+							self.isGuest = data.signature === '';
 							
 							if(fn!==undefined){
 								fn();
@@ -69,6 +73,11 @@ var oirc = (function(){
 						},true,false);
 						
 					},true,false);
+				},
+				setIdent:function(nick,sig,uid){
+					self.nick = nick;
+					self.signature = sig;
+					self.uid = uid;
 				},
 				getUrlParams:function(){
 					return 'nick='+base64.encode(self.nick)+'&signature='+base64.encode(self.signature)+'&time='+(+new Date()).toString()+'&id='+self.uid+'&network='+self.net+'&noLoginErrors';
@@ -97,6 +106,9 @@ var oirc = (function(){
 				loggedIn:function(){
 					return self.signature !== '';
 				},
+				guestLevel:function(){
+					return self.guestLevel;
+				},
 				getWholePmIdent:function(uid,net){
 					var otherhandler = '['+net.toString()+','+uid.toString()+']';
 					if(net < self.net){
@@ -112,6 +124,7 @@ var oirc = (function(){
 			};
 			return {
 				fetch:self.fetch,
+				setIdent:self.setIdent,
 				getUrlParams:self.getUrlParams,
 				getIdentParams:self.getIdentParams,
 				getNetwork:self.getNetwork,
@@ -122,8 +135,12 @@ var oirc = (function(){
 					return self.net;
 				},
 				loggedIn:self.loggedIn,
+				guestLevel:self.guestLevel,
 				getPmIdent:function(){
 					return self.pmIdent;
+				},
+				isGuest:function(){
+					return self.isGuest;
 				},
 				getWholePmIdent:self.getWholePmIdent
 			};
@@ -857,7 +874,7 @@ var oirc = (function(){
 								self.ws.tryFallback = false;
 								self.ws.socket.close();
 							}catch(e){}
-							network.getJSON('omnomirc.php?getcurline&noLoginErrors',function(data){
+							network.getJSON('misc.php?getcurline&noLoginErrors',function(data){
 								channels.current().reloadUserlist(); // this is usually a good idea.
 								self.setCurLine(data.curline);
 								self.ws.use = false;
@@ -1531,7 +1548,7 @@ var oirc = (function(){
 								send.internal('<span style="color:#C73232;">Query Error: Cannot query a channel. Use /join instead.</span>');
 								return;
 							}
-							network.getJSON('Load.php?openpm='+base64.encode(s),function(data){
+							network.getJSON('misc.php?openpm='+base64.encode(s),function(data){
 								if(data.chanid){
 									callback(data.channick,data.chanid);
 								}else{
@@ -1758,7 +1775,7 @@ var oirc = (function(){
 									'<br>'
 								)
 								.mouseover(function(){
-									getInfo = network.getJSON('Load.php?userinfo&name='+base64.encode(u.nick)+'&chan='+channels.current().handlerB64+'&online='+u.network.toString(),function(data){
+									getInfo = network.getJSON('misc.php?userinfo&name='+base64.encode(u.nick)+'&chan='+channels.current().handlerB64+'&online='+u.network.toString(),function(data){
 										if(data.last){
 											$('#lastSeenCont').text('Last Seen: '+(new Date(data.last*1000)).toLocaleString());
 										}else{
@@ -2332,7 +2349,7 @@ var oirc = (function(){
 						$('#mBoxCont').css('height',htmlHeight - footerHeight - headerHeight - 0.2*em);
 						$('html,body').height(htmlHeight);
 						
-						$('#message').css('width',htmlWidth*(self.hide_userlist?1:0.91) - 12*em);
+						$('#message').css('width',htmlWidth*(self.hide_userlist?1:0.91) - 12*em - ($('#loginForm').width()));
 					}
 					if(self.show_scrollbar){
 						var widthOffset = (htmlWidth/100)*self.mBoxContWidthOffset;
@@ -2348,25 +2365,82 @@ var oirc = (function(){
 					}
 					scroll.down();
 				},
+				initGuestLogin:function(){
+					var tryLogin = function(name,remember){
+							network.getJSON('misc.php?identName='+base64.encode(name),function(data){
+								if(!data.success){
+									alert('ERROR'+(data.message?': '+data.message:''));
+									loginFail();
+								}else{
+									settings.setIdent(name,data.signature,-1);
+									$('#pickUsernamePopup').hide();
+									$('#message').removeAttr('disabled');
+									send.val('');
+									if(remember){
+										ls.set('guestName',name);
+										ls.set('guestSig',data.signature);
+									}else{
+										ls.set('guestName','');
+									}
+									$('#loginForm > button').hide();
+									$('#guestName').text(name+' (guest) (').append(
+										$('<a>').text('logout').click(function(e){
+											e.preventDefault();
+											if(confirm('Are you sure? You won\'t be able to take this nick for half an hour!')){
+												ls.set('guestName','');
+												ls.set('guestSig','');
+												settings.setIdent('','',-1);
+												loginFail();
+											}
+										}),
+										')'
+									).show();
+									$(window).trigger('resize');
+								}
+							});
+						},
+						loginFail = function(){
+							send.val('You need to pick a username if you want to chat!');
+							$('#message').attr('disabled',true);
+							$('#loginForm > button').show();
+							$('#guestName').hide();
+							$(window).trigger('resize');
+						}
+					if(ls.get('guestName')){
+						settings.setIdent(ls.get('guestName'),ls.get('guestSig'),-1);
+						tryLogin(ls.get('guestName'),true);
+					}else{
+						loginFail();
+					}
+					$('#loginForm').show();
+					$('#loginForm > button').click(function(e){
+						e.preventDefault();
+						$('#pickUsernamePopup').toggle();
+					});
+					$('#pickUsernamePopup > button').click(function(e){
+						tryLogin($('#pickUsernamePopup > input[type="text"]').val(),$('#pickUsernamePopup > input[type="checkbox"]')[0].checked);
+						
+					});
+				},
 				init:function(){
 					var nua = navigator.userAgent,
 						is_android = ((nua.indexOf('Mozilla/5.0') > -1 && nua.indexOf('Android ') > -1 && nua.indexOf('AppleWebKit') > -1) && !(nua.indexOf('Chrome') > -1)),
 						is_ios = (nua.match(/(iPod|iPhone|iPad)/i) && nua.match(/AppleWebKit/i)),
 						is_mobile_webkit = (nua.match(/AppleWebKit/i) && nua.match(/Android/i));
+					
 					$('body').css('font-size',options.get('fontSize').toString(10)+'pt');
 					self.hide_userlist = options.get('hideUserlist');
 					self.show_scrollbar = options.get('scrollBar');
 					page.changeLinks();
 					if(!wysiwyg.support()){
 						$('#message').replaceWith(
-							$('<input>')
-								.attr({
-									'type':'text',
-									'id':'message',
-									'accesskey':'i',
-									'maxlen':'256',
-									'autocomplete':'off'
-								})
+							$('<input>').attr({
+								'type':'text',
+								'id':'message',
+								'accesskey':'i',
+								'maxlen':'256',
+								'autocomplete':'off'
+							})
 						);
 					}else{
 						$('#message').keydown(function(e){
@@ -2376,6 +2450,13 @@ var oirc = (function(){
 							}
 						});
 						wysiwyg.init();
+					}
+					
+					if(!settings.loggedIn()){
+						send.val('You need to login if you want to chat!');
+						if(settings.guestLevel() >= 2){ // display the stuff for login form
+							self.initGuestLogin();
+						}
 					}
 					if(self.hide_userlist){ // hide userlist is on
 						self.mBoxContWidthOffset = 99;
@@ -2420,7 +2501,8 @@ var oirc = (function(){
 							send.init();
 							oldMessages.init();
 							channels.init();
-							request.init()
+							request.init();
+							
 							if(!channels.join(options.get('curChan'))){
 								channels.join(0);
 							}
@@ -2545,13 +2627,6 @@ var oirc = (function(){
 				messages:[],
 				counter:0,
 				current:'',
-				setMsg:function(s){
-					if(!wysiwyg.support()){
-						$('#message').val(s);
-					}else{
-						$('#message').html(s);
-					}
-				},
 				getMsg:function(){
 					if(!wysiwyg.support()){
 						return $('#message').val();
@@ -2559,32 +2634,31 @@ var oirc = (function(){
 					return $('#message').html();
 				},
 				init:function(){
-					$('#message')
-						.keydown(function(e){
-							if(e.keyCode==38 || e.keyCode==40){
-								e.preventDefault();
-								if(self.counter==self.messages.length){
-									self.current = self.getMsg();
-								}
-								if(self.messages.length!==0){
-									if(e.keyCode==38){ //up
-										if(self.counter!==0){
-											self.counter--;
-										}
-										self.setMsg(self.messages[self.counter]);
-									}else{ //down
-										if(self.counter!=self.messages.length){
-											self.counter++;
-										}
-										if(self.counter==self.messages.length){
-											self.setMsg(self.current);
-										}else{
-											self.setMsg(self.messages[self.counter]);
-										}
+					$('#message').keydown(function(e){
+						if(e.keyCode==38 || e.keyCode==40){
+							e.preventDefault();
+							if(self.counter==self.messages.length){
+								self.current = self.getMsg();
+							}
+							if(self.messages.length!==0){
+								if(e.keyCode==38){ //up
+									if(self.counter!==0){
+										self.counter--;
+									}
+									self.setMsg(self.messages[self.counter]);
+								}else{ //down
+									if(self.counter!=self.messages.length){
+										self.counter++;
+									}
+									if(self.counter==self.messages.length){
+										send.val(self.current);
+									}else{
+										send.val(self.messages[self.counter]);
 									}
 								}
 							}
-						});
+						}
+					});
 				},
 				add:function(s){
 					self.messages.push(s);
@@ -2614,20 +2688,12 @@ var oirc = (function(){
 				sending:false,
 				sendMessage:function(s){
 					if(s[0] == '/' && commands.parse(s.substr(1))){
-						if(!wysiwyg.support()){
-							$('#message').val('');
-						}else{
-							$('#message').html('');
-						}
+						self.val('');
 					}else{
 						if(!self.sending){
 							self.sending = true;
 							request.send(s,function(){
-								if(!wysiwyg.support()){
-									$('#message').val('');
-								}else{
-									$('#message').html('');
-								}
+								self.val('');
 								self.sending = false;
 							});
 						}
@@ -2645,36 +2711,39 @@ var oirc = (function(){
 					});
 				},
 				init:function(){
-					$('#sendMessage')
-						.submit(function(e){
-							e.preventDefault();
-							if(settings.loggedIn()){
-								var val = '';
-								if(!wysiwyg.support()){
-									val = $('#message').val();
-									
-									oldMessages.add(val);
-								}else{
-									oldMessages.add($('#message').html());
-									val = wysiwyg.getMsg();
-								}
-								console.log(val);
-								val = parser.parseTextDecorations(val);
-								if(!$('#message').attr('disabled') && val!==''){
-									self.sendMessage(val);
-									$('#message').focus(); // fix IE not doing that automatically
-								}
+					$('#sendMessage').submit(function(e){
+						e.preventDefault();
+						if(settings.loggedIn()){
+							var val = '';
+							if(!wysiwyg.support()){
+								val = $('#message').val();
+								
+								oldMessages.add(val);
+							}else{
+								oldMessages.add($('#message').html());
+								val = wysiwyg.getMsg();
 							}
-						});
-					if(!settings.loggedIn()){
-						$('#message')
-							.val('You need to login if you want to chat!');
+							console.log(val);
+							val = parser.parseTextDecorations(val);
+							if(!$('#message').attr('disabled') && val!==''){
+								self.sendMessage(val);
+								$('#message').focus(); // fix IE not doing that automatically
+							}
+						}
+					});
+				},
+				val:function(s){
+					if(!wysiwyg.support()){
+						$('#message').val(s);
+					}else{
+						$('#message').html(s);
 					}
 				}
 			};
 			return {
 				internal:self.internal,
-				init:self.init
+				init:self.init,
+				val:self.val
 			};
 		})(),
 		logs = (function(){
@@ -2893,7 +2962,7 @@ var oirc = (function(){
 							cn = $('<span>').append($('<span>').addClass('uName-'+rcolors[sum % 9].toString()).html(n)).html();
 							break;
 						case '2': //server
-							if(net!==undefined && net.checkLogin!==undefined){
+							if(net!==undefined && net.checkLogin!==undefined && uid!=-1){
 								addLink = false;
 								if(self.cacheServerNicks[o.toString()+':'+uid.toString()]===undefined){
 									network.getJSON(net.checkLogin+'?c='+uid.toString(10)+'&n='+ne,function(data){

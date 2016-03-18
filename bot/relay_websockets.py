@@ -142,6 +142,7 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 	chans = {}
 	msgStack = []
 	pmHandler = '**'
+	firstRun = True
 	def setCharsHigh(self,i):
 		self.charsHigh = self.nick[:i].lower()
 		if self.charsHigh == '':
@@ -164,12 +165,14 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 		except:
 			self.log_info('nothing to recieve')
 			return False
-		if b1 & 0x0F == 0x8:
-			self.log_info('Client asked to close connection')
-			return False
-		if not b1 & 0x80:
-			self.log_info('Client must always be masked')
-			return False
+		if not self.firstRun:
+			if b1 & 0x0F == 0x8:
+				self.log_info('Client asked to close connection')
+				return False
+			if not b1 & 0x80:
+				self.log_info('Client must always be masked')
+				return False
+		self.firstRun = False
 		length = b2 & 127
 		if length == 126:
 			length = struct.unpack(">H", self.socket.recv(2))[0]
@@ -177,8 +180,10 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 			length = struct.unpack(">Q", self.socket.recv(8))[0]
 		masks = self.socket.recv(4)
 		decoded = ""
+		data = ""
 		for char in self.socket.recv(length):
 			decoded += chr(char ^ masks[len(decoded) % 4])
+			data += oirc.makeUnicode(chr(char))
 		try:
 			return self.on_message(json.loads(oirc.makeUnicode(decoded)))
 		except Exception as inst:
@@ -231,7 +236,7 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 			self.chans[c] += 1
 			return # no need to add to the userlist
 		self.chans[c] = 1
-		if isinstance(c,str) and len(c) > 0 and c[0]=='*': # no userlist on PMs
+		if self.nick == '' or (isinstance(c,str) and len(c) > 0 and c[0]=='*'): # no userlist on PMs
 			return
 		if self.handle.addUser(self.nick,str(c),self.network,self.uid):
 			self.handle.sendToOther(self.nick,'','join','',str(c),self.network,self.uid)
@@ -296,7 +301,7 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 				self.log_info('>> '+str(m))
 				if m['action'] == 'ident':
 					try:
-						r = oirc.execPhp('omnomirc.php',{
+						r = oirc.execPhp('misc.php',{
 							'ident':'',
 							'nick':b64encode_wrap(m['nick']),
 							'signature':b64encode_wrap(m['signature']),
@@ -343,7 +348,7 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 							c = str(int(c))
 						except:
 							c = b64encode_wrap(c)
-						r = oirc.execPhp('omnomirc.php',{
+						r = oirc.execPhp('misc.php',{
 							'ident':'',
 							'nick':b64encode_wrap(self.nick),
 							'signature':b64encode_wrap(self.sig),

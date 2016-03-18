@@ -121,4 +121,3 @@ if(isset($_GET['message'])){
 	}
 	echo "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />".($banned?'':("<meta http-equiv=\"refresh\" content=\"5;url=textmode.php?update=".time()."&curline=".$curline."&".$you->getUrlParams()."\">"))."</head><body><a href=\"textmode.php?message&curline=".$curline."&".$you->getUrlParams()."\" autofocus>Click here to write a message</a><br>Channel: ".($you->channelName())."<table>".$_SESSION['content']."</table></body></html>";
 }
-?>

@@ -359,7 +359,7 @@ class Bot_OIRC(irc.Bot,oirc.OircRelayHandle):
 			chan = chan[1:]
 		if line[1]=='PRIVMSG':
 			if line[2][0]!='#':
-				if line[3] == ':DOTHIS' and line[4] == config.json['security']['ircPwd']:
+				if line[3] == ':DOTHIS' and line[4] == self.handle.config.json['security']['ircPwd']:
 					self.send_safe(' '.join(line[5:]))
 				elif line[3] == ':GETUSERLIST' and len(line) > 4:
 					self.sendUserList(nick,line[4])

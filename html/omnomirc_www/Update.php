@@ -181,4 +181,3 @@ while(true){
 	echo $json->get();
 	break;
 }
-?>
