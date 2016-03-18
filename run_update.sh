@@ -2,8 +2,14 @@
 read -p "Old OmnomIRC version:" oldversion
 read -p "New OmnomIRC version:" newversion
 
-echo "building sourcefiles..."
+tmp=$(mktemp)
+
+echo "building sourcefiles / updating..."
 ./build.sh
+sed "s/$oldversion/$newversion/" html/omnomirc_www/config.json.php > $tmp
+cp $tmp html/omnomirc_www/config.json.php
+sed "s/$oldversion/$newversion/" html/omnomirc_www/updater.php > $tmp
+cp $tmp html/omnomirc_www/updater.php
 echo "done"
 echo "committing git..."
 git commit -am "version bump to $newversion"
@@ -40,7 +46,6 @@ for f in $(git diff --name-only master dev); do
 	esac
 done
 echo "Uploading updater..."
-tmp=$(mktemp)
 ./make_updater.sh "$oldversion" "$newversion" > $tmp
 scp $tmp "sorunome.de:/var/www/omnomirc.omnimaga.org/$newversion/updater.php.s"
 rm $tmp
