@@ -664,7 +664,7 @@ var oirc = (function(){
 						self.update();
 					}).unload(function(){
 						ls.set('newInstant',true);
-					})
+					});
 				},
 				current:function(){
 					if(ls.get('newInstant')){
@@ -843,6 +843,8 @@ var oirc = (function(){
 						if(e.originalEvent.key == settings.net()+'stopFlash'){
 							self.stopFlash(true);
 						}
+					}).unload(function(){
+						self.stopFlash(true); // don't message the other tabs as they might still be open
 					});
 				}
 			};
@@ -2592,11 +2594,19 @@ var oirc = (function(){
 					switch(command){
 						case 'j':
 						case 'join':
-							channels.open(parameters);
+							if(settings.isGuest()){
+								send.internal('<span style="color:#C73232;"><b>ERROR:</b> can\'t join as guest</span>');
+							}else{
+								channels.open(parameters);
+							}
 							return true;
 						case 'q':
 						case 'query':
-							channels.openPm(parameters,'',true);
+							if(settings.isGuest()){
+								send.internal('<span style="color:#C73232;"><b>ERROR:</b> can\'t query as guest</span>');
+							}else{
+								channels.openPm(parameters,'',true);
+							}
 							return true;
 						case 'win':
 						case 'w':
@@ -2885,7 +2895,7 @@ var oirc = (function(){
 								indicator.stop();
 							}
 						}else{
-							send.internal('<span style="color:#C73232;"><b>ERROR:</b> banned</banned>');
+							send.internal('<span style="color:#C73232;"><b>ERROR:</b> banned</span>');
 						}
 					});
 				},

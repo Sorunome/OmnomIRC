@@ -142,11 +142,15 @@ if(substr($parts[0],0,1)=='/'){
 			}
 			break;
 		case 'ignore':
-			unset($parts[0]);
-			$ignoreuser = trim(strtolower(implode(" ",$parts)));
 			$returnmessage = "";
 			$sendNormal = false;
 			$sendPm = true;
+			if($you->getUid() == -1){{
+				$returnmessage = "\x034\x02ERROR:\x02 can't ignore as guest";
+				break;
+			}
+			unset($parts[0]);
+			$ignoreuser = trim(strtolower(implode(" ",$parts)));
 			$userSql = $you->info();
 			if(strpos($userSql['ignores'],$ignoreuser."\n")===false){
 				$userSql['ignores'].=$ignoreuser."\n";
@@ -158,11 +162,15 @@ if(substr($parts[0],0,1)=='/'){
 			}
 			break;
 		case 'unignore':
-			unset($parts[0]);
-			$ignoreuser = trim(strtolower(implode(' ',$parts)));
 			$returnmessage = '';
 			$sendNormal = false;
 			$sendPm = true;
+			if($you->getUid() == -1){{
+				$returnmessage = "\x034\x02ERROR:\x02 can't unignore as guest";
+				break;
+			}
+			unset($parts[0]);
+			$ignoreuser = trim(strtolower(implode(' ',$parts)));
 			$userSql = $you->info();
 			$allIgnoreUsers = explode("\n","\n".$userSql['ignores']);
 			$unignored = false;
