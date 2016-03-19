@@ -145,7 +145,7 @@ if(substr($parts[0],0,1)=='/'){
 			$returnmessage = "";
 			$sendNormal = false;
 			$sendPm = true;
-			if($you->getUid() == -1){{
+			if($you->getUid() == -1){
 				$returnmessage = "\x034\x02ERROR:\x02 can't ignore as guest";
 				break;
 			}
@@ -165,7 +165,7 @@ if(substr($parts[0],0,1)=='/'){
 			$returnmessage = '';
 			$sendNormal = false;
 			$sendPm = true;
-			if($you->getUid() == -1){{
+			if($you->getUid() == -1){
 				$returnmessage = "\x034\x02ERROR:\x02 can't unignore as guest";
 				break;
 			}
