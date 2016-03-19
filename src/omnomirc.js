@@ -34,9 +34,24 @@ var oirc = (function(){
 				pmIdent:false,
 				guestLevel:0,
 				isGuest:true,
+				identGuest:function(name,fn){
+					network.getJSON('misc.php?identName='+base64.encode(name),function(data){
+						if(fn!==undefined){
+							fn(data);
+						}
+					});
+				},
 				fetch:function(fn,clOnly){
 					if(clOnly===undefined){
 						clOnly = false;
+					}
+					if(clOnly && self.loggedIn() && self.isGuest){
+						self.identGuest(self.nick,function(data){
+							if(data.success){
+								self.signature = data.signature;
+							}
+						})
+						return;
 					}
 					network.getJSON('config.php?js'+(document.URL.split('network=')[1]!==undefined?'&network='+document.URL.split('network=')[1].split('&')[0].split('#')[0]:'')+(clOnly?'&clonly':''),function(data){
 						var set;
@@ -59,19 +74,25 @@ var oirc = (function(){
 						}
 						
 						self.checkLoginUrl = data.checkLoginUrl;
-						
-						network.getJSON(self.checkLoginUrl+'&network='+self.net.toString()+'&jsoncallback=?',function(data){
-							self.nick = data.nick;
-							self.signature = data.signature;
-							self.uid = data.uid;
-							self.pmIdent = '['+self.net.toString()+','+self.uid.toString()+']';
-							self.isGuest = data.signature === '';
-							
-							if(fn!==undefined){
-								fn();
-							}
-						},true,false);
-						
+						if(self.loggedIn() && self.isGuest){
+							self.identGuest(self.nick,function(data){
+								if(data.success){
+									self.signature = data.signature;
+								}
+							});
+						}else{
+							network.getJSON(self.checkLoginUrl+'&network='+self.net.toString()+'&jsoncallback=?',function(data){
+								self.nick = data.nick;
+								self.signature = data.signature;
+								self.uid = data.uid;
+								self.pmIdent = '['+self.net.toString()+','+self.uid.toString()+']';
+								self.isGuest = data.signature === '';
+								
+								if(fn!==undefined){
+									fn();
+								}
+							},true,false);
+						}
 					},true,false);
 				},
 				setIdent:function(nick,sig,uid){
@@ -123,6 +144,7 @@ var oirc = (function(){
 				}
 			};
 			return {
+				identGuest:self.identGuest,
 				fetch:self.fetch,
 				setIdent:self.setIdent,
 				getUrlParams:self.getUrlParams,
@@ -2375,7 +2397,7 @@ var oirc = (function(){
 				},
 				initGuestLogin:function(){
 					var tryLogin = function(name,remember){
-							network.getJSON('misc.php?identName='+base64.encode(name),function(data){
+							settings.identGuest(name,function(data){
 								if(!data.success){
 									alert('ERROR'+(data.message?': '+data.message:''));
 									loginFail();
