@@ -234,8 +234,8 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 		c = str(c)
 		if c in self.chans:
 			self.chans[c] += 1
-			return # no need to add to the userlist
-		self.chans[c] = 1
+		else:
+			self.chans[c] = 1
 		if self.nick == '' or (isinstance(c,str) and len(c) > 0 and c[0]=='*'): # no userlist on PMs
 			return
 		if self.handle.addUser(self.nick,str(c),self.network,self.uid):
