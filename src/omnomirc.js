@@ -3046,8 +3046,9 @@ var oirc = (function(){
 					text = text.replace(RegExp("(\x01|\x04)","g"),"");
 					$.map(self.spLinks,function(url){
 						url = url.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
-						text = text.replace(RegExp("(^|[^\\w/])((?:(?:f|ht)tps?:\/\/)"+url+ier+"*)","g"),'$1\x01$2')
-									.replace(RegExp("(^|[^\\w/])("+url+ier+"*)","g"),'$1\x04$2');
+						// we have > in that regex as it markes the end of <span>
+						text = text.replace(RegExp("(^|[\\s>])((?:(?:f|ht)tps?:\/\/(?:www\\.)?)"+url+ier+"*)","g"),'$1\x01$2')
+									.replace(RegExp("(^|[\\s>])("+url+ier+"*)","g"),'$1\x04$2');
 					});
 					return text.replace(RegExp("(^|[^a-zA-Z0-9_\x01\x04])((?:(?:f|ht)tps?:\/\/)"+ier+"+)","g"),'$1<a target="_blank" href="$2">$2</a>')
 							.replace(RegExp("(^|[^a-zA-Z0-9_\x01\x04/])(www\\."+ier+"+)","g"),'$1<a target="_blank" href="http://$2">$2</a>')
