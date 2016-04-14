@@ -1,4 +1,5 @@
 <?php
+$_SERVER['SERVER_NAME'] = isset($_SERVER['SERVER_NAME'])?$_SERVER['SERVER_NAME']:'';
 if(isset($argv) && php_sapi_name() == 'cli'){
 	// parse command line args into $_GET
 	foreach($argv as $a){

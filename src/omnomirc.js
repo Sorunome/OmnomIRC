@@ -34,9 +34,24 @@ var oirc = (function(){
 				pmIdent:false,
 				guestLevel:0,
 				isGuest:true,
+				identGuest:function(name,fn){
+					network.getJSON('misc.php?identName='+base64.encode(name),function(data){
+						if(fn!==undefined){
+							fn(data);
+						}
+					});
+				},
 				fetch:function(fn,clOnly){
 					if(clOnly===undefined){
 						clOnly = false;
+					}
+					if(clOnly && self.loggedIn() && self.isGuest){
+						self.identGuest(self.nick,function(data){
+							if(data.success){
+								self.signature = data.signature;
+							}
+						})
+						return;
 					}
 					network.getJSON('config.php?js'+(document.URL.split('network=')[1]!==undefined?'&network='+document.URL.split('network=')[1].split('&')[0].split('#')[0]:'')+(clOnly?'&clonly':''),function(data){
 						var set;
@@ -59,19 +74,25 @@ var oirc = (function(){
 						}
 						
 						self.checkLoginUrl = data.checkLoginUrl;
-						
-						network.getJSON(self.checkLoginUrl+'&network='+self.net.toString()+'&jsoncallback=?',function(data){
-							self.nick = data.nick;
-							self.signature = data.signature;
-							self.uid = data.uid;
-							self.pmIdent = '['+self.net.toString()+','+self.uid.toString()+']';
-							self.isGuest = data.signature === '';
-							
-							if(fn!==undefined){
-								fn();
-							}
-						},true,false);
-						
+						if(self.loggedIn() && self.isGuest){
+							self.identGuest(self.nick,function(data){
+								if(data.success){
+									self.signature = data.signature;
+								}
+							});
+						}else{
+							network.getJSON(self.checkLoginUrl+'&network='+self.net.toString()+'&jsoncallback=?',function(data){
+								self.nick = data.nick;
+								self.signature = data.signature;
+								self.uid = data.uid;
+								self.pmIdent = '['+self.net.toString()+','+self.uid.toString()+']';
+								self.isGuest = data.signature === '';
+								
+								if(fn!==undefined){
+									fn();
+								}
+							},true,false);
+						}
 					},true,false);
 				},
 				setIdent:function(nick,sig,uid){
@@ -123,6 +144,7 @@ var oirc = (function(){
 				}
 			};
 			return {
+				identGuest:self.identGuest,
 				fetch:self.fetch,
 				setIdent:self.setIdent,
 				getUrlParams:self.getUrlParams,
@@ -664,7 +686,7 @@ var oirc = (function(){
 						self.update();
 					}).unload(function(){
 						ls.set('newInstant',true);
-					})
+					});
 				},
 				current:function(){
 					if(ls.get('newInstant')){
@@ -843,6 +865,8 @@ var oirc = (function(){
 						if(e.originalEvent.key == settings.net()+'stopFlash'){
 							self.stopFlash(true);
 						}
+					}).unload(function(){
+						self.stopFlash(true); // don't message the other tabs as they might still be open
 					});
 				}
 			};
@@ -1940,7 +1964,7 @@ var oirc = (function(){
 				},
 				enableUserlist:function(){
 					var moveUserList = function(delta,_self){
-							$(self).css('top',Math.min(0,Math.max(((/Opera/i.test(navigator.userAgent))?-30:0)+document.getElementById('UserListInnerCont').clientHeight-_self.scrollHeight,delta+parseInt($('#UserList').css('top'),10))));
+							$(_self).css('top',Math.min(0,Math.max(((/Opera/i.test(navigator.userAgent))?-30:0)+document.getElementById('UserListInnerCont').clientHeight-_self.scrollHeight,delta+parseInt($('#UserList').css('top'),10))));
 						};
 					$('#UserList')
 						.css('top',0)
@@ -2373,7 +2397,7 @@ var oirc = (function(){
 				},
 				initGuestLogin:function(){
 					var tryLogin = function(name,remember){
-							network.getJSON('misc.php?identName='+base64.encode(name),function(data){
+							settings.identGuest(name,function(data){
 								if(!data.success){
 									alert('ERROR'+(data.message?': '+data.message:''));
 									loginFail();
@@ -2592,11 +2616,19 @@ var oirc = (function(){
 					switch(command){
 						case 'j':
 						case 'join':
-							channels.open(parameters);
+							if(settings.isGuest()){
+								send.internal('<span style="color:#C73232;"><b>ERROR:</b> can\'t join as guest</span>');
+							}else{
+								channels.open(parameters);
+							}
 							return true;
 						case 'q':
 						case 'query':
-							channels.openPm(parameters,'',true);
+							if(settings.isGuest()){
+								send.internal('<span style="color:#C73232;"><b>ERROR:</b> can\'t query as guest</span>');
+							}else{
+								channels.openPm(parameters,'',true);
+							}
 							return true;
 						case 'win':
 						case 'w':
@@ -2885,7 +2917,7 @@ var oirc = (function(){
 								indicator.stop();
 							}
 						}else{
-							send.internal('<span style="color:#C73232;"><b>ERROR:</b> banned</banned>');
+							send.internal('<span style="color:#C73232;"><b>ERROR:</b> banned</span>');
 						}
 					});
 				},
@@ -3014,8 +3046,9 @@ var oirc = (function(){
 					text = text.replace(RegExp("(\x01|\x04)","g"),"");
 					$.map(self.spLinks,function(url){
 						url = url.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
-						text = text.replace(RegExp("(^|[^\\w/])((?:(?:f|ht)tps?:\/\/)"+url+ier+"*)","g"),'$1\x01$2')
-									.replace(RegExp("(^|[^\\w/])("+url+ier+"*)","g"),'$1\x04$2');
+						// we have > in that regex as it markes the end of <span>
+						text = text.replace(RegExp("(^|[\\s>])((?:(?:f|ht)tps?:\/\/(?:www\\.)?)"+url+ier+"*)","g"),'$1\x01$2')
+									.replace(RegExp("(^|[\\s>])("+url+ier+"*)","g"),'$1\x04$2');
 					});
 					return text.replace(RegExp("(^|[^a-zA-Z0-9_\x01\x04])((?:(?:f|ht)tps?:\/\/)"+ier+"+)","g"),'$1<a target="_blank" href="$2">$2</a>')
 							.replace(RegExp("(^|[^a-zA-Z0-9_\x01\x04/])(www\\."+ier+"+)","g"),'$1<a target="_blank" href="http://$2">$2</a>')

@@ -179,11 +179,9 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 		elif length == 127:
 			length = struct.unpack(">Q", self.socket.recv(8))[0]
 		masks = self.socket.recv(4)
-		decoded = ""
-		data = ""
+		decoded = b""
 		for char in self.socket.recv(length):
-			decoded += chr(char ^ masks[len(decoded) % 4])
-			data += oirc.makeUnicode(chr(char))
+			decoded += bytes([char ^ masks[len(decoded) % 4]])
 		try:
 			return self.on_message(json.loads(oirc.makeUnicode(decoded)))
 		except Exception as inst:
@@ -243,6 +241,7 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 		if self.handle.addUser(self.nick,str(c),self.network,self.uid):
 			self.handle.sendToOther(self.nick,'','join','',str(c),self.network,self.uid)
 	def part(self,c):
+		return # disabled for now as the client is doing weired stuff
 		c = str(c)
 		if not c in self.chans:
 			return

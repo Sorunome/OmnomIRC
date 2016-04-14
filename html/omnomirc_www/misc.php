@@ -68,7 +68,7 @@ if(isset($_GET['ident'])){
 	}elseif(!preg_match('/^[a-zA-Z0-9\\-_]{4,20}$/',$name)){
 		$json->add('message','invalid nickname (chars and digits, 4-20)');
 	}else{
-		$res = $sql->query_prepare("SELECT `uid` FROM {db_prefix}users WHERE `username`=? AND `online`=? AND (`uid`<>-1 OR (`lastMsg` <= ? AND `isOnline`=0) OR `isOnline`=1) LIMIT 1",array($name,$you->getNetwork(),strtotime('-30 minutes')));
+		$res = $sql->query_prepare("SELECT `uid` FROM {db_prefix}users WHERE `username`=? AND `online`=? AND (`uid`<>-1 OR (`lastMsg` >= ? AND `isOnline`=0) OR `isOnline`=1) LIMIT 1",array($name,$you->getNetwork(),strtotime('-30 minutes')));
 		$res = $res[0];
 		if($res['uid'] === NULL || ($you->isLoggedIn() && $res['uid'] == -1 && $name == $you->nick /* network must be already correct */)){
 			$json->add('success',true);

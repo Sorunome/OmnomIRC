@@ -919,7 +919,7 @@ class You{
 		return $this->id;
 	}
 	public function getPmHandler(){
-		if(!$this->loggedIn){
+		if(!$this->loggedIn || $this->id == -1){
 			return '';
 		}
 		return '['.$this->network.','.$this->id.']';
