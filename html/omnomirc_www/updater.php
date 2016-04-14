@@ -401,14 +401,17 @@ if(!isset($_GET['server'])){
 					'action=set&var=network&val=1',
 					'action=set&var=oircUrl&val='.base64_url_encode($u)
 				);
-				if(!in_array($res['hook'],$res['hooks'])){
-					if(count($res['hooks']) == 0){
-						die('{"errors":["Forum doesn\'t have any hooks!"],"step":7}');
-					}
-					if(!empty($_POST['hook']) && in_array($_POST['hook'],$res['hooks'])){
+				if(!empty($_POST['hook'])){
+					if(in_array($_POST['hook'],$res['hooks'])){
 						$urls[] = 'action=set&var=hook&val='.base64_url_encode($_POST['hook']);
 					}else{
 						die('{"errors":["Don\'t know what to do with forum hooks!"],"step":7}');
+					}
+				}elseif(!in_array($res['hook'],$res['hooks'])){
+					if(count($res['hooks']) == 0){
+						die('{"errors":["Forum doesn\'t have any hooks!"],"step":7}');
+					}else{
+						die('{"errors":["Forum hook stuff is invalid!"],"step":7}');
 					}
 				}
 				$urls[] = 'action=set&var=installed&val=true';
