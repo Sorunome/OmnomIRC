@@ -69,7 +69,7 @@
 				echo '<p>Latest release: <a href="https://github.com/Sorunome/OmnomIRC/releases/tag/'.$latest['name'].'">'.$latest['name'].'</a></p>'.
 					'<p>Downloads: <a class="btn btn-primary btn-lg" role="button" href="'.$latest['zipball_url'].'">.zip &raquo;</a> <a class="btn btn-primary btn-lg" role="button" href="'.$latest['tarball_url'].'">.tar.gz &raquo;</a></p>'.
 					'<p>Release Notes:</p>'.
-					'<p>'.json_decode(file_get_contents('http://omnomirc.omnimaga.org/getReleaseNotes.php?version='.$latest['name']),true)['notes'].'</p>';
+					'<p>'.json_decode(file_get_contents('https://omnomirc.omnimaga.org/getReleaseNotes.php?version='.$latest['name']),true)['notes'].'</p>';
 				?>
 				
 			</div>
