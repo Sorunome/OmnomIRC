@@ -306,14 +306,16 @@ class Main():
 		except Exception as inst:
 			self.log_error('curline error: '+str(inst))
 			self.log_error(traceback.format_exc())
-	def addUser(self,u,c,i,uid=-1):
+	def addUser(self,u,c,i,uid=-1,donotify = True):
 		temp = sql.query("SELECT usernum,isOnline FROM {db_prefix}users WHERE username=%s AND channel=%s AND online=%s",[u,c,int(i)])
+		notify = True
 		if(len(temp)==0):
-			sql.query("INSERT INTO `{db_prefix}users` (`username`,`channel`,`online`,`uid`) VALUES (%s,%s,%s,%s)",[u,c,int(i),int(uid)])
-			return True
+			sql.query("INSERT INTO `{db_prefix}users` (`username`,`channel`,`online`,`time`,`uid`) VALUES (%s,%s,%s,0,%s)",[u,c,int(i),int(uid)])
 		else:
 			sql.query("UPDATE `{db_prefix}users` SET `isOnline`=1,`uid`=%s,`time`=0 WHERE `usernum`=%s",[int(uid),int(temp[0]['usernum'])])
-			return temp[0]['isOnline'] == 0
+			notify = (temp[0]['isOnline'] == 0)
+		if notify and donotify:
+			self.sendToOther(u,'','join','',c,i)
 	def removeUser(self,u,c,i):
 		sql.query("UPDATE `{db_prefix}users` SET `isOnline`=0 WHERE `username` = %s AND `channel` = %s AND online=%s",[u,c,int(i)])
 	def timeoutUser(self,u,c,i):

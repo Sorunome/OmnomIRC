@@ -168,7 +168,6 @@ class CalculatorHandler(server.ServerHandler,oirc.OircRelayHandle):
 			self.send(b'\xAD**Channel '+bytes(self.chan,'utf-8')+b' is not more available!')
 			self.chan = self.defaultChan
 			self.send(b'\xAD**Now speeking in channel '+bytes(self.chan,'utf-8'))
-			self.addLine('join','')
 			self.userJoin()
 		self.channels = chans
 	def setup(self):
@@ -213,7 +212,6 @@ class CalculatorHandler(server.ServerHandler,oirc.OircRelayHandle):
 						printString+=self.calcName+' has joined\n'
 						self.connectedToIRC=True
 						self.send(b'\xAD**Now speeking in channel '+bytes(self.chan,'utf-8'))
-						self.addLine('join','')
 						self.userJoin()
 				elif r_bytes[17]==172:
 					if self.connectedToIRC:
@@ -230,7 +228,6 @@ class CalculatorHandler(server.ServerHandler,oirc.OircRelayHandle):
 							self.userPart()
 							self.chan=message[message.find(' ')+1:].lower()
 							self.send(b'\xAD**Now speeking in channel '+bytes(self.chan,'utf-8'))
-							self.addLine('join','')
 							self.userJoin()
 						else:
 							self.send(b'\xAD**Channel '+bytes(message[message.find(' ')+1:],'utf-8')+b' doesn\'t exist!')
@@ -248,4 +245,3 @@ class CalculatorHandler(server.ServerHandler,oirc.OircRelayHandle):
 			self.log_error(str(inst))
 			self.log_error(traceback.format_exc())
 		return True
-

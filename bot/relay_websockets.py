@@ -238,8 +238,7 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 			self.chans[c] = 1
 		if self.nick == '' or (isinstance(c,str) and len(c) > 0 and c[0]=='*'): # no userlist on PMs
 			return
-		if self.handle.addUser(self.nick,str(c),self.network,self.uid):
-			self.handle.sendToOther(self.nick,'','join','',str(c),self.network,self.uid)
+		self.handle.addUser(self.nick,str(c),self.network,self.uid)
 	def part(self,c):
 		return # disabled for now as the client is doing weired stuff
 		c = str(c)
@@ -406,8 +405,8 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 			for c in self.chans:
 				self.chans[c] = 1 # we want to quit right away
 				self.part(c)
+				self.handle.timeoutUser(self.nick,str(c),self.network)
 			self.socket.close()
 		except:
 			pass
 		return False
-
