@@ -193,6 +193,14 @@ if($i){
 	$hotlinksHTML .= '<td style="display:none;" id="adminLink"><a href="?admin">Admin</a></td>';
 }
 $hotlinksHTML .= '</tr>';
+
+$colorButtonsHTML = '<br>';
+for($i = 0;$i < 16;$i++){
+	$colorButtonsHTML .= '<span class="colorbutton bg-'.$i.'" data-num="'.$i.'"></span>';
+	if(($i+1) % 4 == 0){
+		$colorButtonsHTML .= '<br>';
+	}
+}
 echo getPage('OmnomIRC','
 <noscript><meta http-equiv="refresh" content="0;url=index.php?textmode"></noscript>
 ','
@@ -242,7 +250,8 @@ echo getPage('OmnomIRC','
 	<div id="textDecoForm" style="display:none;">
 		<button id="textDecoFormBold" style="font-weight:bold;">B</button>
 		<button id="textDecoFormItalic" style="font-style:italic;">I</button>
-		<button id="textDecoFormUnderline" style="text-decoration:underline;">U</button>
+		<button id="textDecoFormUnderline" style="text-decoration:underline;">U</button><br>
+		'.$colorButtonsHTML.'
 	</div>
 	<div id="loginForm" style="display:none;">
 		<button style="display:none;">Pick Username</button>
@@ -269,7 +278,7 @@ echo getPage('OmnomIRC','
 	<p><a href="https://omnomirc.omnimaga.org/" target="_blank">OmnomIRC</a> is developed by <a href="https://www.omnimaga.org" alt="Omnimaga" target="_blank">Omnimaga</a></p>
 	<p>Found an issue/bug? <a href="https://github.com/Sorunome/OmnomIRC/issues" target="_blank">Report it!</a></p>
 	<h1>Programmers</h1>
-	<ul><li><a href="http://netham45.org/" target="_blank">Netham45</a></li><li><a href="http://www.sorunome.de" target="_blank">Sorunome</a></li><li><a href="http://eeems.ca/" target="_blank">Eeems</a></li></ul>
+	<ul><li><a href="http://netham45.org/" target="_blank">Netham45</a></li><li><a href="https://www.sorunome.de" target="_blank">Sorunome</a></li><li><a href="http://eeems.ca/" target="_blank">Eeems</a></li></ul>
 	<h1>Style</h1>
 	<ul><li><a href="https://www.omnimaga.org/profile/Darl181" target="_blank">Darl181</a></li></ul>
 	<a href="https://omnomirc.omnimaga.org/" target="_blank">Homepage</a> | <a href="https://github.com/Sorunome/OmnomIRC" target="_blank">GitHub</a>

@@ -542,8 +542,8 @@ var oirc = (function(){
 						default:false
 					},
 					wysiwyg:{
-						disp:'Use WYSIWYG editor (experimental)',
-						default:false
+						disp:'Use WYSIWYG editor',
+						default:true
 					},
 					textDeco:{
 						disp:'Enable simple text decorations',
@@ -2258,16 +2258,221 @@ var oirc = (function(){
 		})(),
 		wysiwyg = (function(){
 			var self = {
-				sel:false,
 				menuOpen:false,
+				msgVal:'',
 				hideMenu:function(){
 					$('#textDecoForm').css('display','none');
 					self.menuOpen = false;
 				},
+				reverseParse:function(s){
+					if(s.indexOf('<') === -1){ // no tags, nothing to do!
+						return $('<span>').html(s).text();
+					}
+					var bold = false,
+						italic = false,
+						underline = false,
+						fg = '-1',
+						bg = '-1';
+					s = s.replace(/<img([^>]*?)>/gi,function(match,args){
+						var m = args.match(/data-code="([^"]*)"/);
+						if(m){
+							return m[1];
+						}
+						return '';
+					});
+					s = s.replace(/<span([^>]*?)>([^<]*?)<\/span>/gi,function(match,args,str){
+						if(!args){
+							return str;
+						}
+						
+						s = '';
+						if((args.indexOf('bold')==-1) == bold){
+							bold = !bold;
+							s += '\x02';
+						}
+						if((args.indexOf('italic')==-1) == italic){
+							italic = !italic;
+							s += '\x1d';
+						}
+						if((args.indexOf('underline')==-1) == underline){
+							underline = !underline;
+							s += '\x1f';
+						}
+						var dfg = args.match(/fg-(\d+)/)
+							dbg = args.match(/bg-(\d+)/);
+						if(!dfg){
+							dfg = '-1';
+						}
+						if(!dbg){
+							dbg = '-1';
+						}
+						
+						if(dbg != bg || dfg != fg){
+							if((fg!='-1' && dfg == '-1') || (bg!='-1' && dbg == '-1')){
+								s = '\x0f';
+								if(bold){
+									s += '\x02';
+								}
+								if(italic){
+									s += '\x1d';
+								}
+								if(underline){
+									s += '\x1f';
+								}
+							}
+							s += '\x03';
+							fg = dfg;
+							if(fg != '-1'){
+								s += fg;
+							}
+							bg = dbg;
+							if(bg != '-1'){
+								s += ','+bg;
+							}
+						}
+						
+						return s+str;
+					});
+					return $('<span>').html(s).text();
+				},
+				getCaretCharacterOffsetWithin:function(elem){
+					var sel = window.getSelection();
+					if(sel.rangeCount > 0){
+						var range = sel.getRangeAt(0),
+							preCaretRange = range.cloneRange(),
+							extra = 0,
+							nodeRange = document.createRange();
+						preCaretRange.selectNodeContents(elem);
+						preCaretRange.setEnd(range.endContainer,range.endOffset);
+						for(var node of preCaretRange.commonAncestorContainer.getElementsByTagName('img')){
+							if(node.dataset.code){
+								nodeRange.selectNode(node);
+								if(preCaretRange.compareBoundaryPoints(Range.START_TO_START,nodeRange) != 1 && preCaretRange.compareBoundaryPoints(Range.END_TO_END,nodeRange) != -1){
+									extra += node.dataset.code.length;
+								}
+							}
+						}
+						return preCaretRange.toString().length + extra;
+					}
+					return 0;
+				},
+				getWholeSelection:function(elem){
+					var sel = window.getSelection(),
+						start,
+						range = sel.getRangeAt(0),
+						range_copy = range.cloneRange(),
+						end = self.getCaretCharacterOffsetWithin(elem);
+					range.collapse(true);
+					sel.removeAllRanges();
+					sel.addRange(range);
+					start = self.getCaretCharacterOffsetWithin(elem);
+					sel.removeAllRanges();
+					sel.addRange(range_copy);
+					return [start,end];
+				},
+				setCaretCharacterOffsetWithin:function(el,pos,length,range,haveStart){
+					if(length === undefined){
+						length = 0;
+					}
+					if(range === undefined){
+						range = document.createRange();
+					}
+					if(haveStart === undefined){
+						haveStart = false;
+					}
+					// Loop through all child nodes
+					for(var node of el.childNodes){
+						if(node.nodeType == 3){ // we have a text node
+							if(node.length >= pos){
+								// finally add our range
+								var sel = window.getSelection();
+								if(!haveStart){
+									range.setStart(node,pos);
+									haveStart = true;
+									pos += length;
+								}
+								if(haveStart && (node.length >= pos)){ // outside as if length is same we just do our stuff
+									range.setEnd(node,pos);
+									sel.removeAllRanges();
+									sel.addRange(range);
+									return -1; // we are done
+								}
+							}
+							pos -= node.length;
+						}else if(node.nodeType == 1){ // we might have an image!
+							if(node.tagName == 'IMG' && node.dataset.code){
+								if(node.dataset.code.length >= pos){
+									// finally add our range
+									var sel = window.getSelection();
+									if(!haveStart){
+										range.setStartAfter(node);
+										haveStart = true;
+										pos += length;
+									}
+									if(haveStart && (node.dataset.code.length >= pos)){ // outside as if length is same we just do our stuff
+										range.setEndAfter(node);
+										sel.removeAllRanges();
+										sel.addRange(range);
+										return -1; // we are done
+									}
+								}
+								pos -= node.dataset.code.length;
+							}else{
+								pos = self.setCaretCharacterOffsetWithin(node,pos,length,range,haveStart);
+								if(pos < 0){
+									return -1; // no need to finish the for loop
+								}
+							}
+						}else{
+							pos = self.setCaretCharacterOffsetWithin(node,pos,length,range,haveStart);
+							if(pos < 0){
+								return -1; // no need to finish the for loop
+							}
+						}
+					}
+					return pos; // needed because of recursion stuff
+				},
+				surroundSelection:function(before,after){
+					var sel = window.getSelection();
+					if(sel.rangeCount > 0){
+						var range = sel.getRangeAt(0),
+							startNode = range.startContainer,
+							startOffset = range.startOffset,
+							startTextNode = document.createTextNode(before),
+							endTextNode = document.createTextNode(after),
+							boundaryRange = range.cloneRange();
+						boundaryRange.collapse(false);
+						boundaryRange.insertNode(endTextNode);
+						boundaryRange.setStart(startNode,startOffset);
+						boundaryRange.collapse(true);
+						boundaryRange.insertNode(startTextNode);
+						
+						range.setStartAfter(startTextNode);
+						range.setEndBefore(endTextNode);
+						sel.removeAllRanges();
+						sel.addRange(range);
+					}
+				},
+				updateContent:function(start,end){
+					var $elem = $('#message');
+					if(start === undefined){
+						start = end = self.getCaretCharacterOffsetWithin($elem[0]);
+						console.log(start);
+					}
+					
+					self.msgVal = self.reverseParse($elem.html());
+					$elem.html(parser.parseMessage(self.msgVal));
+					var range = document.createRange();
+					
+					self.setCaretCharacterOffsetWithin($elem[0],start,end-start);
+				},
 				init:function(){
+					$('#message').on('input',function(e){
+						self.updateContent(); // we need the first argument to be undefined
+					});
 					$('#message').mouseup(function(e){
-						self.sel = window.getSelection();
-						if(self.sel.isCollapsed){
+						var sel = window.getSelection();
+						if(sel.isCollapsed){
 							return;
 						}
 						e.preventDefault();
@@ -2284,24 +2489,34 @@ var oirc = (function(){
 							self.hideMenu();
 						}
 					})
-					$('#textDecoFormBold').click(function(){
-						self.sel.getRangeAt(0).surroundContents($('<b>')[0]);
+					$('#textDecoForm .colorbutton').click(function(e){
+						e.preventDefault();
+						var num = this.dataset.num,
+							pos = self.getWholeSelection($('#message')[0]);
+						self.surroundSelection('\x03'+num,'\x0f');
+						self.updateContent(pos[0],pos[1]);
 					});
-					$('#textDecoFormItalic').click(function(){
-						self.sel.getRangeAt(0).surroundContents($('<i>')[0]);
+					$('#textDecoFormBold').click(function(e){
+						e.preventDefault();
+						var pos = self.getWholeSelection($('#message')[0]);
+						self.surroundSelection('\x02','\x02');
+						self.updateContent(pos[0],pos[1]);
 					});
-					$('#textDecoFormUnderline').click(function(){
-						self.sel.getRangeAt(0).surroundContents($('<u>')[0]);
+					$('#textDecoFormItalic').click(function(e){
+						e.preventDefault();
+						var pos = self.getWholeSelection($('#message')[0]);
+						self.surroundSelection('\x1d','\x1d');
+						self.updateContent(pos[0],pos[1]);
+					});
+					$('#textDecoFormUnderline').click(function(e){
+						e.preventDefault();
+						var pos = self.getWholeSelection($('#message')[0]);
+						self.surroundSelection('\x1f','\x1f');
+						self.updateContent(pos[0],pos[1]);
 					});
 				},
 				getMsg:function(){
-					var msg = $('#message').html();
-					msg = msg.split('<b>').join('\x02').split('</b>').join('\x02');
-					msg = msg.split('<i>').join('\x1d').split('</i>').join('\x1d');
-					msg = msg.split('<u>').join('\x1f').split('</u>').join('\x1f');
-					msg = msg.split('&nbsp;').join(' ');
-					msg = $('<span>').html(msg).text();
-					return msg;
+					return self.msgVal;
 				},
 				support:function(){
 					return (('contentEditable' in document.documentElement) && options.get('wysiwyg'));
@@ -2310,7 +2525,8 @@ var oirc = (function(){
 			return {
 				init:self.init,
 				getMsg:self.getMsg,
-				support:self.support
+				support:self.support,
+				updateContent:self.updateContent
 			}
 		})(),
 		page = (function(){
@@ -2349,6 +2565,7 @@ var oirc = (function(){
 										var range = window.getSelection().getRangeAt(0);
 										range.deleteContents();
 										range.insertNode(document.createTextNode(' '+s.code));
+										wysiwyg.updateContent();
 									}
 								})):''),' '];
 								
@@ -2757,13 +2974,11 @@ var oirc = (function(){
 							var val = '';
 							if(!wysiwyg.support()){
 								val = $('#message').val();
-								
-								oldMessages.add(val);
 							}else{
-								oldMessages.add($('#message').html());
 								val = wysiwyg.getMsg();
 							}
-							console.log(val);
+							oldMessages.add(val);
+							
 							val = parser.parseTextDecorations(val);
 							if(!$('#message').attr('disabled') && val!==''){
 								self.sendMessage(val);
@@ -3394,12 +3609,11 @@ var oirc = (function(){
 					return true;
 				},
 				setSmileys:function(sm){
-					var addStuff = '';
 					self.smileys = [];
 					$.each(sm,function(i,s){
 						self.smileys.push({
 							regex:s.regex,
-							replace:s.replace.split('ADDSTUFF').join(addStuff).split('PIC').join(s.pic).split('ALT').join(s.alt),
+							replace:s.replace.split('ADDSTUFF').join('data-code="'+s.code+'"').split('PIC').join(s.pic).split('ALT').join(s.alt),
 						});
 					});
 				},
@@ -3426,6 +3640,7 @@ var oirc = (function(){
 				setSmileys:self.setSmileys,
 				setSpLinks:self.setSpLinks,
 				setIgnoreList:self.setIgnoreList,
+				parseMessage:self.parseMessage,
 				parseTextDecorations:self.parseTextDecorations
 			};
 		})();
