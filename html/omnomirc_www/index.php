@@ -203,6 +203,7 @@ for($i = 0;$i < 16;$i++){
 }
 echo getPage('OmnomIRC','
 <noscript><meta http-equiv="refresh" content="0;url=index.php?textmode"></noscript>
+<script src="oirc_client.js"></script>
 ','
 <div id="header">
 	<div id="chattingHeader">

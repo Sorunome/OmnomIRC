@@ -98,7 +98,7 @@ while(true){
 	$lines = Array();
 	if($nick===false){
 		$lines[] = Array(
-			'curLine' => 0,
+			'curline' => 0,
 			'type' => 'relog',
 			'network' => 0,
 			'time' => time(),
@@ -120,7 +120,7 @@ while(true){
 		}
 		if(strpos($userSql['ignores'],strtolower($result['name1'])."\n")===false){
 			$lines[] = Array(
-				'curLine' => (int)$result['line_number'],
+				'curline' => (int)$result['line_number'],
 				'type' => 'highlight',
 				'network' => (int)$result['Online'],
 				'time' => (int)$result['time'],
@@ -132,7 +132,7 @@ while(true){
 			);
 		}else{
 			$lines[] = Array(
-				'curLine' => (int)$result['line_number'],
+				'curline' => (int)$result['line_number'],
 				'type' => 'curline',
 				'network' => 0,
 				'time' => time(),
@@ -153,7 +153,7 @@ while(true){
 		}
 		if(strpos($userSql['ignores'],strtolower($result['name1'])."\n")===false){
 			$lines[] = Array(
-				'curLine' => (int)$result['line_number'],
+				'curline' => (int)$result['line_number'],
 				'type' => $result['type'],
 				'network' => (int)$result['Online'],
 				'time' => (int)$result['time'],
@@ -165,7 +165,7 @@ while(true){
 			);
 		}else{
 			$lines[] = Array(
-				'curLine' => (int)$result['line_number'],
+				'curline' => (int)$result['line_number'],
 				'type' => 'curline',
 				'network' => 0,
 				'time' => time(),

@@ -77,7 +77,7 @@ while(true){
 	
 	foreach($res as $result){
 		$lines[] = array(
-			'curLine' => ($table=='{db_prefix}lines'?(int)$result['line_number']:0),
+			'curline' => ($table=='{db_prefix}lines'?(int)$result['line_number']:0),
 			'type' => $result['type'],
 			'network' => (int)$result['Online'],
 			'time' => (int)$result['time'],

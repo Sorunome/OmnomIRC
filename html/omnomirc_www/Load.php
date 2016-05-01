@@ -56,7 +56,7 @@ $json->add('admin',$you->isGlobalOp());
 $lines = $omnomirc->loadChannel($count);
 if(!isset($_GET['userlist'])){
 	array_push($lines,array(
-		'curLine' => (int)file_get_contents($config['settings']['curidFilePath']),
+		'curline' => (int)file_get_contents($config['settings']['curidFilePath']),
 		'type' => 'topic',
 		'network' => 0,
 		'time' => time(),
