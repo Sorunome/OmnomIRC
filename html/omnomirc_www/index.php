@@ -65,10 +65,22 @@ Options:
 20 - font size (fontSize)
 */
 	$page = \oirc\skin\getOptions();
+	if(!$page){
+		include_once(realpath(dirname(__FILE__)).'/skin_lobster.php');
+		$page = \oirc\skin\getOptions();
+	}
 }elseif(isset($_GET['admin'])){
 	$page = \oirc\skin\getAdmin();
+	if(!$page){
+		include_once(realpath(dirname(__FILE__)).'/skin_lobster.php');
+		$page = \oirc\skin\getAdmin();
+	}
 }else{
 	$page = \oirc\skin\getPage();
+	if(!$page){
+		include_once(realpath(dirname(__FILE__)).'/skin_lobster.php');
+		$page = \oirc\skin\getPage();
+	}
 }
 // combind with default options to make sure they always exist
 $page = array_merge(array(

@@ -827,8 +827,7 @@ $(function(){
 		oirc.onerror = oirc.error.addError;
 		oirc.onwarning = oirc.error.addWarning;
 		
-		oirc.connect(function(){
-			oirc.disconnect();
+		oirc.settings.fetch(function(){
 			
 			$('#adminNav a').click(function(e){
 				e.preventDefault();
