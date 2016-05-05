@@ -100,8 +100,8 @@ var oirc;
 					if(self.support_webkit){
 						window.webkitNotifications.requestPermission(function(){
 							if (window.webkitNotifications.checkPermission() === 0){
-								show('Notifications Enabled!');
-								options.set(7,true);
+								self.show('Notifications Enabled!');
+								oirc.options.set('browserNotifications',true);
 								document.location.reload();
 							}
 						});
@@ -111,8 +111,8 @@ var oirc;
 								Notification.permission = status;
 							}
 							if(status==='granted'){
-								show('Notifications Enabled!');
-								options.set(7,true);
+								self.show('Notifications Enabled!');
+								oirc.options.set('browserNotifications',true);
 								document.location.reload();
 							}
 						});
@@ -121,19 +121,19 @@ var oirc;
 					}
 				},
 				make:function(s,c){
-					if(instant.current()){
+					if(oirc.instant.current()){
 						if(oirc.options.get('browserNotifications')){
 							self.show(s);
 						}
 						if(oirc.options.get('ding')){
 							$('#ding')[0].play();
 						}
-						if(c!=channels.current().handler){
-							channels.highlight(c,true);
+						if(c!=oirc.channels.current().handler){
+							oirc.channels.highlight(c);
 						}
 					}else{
-						if(c!=channels.current().handler){
-							channels.highlight(c);
+						if(c!=oirc.channels.current().handler){
+							oirc.channels.highlight(c);
 						}
 					}
 					self.startFlash();
@@ -178,7 +178,7 @@ var oirc;
 						}
 						self.doFlash = false;
 						if(!noTransmit){
-							ls.set('stopFlash',Math.random().toString(36)+(new Date()).getTime().toString());
+							oirc.ls.set('stopFlash',Math.random().toString(36)+(new Date()).getTime().toString());
 						}
 					}
 				},
@@ -1346,180 +1346,11 @@ var oirc;
 				maxLines:200,
 				lastMessage:0,
 				lineHigh:false,
-				addLine:function(line,loadMode){
-					if(line.type!='highlight' && line.chan.toString().toLowerCase()!=oirc.channels.current().handler.toLowerCase() && line.name2 !== oirc.settings.getPmIdent()){
-						return;
-					}
+				addLine:function(tdName,tdMessage,line){
 					var $mBox = $('#MessageBox'),
-						name = oirc.parser.name(line.name,line.network,line.uid),
-						message = oirc.parser.parse(line.message),
-						tdName = '*',
-						tdMessage = message,
 						statusTxt = '',
 						lineDate = new Date(line.time*1000);
-					if(oirc.settings.nick() != '' && (['message','action','pm','pmaction'].indexOf(line.type)>=0) && line.name.toLowerCase() != '*' && message.toLowerCase().indexOf(oirc.settings.nick().toLowerCase().substr(0,oirc.options.get('charsHigh'))) >= 0){
-						tdMessage = message = oirc.parser.highlight(message);
-						if(!loadMode && page.isBlurred()){
-							notification.make('('+channels.current().name+') <'+line.name+'> '+line.message,line.chan);
-						}
-					}
-					switch(line.type){
-						case 'reload':
-							if(!loadMode){
-								oirc.channels.current().reload();
-							}
-							return;
-						case 'reload_userlist':
-							if(!loadMode){
-								oirc.channels.current().reloadUserlist();
-							}
-							return;
-						case 'relog':
-							if(!loadMode){
-								oirc.settings.fetch(undefined,true);
-							}
-							return;
-						case 'refresh':
-							if(!loadMode){
-								location.reload(true);
-							}
-							return;
-						case 'join':
-							tdMessage = [name,' has joined '+oirc.channels.current().name];
-							if(!loadMode){
-								oirc.users.add({
-									nick:line.name,
-									network:line.network
-								});
-							}
-							if(oirc.settings.getNetwork(line.network).type==1 && !oirc.options.get('oircJoinPart')){
-								return;
-							}
-							break;
-						case 'part':
-							tdMessage = [name,' has left '+oirc.channels.current().name+' (',message,')'];
-							if(!loadMode){
-								oirc.users.remove({
-									nick:line.name,
-									network:line.network
-								});
-							}
-							if(oirc.settings.getNetwork(line.network).type==1 && !oirc.options.get('oircJoinPart')){
-								return;
-							}
-							break;
-						case 'quit':
-							tdMessage = [name,' has quit IRC (',message,')'];
-							if(!loadMode){
-								oirc.users.remove({
-									nick:line.name,
-									network:line.network
-								});
-							}
-							if(oirc.settings.getNetwork(line.network).type==1 && !oirc.options.get('oircJoinPart')){
-								return;
-							}
-							break;
-						case 'kick':
-							tdMessage = [name,' has kicked ',oirc.parser.name(line.name2,line.network),' from '+oirc.channels.current().name+' (',message,')'];
-							if(!loadMode){
-								oirc.users.remove({
-									nick:line.name2,
-									network:line.network
-								});
-							}
-							break;
-						case 'message':
-							tdName = name;
-							break;
-						case 'action':
-							tdMessage = [name,' ',message];
-							break;
-						case 'mode':
-							if(typeof(message)=='string'){
-								message = line.message.split(' ');
-								$.each(message,function(i,v){
-									var n = $('<span>').html(v).text();
-									if(n.indexOf('+')==-1 && n.indexOf('-')==-1){
-										message[i] = oirc.parser.name(v,line.network);
-									}
-								});
-								message = message.join(' ');
-							}
-							tdMessage = [name,' set '+oirc.channels.current().name+' mode ',message];
-							break;
-						case 'nick':
-							tdMessage = [name,' has changed nicks to ',oirc.parser.name(line.name2,line.network)];
-							if(!loadMode){
-								oirc.users.add({
-									nick:line.name2,
-									network:line.network
-								});
-								oirc.users.remove({
-									nick:line.name,
-									network:line.network
-								});
-							}
-							break;
-						case 'topic':
-							topic.set(oirc.parser.parse(line.message,true));
-							if(line.name ==='' && line.network === 0 && loadMode){
-								return;
-							}
-							tdMessage = [name,' has changed the topic to ',oirc.parser.parse(line.message,true)];
-							break;
-						case 'pm':
-							if(line.chan==oirc.channels.current().handler){
-								tdName = name;
-								line.type = 'message';
-							}else{
-								if(!loadMode){
-									if(line.name.toLowerCase() == oirc.settings.nick().toLowerCase()){
-										oirc.channels.openPm(line.chan,oirc.settings.getWholePmIdent(line.uid,line.network));
-										return;
-									}else{
-										tdName = ['(PM)',name];
-										oirc.channels.openPm(line.name,oirc.settings.getWholePmIdent(line.uid,line.network));
-										notification.make('(PM) <'+line.name+'> '+line.message,line.chan);
-									}
-								}else{
-									return;
-								}
-							}
-							break;
-						case 'pmaction':
-							if(line.chan == channels.current().handler){
-								tdMessage = [name,' ',message];
-								line.type = 'action';
-							}else{
-								if(!loadMode){
-									if(line.name.toLowerCase() == oirc.settings.nick().toLowerCase()){
-										oirc.channels.openPm(line.chan,oirc.settings.getWholePmIdent(line.uid,line.network));
-										return;
-									}else{
-										tdMessage = ['(PM)',name,' ',message];
-										oirc.channels.openPm(line.name,oirc.settings.getWholePmIdent(line.uid,line.network));
-										notification.make('* (PM)'+line.name+' '+line.message,line.chan);
-										line.type = 'pm';
-									}
-								}else{
-									return;
-								}
-							}
-							break;
-						case 'highlight':
-							if(line.name.toLowerCase() != '*'){
-								notification.make('('+line.chan+') <'+line.name+'> '+line.message,line.chan);
-							}
-							return;
-						case 'internal':
-							tdMessage = line.message;
-							break;
-						case 'server':
-							break;
-						default:
-							return;
-					}
+					
 					if(($mBox.find('tr').length>self.maxLines) && loadMode!==true){
 						$mBox.find('tr:first').remove();
 					}
@@ -1639,6 +1470,9 @@ var oirc;
 		}
 	};
 	oirc.onchannelpart = oirc.channels.part;
+	oirc.ontopicchange = topic.set;
+	oirc.onnotification = notification.make;
+	
 	indicator.start();
 	oirc.connect(function(){
 		if(oirc.options.get('enable')){
