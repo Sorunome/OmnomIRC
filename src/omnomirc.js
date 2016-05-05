@@ -544,7 +544,10 @@ var OmnomIRC = function(){
 						self.allOptions[i].value = val;
 					});
 				},
-				getAll:function(){
+				getAll:function(raw){
+					if(raw){
+						return self.allOptions;
+					}
 					var a = {};
 					$.each(self.allOptions,function(i,v){
 						if(v.hidden===undefined || !v.hidden){
@@ -2074,6 +2077,23 @@ var OmnomIRC = function(){
 				init:self.init
 			};
 		})(),
+		page = (function(){
+			var self = {
+				changeLinks:function(){
+					// change links to add network
+					$('#adminLink a,a[href="."],a[href="?options"],a[href="index.php"]').each(function(){
+						if($(this).attr('href').split('?')[1] !== undefined){
+							$(this).attr('href',$(this).attr('href')+'&network='+oirc.settings.net());
+						}else{
+							$(this).attr('href',$(this).attr('href')+'?network='+oirc.settings.net());
+						}
+					});
+				}
+			};
+			return {
+				changeLinks:self.changeLinks
+			}
+		})(),
 		oirc;
 	
 	this.OMNOMIRCSERVER = OMNOMIRCSERVER;
@@ -2132,6 +2152,9 @@ var OmnomIRC = function(){
 		addWarning:error.addWarning,
 		addError:error.addError,
 		init:error.init
+	};
+	this.page = {
+		changeLinks:page.changeLinks
 	};
 	this.initinput = function($elem){
 		if($elem === undefined){

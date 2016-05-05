@@ -19,10 +19,9 @@
  *  along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
  */
 'use strict';
-var oirc;
 $(function(){
-	oirc = new OmnomIRC();
-	var  indicator = (function(){
+	var oirc = new OmnomIRC(),
+		indicator = (function(){
 			var self = {
 				interval:false,
 				$elem:false,
@@ -1265,7 +1264,7 @@ $(function(){
 					$('body').css('font-size',oirc.options.get('fontSize').toString(10)+'pt');
 					self.hide_userlist = oirc.options.get('hideUserlist');
 					self.show_scrollbar = oirc.options.get('scrollBar');
-					page.changeLinks();
+					oirc.page.changeLinks();
 					if(!wysiwyg.support()){
 						$('#message').replaceWith(
 							$('<input>').attr({
@@ -1337,16 +1336,6 @@ $(function(){
 						}
 					});
 				},
-				changeLinks:function(){
-					// change links to add network
-					$('#adminLink a,a[href="."],a[href="?options"],a[href="index.php"]').each(function(){
-						if($(this).attr('href').split('?')[1] !== undefined){
-							$(this).attr('href',$(this).attr('href')+'&network='+oirc.settings.net());
-						}else{
-							$(this).attr('href',$(this).attr('href')+'?network='+oirc.settings.net());
-						}
-					});
-				},
 				maxLines:200,
 				lastMessage:0,
 				lineHigh:false,
@@ -1406,7 +1395,6 @@ $(function(){
 				isBlurred:function(){
 					return self.isBlurred;
 				},
-				changeLinks:self.changeLinks,
 				registerToggle:self.registerToggle,
 				addLine:self.addLine
 			};
