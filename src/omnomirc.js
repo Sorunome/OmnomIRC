@@ -1975,94 +1975,196 @@ var OmnomIRC = function(){
 				addLine:self.addLine
 			};
 		})(),
-		
-		oirc = {
-			OMNOMIRCSERVER:OMNOMIRCSERVER,
-			settings:{
-				loggedIn:settings.loggedIn,
-				fetch:settings.fetch,
-				net:settings.net,
-				getNetwork:settings.getNetwork,
-				getPmIdent:settings.getPmIdent,
-				getWholePmIdent:settings.getWholePmIdent,
-				nick:settings.nick,
-				guestLevel:settings.guestLevel
-			},
-			ls:{
-				get:ls.get,
-				set:ls.set
-			},
-			network:{
-				getJSON:network.getJSON,
-				post:network.post
-			},
-			options:{
-				get:options.get,
-				set:options.set,
-				getAll:options.getAll
-			},
-			instant:{
-				current:instant.current
-			},
-			channels:{
-				load:channels.load,
-				join:channels.join,
-				joinPm:channels.joinPm,
-				part:channels.part,
-				getList:channels.getList,
-				getHandler:channels.getHandler,
-				getNames:channels.getNames,
-				current:channels.current,
-				setChans:channels.setChans,
-				highlight:channels.highlight
-			},
-			users:{
-				add:users.add,
-				remove:users.remove,
-				getNames:users.getNames
-			},
-			send:{
-				send:send.send,
-				internal:send.internal,
-				val:send.val
-			},
-			parser:{
-				parse:parser.parse,
-				name:parser.name,
-				highlight:parser.highlight
-			},
-			initinput:function($elem){
-				if($elem === undefined){
-					$elem = $('#message');
+		error = (function(){
+			var self = {
+				$errors:false,
+				$warnings:false,
+				errors:[],
+				warnings:[],
+				$errorsPopup:false,
+				$warningsPopup:false,
+				getSinglePopupEntry:function(e){
+					return $('<div>')
+						.css('border-bottom','1px solid black')
+						.append(
+							'Time: ',
+							(new Date(e.time)).toLocaleTimeString(),
+							'<br>File: ',
+							$('<span>').text(e.file).html(),
+							$.map(e.content,function(val,i){
+								return ['<br>',$('<span>').text(i).html(),': ',$('<span>').text(val).html()];
+							})
+						);
+				},
+				makePopup:function(type,data,fn){
+					return $('<div>')
+						.addClass('errorPopup')
+						.addClass(type.toLowerCase())
+						.append(
+							$('<a>')
+								.text('Close')
+								.click(function(e){
+									e.preventDefault();
+									$(this).parent().remove();
+									fn();
+								}),
+							'&nbsp;',
+							$('<b>')
+								.text(type),
+							$('<div>')
+								.addClass('errorPopupCont')
+								.append(
+									$.map(data,function(e){
+										return self.getSinglePopupEntry(e);
+									})
+								)
+						)
+						.appendTo('body');
+				},
+				init:function($e,$w){
+					if($e === undefined){
+						$e = $('#errors');
+					}
+					if($w === undefined){
+						$w = $('#warnings');
+					}
+					$e.click(function(){
+						if(!self.$errorsPopup){
+							self.$errorsPopup = self.makePopup('Errors',self.errors,function(){
+								self.$errorsPopup = false;
+							});
+						}
+					});
+					$w.click(function(){
+						if(!self.$warningsPopup){
+							self.$warningsPopup = self.makePopup('Warnings',self.warnings,function(){
+								self.$warningsPopup = false;
+							});
+						}
+					});
+					self.$errors = $e;
+					self.$warnings = $w;
+				},
+				addError:function(s,e){
+					self.errors.push({
+						time:(new Date().getTime()),
+						file:s,
+						content:e
+					});
+					self.$errors.css('display','').find('.count').text(self.errors.length);
+					if(self.$errorsPopup){
+						self.$errorsPopup.children('div').append(self.getSinglePopupEntry(self.errors[self.errors.length - 1]));
+					}
+				},
+				addWarning:function(s,e){
+					self.warnings.push({
+						time:(new Date().getTime()),
+						file:s,
+						content:e
+					});
+					self.$warnings.css('display','').find('.count').text(self.warnings.length)
+					if(self.$warningsPopup){
+						self.$warningsPopup.children('div').append(self.getSinglePopupEntry(self.warnings[self.warnings.length - 1]));
+					}
 				}
-				$input = $elem;
-				tab.init();
-				oldMessages.init();
-			},
-			connect:function(callback){
-				settings.fetch(function(){
-					instant.init();
-					request.init();
-					channels.init();
-					callback();
-				});
-			},
-			disconnect:function(){
-				instant.kill();
-				request.kill();
-			},
-			onerror:function(){},
-			onwarning:function(){},
-			onmessage:function(){},
-			onmessageraw:false,
-			onuserchange:function(){},
-			onchannelchange:function(){},
-			onchanneljoin:function(){},
-			onchannelpart:function(){},
-			onsetval:false,
-			ongetval:false,
-			ontopicchange:function(){},
-			onnotification:function(){}
-		};
-	return oirc;
-}
+			};
+			return {
+				addError:self.addError,
+				addWarning:self.addWarning,
+				init:self.init
+			};
+		})(),
+		oirc;
+	
+	this.OMNOMIRCSERVER = OMNOMIRCSERVER;
+	this.settings = {
+		loggedIn:settings.loggedIn,
+		fetch:settings.fetch,
+		net:settings.net,
+		getNetwork:settings.getNetwork,
+		getPmIdent:settings.getPmIdent,
+		getWholePmIdent:settings.getWholePmIdent,
+		nick:settings.nick,
+		guestLevel:settings.guestLevel
+	};
+	this.ls = {
+		get:ls.get,
+		set:ls.set
+	};
+	this.network = {
+		getJSON:network.getJSON,
+		post:network.post
+	};
+	this.options = {
+		get:options.get,
+		set:options.set,
+		getAll:options.getAll
+	};
+	this.instant = {
+		current:instant.current
+	};
+	this.channels = {
+		load:channels.load,
+		join:channels.join,
+		joinPm:channels.joinPm,
+		part:channels.part,
+		getList:channels.getList,
+		getHandler:channels.getHandler,
+		current:channels.current,
+		setChans:channels.setChans,
+		highlight:channels.highlight
+	};
+	this.users = {
+		add:users.add,
+		remove:users.remove,
+	};
+	this.send = {
+		send:send.send,
+		internal:send.internal,
+		val:send.val
+	};
+	this.parser = {
+		parse:parser.parse,
+		name:parser.name,
+		highlight:parser.highlight
+	};
+	this.error = {
+		addWarning:error.addWarning,
+		addError:error.addError,
+		init:error.init
+	};
+	this.initinput = function($elem){
+		if($elem === undefined){
+			$elem = $('#message');
+		}
+		$input = $elem;
+		tab.init();
+		oldMessages.init();
+	};
+	this.connect = function(callback){
+		settings.fetch(function(){
+			instant.init();
+			request.init();
+			channels.init();
+			callback();
+		});
+	};
+	this.disconnect = function(){
+		instant.kill();
+		request.kill();
+	};
+	
+	this.onerror = function(){};
+	this.onwarning = function(){};
+	this.onmessage = function(){};
+	this.onmessageraw = false;
+	this.onuserchange = function(){};
+	this.onchannelchange = function(){};
+	this.onchanneljoin = function(){};
+	this.onchannelpart = function(){};
+	this.onsetval = false;
+	this.ongetval = false;
+	this.ontopicchange = function(){};
+	this.onnotification = function(){};
+	oirc = this;
+};

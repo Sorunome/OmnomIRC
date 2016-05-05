@@ -20,8 +20,8 @@
  */
 'use strict';
 var oirc;
-(function(){
-	oirc = OmnomIRC();
+$(function(){
+	oirc = new OmnomIRC();
 	var  indicator = (function(){
 			var self = {
 				interval:false,
@@ -353,7 +353,11 @@ var oirc;
 					$('.chan').removeClass('curchan');
 					oirc.channels.load(i,function(success,data){
 						if(success){
-							
+							if(data.admin){
+								$('#adminLink').css('display','');
+							}else{
+								$('#adminLink').css('display','none');
+							}
 							if(oirc.settings.loggedIn()){
 								$('#message').removeAttr('disabled');
 							}
@@ -1439,17 +1443,15 @@ var oirc;
 				set:self.set
 			};
 		})();
-
-
+	
+	
+	indicator.start();
+	oirc.error.init();
+	
 	oirc.onmessage = page.addLine;
-	oirc.onerror = function(url,error){
-		console.error(url);
-		console.error(error);
-	};
-	oirc.onwarning = function(url,warning){
-		console.info(url);
-		console.info(warning);
-	};
+	oirc.onerror = oirc.error.addError;
+	oirc.onwarning = oirc.error.addWarning;
+	
 	oirc.onuserchange = users.draw;
 	oirc.onchannelchange = channels.draw;
 	oirc.onchanneljoin = function(c){
@@ -1473,7 +1475,6 @@ var oirc;
 	oirc.ontopicchange = topic.set;
 	oirc.onnotification = notification.make;
 	
-	indicator.start();
 	oirc.connect(function(){
 		if(oirc.options.get('enable')){
 			page.init();
@@ -1501,4 +1502,4 @@ var oirc;
 			indicator.stop();
 		}
 	});
-})();
+});
