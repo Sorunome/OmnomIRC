@@ -21,6 +21,7 @@
 'use strict';
 var OmnomIRC = function(){
 	var OMNOMIRCSERVER = 'https://omnomirc.omnimaga.org',
+		$input = false,
 		eventOnMessage = function(line,loadMode){
 			if(loadMode === undefined){
 				loadMode = false;
@@ -29,7 +30,12 @@ var OmnomIRC = function(){
 			if(line.name === null || line.network == -1){
 				return;
 			}
+			if(oirc.onmessageraw !== false){
+				oirc.onmessageraw(line,loadMode);
+				return;
+			}
 			oirc.onmessage(line,loadMode);
+//			parser.addLine(line,loadMode);
 		},
 		settings = (function(){
 			var self = {
@@ -480,7 +486,7 @@ var OmnomIRC = function(){
 					},
 					wysiwyg:{
 						disp:'Use WYSIWYG editor',
-						default:true
+						default:false
 					},
 					textDeco:{
 						disp:'Enable simple text decorations',
@@ -1020,6 +1026,10 @@ var OmnomIRC = function(){
 						}
 					});
 					if(addChan===true){
+						if(s[0] == '#'){
+							send.internal('<span style="color:#C73232;">Join Error: Cannot join new channels starting with #.</span>');
+							return -1;
+						}
 						self.chans.push({
 							chan:s,
 							high:false,
@@ -1066,6 +1076,8 @@ var OmnomIRC = function(){
 								self.save();
 								request.joinChan(self.getHandler(i));
 								request.start();
+								tab.load();
+								oldMessages.read();
 								fn(true,data);
 								return;
 							}
@@ -1076,11 +1088,10 @@ var OmnomIRC = function(){
 				join:function(s){
 					var addChan = true;
 					s = s.trim();
-					if(s.substr(0,1) == '#'){
-						send.internal('<span style="color:#C73232;">Join Error: Cannot join new channels starting with #.</span>');
+					if(!s){
 						return -1;
 					}
-					if(s.substr(0,1) != '@'){
+					if(s[0] != '@' && s[0] != '#'){
 						s = '@' + s;
 					}
 					// s will now be either prefixed with # or with @
@@ -1110,10 +1121,11 @@ var OmnomIRC = function(){
 							return;
 						}
 						network.getJSON('misc.php?openpm='+base64.encode(s),function(data){
-							if(data.chanid){
+							if(data.channick){
 								callback(data.channick,data.chanid);
 							}else{
 								send.internal('<span style="color:#C73232;">Query Error: User not found.</span>');
+								fn(-1);
 							}
 						});
 					}else{
@@ -1126,21 +1138,29 @@ var OmnomIRC = function(){
 					}
 					if((typeof i)!='number'){
 						// a string was passed, we need to get the correct i
+						if(i && i[0] != '@'){
+							i = '@'+i;
+						}
 						$.each(self.chans,function(ci,c){
 							if(c.chan == i){
 								i = ci;
+								return false; // break the loop
 							}
 						});
 					}
 					if((typeof i)!='number' || self.chans[i] === undefined){ // we aren#t in the channel
-						send.internal('<span style="color:#C73232;"> Part Error: I cannot part '+i+'. (You are not in it.)</span>');
-						return -1;
+						send.internal('<span style="color:#C73232;"> Part Error: can\'t part '+i+'. (You are not in it.)</span>');
+						return false;
 					}
-					if(self.chans[i].chan.substr(0,1)=='#'){
-						send.internal('<span style="color:#C73232;"> Part Error: I cannot part '+self.chans[i].chan+'. (IRC channel.)</span>');
-						return -1;
+					if(self.chans[i].chan[0]=='#'){
+						send.internal('<span style="color:#C73232;"> Part Error: can\'t part '+self.chans[i].chan+'. (IRC channel.)</span>');
+						return false;
 					}
-					var chanId = self.chans[i].chanId;
+					var chanId = self.chans[i].chanId,
+						selected = false;
+					if(self.current.is(i)){
+						selected = true;
+					}
 					if(chanId == -1){
 						chanId = self.chans[i];
 					}
@@ -1148,13 +1168,20 @@ var OmnomIRC = function(){
 					self.chans.splice(i,1);
 					self.save();
 					oirc.onchannelchange(self.chans);
-					return i;
+					if(selected){
+						oirc.onchanneljoin(self.chans[i-1].chan);
+					}
+					return true;
 				},
 				getList:function(){
 					return self.chans;
 				},
 				setChans:function(c){
 					self.chans = c;
+					if(self.current){
+						self.save();
+						oirc.onchannelchange(self.chans);
+					}
 				},
 				getNames:function(){
 					return $.map(self.chans,function(c){
@@ -1252,7 +1279,7 @@ var OmnomIRC = function(){
 							if(settings.isGuest()){
 								send.internal('<span style="color:#C73232;"><b>ERROR:</b> can\'t join as guest</span>');
 							}else{
-								channels.open(parameters);
+								oirc.onchanneljoin(parameters);
 							}
 							return true;
 						case 'q':
@@ -1260,17 +1287,24 @@ var OmnomIRC = function(){
 							if(settings.isGuest()){
 								send.internal('<span style="color:#C73232;"><b>ERROR:</b> can\'t query as guest</span>');
 							}else{
-								channels.openPm(parameters,'',true);
+								oirc.onchanneljoin('*'+parameters);
 							}
 							return true;
 						case 'win':
 						case 'w':
 						case 'window':
-							channels.join(parseInt(parameters,10));
+							var c = channels.getList()[parseInt(parameters,10)];
+							if(c!==undefined){
+								oirc.onchanneljoin(c.chan);
+							}
 							return true;
 						case 'p':
 						case 'part':
-							channels.part((parameters!==''?parameters:undefined));
+							if(parameters !== ''){
+								oirc.onchannelpart(parameters);
+							}else{
+								oirc.onchannelpart(channels.current().name);
+							}
 							return true;
 						case 'help':
 							send.internal('<span style="color:#2A8C2A;">Commands: me, ignore, unignore, ignorelist, join, part, query, msg, window</span>');
@@ -1298,10 +1332,22 @@ var OmnomIRC = function(){
 		send = (function(){
 			var self = {
 				sending:false,
-				send:function(s,fn,chan){
+				send:function(fn,s,chan){
+					if(typeof fn === 'string'){
+						s = fn;
+						fn = undefined;
+					}
 					if(fn === undefined){
 						fn = function(){};
 					}
+					if(s === undefined){
+						s = send.val();
+					}
+					if(!s){
+						fn();
+						return;
+					}
+					oldMessages.add(s);
 					if(s !== '' && options.get('textDeco')){
 						if(s[0] == '>'){
 							s = '\x033'+s;
@@ -1326,7 +1372,7 @@ var OmnomIRC = function(){
 					}
 				},
 				internal:function(s){
-					hookOnMessage({
+					eventOnMessage({
 						curLine:0,
 						type:'internal',
 						time:Math.floor((new Date()).getTime()/1000),
@@ -1335,11 +1381,194 @@ var OmnomIRC = function(){
 						name2:'',
 						chan:channels.current().handler
 					});
+				},
+				val:function(s){
+					if(s===undefined){
+						if(oirc.ongetval===false){
+							if($input.is('input')){
+								return $input.val();
+							}
+							return $input.text();
+						}
+						return oirc.ongetval();
+					}
+					if(oirc.onsetval===false){
+						if($input.is('input')){
+							$input.val(s);
+						}else{
+							$input.text(s);
+						}
+					}else{
+						oirc.onsetval(s);
+					}
+					
 				}
 			};
 			return {
 				internal:self.internal,
-				send:self.send
+				send:self.send,
+				val:self.val
+			};
+		})(),
+		tab = (function(){
+			var self = {
+				tabWord:'',
+				tabCount:0,
+				isInTab:false,
+				startPos:0,
+				startChar:'',
+				endPos:0,
+				endChar:'',
+				endPos0:0,
+				tabAppendStr:'',
+				searchArray:[],
+				node:false,
+				wysiwyg:false,
+				getCurrentWord:function(){
+					var messageVal = (!self.wysiwyg?$input[0].value:(self.node = window.getSelection().anchorNode).nodeValue);
+					if(self.isInTab){
+						return self.tabWord;
+					}
+					self.startPos = (!self.wysiwyg?$input[0].selectionStart:window.getSelection().anchorOffset);
+					self.startChar = messageVal.charAt(self.startPos);
+					while(self.startChar != ' ' && --self.startPos > 0){
+						self.startChar = messageVal.charAt(self.startPos);
+					}
+					if(self.startChar == ' '){
+						self.startPos++;
+					}
+					self.endPos = (!self.wysiwyg?$input[0].selectionStart:window.getSelection().anchorOffset);
+					self.endChar = messageVal.charAt(self.endPos);
+					while(self.endChar != ' ' && ++self.endPos <= messageVal.length){
+						self.endChar = messageVal.charAt(self.endPos);
+					}
+					self.endPos0 = self.endPos;
+					self.tabWord = messageVal.substr(self.startPos,self.endPos - self.startPos).trim();
+					return self.tabWord;
+				},
+				getTabComplete:function(){
+					var messageVal = (!self.wysiwyg?$input[0].value:self.node.nodeValue),
+						name;
+					if(messageVal === null){
+						return;
+					}
+					name = self.search(self.getCurrentWord(),self.tabCount);
+					if(!self.isInTab){
+						self.tabAppendStr = ' ';
+						if(self.startPos===0){
+							self.tabAppendStr = ': ';
+						}
+					}
+					if(name == self.getCurrentWord()){
+						self.tabCount = 0;
+						name = self.search(self.getCurrentWord(),self.tabCount);
+					}
+					messageVal = messageVal.substr(0,self.startPos)+name+self.tabAppendStr+messageVal.substr(self.endPos+1);
+					if(!self.wysiwyg){
+						$input[0].value = messageVal;
+					}else{
+						window.getSelection().anchorNode.nodeValue = messageVal;
+						window.getSelection().getRangeAt(0).setEnd(self.node,self.startPos+name.length+self.tabAppendStr.length);
+						window.getSelection().getRangeAt(0).setStart(self.node,self.startPos+name.length+self.tabAppendStr.length);
+					}
+					self.endPos = self.endPos0+name.length+self.tabAppendStr.length;
+				},
+				search:function(start,startAt){
+					var res = false;
+					if(!startAt){
+						startAt = 0;
+					}
+					$.each(self.searchArray,function(i,u){
+						if(u.toLowerCase().indexOf(start.toLowerCase()) === 0 && startAt-- <= 0 && res === false){
+							res = u;
+						}
+					});
+					if(res!==false){
+						return res;
+					}
+					return start;
+				},
+				init:function(){
+					self.wysiwyg = !$input.is('input');
+					$input.keydown(function(e){
+						if(e.keyCode == 9){
+							if(!e.ctrlKey){
+								e.preventDefault();
+								
+								self.getTabComplete();
+								self.isInTab = true;
+								self.tabCount++;
+								setTimeout(1,1);
+							}
+						}else{
+							self.tabWord = '';
+							self.tabCount = 0;
+							self.isInTab = false;
+						}
+					});
+				},
+				load:function(){
+					self.searchArray = $.merge(users.getNames(),channels.getNames());
+				}
+			};
+			return {
+				init:self.init,
+				load:self.load
+			};
+		})(),
+		oldMessages = (function(){
+			var self = {
+				messages:[],
+				counter:0,
+				current:'',
+				init:function(){
+					$input.keydown(function(e){
+						if(e.keyCode==38 || e.keyCode==40){
+							e.preventDefault();
+							if(self.counter==self.messages.length){
+								self.current = send.val();
+							}
+							if(self.messages.length!==0){
+								if(e.keyCode==38){ //up
+									if(self.counter!==0){
+										self.counter--;
+									}
+									send.val(self.messages[self.counter]);
+								}else{ //down
+									if(self.counter!=self.messages.length){
+										self.counter++;
+									}
+									if(self.counter==self.messages.length){
+										send.val(self.current);
+									}else{
+										send.val(self.messages[self.counter]);
+									}
+								}
+							}
+						}
+					});
+				},
+				add:function(s){
+					self.messages.push(s);
+					if(self.messages.length>20){
+						self.messages.shift();
+					}
+					self.counter = self.messages.length;
+					oirc.ls.set('oldMessages-'+oirc.channels.current().handlerB64,self.messages);
+				},
+				read:function(){
+					self.messages = oirc.ls.get('oldMessages-'+oirc.channels.current().handlerB64);
+					if(!self.messages){
+						self.messages = [];
+					}
+					console.log(self.messages);
+					self.counter = self.messages.length;
+				}
+			};
+			return {
+				init:self.init,
+				add:self.add,
+				read:self.read
 			};
 		})(),
 		parser = (function(){
@@ -1571,7 +1800,8 @@ var OmnomIRC = function(){
 				getNetwork:settings.getNetwork,
 				getPmIdent:settings.getPmIdent,
 				getWholePmIdent:settings.getWholePmIdent,
-				nick:settings.nick
+				nick:settings.nick,
+				guestLevel:settings.guestLevel
 			},
 			ls:{
 				get:ls.get,
@@ -1607,12 +1837,21 @@ var OmnomIRC = function(){
 			},
 			send:{
 				send:send.send,
-				internal:send.internal
+				internal:send.internal,
+				val:send.val
 			},
 			parser:{
 				parse:parser.parse,
 				name:parser.name,
 				highlight:parser.highlight
+			},
+			initinput:function($elem){
+				if($elem === undefined){
+					$elem = $('#message');
+				}
+				$input = $elem;
+				tab.init();
+				oldMessages.init();
 			},
 			connect:function(callback){
 				settings.fetch(function(){
@@ -1629,8 +1868,13 @@ var OmnomIRC = function(){
 			onerror:function(){},
 			onwarning:function(){},
 			onmessage:function(){},
+			onmessageraw:false,
 			onuserchange:function(){},
-			onchannelchange:function(){}
+			onchannelchange:function(){},
+			onchanneljoin:function(){},
+			onchannelpart:function(){},
+			onsetval:false,
+			ongetval:false
 		};
 	return oirc;
 }

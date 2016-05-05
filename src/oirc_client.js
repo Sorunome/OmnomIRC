@@ -241,10 +241,10 @@ var oirc;
 								startDrag(elem);
 								e.preventDefault();
 							}else if($(elem).hasClass('dragging')){
-								var newX = mouseX - offsetX;
+								var newX = mouseX - offsetX,
+									$ne = $('#topicDragPlaceHolder').next('.chanList'),
+									$pe = $('#topicDragPlaceHolder').prev('.chanList');
 								$(elem).css('left',newX);
-								$ne = $('#topicDragPlaceHolder').next('.chanList');
-								$pe = $('#topicDragPlaceHolder').prev('.chanList');
 								if($ne.length > 0 && ($ne.position().left) < (newX + (width/2))){
 									$ne.after($('#topicDragPlaceHolder').remove());
 								}else if($pe.length > 0){
@@ -292,7 +292,7 @@ var oirc;
 													})
 													.mouseup(function(e){
 														if(canClick){
-															channels.part(i);
+															oirc.channels.part(i);
 														}
 													})
 													.text('x')
@@ -353,8 +353,6 @@ var oirc;
 					$('.chan').removeClass('curchan');
 					oirc.channels.load(i,function(success,data){
 						if(success){
-							tab.load();
-							oldMessages.read();
 							
 							if(oirc.settings.loggedIn()){
 								$('#message').removeAttr('disabled');
@@ -372,111 +370,6 @@ var oirc;
 				init:self.init,
 				draw:self.draw,
 				join:self.join
-			};
-		})(),
-		tab = (function(){
-			var self = {
-				tabWord:'',
-				tabCount:0,
-				isInTab:false,
-				startPos:0,
-				startChar:'',
-				endPos:0,
-				endChar:'',
-				endPos0:0,
-				tabAppendStr:'',
-				searchArray:[],
-				node:false,
-				getCurrentWord:function(){
-					var messageVal = (!wysiwyg.support()?$('#message')[0].value:(self.node = window.getSelection().anchorNode).nodeValue);
-					if(self.isInTab){
-						return self.tabWord;
-					}
-					self.startPos = (!wysiwyg.support()?$('#message')[0].selectionStart:window.getSelection().anchorOffset);
-					self.startChar = messageVal.charAt(self.startPos);
-					while(self.startChar != ' ' && --self.startPos > 0){
-						self.startChar = messageVal.charAt(self.startPos);
-					}
-					if(self.startChar == ' '){
-						self.startPos++;
-					}
-					self.endPos = (!wysiwyg.support()?$('#message')[0].selectionStart:window.getSelection().anchorOffset);
-					self.endChar = messageVal.charAt(self.endPos);
-					while(self.endChar != ' ' && ++self.endPos <= messageVal.length){
-						self.endChar = messageVal.charAt(self.endPos);
-					}
-					self.endPos0 = self.endPos;
-					self.tabWord = messageVal.substr(self.startPos,self.endPos - self.startPos).trim();
-					return self.tabWord;
-				},
-				getTabComplete:function(){
-					var messageVal = (!wysiwyg.support()?$('#message')[0].value:self.node.nodeValue),
-						name;
-					if(messageVal === null){
-						return;
-					}
-					name = self.search(self.getCurrentWord(),self.tabCount);
-					if(!self.isInTab){
-						self.tabAppendStr = ' ';
-						if(self.startPos===0){
-							self.tabAppendStr = ': ';
-						}
-					}
-					if(name == self.getCurrentWord()){
-						self.tabCount = 0;
-						name = self.search(self.getCurrentWord(),self.tabCount);
-					}
-					messageVal = messageVal.substr(0,self.startPos)+name+self.tabAppendStr+messageVal.substr(self.endPos+1);
-					if(!wysiwyg.support()){
-						$('#message')[0].value = messageVal;
-					}else{
-						window.getSelection().anchorNode.nodeValue = messageVal;
-						window.getSelection().getRangeAt(0).setEnd(self.node,self.startPos+name.length+self.tabAppendStr.length);
-						window.getSelection().getRangeAt(0).setStart(self.node,self.startPos+name.length+self.tabAppendStr.length);
-					}
-					self.endPos = self.endPos0+name.length+self.tabAppendStr.length;
-				},
-				search:function(start,startAt){
-					var res = false;
-					if(!startAt){
-						startAt = 0;
-					}
-					$.each(self.searchArray,function(i,u){
-						if(u.toLowerCase().indexOf(start.toLowerCase()) === 0 && startAt-- <= 0 && res === false){
-							res = u;
-						}
-					});
-					if(res!==false){
-						return res;
-					}
-					return start;
-				},
-				init:function(){
-					$('#message')
-						.keydown(function(e){
-							if(e.keyCode == 9){
-								if(!e.ctrlKey){
-									e.preventDefault();
-									
-									self.getTabComplete();
-									self.isInTab = true;
-									self.tabCount++;
-									setTimeout(1,1);
-								}
-							}else{
-								self.tabWord = '';
-								self.tabCount = 0;
-								self.isInTab = false;
-							}
-						});
-				},
-				load:function(){
-					self.searchArray = $.merge(oirc.users.getNames(),oirc.channels.getNames());
-				}
-			};
-			return {
-				init:self.init,
-				load:self.load
 			};
 		})(),
 		users = (function(){
@@ -1143,6 +1036,13 @@ var oirc;
 					self.setCaretCharacterOffsetWithin($elem[0],start,end-start);
 				},
 				init:function(){
+					oirc.onsetval = function(s){
+						self.msgVal = s;
+						$('#message').html(oirc.parser.parse(s));
+					};
+					oirc.ongetval = function(){
+						return self.msgVal;
+					}
 					$('#message').on('input',function(e){
 						self.updateContent(); // we need the first argument to be undefined
 					});
@@ -1190,9 +1090,6 @@ var oirc;
 						self.surroundSelection('\x1f','\x1f');
 						self.updateContent(pos[0],pos[1]);
 					});
-				},
-				getMsg:function(){
-					return self.msgVal;
 				},
 				support:function(){
 					return (('contentEditable' in document.documentElement) && oirc.options.get('wysiwyg'));
@@ -1307,7 +1204,7 @@ var oirc;
 									request.identify();
 									$('#pickUsernamePopup').hide();
 									$('#message').removeAttr('disabled');
-									send.val('');
+									oirc.send.val('');
 									if(remember){
 										ls.set('guestName',name);
 										ls.set('guestSig',data.signature);
@@ -1333,7 +1230,7 @@ var oirc;
 							});
 						},
 						loginFail = function(){
-							send.val('You need to pick a username if you want to chat!');
+							oirc.send.val('You need to pick a username if you want to chat!');
 							$('#message').attr('disabled',true);
 							$('#loginForm > button').show();
 							$('#guestName').hide();
@@ -1386,8 +1283,8 @@ var oirc;
 					}
 					
 					if(!oirc.settings.loggedIn()){
-						send.val('You need to login if you want to chat!');
-						if(settings.guestLevel() >= 2){ // display the stuff for login form
+						oirc.send.val('You need to login if you want to chat!');
+						if(oirc.settings.guestLevel() >= 2){ // display the stuff for login form
 							self.initGuestLogin();
 						}
 					}
@@ -1403,7 +1300,6 @@ var oirc;
 							.appendTo('head');
 					}
 					scroll.init();
-					tab.init();
 					
 					notification.init();
 					self.registerToggle();
@@ -1424,27 +1320,15 @@ var oirc;
 					});
 					smileys.init();
 					
-					oldMessages.init();
 					$('#sendMessage').submit(function(e){
 						e.preventDefault();
 						if(oirc.settings.loggedIn()){
-							var val = '';
-							if(!wysiwyg.support()){
-								val = $('#message').val();
-							}else{
-								val = wysiwyg.getMsg();
-							}
-							oldMessages.add(val);
 							
-							if(!$('#message').attr('disabled') && val!==''){
-								oirc.send.send(val,function(){
-									if(!wysiwyg.support()){
-										$('#message').val('');
-									}else{
-										$('#message').text('');
-									}
+							if(!$('#message').attr('disabled')){
+								oirc.send.send(function(){
+									oirc.send.val('');
+									$('#message').focus(); // fix IE not doing that automatically
 								});
-								$('#message').focus(); // fix IE not doing that automatically
 							}
 						}
 					});
@@ -1723,67 +1607,6 @@ var oirc;
 			return {
 				set:self.set
 			};
-		})(),
-		oldMessages = (function(){
-			var self = {
-				messages:[],
-				counter:0,
-				current:'',
-				getMsg:function(){
-					if(!wysiwyg.support()){
-						return $('#message').val();
-					}
-					return $('#message').html();
-				},
-				init:function(){
-					$('#message').keydown(function(e){
-						if(e.keyCode==38 || e.keyCode==40){
-							e.preventDefault();
-							if(self.counter==self.messages.length){
-								self.current = self.getMsg();
-							}
-							if(self.messages.length!==0){
-								if(e.keyCode==38){ //up
-									if(self.counter!==0){
-										self.counter--;
-									}
-									send.val(self.messages[self.counter]);
-								}else{ //down
-									if(self.counter!=self.messages.length){
-										self.counter++;
-									}
-									if(self.counter==self.messages.length){
-										send.val(self.current);
-									}else{
-										send.val(self.messages[self.counter]);
-									}
-								}
-							}
-						}
-					});
-				},
-				add:function(s){
-					self.messages.push(s);
-					if(self.messages.length>20){
-						self.messages.shift();
-					}
-					self.counter = self.messages.length;
-					oirc.ls.set('oldMessages-'+oirc.channels.current().handlerB64,self.messages);
-				},
-				read:function(){
-					self.messages = oirc.ls.get('oldMessages-'+oirc.channels.current().handlerB64);
-					if(!self.messages){
-						self.messages = [];
-					}
-					console.log(self.messages);
-					self.counter = self.messages.length;
-				}
-			};
-			return {
-				init:self.init,
-				add:self.add,
-				read:self.read
-			};
 		})();
 
 
@@ -1798,13 +1621,32 @@ var oirc;
 	};
 	oirc.onuserchange = users.draw;
 	oirc.onchannelchange = channels.draw;
+	oirc.onchanneljoin = function(c){
+		if(!c){
+			return;
+		}
+		if(c[0] == '*'){ // pm!
+			oirc.channels.joinPm(c.substring(1),'',function(i){
+				if(i != -1){
+					channels.join(i);
+				}
+			});
+			return;
+		}
+		var i = oirc.channels.join(c);
+		if(i != -1){
+			channels.join(i);
+		}
+	};
+	oirc.onchannelpart = oirc.channels.part;
 	indicator.start();
 	oirc.connect(function(){
 		if(oirc.options.get('enable')){
 			page.init();
+			oirc.initinput();
 			channels.join(oirc.options.get('curChan'),function(success){
 				if(!success){
-					oirc.chanels.join(0);
+					channels.join(0);
 				}
 			});
 		}else{

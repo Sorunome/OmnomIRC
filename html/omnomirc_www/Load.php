@@ -68,10 +68,11 @@ if(!isset($_GET['userlist'])){
 	));
 }
 $json->add('lines',$lines);
-$users = $sql->query_prepare("SELECT `username` AS `nick`,`online` AS `network` FROM `{db_prefix}users` WHERE `channel`=? AND `isOnline`=1 AND `username` IS NOT NULL ORDER BY `username`",array($channel));
+$users = $sql->query_prepare("SELECT `username` AS `nick`,`online` AS `network` FROM `{db_prefix}users` WHERE `channel`=? AND `isOnline`=1 AND `username` IS NOT NULL ORDER BY `username`",array((string)$channel)); // cast to string else (int)0 will be intepreted wrong by mysql
 if($users[0]['nick'] === NULL){
 	$users = array();
 }
+
 $json->add('users',$users);
 if($you->isLoggedIn()){
 	$userSql = $you->info();
