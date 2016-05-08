@@ -18,7 +18,7 @@ debug: mini
 			cp "$(OIRCHTML)/$$f" "$(WORKDIR)/$$f";					\
 		fi										\
 	done
-	for f in $$(find src -name '*.js'); do	\
+	for f in $$(find src); do	\
 		f=$${f:4};			\
 		cp "src/$$f" "$(WORKDIR)/$$f";	\
 	done

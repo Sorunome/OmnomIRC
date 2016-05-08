@@ -762,7 +762,7 @@ var OmnomIRC = function(){
 								self.old.handler = false;
 								self.old.lastSuccess = (new Date).getTime();
 								if(data.lines!==undefined){
-									$.each(data.lines,function(i,line){
+									$.map(data.lines,function(line){
 										eventOnMessage(line);
 									});
 								}
@@ -963,8 +963,20 @@ var OmnomIRC = function(){
 						part:function(){
 							self.part(self.i);
 						},
+						reloadUserlist:function(){
+							if(!exists){
+								return;
+							}
+							network.getJSON('Load.php?userlist&channel='+self.handlerB64,function(data){
+								if(!data.banned){
+									users.setUsers(data.users);
+								}else{
+									send.internal('<span style="color:#C73232;"><b>ERROR:</b> banned</span>');
+								}
+							})
+						},
 						reload:function(){
-							self.join(self.i);
+							oirc.onchanneljoin(_self.name);
 						},
 						setI:function(i){
 							_self.i = i;
@@ -2134,7 +2146,54 @@ var OmnomIRC = function(){
 				isBlurred:function(){
 					return self.isBlurred;
 				}
-			}
+			};
+		})(),
+		logs = (function(){
+			var self = {
+				isOpen:false,
+				open:function(fn){
+					if(self.isOpen){
+						return;
+					}
+					self.isOpen = true;
+					request.stop(fn);
+				},
+				close:function(){
+					if(!self.isOpen){
+						return;
+					}
+					self.isOpen = false;
+					channels.current().reload();
+				},
+				fetch:function(day,fn,n){
+					if(!self.isOpen){
+						return;
+					}
+					if(n === undefined){
+						n = 0;
+					}
+					network.getJSON('Log.php?day='+day+'&offset='+parseInt(n,10)+'&channel='+channels.current().handlerB64,function(data){
+						if(!data.banned){
+							$.map(data.lines,function(line){
+								eventOnMessage(line,true);
+							});
+							if(data.lines.length >= 1000){
+								self.fetch(day,fn,n+1000);
+							}else if(fn!==undefined){
+								fn(true);
+							}
+						}else{
+							send.internal('<span style="color:#C73232;"><b>ERROR:</b> banned</span>');
+							fn(false);
+						}
+					});
+				}
+			};
+			return {
+				fetch:self.fetch,
+				open:self.open,
+				close:self.close
+			};
 		})(),
 		oirc;
 	
@@ -2182,6 +2241,7 @@ var OmnomIRC = function(){
 	this.users = {
 		add:users.add,
 		remove:users.remove,
+		setUsers:users.setUsers
 	};
 	this.send = {
 		send:send.send,
@@ -2201,6 +2261,11 @@ var OmnomIRC = function(){
 	this.page = {
 		changeLinks:page.changeLinks,
 		isBlurred:page.isBlurred
+	};
+	this.logs = {
+		fetch:logs.fetch,
+		open:logs.open,
+		close:logs.close
 	};
 	this.initinput = function($elem){
 		if($elem === undefined){

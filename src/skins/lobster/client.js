@@ -19,10 +19,9 @@
  *  along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
  */
 'use strict';
-var oirc;
 $(function(){
-	oirc = new OmnomIRC();
-	var	indicator = (function(){
+	var oirc = new OmnomIRC(),
+		indicator = (function(){
 			var self = {
 				interval:false,
 				$elem:false,
@@ -366,6 +365,7 @@ $(function(){
 						if(fn!==undefined){
 							fn(success);
 						}
+						scroll.down();
 						indicator.stop();
 					});
 				}
@@ -1311,6 +1311,7 @@ $(function(){
 						$('#about').toggle();
 					});
 					smileys.init();
+					logs.init();
 					
 					$('#sendMessage').submit(function(e){
 						e.preventDefault();
@@ -1439,6 +1440,170 @@ $(function(){
 			};
 			return {
 				set:self.set
+			};
+		})(),
+		logs = (function(){
+			var self = {
+				isOpen:false,
+				year:0,
+				month:0,
+				day:0,
+				months:['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
+				getLogUrlParam:function(){
+					return base64.encode(self.year.toString(10)+'-'+self.month.toString(10)+'-'+self.day.toString(10));
+				},
+				updateInputVal:function(){
+					$('#logDate').val(self.months[self.month-1]+' '+self.day.toString(10)+' '+self.year.toString(10));
+				},
+				displayDatePicker:function(){
+					var d = new Date(self.year,self.month,self.day),
+						week = ['Sun','Mon','Tue','Wen','Thu','Fri','Sat'],
+						days = (new Date(self.year,self.month,0)).getDate(),
+						firstDayOfWeek = (new Date(self.year,self.month-1,1)).getDay(),
+						i = 0;
+					if(self.day > days){
+						self.day = days;
+					}
+					self.updateInputVal();
+					$('#logDatePicker').empty().append(
+						$('<a>').text('<').click(function(e){
+							e.preventDefault();
+							e.stopPropagation();
+							self.year--;
+							self.displayDatePicker();
+						}),' ',self.year.toString(10),' ',
+						$('<a>').text('>').click(function(e){
+							e.preventDefault();
+							e.stopPropagation();
+							self.year++;
+							self.displayDatePicker();
+						}),'<br>',
+						$('<a>').text('<').click(function(e){
+							e.preventDefault();
+							e.stopPropagation();
+							self.month--;
+							if(self.month < 1){
+								self.month = 12;
+								self.year--;
+							}
+							self.displayDatePicker();
+						}),' ',self.months[self.month-1],' ',
+						$('<a>').text('>').click(function(e){
+							e.preventDefault();
+							e.stopPropagation();
+							self.month++;
+							if(self.month > 12){
+								self.month = 1;
+								self.year++;
+							}
+							self.displayDatePicker();
+						}),'<br>',
+						$('<table>').append(
+							$('<tr>').append(
+								$.map(week,function(v){
+									return $('<th>').text(v);
+								})
+							),
+							$.map([0,1,2,3,4,5],function(){
+								if(i >= days){
+									return;
+								}
+								return $('<tr>').append(
+									$.map([0,1,2,3,4,5,6],function(v){
+										if((i == 0 && v!=firstDayOfWeek) || i >= days){
+											return $('<td>').text(' ');
+										}
+										i++;
+										return $('<td>').text(i).addClass('logDatePickerDay').addClass(i==self.day?'current':'').data('day',i).click(function(){
+											$('.logDatePickerDay.current').removeClass('current');
+											self.day = $(this).addClass('current').data('day');
+											self.updateInputVal();
+										});
+									})
+								);
+							})
+						)
+					);
+					$('#logDatePicker').css('display','block');
+				},
+				open:function(){
+					var d = new Date();
+					indicator.start();
+					oirc.logs.open(function(){
+						$('#MessageBox').empty();
+						$('#message').attr('disabled','true');
+						oirc.users.setUsers([]);
+						$('#chattingHeader').css('display','none');
+						$('#logDatePicker').css('display','none');
+						$('#logsHeader').css('display','block');
+						
+						$('#logChanIndicator').text(oirc.channels.current().name);
+						
+						self.year = parseInt(d.getFullYear(),10);
+						self.month = parseInt(d.getMonth()+1,10);
+						self.day = parseInt(d.getDate(),10);
+						self.updateInputVal();
+						
+						self.isOpen = true;
+						self.fetch();
+					});
+				},
+				close:function(){
+					oirc.logs.close();
+					$('#chattingHeader').css('display','block');
+					$('#logsHeader').css('display','none');
+					self.isOpen = false;
+				},
+				fetch:function(){
+					indicator.start();
+					$('#MessageBox').empty();
+					oirc.logs.fetch(self.getLogUrlParam(),function(){
+						scroll.up();
+						indicator.stop();
+					})
+				},
+				toggle:function(){
+					if(self.isOpen){
+						self.close();
+					}else{
+						self.open();
+					}
+				},
+				init:function(){
+					$('#logCloseButton')
+						.click(function(e){
+							e.preventDefault();
+							self.close();
+						});
+					$('#logGoButton')
+						.click(function(e){
+							e.preventDefault();
+							self.fetch();
+						});
+					$('#logsButton').click(function(e){
+						e.preventDefault();
+						self.toggle();
+					});
+					$('#logDate').click(function(e){
+						e.preventDefault();
+						$(this).focusout();
+						if($('#logDatePicker').css('display')!='block'){
+							self.displayDatePicker();
+							e.stopPropagation();
+						}
+					});
+					$(document).click(function(e){
+						if(self.isOpen){
+							var $cont = $('#logDatePicker');
+							if(!$cont.is(e.target) && $cont.has(e.target).length === 0){
+								$cont.css('display','none');
+							}
+						}
+					});
+				}
+			};
+			return {
+				init:self.init
 			};
 		})();
 	

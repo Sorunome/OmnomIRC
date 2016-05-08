@@ -53,7 +53,7 @@ OIRC::$json->add('banned',false);
 OIRC::$json->add('admin',OIRC::$you->isGlobalOp());
 
 if(isset($_GET['day'])){
-	$t_low = (int)DateTime::createFromFormat('Y-n-j H:i:s',base64_url_decode($_GET['day']).' 00:00:00')->getTimestamp();
+	$t_low = (int)\DateTime::createFromFormat('Y-n-j H:i:s',base64_url_decode($_GET['day']).' 00:00:00')->getTimestamp();
 }else{
 	$t_low = (int)time();
 	OIRC::$json->addWarning('No day set, defaulting to today');
