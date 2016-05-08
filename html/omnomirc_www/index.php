@@ -33,126 +33,35 @@ if(!OIRC::$config['info']['installed']){
 	}
 }
 
-
-
-include_once(realpath(dirname(__FILE__)).'/skin_lobster.php');
+include_once(realpath(dirname(__FILE__)).'/skins.php');
 
 if(strpos($_SERVER['HTTP_USER_AGENT'],'textmode;')!==false || isset($_GET['textmode'])){
 	header('Location: '.getCheckLoginUrl().'&textmode&network='.(OIRC::$you->getNetwork()));
 	exit;
-}elseif(isset($_GET['options'])){
-/*
-Options:
-1 - highlight bold (highBold)
-2 - highlight red (highRed)
-3 - color names (colordNames)
-4 - currentChannel (curChan)
-5 - enabled (enable)
-6 - alternating line highlight (altLines)
-7 - enable chrome notifications (browserNotifications)
-8 - ding on highlight (ding)
-9 - show extra channels (extraChans)
-10 - show timestamps (times)
-11 - show updates in status bar (statusBar)
-12 - show smileys (smileys)
-13 - highlight number chars (charsHigh)
-14 - hide userlist (hideUserlist)
-15 - show scrollbar (scrollBar)
-16 - enable main-window scrolling (scrollWheel)
-17 - show omnomirc join/part messages (oircJoinPart)
-18 - use wysiwyg edtior (wysiwyg)
-19 - use simple text decorations (textDeco)
-20 - font size (fontSize)
-*/
-	$page = \oirc\skin\getOptions();
-	if(!$page){
-		include_once(realpath(dirname(__FILE__)).'/skin_lobster.php');
-		$page = \oirc\skin\getOptions();
-	}
-}elseif(isset($_GET['admin'])){
-	$page = \oirc\skin\getAdmin();
-	if(!$page){
-		include_once(realpath(dirname(__FILE__)).'/skin_lobster.php');
-		$page = \oirc\skin\getAdmin();
-	}
-}else{
-	$page = \oirc\skin\getPage();
-	if(!$page){
-		include_once(realpath(dirname(__FILE__)).'/skin_lobster.php');
-		$page = \oirc\skin\getPage();
-	}
 }
-// combind with default options to make sure they always exist
-$page = array_merge(array(
-	'html' => '',
-	'title' => 'OmnomIRC',
-	'head' => '',
-	'favicon' => 'omni.png',
-	'js' => array(),
-	'css' => array()
-),$page);
+
+$page = getSkin('lobster');
+
+parseScripts($page,'js',function(&$page,$file){
+	$page['head'] .= '<script type="text/javascript" src="'.htmlentities($file).'"></script>';
+},function(&$page,$file){
+	$page['head'] .= '<script type="text/javascript">'.$file.'</script>';
+});
+parseScripts($page,'css',function(&$page,$file){
+	$page['head'] .= '<link rel="stylesheet" type="text/css" href="'.htmlentities($file).'" />';
+},function(&$page,$file){
+	$page['head'] .= '<style type="text/css">'.$file.'</style>';
+});
 
 // now it's time to construct the page!
-
-foreach($page['js'] as $js){
-	if(!is_array($js)){
-		$js = array(
-			'file' => $js
-		);
-	}
-	$js = array_merge(array(
-		'type' => 'file',
-		'file' => '',
-		'minified' => false
-	),$js);
-	if($js['type'] != 'inline' && substr($js['file'],-3) != '.js'){ // nothing to do
-		continue;
-	}
-	$file = substr($js['file'],0,-3);
-	switch($js['type']){
-		case 'file':
-			$page['head'] .= '<script type="text/javascript" src="'.htmlentities($file).($js['minified'] && (!isset(OIRC::$config['settings']['minified'])||OIRC::$config['settings']['minified'])?'.min':'').'.js"></script>';
-			break;
-		case 'inline':
-			$page['head'] .= '<script type="text/javascript">'.$js['file'].'</script>';
-	}
-}
-foreach($page['css'] as $css){
-	if(!is_array($css)){
-		$css = array(
-			'file' => $css
-		);
-	}
-	$css = array_merge(array(
-		'type' => 'file',
-		'file' => '',
-		'minified' => false
-	),$css);
-	if($css['type'] != 'inline' && substr($css['file'],-4) != '.css'){ // nothing to do
-		continue;
-	}
-	$file = substr($css['file'],0,-4);
-	switch($css['type']){
-		case 'file':
-			$page['head'] .= '<link rel="stylesheet" type="text/css" href="'.htmlentities($file).($css['minified'] && (!isset(OIRC::$config['settings']['minified'])||OIRC::$config['settings']['minified'])?'.min':'').'.css" />';
-			break;
-		case 'inline':
-			$page['head'] .= '<style type="text/css">'.$css['file'].'</style>';
-	}
-}
 
 $theme = OIRC::$networks->get(OIRC::$you->getNetwork());
 $theme = $theme['config']['theme'];
 echo '<!DOCTYPE html><html><head>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta charset="utf-8" />
-	<link rel="icon" type="image/png" href="'.htmlentities($page['favicon']).'">
-	<script type="text/javascript" src="btoa.js"></script>
-	<script type="text/javascript" src="jquery-1.11.3.min.js"></script>
-	<script type="text/javascript" src="omnomirc'.(!isset(OIRC::$config['settings']['minified'])||OIRC::$config['settings']['minified']?'.min':'').'.js"></script>
-	'.(OIRC::$config['websockets']['use'] && OIRC::$config['settings']['useBot']?'<script type="text/javascript" src="pooledwebsocket.min.js"></script>':'').'
 	<title>'.$page['title'].'</title>
-	<script type="text/javascript">document.domain="'.OIRC::$config['settings']['hostname'].'";</script>
+	<link rel="icon" type="image/png" href="'.htmlentities($page['favicon']).'">
 	'.$page['head'].'
 	'.($theme!=-1?'<link rel="stylesheet" type="text/css" href="theme.php?theme='.$theme.'" />':'').'
 </head>

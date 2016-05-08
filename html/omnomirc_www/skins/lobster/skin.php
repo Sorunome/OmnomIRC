@@ -141,7 +141,7 @@ function getPage(){
 		'head' => '<noscript><meta http-equiv="refresh" content="0;url=index.php?textmode"></noscript>',
 		'js' => array(
 			array(
-				'file' => 'oirc_client.js',
+				'file' => 'client.js',
 				'minified' => true
 			)
 		),
