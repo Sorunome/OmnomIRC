@@ -49,12 +49,40 @@ var OmnomIRC = function(){
 				pmIdent:false,
 				guestLevel:0,
 				isGuest:true,
-				identGuest:function(name,fn){
+				identGuest:function(name,remember,fn){
+					if(fn === undefined){
+						fn = remember;
+						remember = false;
+					}
 					network.getJSON('misc.php?identName='+base64.encode(name),function(data){
+						if(data.success){
+							if(remember){
+								ls.set('guestName',name);
+								ls.set('guestSig',data.signature);
+							}else{
+								ls.set('guestName','');
+								ls.set('guestSig','');
+							}
+							self.setIdent(name,data.signature,-1);
+							request.identify();
+						}
 						if(fn!==undefined){
 							fn(data);
 						}
 					});
+				},
+				logout:function(){
+					ls.set('guestName','');
+					ls.set('guestSig','');
+					self.setIdent('','',-1);
+					request.identify();
+				},
+				login:function(nick,sig,uid){
+					if(uid === undefined){
+						uid = -1;
+					}
+					self.setIdent(nick,sig,uid);
+					request.identify();
 				},
 				fetch:function(fn,clOnly){
 					if(clOnly===undefined){
@@ -161,7 +189,6 @@ var OmnomIRC = function(){
 			return {
 				identGuest:self.identGuest,
 				fetch:self.fetch,
-				setIdent:self.setIdent,
 				getUrlParams:self.getUrlParams,
 				getIdentParams:self.getIdentParams,
 				getNetwork:self.getNetwork,
@@ -179,7 +206,9 @@ var OmnomIRC = function(){
 				isGuest:function(){
 					return self.isGuest;
 				},
-				getWholePmIdent:self.getWholePmIdent
+				getWholePmIdent:self.getWholePmIdent,
+				logout:self.logout,
+				login:self.login
 			};
 		})(),
 		ls = (function(){
@@ -763,7 +792,7 @@ var OmnomIRC = function(){
 						if(self.old.inRequest && channels.current().loaded && self.old.handler===false){
 							setTimeout(function(){
 								self.old.sendRequest();
-							},200);
+							},page.isBlurred()?2500:200);
 						}else{
 							self.old.stop();
 						}
@@ -2079,6 +2108,14 @@ var OmnomIRC = function(){
 		})(),
 		page = (function(){
 			var self = {
+				isBlurred:true,
+				init:function(){
+					$(window).blur(function(){
+						self.isBlurred = true;
+					}).focus(function(){
+						self.isBlurred = false;
+					});
+				},
 				changeLinks:function(){
 					// change links to add network
 					$('#adminLink a,a[href="."],a[href="?options"],a[href="index.php"]').each(function(){
@@ -2091,7 +2128,11 @@ var OmnomIRC = function(){
 				}
 			};
 			return {
-				changeLinks:self.changeLinks
+				init:self.init,
+				changeLinks:self.changeLinks,
+				isBlurred:function(){
+					return self.isBlurred;
+				}
 			}
 		})(),
 		oirc;
@@ -2105,7 +2146,10 @@ var OmnomIRC = function(){
 		getPmIdent:settings.getPmIdent,
 		getWholePmIdent:settings.getWholePmIdent,
 		nick:settings.nick,
-		guestLevel:settings.guestLevel
+		guestLevel:settings.guestLevel,
+		identGuest:settings.identGuest,
+		logout:settings.logout,
+		login:settings.login
 	};
 	this.ls = {
 		get:ls.get,
@@ -2154,7 +2198,8 @@ var OmnomIRC = function(){
 		init:error.init
 	};
 	this.page = {
-		changeLinks:page.changeLinks
+		changeLinks:page.changeLinks,
+		isBlurred:page.isBlurred
 	};
 	this.initinput = function($elem){
 		if($elem === undefined){
@@ -2165,6 +2210,7 @@ var OmnomIRC = function(){
 		oldMessages.init();
 	};
 	this.connect = function(callback){
+		page.init();
 		settings.fetch(function(){
 			instant.init();
 			request.init();

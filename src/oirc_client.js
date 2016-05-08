@@ -19,9 +19,10 @@
  *  along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
  */
 'use strict';
+var oirc;
 $(function(){
-	var oirc = new OmnomIRC(),
-		indicator = (function(){
+	oirc = new OmnomIRC();
+	var	indicator = (function(){
 			var self = {
 				interval:false,
 				$elem:false,
@@ -1166,7 +1167,6 @@ $(function(){
 						document.location.reload();
 					});
 				},
-				isBlurred:true,
 				calcResize:function(allowHeightChange){
 					var htmlHeight = window.innerHeight,
 						htmlWidth = window.innerWidth,
@@ -1198,38 +1198,29 @@ $(function(){
 				},
 				initGuestLogin:function(){
 					var tryLogin = function(name,remember){
-							settings.identGuest(name,function(data){
+							oirc.settings.identGuest(name,remember,function(data){
 								if(!data.success){
 									alert('ERROR'+(data.message?': '+data.message:''));
 									loginFail();
-								}else{
-									settings.setIdent(name,data.signature,-1);
-									request.identify();
-									$('#pickUsernamePopup').hide();
-									$('#message').removeAttr('disabled');
-									oirc.send.val('');
-									if(remember){
-										ls.set('guestName',name);
-										ls.set('guestSig',data.signature);
-									}else{
-										ls.set('guestName','');
-									}
-									$('#loginForm > button').hide();
-									$('#guestName').text(name+' (guest) (').append(
-										$('<a>').text('logout').click(function(e){
-											e.preventDefault();
-											if(confirm('Are you sure? You won\'t be able to take this nick for half an hour!')){
-												ls.set('guestName','');
-												ls.set('guestSig','');
-												settings.setIdent('','',-1);
-												request.identify();
-												loginFail();
-											}
-										}),
-										')'
-									).show();
-									$(window).trigger('resize');
+									return;
 								}
+								
+								$('#pickUsernamePopup').hide();
+								$('#message').removeAttr('disabled');
+								oirc.send.val('');
+								
+								$('#loginForm > button').hide();
+								$('#guestName').text(name+' (guest) (').append(
+									$('<a>').text('logout').click(function(e){
+										e.preventDefault();
+										if(confirm('Are you sure? You won\'t be able to take this nick for half an hour!')){
+											oirc.settings.logout();
+											loginFail();
+										}
+									}),
+									')'
+								).show();
+								$(window).trigger('resize');
 							});
 						},
 						loginFail = function(){
@@ -1239,9 +1230,9 @@ $(function(){
 							$('#guestName').hide();
 							$(window).trigger('resize');
 						}
-					if(ls.get('guestName')){
-						settings.setIdent(ls.get('guestName'),ls.get('guestSig'),-1);
-						tryLogin(ls.get('guestName'),true);
+					if(oirc.ls.get('guestName')){
+						oirc.settings.login(oirc.ls.get('guestName'),oirc.ls.get('guestSig'));
+						tryLogin(oirc.ls.get('guestName'),true);
 					}else{
 						loginFail();
 					}
@@ -1284,6 +1275,7 @@ $(function(){
 						});
 						wysiwyg.init();
 					}
+					oirc.initinput();
 					
 					if(!oirc.settings.loggedIn()){
 						oirc.send.val('You need to login if you want to chat!');
@@ -1311,10 +1303,7 @@ $(function(){
 					}
 					$(window).resize(function(){
 						self.calcResize(!is_ios);
-					}).trigger('resize').blur(function(){
-						self.isBlurred = true;
-					}).focus(function(){
-						self.isBlurred = false;
+					}).trigger('resize').focus(function(){
 						notification.stopFlash();
 					});
 					$('#aboutButton').click(function(e){
@@ -1392,9 +1381,6 @@ $(function(){
 			};
 			return {
 				init:self.init,
-				isBlurred:function(){
-					return self.isBlurred;
-				},
 				registerToggle:self.registerToggle,
 				addLine:self.addLine
 			};
@@ -1466,7 +1452,6 @@ $(function(){
 	oirc.connect(function(){
 		if(oirc.options.get('enable')){
 			page.init();
-			oirc.initinput();
 			channels.join(oirc.options.get('curChan'),function(success){
 				if(!success){
 					channels.join(0);

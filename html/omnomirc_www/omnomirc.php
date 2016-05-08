@@ -550,6 +550,9 @@ class Networks{
 $networks = new Networks();
 class Relay{
 	private $sendBuffer = array();
+	private function socketfail(){
+		shell_exec('php '.realpath(dirname(__FILE__)).'/admin.php internalAction=deactivateBot'); // TODO: some better way to do this :P
+	}
 	public function sendLine($n1,$n2,$t,$m,$c = NULL,$s = NULL,$uid = NULL){
 		global $you,$sql,$config;
 		if($c === NULL){
@@ -577,13 +580,19 @@ class Relay{
 		$socket = false;
 		if(substr($sock,0,5) == 'unix:'){
 			$socket = socket_create(AF_UNIX,SOCK_STREAM,0);
-			socket_connect($socket,substr($sock,5));
+			if(!socket_connect($socket,substr($sock,5))){
+				$this->socketfail();
+				return false;
+			}
 		}else{
 			$matches = array();
 			preg_match('/^([\\w\\.]+):(\\d+)/',$sock,$matches);
 			if($matches){
 				$socket = socket_create(AF_INET,SOCK_STREAM,SOL_TCP);
-				socket_connect($socket,$matches[1],$matches[2]);
+				if(!socket_connect($socket,$matches[1],$matches[2])){
+					$this->socketfail();
+					return false;
+				}
 			}
 		}
 		return $socket;
