@@ -22,26 +22,10 @@ namespace oirc;
 
 include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 
-
-function getCheckLoginUrl(){
-	$net = OIRC::$networks->get(OIRC::$you->getNetwork());
-	$cl = $net['config']['checkLogin'];
-	$ts = (string)time();
-	$clsid = urlencode(htmlspecialchars(str_replace(';','%^%',hash_hmac('sha512',(isset($_SERVER['HTTP_REFERER'])?$_SERVER['HTTP_REFERER']:'THE GAME'),OIRC::$config['security']['sigKey'].$ts.OIRC::$you->getNetwork()).'|'.$ts)));
-	if(isset($_SERVER['HTTP_REFERER'])){
-		$urlhost = parse_url($_SERVER['HTTP_REFERER']);
-		if($urlhost['host'] != (isset($_SERVER['HTTP_HOST'])?$_SERVER['HTTP_HOST']:$_SERVER['SERVER_NAME'])){
-			$clsid = '';
-		}
-	}
-	$cl .= '?sid='.$clsid.'&network='.(OIRC::$you->getNetwork());
-	return $cl;
-}
-
 if(isset($_GET['js'])){
 	header('Content-type: application/json');
 	
-	$cl = getCheckLoginUrl();
+	$cl = OIRC::getCheckLoginUrl();
 	if(isset($_GET['clonly'])){
 		echo json_encode(array(
 			'checkLoginUrl' => $cl

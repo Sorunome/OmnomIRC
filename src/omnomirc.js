@@ -93,6 +93,9 @@ var OmnomIRC = function(){
 							if(data.success){
 								self.signature = data.signature;
 							}
+							if(fn !== undefined){
+								fn();
+							}
 						})
 						return;
 					}
@@ -122,6 +125,9 @@ var OmnomIRC = function(){
 							self.identGuest(self.nick,function(data){
 								if(data.success){
 									self.signature = data.signature;
+								}
+								if(fn !== undefined){
+									fn();
 								}
 							});
 						}else{
@@ -255,9 +261,13 @@ var OmnomIRC = function(){
 					if(self.support()){
 						s = localStorage.getItem(name);
 					}else{
-						s = getCookie(name);
+						s = self.getCookie(name);
 					}
-					return JSON.parse(s);
+					try{
+						return JSON.parse(s);
+					}catch(e){
+						return undefined;
+					}
 				},
 				set:function(name,value){
 					name = self.prefix+name;
@@ -265,7 +275,7 @@ var OmnomIRC = function(){
 					if(self.support()){
 						localStorage.setItem(name,value);
 					}else{
-						setCookie(name,value);
+						self.setCookie(name,value);
 					}
 				}
 			}

@@ -36,7 +36,7 @@ if(!OIRC::$config['info']['installed']){
 include_once(realpath(dirname(__FILE__)).'/skins.php');
 
 if(strpos($_SERVER['HTTP_USER_AGENT'],'textmode;')!==false || isset($_GET['textmode'])){
-	header('Location: '.getCheckLoginUrl().'&textmode&network='.(OIRC::$you->getNetwork()));
+	header('Location: '.OIRC::getCheckLoginUrl().'&textmode&network='.(OIRC::$you->getNetwork()));
 	exit;
 }
 
