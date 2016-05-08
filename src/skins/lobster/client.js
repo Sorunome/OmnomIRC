@@ -918,7 +918,7 @@ $(function(){
 							nodeRange = document.createRange();
 						preCaretRange.selectNodeContents(elem);
 						preCaretRange.setEnd(range.endContainer,range.endOffset);
-						for(var node of preCaretRange.commonAncestorContainer.getElementsByTagName('img')){
+						for(var node in preCaretRange.commonAncestorContainer.getElementsByTagName('img')){
 							if(node.dataset.code){
 								nodeRange.selectNode(node);
 								if(preCaretRange.compareBoundaryPoints(Range.START_TO_START,nodeRange) != 1 && preCaretRange.compareBoundaryPoints(Range.END_TO_END,nodeRange) != -1){
@@ -955,7 +955,7 @@ $(function(){
 						haveStart = false;
 					}
 					// Loop through all child nodes
-					for(var node of el.childNodes){
+					for(var node in el.childNodes){
 						if(node.nodeType == 3){ // we have a text node
 							if(node.length >= pos){
 								// finally add our range
