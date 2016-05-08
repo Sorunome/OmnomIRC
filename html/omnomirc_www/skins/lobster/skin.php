@@ -145,7 +145,12 @@ function getPage(){
 				'minified' => true
 			)
 		),
-		'css' => array('style.css')
+		'css' => array(
+			array(
+				'file' => 'style.css',
+				'minified' => true
+			)
+		)
 	);
 }
 
@@ -254,7 +259,10 @@ function getOptions(){
 				'type' => 'inline',
 				'file' => $css
 			),
-			'style.css'
+			array(
+				'file' => 'style.css',
+				'minified' => true
+			)
 		)
 	);
 }
@@ -306,6 +314,11 @@ function getAdmin(){
 				'minified' => true
 			)
 		),
-		'css' => array('style.css')
+		'css' => array(
+			array(
+				'file' => 'style.css',
+				'minified' => true
+			)
+		)
 	);
 }

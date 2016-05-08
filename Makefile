@@ -32,5 +32,13 @@ mini:
 		uglifyjs $(UGLIFYOPTIONS) "src/$$f.js" -o "$(OIRCHTML)/$$f.min.js";	\
 		git add "$(OIRCHTML)/$$f.min.js";					\
 	done
+	for f in $$(find src -name '*.css'); do						\
+		f=$${f:4};								\
+		dir=$$(dirname "$${f}");						\
+		f="$${f%.css}";								\
+		mkdir -p "$(OIRCHTML)/$$dir";						\
+		uglifycss "src/$$f.css" > "$(OIRCHTML)/$$f.min.css";	\
+		git add "$(OIRCHTML)/$$f.min.css";					\
+	done
 info:
 	find . \( -name '*.php' -o -name '*.xml' -o -name '*.css' -o -name '*.html' -o -name '*.py' -o -name '*.sh' -o -name '*.js' -o -name '*.sql' \) \! \( -name '*.min.*' -o -name '\.*' \) -exec wc {} \+ | awk {'print $$4" Lines:"$$1" Bytes:"$$3'} | grep total
