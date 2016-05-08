@@ -20,11 +20,10 @@
 */
 namespace oirc\skin;
 function getPage(){
-	global $vars;
 	$hotlinksHTML = '';
 	$i = true;
-	
-	foreach($vars->get('hotlinks') as $link){
+
+	foreach(\oirc\OIRC::$vars->get('hotlinks') as $link){
 		if($i){
 			$hotlinksHTML .= '<tr>';
 		}
@@ -261,7 +260,6 @@ function getOptions(){
 }
 
 function getAdmin(){
-	global $config;
 	$adminlinks = array(
 		'index' => 'Index',
 		'themes' => 'Theme',
@@ -273,7 +271,7 @@ function getAdmin(){
 		'ws' => 'WebSockets',
 		'misc' => 'Misc'
 	);
-	if($config['settings']['experimental']){
+	if(\oirc\OIRC::$config['settings']['experimental']){
 		$adminlinks['ex'] = 'Experimental';
 	}
 	$nav = '';

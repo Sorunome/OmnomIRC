@@ -21,59 +21,59 @@
 namespace oirc;
 include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 
-$net = $networks->get($you->getNetwork());
-if(!$you->isLoggedIn() && $net['config']['guests'] == 0){
+$net = OIRC::$networks->get(OIRC::$you->getNetwork());
+if(!OIRC::$you->isLoggedIn() && $net['config']['guests'] == 0){
 	$msg = 'You need to log in to be able to view chat!';
 	if(isset($_GET['noLoginErrors'])){
-		$json->add('message',$msg);
+		OIRC::$json->add('message',$msg);
 	}else{
-		$json->addError($msg);
+		OIRC::$json->addError($msg);
 	}
-	echo $json->get();
+	echo OIRC::$json->get();
 	die();
 }
 
 if(isset($_GET['lineNum'])){
 	$curline = (int)$_GET['lineNum'];
-	if($curline < (int)file_get_contents($config['settings']['curidFilePath'])-200){
-		$json->addWarning('lineNum too far in the past, giving only 200');
-		$curline = (int)file_get_contents($config['settings']['curidFilePath'])-200;
+	if($curline < (int)file_get_contents(OIRC::$config['settings']['curidFilePath'])-200){
+		OIRC::$json->addWarning('lineNum too far in the past, giving only 200');
+		$curline = (int)file_get_contents(OIRC::$config['settings']['curidFilePath'])-200;
 	}
 }else{
-	$curline = (int)file_get_contents($config['settings']['curidFilePath']);
-	$json->addWarning('lineNum not set, defaulting to newest one ('.$curline.')');
+	$curline = (int)file_get_contents(OIRC::$config['settings']['curidFilePath']);
+	OIRC::$json->addWarning('lineNum not set, defaulting to newest one ('.$curline.')');
 }
-if($you->isBanned()){
-	$json->add('banned',true);
-	$json->addError('banned');
-	echo $json->get();
+if(OIRC::$you->isBanned()){
+	OIRC::$json->add('banned',true);
+	OIRC::$json->addError('banned');
+	echo OIRC::$json->get();
 	die();
 }
 if(isset($_GET['high'])){
 	$numCharsHighlight = (int)$_GET['high'];
 }else{
-	$json->addWarning('Not set num chars to highlight, defaulting to 4');
+	OIRC::$json->addWarning('Not set num chars to highlight, defaulting to 4');
 	$numCharsHighlight = 4;
 }
-$channel = $you->chan;
-$nick = $you->nick;
+$channel = OIRC::$you->chan;
+$nick = OIRC::$you->nick;
 
 $countBeforeQuit = 0;
-$you->update();
+OIRC::$you->update();
 
 while(true){
 	if($countBeforeQuit++ >= 50){//Timeout after 25 seconds.
-		$you->update();
-		echo $json->get();
+		OIRC::$you->update();
+		echo OIRC::$json->get();
 		die();
 	}
-	if((int)file_get_contents($config['settings']['curidFilePath'])<=$curline){
+	if((int)file_get_contents(OIRC::$config['settings']['curidFilePath'])<=$curline){
 		usleep(500000);
 		continue;
 	}
-	$you->update();
+	OIRC::$you->update();
 	if($nick){
-		$query = $sql->query_prepare("SELECT * FROM `{db_prefix}lines`
+		$query = OIRC::$sql->query_prepare("SELECT * FROM `{db_prefix}lines`
 			WHERE
 				`line_number` > ?
 			AND
@@ -85,12 +85,12 @@ while(true){
 				)
 				OR
 				name2=?
-		)",array($curline,$channel,$you->getPmHandler()));
+		)",array($curline,$channel,OIRC::$you->getPmHandler()));
 	}else{
-		$query = $sql->query_prepare("SELECT * FROM `{db_prefix}lines` WHERE `line_number` > ? AND `channel` = ? AND `type`!='server'",array($curline,$channel));
+		$query = OIRC::$sql->query_prepare("SELECT * FROM `{db_prefix}lines` WHERE `line_number` > ? AND `channel` = ? AND `type`!='server'",array($curline,$channel));
 	}
 	$result = $query[0];
-	$userSql = $you->info();
+	$userSql = OIRC::$you->info();
 	$ignorelist = '';
 	if($userSql['name']!=NULL) {
 		$ignorelist = $userSql['ignores'];
@@ -110,10 +110,10 @@ while(true){
 		);
 	}
 	if($result['line_number'] === NULL){
-		$temp = $sql->query_prepare("SELECT * FROM `{db_prefix}lines` WHERE `line_number` > ? AND locate(?,`message`) != 0 AND NOT (((`type` = 'pm' OR `type` = 'pmaction') AND `name1` <> ? AND `online` = ?) OR (`type` = 'server'))",array($curline,substr($nick,0,4),$nick,$you->getNetwork()));
+		$temp = OIRC::$sql->query_prepare("SELECT * FROM `{db_prefix}lines` WHERE `line_number` > ? AND locate(?,`message`) != 0 AND NOT (((`type` = 'pm' OR `type` = 'pmaction') AND `name1` <> ? AND `online` = ?) OR (`type` = 'server'))",array($curline,substr($nick,0,4),$nick,OIRC::$you->getNetwork()));
 		$result = $temp[0];
 		if($result['line_number'] === NULL){
-			$temp = $sql->query_prepare("SELECT MAX(line_number) AS max FROM `{db_prefix}lines`");
+			$temp = OIRC::$sql->query_prepare("SELECT MAX(line_number) AS max FROM `{db_prefix}lines`");
 			$curline = (int)$temp[0]['max'];
 			usleep(500000);
 			continue;
@@ -143,8 +143,8 @@ while(true){
 				'uid' => -1
 			);
 		}
-		$json->add('lines',$lines);
-		echo $json->get();
+		OIRC::$json->add('lines',$lines);
+		echo OIRC::$json->get();
 		exit;
 	}
 	foreach($query as $result){
@@ -177,7 +177,7 @@ while(true){
 			);
 		}
 	}
-	$json->add('lines',$lines);
-	echo $json->get();
+	OIRC::$json->add('lines',$lines);
+	echo OIRC::$json->get();
 	break;
 }

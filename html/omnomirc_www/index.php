@@ -23,8 +23,8 @@ error_reporting(E_ALL);
 ini_set('display_errors','1');
 
 $textmode = true; // else omnomirc.php will set json headers
-include_once(realpath(dirname(__FILE__)).'/config.php');
-if(!$config['info']['installed']){
+include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
+if(!OIRC::$config['info']['installed']){
 	if(file_exists(realpath(dirname(__FILE__)).'/updater.php')){
 		header('Location: updater.php');
 		die();
@@ -32,13 +32,13 @@ if(!$config['info']['installed']){
 		die('OmnomIRC not installed');
 	}
 }
-include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
+
 
 
 include_once(realpath(dirname(__FILE__)).'/skin_lobster.php');
 
 if(strpos($_SERVER['HTTP_USER_AGENT'],'textmode;')!==false || isset($_GET['textmode'])){
-	header('Location: '.getCheckLoginUrl().'&textmode&network='.($you->getNetwork()));
+	header('Location: '.getCheckLoginUrl().'&textmode&network='.(OIRC::$you->getNetwork()));
 	exit;
 }elseif(isset($_GET['options'])){
 /*
@@ -111,7 +111,7 @@ foreach($page['js'] as $js){
 	$file = substr($js['file'],0,-3);
 	switch($js['type']){
 		case 'file':
-			$page['head'] .= '<script type="text/javascript" src="'.htmlentities($file).($js['minified'] && (!isset($config['settings']['minified'])||$config['settings']['minified'])?'.min':'').'.js"></script>';
+			$page['head'] .= '<script type="text/javascript" src="'.htmlentities($file).($js['minified'] && (!isset(OIRC::$config['settings']['minified'])||OIRC::$config['settings']['minified'])?'.min':'').'.js"></script>';
 			break;
 		case 'inline':
 			$page['head'] .= '<script type="text/javascript">'.$js['file'].'</script>';
@@ -134,14 +134,14 @@ foreach($page['css'] as $css){
 	$file = substr($css['file'],0,-4);
 	switch($css['type']){
 		case 'file':
-			$page['head'] .= '<link rel="stylesheet" type="text/css" href="'.htmlentities($file).($css['minified'] && (!isset($config['settings']['minified'])||$config['settings']['minified'])?'.min':'').'.css" />';
+			$page['head'] .= '<link rel="stylesheet" type="text/css" href="'.htmlentities($file).($css['minified'] && (!isset(OIRC::$config['settings']['minified'])||OIRC::$config['settings']['minified'])?'.min':'').'.css" />';
 			break;
 		case 'inline':
 			$page['head'] .= '<style type="text/css">'.$css['file'].'</style>';
 	}
 }
 
-$theme = $networks->get($you->getNetwork());
+$theme = OIRC::$networks->get(OIRC::$you->getNetwork());
 $theme = $theme['config']['theme'];
 echo '<!DOCTYPE html><html><head>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -149,10 +149,10 @@ echo '<!DOCTYPE html><html><head>
 	<link rel="icon" type="image/png" href="'.htmlentities($page['favicon']).'">
 	<script type="text/javascript" src="btoa.js"></script>
 	<script type="text/javascript" src="jquery-1.11.3.min.js"></script>
-	<script type="text/javascript" src="omnomirc'.(!isset($config['settings']['minified'])||$config['settings']['minified']?'.min':'').'.js"></script>
-	'.($config['websockets']['use'] && $config['settings']['useBot']?'<script type="text/javascript" src="pooledwebsocket.min.js"></script>':'').'
+	<script type="text/javascript" src="omnomirc'.(!isset(OIRC::$config['settings']['minified'])||OIRC::$config['settings']['minified']?'.min':'').'.js"></script>
+	'.(OIRC::$config['websockets']['use'] && OIRC::$config['settings']['useBot']?'<script type="text/javascript" src="pooledwebsocket.min.js"></script>':'').'
 	<title>'.$page['title'].'</title>
-	<script type="text/javascript">document.domain="'.$config['settings']['hostname'].'";</script>
+	<script type="text/javascript">document.domain="'.OIRC::$config['settings']['hostname'].'";</script>
 	'.$page['head'].'
 	'.($theme!=-1?'<link rel="stylesheet" type="text/css" href="theme.php?theme='.$theme.'" />':'').'
 </head>

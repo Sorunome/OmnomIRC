@@ -19,43 +19,27 @@
     along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 */
 namespace oirc;
-function getConfig(){
-	$cfg = explode("\n",file_get_contents(realpath(dirname(__FILE__)).'/config.json.php'));
-	$searchingJson = true;
-	$json = "";
-	foreach($cfg as $line){
-		if($searchingJson){
-			if(trim($line)=='?>'){
-				$searchingJson = false;
-			}
-		}else{
-			$json .= "\n".$line;
-		}
-	}
-	return json_decode($json,true);
-}
-$config = getConfig();
+
+include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
+
 
 function getCheckLoginUrl(){
-	global $you,$networks,$config;
-	$net = $networks->get($you->getNetwork());
+	$net = OIRC::$networks->get(OIRC::$you->getNetwork());
 	$cl = $net['config']['checkLogin'];
 	$ts = (string)time();
-	$clsid = urlencode(htmlspecialchars(str_replace(';','%^%',hash_hmac('sha512',(isset($_SERVER['HTTP_REFERER'])?$_SERVER['HTTP_REFERER']:'THE GAME'),$config['security']['sigKey'].$ts.$you->getNetwork()).'|'.$ts)));
+	$clsid = urlencode(htmlspecialchars(str_replace(';','%^%',hash_hmac('sha512',(isset($_SERVER['HTTP_REFERER'])?$_SERVER['HTTP_REFERER']:'THE GAME'),OIRC::$config['security']['sigKey'].$ts.OIRC::$you->getNetwork()).'|'.$ts)));
 	if(isset($_SERVER['HTTP_REFERER'])){
 		$urlhost = parse_url($_SERVER['HTTP_REFERER']);
 		if($urlhost['host'] != (isset($_SERVER['HTTP_HOST'])?$_SERVER['HTTP_HOST']:$_SERVER['SERVER_NAME'])){
 			$clsid = '';
 		}
 	}
-	$cl .= '?sid='.$clsid.'&network='.($you->getNetwork());
+	$cl .= '?sid='.$clsid.'&network='.(OIRC::$you->getNetwork());
 	return $cl;
 }
 
 if(isset($_GET['js'])){
-	include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 	header('Content-type: application/json');
-	
 	
 	$cl = getCheckLoginUrl();
 	if(isset($_GET['clonly'])){
@@ -66,10 +50,10 @@ if(isset($_GET['js'])){
 	}
 	
 	$channels = array();
-	foreach($config['channels'] as $chan){
+	foreach(OIRC::$config['channels'] as $chan){
 		if($chan['enabled']){
 			foreach($chan['networks'] as $cn){
-				if($cn['id'] == $you->getNetwork()){
+				if($cn['id'] == OIRC::$you->getNetwork()){
 					$channels[] = array(
 						'chan' => $cn['name'],
 						'high' => false,
@@ -87,17 +71,17 @@ if(isset($_GET['js'])){
 		}
 		return (($a['order'] < $b['order'])?-1:1);
 	});
-	$net = $networks->get($you->getNetwork());
+	$net = OIRC::$networks->get(OIRC::$you->getNetwork());
 	
 	$defaults = $net['config']['defaults'];
 	
-	$net = $networks->getNetworkId();
+	$net = OIRC::$networks->getNetworkId();
 	
 	$spLinks = array();
 	
 	$dispNetworks = array();
 	$guests = 0;
-	foreach($networks->getNetsarray() as $n){
+	foreach(OIRC::$networks->getNetsarray() as $n){
 		$addNet = array(
 			'id' => $n['id'],
 			'normal' => $n['normal'],
@@ -109,56 +93,54 @@ if(isset($_GET['js'])){
 			$addNet['checkLogin'] = $n['config']['checkLogin'];
 		}
 		$dispNetworks[] = $addNet;
-		if($n['id'] == $you->getNetwork()){
+		if($n['id'] == OIRC::$you->getNetwork()){
 			$spLinks = $n['config']['spLinks'];
 			$guests = $n['config']['guests'];
 		}
 	}
 	
-	$v = $vars->get(array('extra_chan_msg_'.(string)$net,'defaults_'.(string)$net,'smileys'));
+	$v = OIRC::$vars->get(array('extra_chan_msg_'.(string)$net,'defaults_'.(string)$net,'smileys'));
 	
 	echo json_encode(array(
-		'hostname' => $config['settings']['hostname'],
+		'hostname' => OIRC::$config['settings']['hostname'],
 		'channels' => $channels,
 		'smileys' => $v['smileys'],
 		'networks' => $dispNetworks,
-		'network' => $you->getNetwork(),
+		'network' => OIRC::$you->getNetwork(),
 		'checkLoginUrl' => $cl,
 		'defaults' => $v['defaults_'.(string)$net]?$v['defaults_'.(string)$net]:array(),
 		'spLinks' => $spLinks,
 		'guests' => $guests,
 		'websockets' => array(
-			'use' => $config['websockets']['use'] && $config['settings']['useBot'],
-			'host' => $config['websockets']['host']?$config['websockets']['host']:$config['settings']['hostname'],
-			'port' => $config['websockets']['port'],
-			'ssl' => $config['websockets']['ssl'] || $config['websockets']['fssl']
+			'use' => OIRC::$config['websockets']['use'] && OIRC::$config['settings']['useBot'],
+			'host' => OIRC::$config['websockets']['host']?OIRC::$config['websockets']['host']:OIRC::$config['settings']['hostname'],
+			'port' => OIRC::$config['websockets']['port'],
+			'ssl' => OIRC::$config['websockets']['ssl'] || OIRC::$config['websockets']['fssl']
 		),
 		'extraChanMsg' => $v['extra_chan_msg_'.(string)$net]?$v['extra_chan_msg_'.(string)$net]:''
 	));
 }elseif(isset($_GET['admincfg'])){
-	include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 	header('Content-type: application/json');
-	if($you->isGlobalOp()){
+	if(OIRC::$you->isGlobalOp()){
 		echo json_encode(array(
-			'betaUpdates' => isset($config['settings']['betaUpdates'])&&$config['settings']['betaUpdates']
+			'betaUpdates' => isset(OIRC::$config['settings']['betaUpdates'])&&OIRC::$config['settings']['betaUpdates']
 		));
 	}else{
-		$json->addError('permission denied');
-		echo $json->get();
+		OIRC::$json->addError('permission denied');
+		echo OIRC::$json->get();
 	}
 }elseif(isset($_GET['channels'])){
-	include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 	header('Content-type: application/json');
-	if($you->getNetwork()==0 && $you->isLoggedIn()){
+	if(OIRC::$you->getNetwork()==0 && OIRC::$you->isLoggedIn()){
 		$dispChans = array();
-		foreach($config['channels'] as $chan){
+		foreach(OIRC::$config['channels'] as $chan){
 			$dispChans[$chan['id']] = $chan['alias'];
 		}
 		echo json_encode(array(
 			'channels' => $dispChans
 		),JSON_FORCE_OBJECT);
 	}else{
-		$json->addError('permission denied');
-		echo $json->get();
+		OIRC::$json->addError('permission denied');
+		echo OIRC::$json->get();
 	}
 }

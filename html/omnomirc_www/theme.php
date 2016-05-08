@@ -55,7 +55,7 @@ function getColor($c,$condition = true,$default = '#000000'){
 	return ($c!==NULL && $condition?$c:$default);
 }
 
-if(isset($_GET['theme']) && ($themes = $vars->get('themes')) && isset($themes[$_GET['theme']])){
+if(isset($_GET['theme']) && ($themes = OIRC::$vars->get('themes')) && isset($themes[$_GET['theme']])){
 	$t = $themes[$_GET['theme']];
 	header('Content-Type: text/css');
 	$lastModified = $t['lastModified'];

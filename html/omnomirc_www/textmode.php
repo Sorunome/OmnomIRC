@@ -28,23 +28,23 @@ include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 
 
 if(isset($_GET['message'])){
-	echo "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" /></head><body><form action='textmode.php?sendMessage&curline=".((int)$_GET['curline'])."&".$you->getUrlParams()."' method='post'><input type='text' name='message' autofocus autocomplete=\"off\" style='width:100%'><input type='Submit' value='Send'></form><a href=\"textmode.php?curline=".((int)$_GET['curline'])."&".$you->getUrlParams()."\">Cancel</a><table>".$_SESSION['content']."</table></body></html>";
+	echo "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" /></head><body><form action='textmode.php?sendMessage&curline=".((int)$_GET['curline'])."&".OIRC::$you->getUrlParams()."' method='post'><input type='text' name='message' autofocus autocomplete=\"off\" style='width:100%'><input type='Submit' value='Send'></form><a href=\"textmode.php?curline=".((int)$_GET['curline'])."&".OIRC::$you->getUrlParams()."\">Cancel</a><table>".$_SESSION['content']."</table></body></html>";
 }elseif (isset($_GET['sendMessage'])){
-	header("Location: message.php?textmode&curline=".((int)$_GET['curline'])."&".$you->getUrlParams()."&message=".base64_url_encode($_POST['message']));
+	header("Location: message.php?textmode&curline=".((int)$_GET['curline'])."&".OIRC::$you->getUrlParams()."&message=".base64_url_encode($_POST['message']));
 }else{
-	$net = $networks->get($you->getNetwork());
-	if(!$you->isLoggedIn() && $net['config']['guests'] == 0){
+	$net = OIRC::$networks->get(OIRC::$you->getNetwork());
+	if(!OIRC::$you->isLoggedIn() && $net['config']['guests'] == 0){
 		echo 'You need to log in to be able to view chat!';
 		die();
 	}
 	$banned = false;
 	if(isset($_GET['update']) && isset($_GET['curline']) && !(isset($_SESSION['content']) && $_SESSION['content']==='')){
 		$curline = (int)$_GET['curline'];
-		$query = $sql->query_prepare("SELECT * FROM `{db_prefix}lines` WHERE `line_number` > ? AND (`channel` = ? OR (`channel` = ?  AND `online` = ?)) ORDER BY `line_number` ASC",array((int)$curline,$you->chan,$you->nick,$you->getNetwork()));
-		$lines = $omnomirc->getLines($query);
+		$query = OIRC::$sql->query_prepare("SELECT * FROM `{db_prefix}lines` WHERE `line_number` > ? AND (`channel` = ? OR (`channel` = ?  AND `online` = ?)) ORDER BY `line_number` ASC",array((int)$curline,OIRC::$you->chan,OIRC::$you->nick,OIRC::$you->getNetwork()));
+		$lines = OIRC::getLines($query);
 	}else{
 		$curline = 0;
-		if($you->isBanned()){
+		if(OIRC::$you->isBanned()){
 			$banned = true;
 			$lines = array(
 				array(
@@ -55,11 +55,11 @@ if(isset($_GET['message'])){
 						'name' => '',
 						'message' => 'Banned',
 						'name2' => '',
-						'chan' => $you->chan
+						'chan' => OIRC::$you->chan
 				)
 			);
 		}else{
-			$lines = $omnomirc->loadChannel(25);
+			$lines = OIRC::loadChannel(25);
 		}
 		$_SESSION['content'] = '';
 	}
@@ -113,6 +113,6 @@ if(isset($_GET['message'])){
 			}
 		}
 	}
-	echo "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />".($banned?'':("<meta http-equiv=\"refresh\" content=\"5;url=textmode.php?update=".time()."&curline=".$curline."&".$you->getUrlParams()."\">"))."</head>
-	<body>".($you->isLoggedIn()?"<a href=\"textmode.php?message&curline=".$curline."&".$you->getUrlParams()."\" autofocus>Click here to write a message</a>":"You need to log in if you want to chat!")."<br>Channel: ".($you->channelName())."<table>".$_SESSION['content']."</table></body></html>";
+	echo "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />".($banned?'':("<meta http-equiv=\"refresh\" content=\"5;url=textmode.php?update=".time()."&curline=".$curline."&".OIRC::$you->getUrlParams()."\">"))."</head>
+	<body>".(OIRC::$you->isLoggedIn()?"<a href=\"textmode.php?message&curline=".$curline."&".OIRC::$you->getUrlParams()."\" autofocus>Click here to write a message</a>":"You need to log in if you want to chat!")."<br>Channel: ".(OIRC::$you->channelName())."<table>".$_SESSION['content']."</table></body></html>";
 }

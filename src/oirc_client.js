@@ -1377,12 +1377,36 @@ $(function(){
 					self.lastMessage = line.time*1000;
 					
 					return;
+				},
+				setSmileys:function(sm){
+					$('#smileyselect').empty().append(
+						$.map(sm,function(s){
+							return [(s.inMenu?($('<img>')
+								.attr({
+									src:s.pic,
+									alt:s.alt,
+									title:s.title
+								})
+								.click(function(){
+									if(!wysiwyg.support()){
+										replaceText(' '+s.code,$('#message')[0]);
+									}else{
+										var range = window.getSelection().getRangeAt(0);
+										range.deleteContents();
+										range.insertNode(document.createTextNode(' '+s.code));
+										wysiwyg.updateContent();
+									}
+								})):''),' '];
+								
+						})
+					);
 				}
 			};
 			return {
 				init:self.init,
 				registerToggle:self.registerToggle,
-				addLine:self.addLine
+				addLine:self.addLine,
+				setSmileys:self.setSmileys
 			};
 		})(),
 		statusBar = (function(){
@@ -1448,6 +1472,7 @@ $(function(){
 	oirc.onchannelpart = oirc.channels.part;
 	oirc.ontopicchange = topic.set;
 	oirc.onnotification = notification.make;
+	oirc.onsmileychange = page.setSmileys;
 	
 	oirc.connect(function(){
 		if(oirc.options.get('enable')){

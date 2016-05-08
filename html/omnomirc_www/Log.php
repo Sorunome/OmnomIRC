@@ -21,15 +21,15 @@
 namespace oirc;
 include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 
-$net = $networks->get($you->getNetwork());
-if(!$you->isLoggedIn() && $net['config']['guests'] == 0){
+$net = OIRC::$networks->get(OIRC::$you->getNetwork());
+if(!OIRC::$you->isLoggedIn() && $net['config']['guests'] == 0){
 	$msg = 'You need to log in to be able to view chat!';
 	if(isset($_GET['noLoginErrors'])){
-		$json->add('message',$msg);
+		OIRC::$json->add('message',$msg);
 	}else{
-		$json->addError($msg);
+		OIRC::$json->addError($msg);
 	}
-	echo $json->get();
+	echo OIRC::$json->get();
 	die();
 }
 
@@ -37,33 +37,33 @@ if(isset($_GET['offset'])){
 	$offset = (int)$_GET['offset'];
 }else{
 	$offset = 0;
-	$json->addWarning('Didn\'t set an offset, defaulting to zero.');
+	OIRC::$json->addWarning('Didn\'t set an offset, defaulting to zero.');
 }
-$channel = $you->chan;
+$channel = OIRC::$you->chan;
 
-if($you->isBanned()){
-	$json->add('banned',true);
-	$json->add('admin',false);
-	$json->add('lines',array());
-	$json->add('users',array());
-	echo $json->get();
+if(OIRC::$you->isBanned()){
+	OIRC::$json->add('banned',true);
+	OIRC::$json->add('admin',false);
+	OIRC::$json->add('lines',array());
+	OIRC::$json->add('users',array());
+	echo OIRC::$json->get();
 	die();
 }
-$json->add('banned',false);
-$json->add('admin',$you->isGlobalOp());
+OIRC::$json->add('banned',false);
+OIRC::$json->add('admin',OIRC::$you->isGlobalOp());
 
 if(isset($_GET['day'])){
 	$t_low = (int)DateTime::createFromFormat('Y-n-j H:i:s',base64_url_decode($_GET['day']).' 00:00:00')->getTimestamp();
 }else{
 	$t_low = (int)time();
-	$json->addWarning('No day set, defaulting to today');
+	OIRC::$json->addWarning('No day set, defaulting to today');
 }
 $t_high = $t_low + (3600 * 24);
 $lines = array();
 $table = '{db_prefix}lines_old';
 // $table is NEVER user-defined, it is only {db_prefix}lines_old or {db_prefix}lines!!
 while(true){
-	$res = $sql->query_prepare("SELECT * FROM `$table`
+	$res = OIRC::$sql->query_prepare("SELECT * FROM `$table`
 		WHERE
 				`channel` = ?
 			AND
@@ -94,7 +94,7 @@ while(true){
 	break;
 }
 
-$json->add('lines',$lines);
+OIRC::$json->add('lines',$lines);
 
 
-echo $json->get();
+echo OIRC::$json->get();

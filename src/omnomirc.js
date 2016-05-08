@@ -102,6 +102,7 @@ var OmnomIRC = function(){
 							self.hostname = data.hostname;
 							channels.setChans(data.channels);
 							parser.setSmileys(data.smileys);
+							oirc.onsmileychange(data.smileys);
 							parser.setSpLinks(data.spLinks);
 							
 							self.guestLevel = data.guests;
@@ -2231,6 +2232,7 @@ var OmnomIRC = function(){
 	this.onchannelchange = function(){};
 	this.onchanneljoin = function(){};
 	this.onchannelpart = function(){};
+	this.onsmileychange = function(){};
 	this.onsetval = false;
 	this.ongetval = false;
 	this.ontopicchange = function(){};
