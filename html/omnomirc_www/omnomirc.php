@@ -88,7 +88,7 @@ class OIRC{
 				ORDER BY `line_number` ASC
 				",array(OIRC::$you->chan,(int)$offset,(int)$count));
 			
-			$lines = $this->getLines($res,$table,true); // we don't want ignores to land in cache, thus override them!
+			$lines = self::getLines($res,$table,true); // we don't want ignores to land in cache, thus override them!
 			
 			if(count($lines)<$count && $table=='{db_prefix}lines'){
 				$count -= count($lines);

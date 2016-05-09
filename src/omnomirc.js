@@ -49,12 +49,13 @@ var OmnomIRC = function(){
 				pmIdent:false,
 				guestLevel:0,
 				isGuest:true,
-				identGuest:function(name,remember,fn){
+				identGuest:function(name,sig,remember,fn){
 					if(fn === undefined){
 						fn = remember;
 						remember = false;
 					}
-					network.getJSON('misc.php?identName='+base64.encode(name),function(data){
+					console.log('trying login');
+					network.getJSON('misc.php?identName='+base64.encode(name)+'&nick='+base64.encode(name)+'&signature='+base64.encode(sig)+'&id=-1&network='+self.getNetwork(),function(data){
 						if(data.success){
 							if(remember){
 								ls.set('guestName',name);
@@ -69,7 +70,7 @@ var OmnomIRC = function(){
 						if(fn!==undefined){
 							fn(data);
 						}
-					});
+					},true,false);
 				},
 				logout:function(){
 					ls.set('guestName','');
@@ -89,6 +90,7 @@ var OmnomIRC = function(){
 						clOnly = false;
 					}
 					if(clOnly && self.loggedIn() && self.isGuest){
+						console.log('i am silly');
 						self.identGuest(self.nick,function(data){
 							if(data.success){
 								self.signature = data.signature;
@@ -2218,8 +2220,7 @@ var OmnomIRC = function(){
 		nick:settings.nick,
 		guestLevel:settings.guestLevel,
 		identGuest:settings.identGuest,
-		logout:settings.logout,
-		login:settings.login
+		logout:settings.logout
 	};
 	this.ls = {
 		get:ls.get,

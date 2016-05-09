@@ -40,14 +40,14 @@ if(strpos($_SERVER['HTTP_USER_AGENT'],'textmode;')!==false || isset($_GET['textm
 	exit;
 }
 
-$page = getSkin('lobster');
+$page = Skins::getSkin('lobster');
 
-parseScripts($page,'js',function(&$page,$file){
+Skins::parseScripts($page,'js',function(&$page,$file){
 	$page['head'] .= '<script type="text/javascript" src="'.htmlentities($file).'"></script>';
 },function(&$page,$file){
 	$page['head'] .= '<script type="text/javascript">'.$file.'</script>';
 });
-parseScripts($page,'css',function(&$page,$file){
+Skins::parseScripts($page,'css',function(&$page,$file){
 	$page['head'] .= '<link rel="stylesheet" type="text/css" href="'.htmlentities($file).'" />';
 },function(&$page,$file){
 	$page['head'] .= '<style type="text/css">'.$file.'</style>';

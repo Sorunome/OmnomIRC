@@ -20,47 +20,59 @@
 */
 namespace oirc;
 include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
-function parseScripts(&$page,$type,$include,$inline){
-	foreach($page[$type] as $js){
-		if(!is_array($js)){
-			$js = array(
-				'file' => $js
-			);
-		}
-		$js = array_merge(array(
-			'type' => 'file',
-			'file' => '',
-			'minified' => false,
-			'absolute' => false,
-		),$js);
-		if($js['type'] != 'inline' && substr($js['file'],-1-strlen($type)) != '.'.$type){ // nothing to do
-			continue;
-		}
-		if($js['type'] == 'file'){
-			$file = substr($js['file'],0,-1-strlen($type));
-			if(!$js['absolute'] ){
-				$file = $page['path'].'/'.$file;
+class Skins {
+	public static $handle;
+	private static $hooks = array(
+		'' => '\oirc\skins\lobster\getPage',
+		'options' => '\oirc\skins\lobster\getOptions',
+		'admin' => '\oirc\skins\lobster\getAdmin'
+	);
+	public static function parseScripts(&$page,$type,$include,$inline){
+		foreach($page[$type] as $js){
+			if(!is_array($js)){
+				$js = array(
+					'file' => $js
+				);
 			}
-			$include($page,$file.($js['minified'] && (!isset(OIRC::$config['settings']['minified'])||OIRC::$config['settings']['minified'])?'.min':'').'.'.$type);
-		}else{
-			$inline($page,$js['file']);
+			$js = array_merge(array(
+				'type' => 'file',
+				'file' => '',
+				'minified' => false,
+				'absolute' => false,
+			),$js);
+			if($js['type'] != 'inline' && substr($js['file'],-1-strlen($type)) != '.'.$type){ // nothing to do
+				continue;
+			}
+			if($js['type'] == 'file'){
+				$file = substr($js['file'],0,-1-strlen($type));
+				if(!$js['absolute'] ){
+					$file = $page['path'].'/'.$file;
+				}
+				$include($page,$file.($js['minified'] && (!isset(OIRC::$config['settings']['minified'])||OIRC::$config['settings']['minified'])?'.min':'').'.'.$type);
+			}else{
+				$inline($page,$js['file']);
+			}
 		}
 	}
-}
-function getSkin($name){
-	$path = realpath(dirname(__FILE__)).'/skins/'.$name;
-	if(file_exists($path.'/skin.php')){
-		include_once($path.'/skin.php');
-		if(isset($_GET['options'])){
-			$page = \oirc\skin\getOptions();
-		}elseif(isset($_GET['admin'])){
-			$page = \oirc\skin\getAdmin();
-		}else{
-			$page = \oirc\skin\getPage();
+
+	public static function getSkin($name){
+		include_once(realpath(dirname(__FILE__)).'/skins/lobster/skin.php');
+		$path = realpath(dirname(__FILE__)).'/skins/'.$name;
+		if(file_exists($path.'/skin.php')){
+			include_once($path.'/skin.php');
+		}
+		$page = false;
+		foreach(self::$hooks as $action => $function){
+			if(isset($_GET[$action])){
+				$page = $function;
+				break;
+			}
 		}
 		if(!$page){
-			return getSkin('lobster');
+			$page = self::$hooks[''];
 		}
+		$page = $page();
+		
 		// combind with default options to make sure they always exist
 		$page = array_merge(array(
 			'html' => '',
@@ -90,5 +102,5 @@ function getSkin($name){
 		));
 		return $page;
 	}
-	return getSkin('lobster');
+
 }

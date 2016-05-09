@@ -1197,10 +1197,16 @@ $(function(){
 					scroll.down();
 				},
 				initGuestLogin:function(){
-					var tryLogin = function(name,remember){
-							oirc.settings.identGuest(name,remember,function(data){
+					var tryLogin = function(name,sig,remember,quiet){
+							if(remember === undefined){
+								remember = sig;
+								sig = '';
+							}
+							oirc.settings.identGuest(name,sig,remember,function(data){
 								if(!data.success){
-									alert('ERROR'+(data.message?': '+data.message:''));
+									if(!quiet){
+										alert('ERROR'+(data.message?': '+data.message:''));
+									}
 									loginFail();
 									return;
 								}
@@ -1231,8 +1237,7 @@ $(function(){
 							$(window).trigger('resize');
 						}
 					if(oirc.ls.get('guestName')){
-						oirc.settings.login(oirc.ls.get('guestName'),oirc.ls.get('guestSig'));
-						tryLogin(oirc.ls.get('guestName'),true);
+						tryLogin(oirc.ls.get('guestName'),oirc.ls.get('guestSig'),true,true);
 					}else{
 						loginFail();
 					}

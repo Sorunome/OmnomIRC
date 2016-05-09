@@ -48,7 +48,7 @@ if(isset($_GET['message'])){
 			$banned = true;
 			$lines = array(
 				array(
-						'curLine' => (int)$curMax,
+						'curline' => (int)$curMax,
 						'type' => 'server',
 						'network' => 0,
 						'time' => time(),
@@ -102,8 +102,8 @@ if(isset($_GET['message'])){
 				$line .= '<td>* '.htmlspecialchars($result['message']).'</td>';
 				break;
 		}
-		if((int)$result['curLine'] > $curline){
-			$curline = (int)$result['curLine'];
+		if((int)$result['curline'] > $curline){
+			$curline = (int)$result['curline'];
 		}
 		if($line!='<tr>'){
 			if(isset($_SESSION['content'])){
