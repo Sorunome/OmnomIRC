@@ -55,7 +55,8 @@ function getColor($c,$condition = true,$default = '#000000'){
 	return ($c!==NULL && $condition?$c:$default);
 }
 
-if(isset($_GET['theme']) && ($themes = OIRC::$vars->get('themes')) && isset($themes[$_GET['theme']])){
+if(isset($_GET['theme']) && ($themes = OIRC::$vars->get('themes')) && isset($themes[$_GET['theme']]) && isset($_GET['skin'])){
+	include_once(realpath(dirname(__FILE__)).'/skins.php');
 	$t = $themes[$_GET['theme']];
 	header('Content-Type: text/css');
 	$lastModified = $t['lastModified'];
@@ -66,117 +67,5 @@ if(isset($_GET['theme']) && ($themes = OIRC::$vars->get('themes')) && isset($the
 		header('HTTP/1.1 304 Not Modified');
 		exit;
 	}
-	$bg = getColor($t['colors']['bg']);
-	$bg2 = getColor($t['colors']['bg2']);
-	$border = getColor($t['colors']['border']);
-	$text = getColor($t['colors']['text']);
-	$link = getColor($t['colors']['link']);
-	$tablink = getColor($t['colors']['tablink'],$t['usetablink'],$link);
-	$btn = getColor($t['colors']['btn'],$t['usebtn'],$bg2);
-	$btnhover = getColor($t['colors']['btnhover'],$t['usebtnhover'],$bg2);
-	$form = getColor($t['colors']['form'],$t['useform'],$bg);
-	$popupbg = getColor($t['colors']['popupbg'],$t['usepopupbg'],$bg2);
-	$popupborder = getColor($t['colors']['popupborder'],$t['usepopupborder'],$border);
-	if(isset($t['sheet']) && $t['sheet'] != ''){
-		echo '@import url("'.$t['sheet'].'");';
-	}
-	echo "
-	#UserListContainer,
-	#topicbox,
-	#scrollBar,
-	td.curchan,
-	#scrollBarLine,
-	#UserListInnerCont,
-	#logsHeader,
-	#textDecoForm,
-	#pickUsernamePopup,
-	#logDatePicker,
-	.lineHigh {
-		background: $bg2;
-		border-color: $border;
-		color: $text;
-	}
-	.dateSeperator > td {
-		border-color: $border;
-	}
-	.popup {
-		background: $popupbg;
-		border-color: $popupborder;
-		color: $text;
-	}
-	#scrollBar:active{
-		box-shadow: 0 0 4px $border;
-	}
-
-	#Channels {
-		box-shadow: inset 0 -1px $border;
-	}
-
-	.chan {
-		border: 1px solid ".hex2rgba($border,0.4).";
-		border-top-color: ".hex2rgba($border,0.8).";
-		color: $tablink;
-	}
-
-	.chan.curchan {
-		background: $bg2;
-		border-color: ".hex2rgba($border,0.8).";
-		border-bottom-color: $bg2;
-		color: $tablink;
-	}
-
-	.chan.curchan:hover {
-		background: $bg2;
-	}
-
-	.chan:hover {
-		background: ".hex2rgba($bg2,0.5).";
-	}
-	#scrollbar:active{
-		box-shadow: 0 0 4px $border;
-	}
-	body,
-	#scrollBar:hover,
-	#scrollBar:active,
-	#UserListInnerCont:hover{
-		background: $bg;
-	}
-	body,
-	#UserListInnerCont,
-	.irc-date,
-	td.curchan,
-	.highlight,
-	.optionsTable .option.selected{
-		color:$text;
-	}
-	a,a:link,a:visited,a:hover,a:active{
-		border-color:$link;
-		color:$link;
-	}
-	a:hover{
-		text-shadow:0 0 4px ".hex2rgba($link,0.8).";
-	}
-	span#message,input#message,input,select{
-		background:$form;
-		color:$text;
-		border:1px solid $border;
-	}
-	button,#send{
-		background:$btn;
-		color:$text;
-		border:1px solid $border;
-	}
-	.logDatePickerDay.current{
-		background:$btn;
-	}
-	button:hover,#send:hover,.logDatePickerDay:hover{
-		background:$btnhover;
-	}
-	.optionsTable .option{
-		color:$link;
-		border-right-color:$text;
-	}
-	.optionsTable .option:hover{
-		text-shadow:0 0 4px ".hex2rgba($link,0.8).";
-	}";
+	echo Skins::getTheme($_GET['skin'],$t);
 }

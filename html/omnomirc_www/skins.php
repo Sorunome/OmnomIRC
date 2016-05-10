@@ -27,8 +27,26 @@ class Skins {
 		'options' => '\oirc\skins\lobster\getOptions',
 		'admin' => '\oirc\skins\lobster\getAdmin'
 	);
+	private static $themes = array();
+	public static function theme($name,$function){
+		self::$themes[$name] = $function;
+	}
 	public static function hook($action,$function){
 		self::$hooks[$action] = $function;
+	}
+	public static function getTheme($name,$t){
+		if(!preg_match('/^[\w]+$/',$name)){
+			return '';
+		}
+		$path = realpath(dirname(__FILE__)).'/skins/'.$name;
+		if(!file_exists($path.'/skin.php')){
+			return '';
+		}
+		include_once($path.'/skin.php');
+		if(!isset(self::$themes[$name])){
+			return '';
+		}
+		return self::$themes[$name]($t);
 	}
 	public static function parseScripts(&$page,$type,$include,$inline){
 		foreach($page[$type] as $js){
@@ -43,21 +61,29 @@ class Skins {
 				'minified' => false,
 				'absolute' => false,
 			),$js);
+			$ext = true;
 			if($js['type'] != 'inline' && substr($js['file'],-1-strlen($type)) != '.'.$type){ // nothing to do
-				continue;
+				$ext = false;
 			}
 			if($js['type'] == 'file'){
-				$file = substr($js['file'],0,-1-strlen($type));
+				$file = $ext?substr($js['file'],0,-1-strlen($type)):$js['file'];
 				if(!$js['absolute'] ){
 					$file = $page['path'].'/'.$file;
 				}
-				$include($page,$file.($js['minified'] && (!isset(OIRC::$config['settings']['minified'])||OIRC::$config['settings']['minified'])?'.min':'').'.'.$type);
+				if($ext){
+					$include($page,$file.($js['minified'] && (!isset(OIRC::$config['settings']['minified'])||OIRC::$config['settings']['minified'])?'.min':'').'.'.$type);
+				}else{
+					$include($page,$file);
+				}
 			}else{
 				$inline($page,$js['file']);
 			}
 		}
 	}
 	public static function getSkin($name){
+		if(!preg_match('/^[\w]+$/',$name)){
+			$name = 'lobster';
+		}
 		include_once(realpath(dirname(__FILE__)).'/skins/lobster/skin.php');
 		$path = realpath(dirname(__FILE__)).'/skins/'.$name;
 		if(file_exists($path.'/skin.php')){
@@ -102,6 +128,16 @@ class Skins {
 			'minified' => true,
 			'absolute' => true
 		));
+		
+
+		$theme = OIRC::$networks->get(OIRC::$you->getNetwork());
+		$theme = $theme['config']['theme'];
+		if($theme != -1){
+			$page['css'][] = array(
+				'file' => 'theme.php?skin='.$name.'&theme='.$theme,
+				'absolute' => true
+			);
+		}
 		return $page;
 	}
 

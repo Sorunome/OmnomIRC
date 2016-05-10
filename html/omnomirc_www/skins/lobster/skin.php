@@ -335,3 +335,122 @@ function getAdmin(){
 		)
 	);
 }
+
+function getTheme($t){
+	$bg = \oirc\getColor($t['colors']['bg']);
+	$bg2 = \oirc\getColor($t['colors']['bg2']);
+	$border = \oirc\getColor($t['colors']['border']);
+	$text = \oirc\getColor($t['colors']['text']);
+	$link = \oirc\getColor($t['colors']['link']);
+	$tablink = \oirc\getColor($t['colors']['tablink'],$t['usetablink'],$link);
+	$btn = \oirc\getColor($t['colors']['btn'],$t['usebtn'],$bg2);
+	$btnhover = \oirc\getColor($t['colors']['btnhover'],$t['usebtnhover'],$bg2);
+	$form = \oirc\getColor($t['colors']['form'],$t['useform'],$bg);
+	$popupbg = \oirc\getColor($t['colors']['popupbg'],$t['usepopupbg'],$bg2);
+	$popupborder = \oirc\getColor($t['colors']['popupborder'],$t['usepopupborder'],$border);
+	$css = '';
+	if(isset($t['sheet']) && $t['sheet'] != ''){
+		$css .= '@import url("'.$t['sheet'].'");';
+	}
+	$css .= "
+	#UserListContainer,
+	#topicbox,
+	#scrollBar,
+	td.curchan,
+	#scrollBarLine,
+	#UserListInnerCont,
+	#logsHeader,
+	#textDecoForm,
+	#pickUsernamePopup,
+	#logDatePicker,
+	.lineHigh {
+		background: $bg2;
+		border-color: $border;
+		color: $text;
+	}
+	.dateSeperator > td {
+		border-color: $border;
+	}
+	.popup {
+		background: $popupbg;
+		border-color: $popupborder;
+		color: $text;
+	}
+	#scrollBar:active{
+		box-shadow: 0 0 4px $border;
+	}
+
+	#Channels {
+		box-shadow: inset 0 -1px $border;
+	}
+
+	.chan {
+		border: 1px solid ".\oirc\hex2rgba($border,0.4).";
+		border-top-color: ".\oirc\hex2rgba($border,0.8).";
+		color: $tablink;
+	}
+
+	.chan.curchan {
+		background: $bg2;
+		border-color: ".\oirc\hex2rgba($border,0.8).";
+		border-bottom-color: $bg2;
+		color: $tablink;
+	}
+
+	.chan.curchan:hover {
+		background: $bg2;
+	}
+
+	.chan:hover {
+		background: ".\oirc\hex2rgba($bg2,0.5).";
+	}
+	#scrollbar:active{
+		box-shadow: 0 0 4px $border;
+	}
+	body,
+	#scrollBar:hover,
+	#scrollBar:active,
+	#UserListInnerCont:hover{
+		background: $bg;
+	}
+	body,
+	#UserListInnerCont,
+	.irc-date,
+	td.curchan,
+	.highlight,
+	.optionsTable .option.selected{
+		color:$text;
+	}
+	a,a:link,a:visited,a:hover,a:active{
+		border-color:$link;
+		color:$link;
+	}
+	a:hover{
+		text-shadow:0 0 4px ".\oirc\hex2rgba($link,0.8).";
+	}
+	span#message,input#message,input,select{
+		background:$form;
+		color:$text;
+		border:1px solid $border;
+	}
+	button,#send{
+		background:$btn;
+		color:$text;
+		border:1px solid $border;
+	}
+	.logDatePickerDay.current{
+		background:$btn;
+	}
+	button:hover,#send:hover,.logDatePickerDay:hover{
+		background:$btnhover;
+	}
+	.optionsTable .option{
+		color:$link;
+		border-right-color:$text;
+	}
+	.optionsTable .option:hover{
+		text-shadow:0 0 4px ".\oirc\hex2rgba($link,0.8).";
+	}";
+	return $css;
+}
+\oirc\Skins::theme('lobster','\oirc\skins\lobster\getTheme');

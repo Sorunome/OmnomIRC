@@ -55,14 +55,11 @@ Skins::parseScripts($page,'css',function(&$page,$file){
 
 // now it's time to construct the page!
 
-$theme = OIRC::$networks->get(OIRC::$you->getNetwork());
-$theme = $theme['config']['theme'];
 echo '<!DOCTYPE html><html><head>
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta charset="utf-8" />
 	<title>'.$page['title'].'</title>
 	<link rel="icon" type="image/png" href="'.htmlentities($page['favicon']).'">
 	'.$page['head'].'
-	'.($theme!=-1?'<link rel="stylesheet" type="text/css" href="theme.php?theme='.$theme.'" />':'').'
 </head>
 <body>'.$page['html'].'</body></html>';
