@@ -27,6 +27,9 @@ class Skins {
 		'options' => '\oirc\skins\lobster\getOptions',
 		'admin' => '\oirc\skins\lobster\getAdmin'
 	);
+	public static function hook($action,$function){
+		self::$hooks[$action] = $function;
+	}
 	public static function parseScripts(&$page,$type,$include,$inline){
 		foreach($page[$type] as $js){
 			if(!is_array($js)){
@@ -54,7 +57,6 @@ class Skins {
 			}
 		}
 	}
-
 	public static function getSkin($name){
 		include_once(realpath(dirname(__FILE__)).'/skins/lobster/skin.php');
 		$path = realpath(dirname(__FILE__)).'/skins/'.$name;

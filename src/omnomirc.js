@@ -455,33 +455,13 @@ var OmnomIRC = function(){
 							return true;
 						}
 					},
-					altLines:{
-						disp:'Alternating Line Highlight',
-						default:true
-					},
-					enable:{
-						disp:'Enable OmnomIRC',
-						default:true
-					},
 					ding:{
 						disp:'Ding on Highlight',
 						default:false
 					},
-					times:{
-						disp:'Show Timestamps',
-						default:true
-					},
-					statusBar:{
-						disp:'Show Updates in Browser Status Bar',
-						default:true
-					},
 					smileys:{
 						disp:'Show Smileys',
 						default:true
-					},
-					hideUserlist:{
-						disp:'Hide Userlist',
-						default:false
 					},
 					charsHigh:{
 						disp:'Number chars for Highlighting',
@@ -505,56 +485,13 @@ var OmnomIRC = function(){
 								);
 						}
 					},
-					scrollBar:{
-						disp:'Show Scrollbar',
-						default:true
-					},
-					scrollWheel:{
-						disp:'Enable Scrollwheel',
-						default:true
-					},
-					browserNotifications:{
-						disp:'Browser Notifications',
-						default:false,
-						before:function(){
-							notification.request();
-							return false;
-						}
-					},
 					oircJoinPart:{
 						disp:'Show OmnomIRC join/part messages',
-						default:false
-					},
-					wysiwyg:{
-						disp:'Use WYSIWYG editor',
 						default:false
 					},
 					textDeco:{
 						disp:'Enable simple text decorations',
 						default:false
-					},
-					fontSize:{
-						disp:'Font Size',
-						default:9,
-						handler:function(){
-							return $('<td>')
-								.attr('colspan',2)
-								.css('border-right','none')
-								.append($('<input>')
-									.attr({
-										type:'number',
-										step:1,
-										min:1,
-										max:42
-									})
-									.css('width','3em')
-									.val(self.get('fontSize'))
-									.change(function(){
-										self.set('fontSize',parseInt(this.value,10));
-										$('body').css('font-size',this.value+'pt');
-									})
-								)
-						}
 					}
 				},
 				set:function(s,v){
@@ -597,6 +534,9 @@ var OmnomIRC = function(){
 						}
 					});
 					return a;
+				},
+				setAll:function(o){
+					self.allOptions = o;
 				}
 			};
 			return {
@@ -604,7 +544,8 @@ var OmnomIRC = function(){
 				get:self.get,
 				setDefaults:self.setDefaults,
 				setExtraChanMsg:self.setExtraChanMsg,
-				getAll:self.getAll
+				getAll:self.getAll,
+				setAll:self.setAll
 			};
 		})(),
 		instant = (function(){
@@ -2314,4 +2255,9 @@ var OmnomIRC = function(){
 	this.ontopicchange = function(){};
 	this.onnotification = function(){};
 	oirc = this;
+	if(this.setOptions !== undefined){
+		this.options.setAll = options.setAll;
+		this.setOptions();
+		delete this.options.setAll;
+	}
 };

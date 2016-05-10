@@ -141,6 +141,10 @@ function getPage(){
 		'head' => '<noscript><meta http-equiv="refresh" content="0;url=index.php?textmode"></noscript>',
 		'js' => array(
 			array(
+				'file' => 'options.js',
+				'minified' => true
+			),
+			array(
 				'file' => 'client.js',
 				'minified' => true
 			)
@@ -207,13 +211,14 @@ function getOptions(){
 				}
 			});
 			$("body").css("font-size",oirc.options.get("fontSize").toString(10)+"pt");
-			$("#options").append($.map([true,false],function(alternator){
+			var j = 0;
+			$("#options").append($.map([0,1],function(mod){
 				return $("<table>").addClass("optionsTable").append(
 					$.map(oirc.options.getAll(true),function(o,i){
 						if(o.hidden){
 							return;
 						}
-						return ((alternator = !alternator)?$("<tr>").append(
+						return ((j++%2)==mod?$("<tr>").append(
 							$.merge(
 							[$("<td>")
 								.text(o.disp)],
@@ -249,6 +254,10 @@ function getOptions(){
 		'html' => $html,
 		'title' => 'OmnomIRC Options',
 		'js' => array(
+			array(
+				'file' => 'options.js',
+				'minified' => true
+			),
 			array(
 				'type' => 'inline',
 				'file' => $js
@@ -309,6 +318,10 @@ function getAdmin(){
 		'html' => $html,
 		'title' => 'OmnomIRC admin panel',
 		'js' => array(
+			array(
+				'file' => 'options.js',
+				'minified' => true
+			),
 			array(
 				'file' => 'admin.js',
 				'minified' => true
