@@ -54,7 +54,7 @@ if(isset($_GET['ident'])){
 	if(OIRC::$you->isBanned()){
 		OIRC::$json->addError('banned');
 	}else{
-		$temp = OIRC::$sql->query_prepare("SELECT `name`,`network`,`uid` FROM `{db_prefix}userstuff` WHERE LOWER(`name`)=LOWER(?) AND `network`=?",array(base64_url_decode($_GET['openpm']),isset($_GET['checknet'])?$_GET['checknet']:$you->getNetwork()));
+		$temp = OIRC::$sql->query_prepare("SELECT `name`,`network`,`uid` FROM `{db_prefix}userstuff` WHERE LOWER(`name`)=LOWER(?) AND `network`=?",array(base64_url_decode($_GET['openpm']),isset($_GET['checknet'])?$_GET['checknet']:OIRC::$you->getNetwork()));
 		OIRC::$json->add('chanid','*'.OIRC::$you->getWholePmHandler($temp[0]['name'],$temp[0]['network']));
 		OIRC::$json->add('channick',$temp[0]['name']);
 	}

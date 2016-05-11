@@ -32,7 +32,7 @@ class OIRC{
 	public static $you;
 	public static $channels;
 	public static $config;
-	public static function getLines($res,$table = '{db_prefix}lines',$overrideIgnores = false){
+	public static function getLines($res,$table = '{db_prefix}lines',$chan = false){
 		$lines = array();
 		foreach($res as $result){
 			if($result['type']===NULL){
@@ -46,7 +46,7 @@ class OIRC{
 				'name' => $result['name1'],
 				'message' => $result['message'],
 				'name2' => $result['name2'],
-				'chan' => $result['channel'],
+				'chan' => ($chan?$chan:$result['channel']),
 				'uid' => (int)$result['uid']
 			);
 		}
@@ -71,6 +71,8 @@ class OIRC{
 		$offset = count($lines_cached);
 		
 		$count -= $offset;
+		$channel = OIRC::$sql->query_prepare("SELECT {db_prefix}getchanid(?) AS chan",array(OIRC::$you->chan));
+		$channel = $channel[0]['chan'];
 		// $table is NEVER user-defined, only possible values are {db_prefix}lines and {db_prefix}lines_old!!!!!
 		while(true){
 			$res = OIRC::$sql->query_prepare("SELECT x.* FROM
@@ -78,17 +80,17 @@ class OIRC{
 					SELECT * FROM `$table`
 					WHERE
 					(
-						`type` != 'server'
+						`channel` = ?
 						AND
-						LOWER(`channel`) = LOWER(?)
+						`type` != 'server'
 					)
 					ORDER BY `line_number` DESC
 					LIMIT ?,?
 				) AS x
 				ORDER BY `line_number` ASC
-				",array(OIRC::$you->chan,(int)$offset,(int)$count));
+				",array($channel,(int)$offset,(int)$count));
 			
-			$lines = self::getLines($res,$table,true); // we don't want ignores to land in cache, thus override them!
+			$lines = self::getLines($res,$table,OIRC::$you->chan);
 			
 			if(count($lines)<$count && $table=='{db_prefix}lines'){
 				$count -= count($lines);
@@ -712,7 +714,7 @@ class Relay{
 			$values = '';
 			$valArray = array();
 			foreach($this->sendBuffer as $line){
-				$values .= '(?,?,?,?,?,?,?,UNIX_TIMESTAMP(CURRENT_TIMESTAMP)),';
+				$values .= '(?,?,?,?,{db_prefix}getchanid(?),?,?,UNIX_TIMESTAMP(CURRENT_TIMESTAMP)),';
 				if($line['n1'] == '' && $line['n2'] == ''){
 					continue;
 				}
@@ -911,7 +913,7 @@ class You{
 				die();
 			}
 		}
-		$this->chan = $channel;
+		$this->chan = strtolower($channel);
 	}
 	public function channelName(){
 		return $this->chanName;
@@ -1043,7 +1045,7 @@ class You{
 			$net = $this->network;
 		}
 		$uid = OIRC::getUid($nick,$net);
-		if($uid === NULL){
+		if($uid === NULL || $uid == -1){
 			return '';
 		}
 		$otherhandler = '['.$net.','.$uid.']';

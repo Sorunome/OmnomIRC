@@ -39,7 +39,7 @@ if(isset($_GET['offset'])){
 	$offset = 0;
 	OIRC::$json->addWarning('Didn\'t set an offset, defaulting to zero.');
 }
-$channel = OIRC::$you->chan;
+
 
 if(OIRC::$you->isBanned()){
 	OIRC::$json->add('banned',true);
@@ -61,6 +61,9 @@ if(isset($_GET['day'])){
 $t_high = $t_low + (3600 * 24);
 $lines = array();
 $table = '{db_prefix}lines_old';
+
+$channel = OIRC::$sql_query_prepare("SELECT {db_prefix}getchanid(?) AS chan",array(OIRC::$you->chan));
+$channel = $channel[0]['chan'];
 // $table is NEVER user-defined, it is only {db_prefix}lines_old or {db_prefix}lines!!
 while(true){
 	$res = OIRC::$sql->query_prepare("SELECT * FROM `$table`
@@ -75,18 +78,8 @@ while(true){
 			ORDER BY `line_number` ASC
 			LIMIT ?,1000",array($channel,$t_low,$t_high,(int)$offset));
 	
-	foreach($res as $result){
-		$lines[] = array(
-			'curline' => ($table=='{db_prefix}lines'?(int)$result['line_number']:0),
-			'type' => $result['type'],
-			'network' => (int)$result['Online'],
-			'time' => (int)$result['time'],
-			'name' => $result['name1'],
-			'message' => $result['message'],
-			'name2' => $result['name2'],
-			'chan' => $result['channel']
-		);
-	}
+	$lines = array_merge($lines,self::getLines($res,$table,true));
+	
 	if(count($lines)<1000 && $table == '{db_prefix}lines_old'){
 		$table = '{db_prefix}lines';
 		continue;

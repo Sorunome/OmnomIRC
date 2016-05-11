@@ -771,13 +771,10 @@ var OmnomIRC = function(){
 						}
 					},
 					send:function(s,chan,fn){
-						self.old.stop(function(){
-							network.getJSON('message.php?message='+base64.encode(s)+'&channel='+chan,function(){
-								self.old.start();
-								if(fn!==undefined){
-									fn();
-								}
-							});
+						network.getJSON('message.php?message='+base64.encode(s)+'&channel='+chan,function(){
+							if(fn!==undefined){
+								fn();
+							}
 						});
 					}
 				},

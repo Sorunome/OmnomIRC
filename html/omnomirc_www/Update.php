@@ -55,12 +55,13 @@ if(isset($_GET['high'])){
 	OIRC::$json->addWarning('Not set num chars to highlight, defaulting to 4');
 	$numCharsHighlight = 4;
 }
-$channel = OIRC::$you->chan;
+
 $nick = OIRC::$you->nick;
 
 $countBeforeQuit = 0;
 OIRC::$you->update();
-
+$channel = OIRC::$sql->query_prepare("SELECT {db_prefix}getchanid(?) AS chan",array(OIRC::$you->chan));
+$channel = $channel[0]['chan'];
 while(true){
 	if($countBeforeQuit++ >= 50){//Timeout after 25 seconds.
 		OIRC::$you->update();
@@ -160,7 +161,7 @@ while(true){
 				'name' => $result['name1'],
 				'message' => $result['message'],
 				'name2' => $result['name2'],
-				'chan' => $result['channel'],
+				'chan' => OIRC::$you->chan,
 				'uid' => (int)$result['uid']
 			);
 		}else{
