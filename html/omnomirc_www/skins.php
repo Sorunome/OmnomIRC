@@ -130,7 +130,7 @@ class Skins {
 		));
 		
 
-		$theme = OIRC::$networks->get(OIRC::$you->getNetwork());
+		$theme = Networks::get(OIRC::$you->getNetwork());
 		$theme = $theme['config']['theme'];
 		if($theme != -1){
 			$page['css'][] = array(

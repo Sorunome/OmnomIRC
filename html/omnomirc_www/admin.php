@@ -42,17 +42,17 @@ exit;
 '.json_encode(OIRC::$config);
 	if(file_put_contents(realpath(dirname(__FILE__)).'/config.json.php',$file)){
 		if(!$silent){
-			if(!($m = OIRC::$json->getIndex('message'))){
+			if(!($m = Json::getIndex('message'))){
 				$m = '';
 			}
-			OIRC::$json->add('message',$m."\nconfig written");
+			Json::add('message',$m."\nconfig written");
 		}
 		if(!INTERNAL && OIRC::$config['settings']['useBot']){
-			OIRC::$relay->sendLine('','','server_updateconfig','');
-			OIRC::$relay->commitBuffer();
+			Relay::sendLine('','','server_updateconfig','');
+			Relay::commitBuffer();
 		}
 	}else{
-		OIRC::$json->addError('Couldn\'t write config');
+		Json::addError('Couldn\'t write config');
 	}
 }
 function getCheckLoginChallenge(){
@@ -90,47 +90,47 @@ if(INTERNAL){
 if(OIRC::$you->isGlobalOp()){
 	if(OIRC::$config['security']['sigKey']==''){
 		OIRC::$config['security']['sigKey'] = getRandKey();
-		OIRC::$json->addWarning('SigKey wasn\'t set, storing random value');
+		Json::addWarning('SigKey wasn\'t set, storing random value');
 		writeConfig(true);
 	}
 	if(OIRC::$config['security']['ircPwd']==''){
 		OIRC::$config['security']['ircPwd'] = getRandKey();
-		OIRC::$json->addWarning('IRC bot password wasn\'t set, storing random value');
+		Json::addWarning('IRC bot password wasn\'t set, storing random value');
 		writeConfig(true);
 	}
 	if(isset($_GET['get'])){
 		switch($_GET['get']){
 			case 'index':
-				OIRC::$json->add('installed',OIRC::$config['info']['installed']);
-				OIRC::$json->add('version',OIRC::$config['info']['version']);
+				Json::add('installed',OIRC::$config['info']['installed']);
+				Json::add('version',OIRC::$config['info']['version']);
 				if(strpos(file_get_contents(realpath(dirname(__FILE__)).'/updater.php'),'//UPDATER FROMVERSION='.OIRC::$config['info']['version'])!==false){
-					OIRC::$json->add('updaterReady',true);
+					Json::add('updaterReady',true);
 				}else{
-					OIRC::$json->add('updaterReady',false);
+					Json::add('updaterReady',false);
 				}
 				break;
 			case 'themes':
-				if(!$a = OIRC::$vars->get('themes')){
+				if(!$a = Vars::get('themes')){
 					$a = array();
 				}
-				OIRC::$json->add('themes',$a);
+				Json::add('themes',$a);
 				break;
 			case 'channels':
-				OIRC::$json->add('channels',OIRC::$config['channels']);
-				OIRC::$json->add('nets',OIRC::$networks->getNetsArray());
+				Json::add('channels',OIRC::$config['channels']);
+				Json::add('nets',Networks::getNetsArray());
 				break;
 			case 'hotlinks':
-				OIRC::$json->add('hotlinks',OIRC::$vars->get('hotlinks'));
+				Json::add('hotlinks',Vars::get('hotlinks'));
 				break;
 			case 'sql':
-				OIRC::$json->add('sql',array(
+				Json::add('sql',array(
 					'server' => OIRC::$config['sql']['server'],
 					'db' => OIRC::$config['sql']['db'],
 					'user' => OIRC::$config['sql']['user'],
 					'prefix' => OIRC::$config['sql']['prefix'],
 					'passwd' => ''
 				));
-				OIRC::$json->add('pattern',array(
+				Json::add('pattern',array(
 					array(
 						'name' => 'Server',
 						'type' => 'text',
@@ -159,12 +159,12 @@ if(OIRC::$you->isGlobalOp()){
 				));
 				break;
 			case 'smileys':
-				OIRC::$json->add('smileys',OIRC::$vars->get('smileys'));
+				Json::add('smileys',Vars::get('smileys'));
 				break;
 			case 'networks':
 				foreach(OIRC::$config['networks'] as &$n){
 					if($n['type'] == 1){
-						$v = OIRC::$vars->get(array('extra_chan_msg_'.(string)$n['id'],'defaults_'.(string)$n['id']));
+						$v = Vars::get(array('extra_chan_msg_'.(string)$n['id'],'defaults_'.(string)$n['id']));
 						$m = $v['extra_chan_msg_'.(string)$n['id']];
 						if($m!==NULL){
 							$n['config']['extraChanMsg'] = $m;
@@ -178,10 +178,10 @@ if(OIRC::$you->isGlobalOp()){
 							$n['config']['defaults'] = array();
 						}
 					}elseif($n['config'] === true){
-						$n['config'] = OIRC::$vars->get('net_config_'.(string)$n['id']);
+						$n['config'] = Vars::get('net_config_'.(string)$n['id']);
 					}
 				}
-				OIRC::$json->add('networks',OIRC::$config['networks']);
+				Json::add('networks',OIRC::$config['networks']);
 				
 				// time to fetch which network types we have!
 				$networkTypes = array(
@@ -199,7 +199,7 @@ if(OIRC::$you->isGlobalOp()){
 					)
 				);
 				if(OIRC::$config['settings']['useBot']){
-					if($socket = OIRC::$relay->getSocket()){
+					if($socket = Relay::getSocket()){
 						$s = json_encode(array('t' => 'server_getRelayTypes'))."\n";
 						socket_write($socket,$s,strlen($s));
 						$b = '';
@@ -218,7 +218,7 @@ if(OIRC::$you->isGlobalOp()){
 						}
 					}
 				}
-				OIRC::$json->add('networkTypes',$networkTypes);
+				Json::add('networkTypes',$networkTypes);
 				break;
 			case 'checkLogin':
 				$success = false;
@@ -229,11 +229,11 @@ if(OIRC::$you->isGlobalOp()){
 						$json->add('checkLogin',json_decode($s,true));
 					}
 				}
-				OIRC::$json->add('success',$success);
+				Json::add('success',$success);
 				break;
 			case 'ws':
-				OIRC::$json->add('websockets',OIRC::$config['websockets']);
-				OIRC::$json->add('pattern',array(
+				Json::add('websockets',OIRC::$config['websockets']);
+				Json::add('pattern',array(
 					array(
 						'name' => 'Enable Websockets',
 						'type' => 'checkbox',
@@ -290,7 +290,7 @@ if(OIRC::$you->isGlobalOp()){
 				));
 				break;
 			case 'misc':
-				OIRC::$json->add('misc',array(
+				Json::add('misc',array(
 					'botSocket' => OIRC::$config['settings']['botSocket'],
 					'hostname' => OIRC::$config['settings']['hostname'],
 					'curidFilePath' => OIRC::$config['settings']['curidFilePath'],
@@ -298,7 +298,7 @@ if(OIRC::$you->isGlobalOp()){
 					'ircPasswd' => OIRC::$config['security']['ircPwd'],
 					'experimental' => OIRC::$config['settings']['experimental']
 				));
-				OIRC::$json->add('pattern',array(
+				Json::add('pattern',array(
 					array(
 						'name' => 'bot socket',
 						'type' => 'text',
@@ -335,12 +335,12 @@ if(OIRC::$you->isGlobalOp()){
 				));
 				break;
 			case 'ex':
-				OIRC::$json->add('ex',array(
+				Json::add('ex',array(
 					'useBot' => OIRC::$config['settings']['useBot'],
 					'minified' => !isset(OIRC::$config['settings']['minified'])||OIRC::$config['settings']['minified'],
 					'betaUpdates' => isset(OIRC::$config['settings']['betaUpdates'])&&OIRC::$config['settings']['betaUpdates']
 				));
-				OIRC::$json->add('pattern',array(
+				Json::add('pattern',array(
 					array(
 						'name' => 'use bot',
 						'type' => 'checkbox',
@@ -359,10 +359,10 @@ if(OIRC::$you->isGlobalOp()){
 				));
 				break;
 			case 'releaseNotes':
-				OIRC::$json->add('version',OIRC::$config['info']['version']);
+				Json::add('version',OIRC::$config['info']['version']);
 				break;
 			default:
-				OIRC::$json->addError('Invalid page');
+				Json::addError('Invalid page');
 		}
 	}elseif(isset($_GET['set'])){
 		$jsonData = json_decode($_POST['data'],true);
@@ -371,22 +371,22 @@ if(OIRC::$you->isGlobalOp()){
 				if(isset($jsonData['path'])){
 					if($file = file_get_contents('https://omnomirc.omnimaga.org/'.$jsonData['path'])){
 						if(file_put_contents(realpath(dirname(__FILE__)).'/updater.php',$file)){
-							OIRC::$json->add('message','Downloaded updater');
+							Json::add('message','Downloaded updater');
 						}else{
-							OIRC::$json->addError('couldn\'t write to updater');
+							Json::addError('couldn\'t write to updater');
 						}
 					}else{
-						OIRC::$json->addError('File not found');
+						Json::addError('File not found');
 					}
 				}else{
-					OIRC::$json->addError('Path not specified');
+					Json::addError('Path not specified');
 				}
 				break;
 			case 'backupConfig':
 				if(file_put_contents(realpath(dirname(__FILE__)).'/config.backup.php',file_get_contents(realpath(dirname(__FILE__)).'/config.json.php'))){
-					OIRC::$json->add('message','Backed up config!');
+					Json::add('message','Backed up config!');
 				}else{
-					OIRC::$json->addError('Couldn\'t back up config');
+					Json::addError('Couldn\'t back up config');
 				}
 				break;
 			case 'themes':
@@ -395,8 +395,8 @@ if(OIRC::$you->isGlobalOp()){
 						$t['lastModified'] = time();
 					}
 				}
-				OIRC::$vars->set('themes',$jsonData);
-				OIRC::$json->add('message','Themes saved!');
+				Vars::set('themes',$jsonData);
+				Json::add('message','Themes saved!');
 				break;
 			case 'channels':
 				$remChans = array();
@@ -413,18 +413,18 @@ if(OIRC::$you->isGlobalOp()){
 					}
 				}
 				foreach($remChans as $removeChan){
-					OIRC::$sql->query_prepare('DELETE FROM {db_prefix}channels WHERE `chan`=?',array($removeChan));
-					OIRC::$sql->query_prepare('DELETE FROM {db_prefix}lines WHERE `channel`=?',array($removeChan));
-					OIRC::$sql->query_prepare('DELETE FROM {db_prefix}lines_old WHERE `channel`=?',array($removeChan));
-					OIRC::$sql->query_prepare('DELETE FROM {db_prefix}permissions WHERE `channel`=?',array($removeChan));
-					OIRC::$sql->query_prepare('DELETE FROM {db_prefix}users WHERE `channel`=?',array($removeChan));
+					Sql::query('DELETE FROM {db_prefix}channels WHERE `chan`=?',array($removeChan));
+					Sql::query('DELETE FROM {db_prefix}lines WHERE `channel`=?',array($removeChan));
+					Sql::query('DELETE FROM {db_prefix}lines_old WHERE `channel`=?',array($removeChan));
+					Sql::query('DELETE FROM {db_prefix}permissions WHERE `channel`=?',array($removeChan));
+					Sql::query('DELETE FROM {db_prefix}users WHERE `channel`=?',array($removeChan));
 				}
 				OIRC::$config['channels'] = $jsonData;
 				writeConfig();
 				break;
 			case 'hotlinks':
-				OIRC::$vars->set('hotlinks',$jsonData);
-				OIRC::$json->add('message','Config saved!');
+				Vars::set('hotlinks',$jsonData);
+				Json::add('message','Config saved!');
 				break;
 			case 'sql':
 				OIRC::$config['sql']['prefix'] = $jsonData['prefix'];
@@ -435,7 +435,7 @@ if(OIRC::$you->isGlobalOp()){
 					OIRC::$config['sql']['passwd'] = $jsonData['passwd'];
 					$sql_connection=@mysqli_connect(OIRC::$config['sql']['server'],OIRC::$config['sql']['user'],OIRC::$config['sql']['passwd'],OIRC::$config['sql']['db']);
 					if (mysqli_connect_errno($sql_connection)!=0){
-						OIRC::$json->addError('Could not connect to SQL DB: '.mysqli_connect_errno($sql_connection).' '.mysqli_connect_error($sql_connection));
+						Json::addError('Could not connect to SQL DB: '.mysqli_connect_errno($sql_connection).' '.mysqli_connect_error($sql_connection));
 					}else{
 						writeConfig();
 					}
@@ -444,8 +444,8 @@ if(OIRC::$you->isGlobalOp()){
 				}
 				break;
 			case 'smileys':
-				OIRC::$vars->set('smileys',$jsonData);
-				OIRC::$json->add('message','Config saved!');
+				Vars::set('smileys',$jsonData);
+				Json::add('message','Config saved!');
 				break;
 			case 'networks':
 				if(sizeof($jsonData) > sizeof(OIRC::$config['networks'])){ // new network!
@@ -465,22 +465,22 @@ if(OIRC::$you->isGlobalOp()){
 				foreach($jsonData as &$n){
 					if($n['type'] == 1){ // oirc network
 						if(isset($n['config']['extraChanMsg'])){
-							OIRC::$vars->set('extra_chan_msg_'.(string)$n['id'],$n['config']['extraChanMsg']);
+							Vars::set('extra_chan_msg_'.(string)$n['id'],$n['config']['extraChanMsg']);
 							unset($n['config']['extraChanMsg']);
 						}
 						if(isset($n['config']['defaults'])){
-							OIRC::$vars->set('defaults_'.(string)$n['id'],$n['config']['defaults']);
+							Vars::set('defaults_'.(string)$n['id'],$n['config']['defaults']);
 							unset($n['config']['defaults']);
 						}
 						if(isset($n['config']['checkLoginHook'])){
 							$res = json_decode(file_get_contents($n['config']['checkLogin'].'?server='.getCheckLoginChallenge().'&action=set&var=hook&val='.base64_url_encode($n['config']['checkLoginHook'])),true);
 							if($res===NULL || (isset($res['auth']) && !$res['auth']) || !$res['success']){
-								OIRC::$json->add('message','Couldn\'t update checkLogin');
+								Json::add('message','Couldn\'t update checkLogin');
 							}
 							unset($n['config']['checkLoginHook']);
 						}
 					}elseif(is_array($n['config'])){
-						OIRC::$vars->set('net_config_'.(string)$n['id'],$n['config']);
+						Vars::set('net_config_'.(string)$n['id'],$n['config']);
 						$n['config'] = true;
 					}
 				}
@@ -507,13 +507,13 @@ if(OIRC::$you->isGlobalOp()){
 				writeConfig();
 				break;
 			default:
-				OIRC::$json->addError('Invalid page');
+				Json::addError('Invalid page');
 		}
 	}else{
-		OIRC::$json->addError('Unknown operation');
+		Json::addError('Unknown operation');
 	}
 }else{
-	OIRC::$json->addError('Permission denied');
-	OIRC::$json->add('denied',true);
+	Json::addError('Permission denied');
+	Json::add('denied',true);
 }
-echo OIRC::$json->get();
+echo Json::get();

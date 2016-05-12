@@ -32,7 +32,7 @@ if(isset($_GET['message'])){
 }elseif (isset($_GET['sendMessage'])){
 	header("Location: message.php?textmode&curline=".((int)$_GET['curline'])."&".OIRC::$you->getUrlParams()."&message=".base64_url_encode($_POST['message']));
 }else{
-	$net = OIRC::$networks->get(OIRC::$you->getNetwork());
+	$net = Networks::get(OIRC::$you->getNetwork());
 	if(!OIRC::$you->isLoggedIn() && $net['config']['guests'] == 0){
 		echo 'You need to log in to be able to view chat!';
 		die();
@@ -40,7 +40,7 @@ if(isset($_GET['message'])){
 	$banned = false;
 	if(isset($_GET['update']) && isset($_GET['curline']) && !(isset($_SESSION['content']) && $_SESSION['content']==='')){
 		$curline = (int)$_GET['curline'];
-		$query = OIRC::$sql->query_prepare("SELECT * FROM `{db_prefix}lines` WHERE `line_number` > ? AND (`channel` = ? OR (`channel` = ?  AND `online` = ?)) ORDER BY `line_number` ASC",array((int)$curline,OIRC::$you->chan,OIRC::$you->nick,OIRC::$you->getNetwork()));
+		$query = Sql::query("SELECT * FROM `{db_prefix}lines` WHERE `line_number` > ? AND (`channel` = ? OR (`channel` = ?  AND `online` = ?)) ORDER BY `line_number` ASC",array((int)$curline,OIRC::$you->chan,OIRC::$you->nick,OIRC::$you->getNetwork()));
 		$lines = OIRC::getLines($query);
 	}else{
 		$curline = 0;

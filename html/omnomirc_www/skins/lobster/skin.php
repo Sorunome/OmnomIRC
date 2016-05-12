@@ -23,7 +23,7 @@ function getPage(){
 	$hotlinksHTML = '';
 	$i = true;
 
-	foreach(\oirc\OIRC::$vars->get('hotlinks') as $link){
+	foreach(\oirc\Vars::get('hotlinks') as $link){
 		if($i){
 			$hotlinksHTML .= '<tr>';
 		}

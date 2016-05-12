@@ -55,17 +55,17 @@ if(isset($_GET['js'])){
 		}
 		return (($a['order'] < $b['order'])?-1:1);
 	});
-	$net = OIRC::$networks->get(OIRC::$you->getNetwork());
+	$net = Networks::get(OIRC::$you->getNetwork());
 	
 	$defaults = $net['config']['defaults'];
 	
-	$net = OIRC::$networks->getNetworkId();
+	$net = Networks::getNetworkId();
 	
 	$spLinks = array();
 	
 	$dispNetworks = array();
 	$guests = 0;
-	foreach(OIRC::$networks->getNetsarray() as $n){
+	foreach(Networks::getNetsarray() as $n){
 		$addNet = array(
 			'id' => $n['id'],
 			'normal' => $n['normal'],
@@ -83,7 +83,7 @@ if(isset($_GET['js'])){
 		}
 	}
 	
-	$v = OIRC::$vars->get(array('extra_chan_msg_'.(string)$net,'defaults_'.(string)$net,'smileys'));
+	$v = Vars::get(array('extra_chan_msg_'.(string)$net,'defaults_'.(string)$net,'smileys'));
 	
 	echo json_encode(array(
 		'hostname' => OIRC::$config['settings']['hostname'],
@@ -110,8 +110,8 @@ if(isset($_GET['js'])){
 			'betaUpdates' => isset(OIRC::$config['settings']['betaUpdates'])&&OIRC::$config['settings']['betaUpdates']
 		));
 	}else{
-		OIRC::$json->addError('permission denied');
-		echo OIRC::$json->get();
+		Json::addError('permission denied');
+		echo Json::get();
 	}
 }elseif(isset($_GET['channels'])){
 	header('Content-type: application/json');
@@ -124,7 +124,7 @@ if(isset($_GET['js'])){
 			'channels' => $dispChans
 		),JSON_FORCE_OBJECT);
 	}else{
-		OIRC::$json->addError('permission denied');
-		echo OIRC::$json->get();
+		Json::addError('permission denied');
+		echo Json::get();
 	}
 }

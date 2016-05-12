@@ -21,15 +21,15 @@
 namespace oirc;
 include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 
-$net = OIRC::$networks->get(OIRC::$you->getNetwork());
+$net = Networks::get(OIRC::$you->getNetwork());
 if(!OIRC::$you->isLoggedIn() && $net['config']['guests'] == 0){
 	$msg = 'You need to log in to be able to view chat!';
 	if(isset($_GET['noLoginErrors'])){
-		OIRC::$json->add('message',$msg);
+		Json::add('message',$msg);
 	}else{
-		OIRC::$json->addError($msg);
+		Json::addError($msg);
 	}
-	echo OIRC::$json->get();
+	echo Json::get();
 	die();
 }
 
@@ -37,26 +37,26 @@ if(isset($_GET['offset'])){
 	$offset = (int)$_GET['offset'];
 }else{
 	$offset = 0;
-	OIRC::$json->addWarning('Didn\'t set an offset, defaulting to zero.');
+	Json::addWarning('Didn\'t set an offset, defaulting to zero.');
 }
 
 
 if(OIRC::$you->isBanned()){
-	OIRC::$json->add('banned',true);
-	OIRC::$json->add('admin',false);
-	OIRC::$json->add('lines',array());
-	OIRC::$json->add('users',array());
-	echo OIRC::$json->get();
+	Json::add('banned',true);
+	Json::add('admin',false);
+	Json::add('lines',array());
+	Json::add('users',array());
+	echo Json::get();
 	die();
 }
-OIRC::$json->add('banned',false);
-OIRC::$json->add('admin',OIRC::$you->isGlobalOp());
+Json::add('banned',false);
+Json::add('admin',OIRC::$you->isGlobalOp());
 
 if(isset($_GET['day'])){
 	$t_low = (int)\DateTime::createFromFormat('Y-n-j H:i:s',base64_url_decode($_GET['day']).' 00:00:00')->getTimestamp();
 }else{
 	$t_low = (int)time();
-	OIRC::$json->addWarning('No day set, defaulting to today');
+	Json::addWarning('No day set, defaulting to today');
 }
 $t_high = $t_low + (3600 * 24);
 $lines = array();
@@ -66,7 +66,7 @@ $channel = OIRC::$sql_query_prepare("SELECT {db_prefix}getchanid(?) AS chan",arr
 $channel = $channel[0]['chan'];
 // $table is NEVER user-defined, it is only {db_prefix}lines_old or {db_prefix}lines!!
 while(true){
-	$res = OIRC::$sql->query_prepare("SELECT * FROM `$table`
+	$res = Sql::query("SELECT * FROM `$table`
 		WHERE
 				`channel` = ?
 			AND
@@ -87,7 +87,7 @@ while(true){
 	break;
 }
 
-OIRC::$json->add('lines',$lines);
+Json::add('lines',$lines);
 
 
-echo OIRC::$json->get();
+echo Json::get();

@@ -53,21 +53,21 @@ function getOtherPmHandler($channel){
 }
 $message = (isset($_GET['message'])?$_GET['message']:'');
 if(strlen($message) < 4){
-	OIRC::$json->addError('Bad message');
+	Json::addError('Bad message');
 }
-if(OIRC::$json->hasErrors() || OIRC::$json->hasWarnings()){
-	echo OIRC::$json->get();
+if(Json::hasErrors() || Json::hasWarnings()){
+	echo Json::get();
 	die();
 }
 if(!OIRC::$you->isLoggedIn()){
-	OIRC::$json->addError('Not Logged in!');
-	echo OIRC::$json->get();
+	Json::addError('Not Logged in!');
+	echo Json::get();
 	die();
 }
 if(OIRC::$you->isBanned()){
-	OIRC::$json->add('banned',true);
-	OIRC::$json->addError('banned');
-	echo OIRC::$json->get();
+	Json::add('banned',true);
+	Json::addError('banned');
+	echo Json::get();
 	die();
 }
 $message = removeLinebrakes(base64_url_decode(str_replace(' ','+',$message)));
@@ -75,13 +75,13 @@ $type = 'message';
 $parts = explode(' ',$message);
 
 if(strlen($message) <= 0){
-	OIRC::$json->addError('Bad message');
+	Json::addError('Bad message');
 }
 if(strlen($message) > 256){
-	OIRC::$json->addError('Message too long');
+	Json::addError('Message too long');
 }
-if(OIRC::$json->hasErrors() || OIRC::$json->hasWarnings()){
-	echo OIRC::$json->get();
+if(Json::hasErrors() || Json::hasWarnings()){
+	echo Json::get();
 	die();
 }
 
@@ -153,7 +153,7 @@ if(substr($parts[0],0,1)=='/'){
 			$userSql = OIRC::$you->info();
 			if(strpos($userSql['ignores'],$ignoreuser."\n")===false){
 				$userSql['ignores'].=$ignoreuser."\n";
-				OIRC::$sql->query_prepare("UPDATE `{db_prefix}userstuff` SET ignores=? WHERE name=LOWER(?) AND network=? AND uid=?",array($userSql["ignores"],$nick,OIRC::$you->getNetwork(),OIRC::$you->getUid()));
+				Sql::query("UPDATE `{db_prefix}userstuff` SET ignores=? WHERE name=LOWER(?) AND network=? AND uid=?",array($userSql["ignores"],$nick,OIRC::$you->getNetwork(),OIRC::$you->getUid()));
 				$returnmessage = "\x033Now ignoring $ignoreuser.";
 				$reload = true;
 			}else{
@@ -190,7 +190,7 @@ if(substr($parts[0],0,1)=='/'){
 				if($ignoreuser=='*'){
 					$returnmessage = "\x033You are no longer ignoring anybody.";
 				}
-				OIRC::$sql->query_prepare("UPDATE `{db_prefix}userstuff` SET ignores=? WHERE name=LOWER(?) AND network=? AND uid=?",array($userSql["ignores"],$nick,OIRC::$you->getNetwork(),OIRC::$you->getUid()));
+				Sql::query("UPDATE `{db_prefix}userstuff` SET ignores=? WHERE name=LOWER(?) AND network=? AND uid=?",array($userSql["ignores"],$nick,OIRC::$you->getNetwork(),OIRC::$you->getUid()));
 				$reload = true;
 			}else{
 				$returnmessage = "\x034ERROR: You weren't ignoring $ignoreuser";
@@ -218,8 +218,8 @@ if(substr($parts[0],0,1)=='/'){
 			if(OIRC::$you->isOp()){
 				unset($parts[0]);
 				$newTopic = implode(' ',$parts);
-				OIRC::$channels->setTopic($channel,$newTopic);
-				OIRC::$relay->sendLine($nick,'','topic',$newTopic);
+				Channels::setTopic($channel,$newTopic);
+				Relay::sendLine($nick,'','topic',$newTopic);
 			}else{
 				$returnmessage = "You aren't op";
 				$sendPm = true;
@@ -230,12 +230,12 @@ if(substr($parts[0],0,1)=='/'){
 			if(OIRC::$you->isOp()){
 				unset($parts[0]);
 				$modeStr = trim(implode(' ',$parts));
-				OIRC::$channels->setMode($channel,$modeStr);
+				Channels::setMode($channel,$modeStr);
 				$sendToBotBuffer .= trim(json_encode(array(
 					't' => 'server_delete_modebuffer',
 					'c' => $channel,
 				)))."\n";
-				OIRC::$relay->sendLine($nick,'','mode',$modeStr);
+				Relay::sendLine($nick,'','mode',$modeStr);
 			}else{
 				$returnmessage = "You aren't op";
 				$sendPm = true;
@@ -244,15 +244,15 @@ if(substr($parts[0],0,1)=='/'){
 		case 'modes':
 			$sendNormal = false;
 			$sendPm = true;
-			$returnmessage = "\x033Channel modes:".OIRC::$channels->getModes($channel);
+			$returnmessage = "\x033Channel modes:".Channels::getModes($channel);
 			break;
 		case 'op':
 			$sendNormal = false;
 			if(OIRC::$you->isOp()){
 				unset($parts[0]);
 				$userToOp = trim(implode(' ',$parts));
-				if(OIRC::$channels->addOp($channel,$userToOp,OIRC::$you->getNetwork())){
-					OIRC::$relay->sendLine($nick,'','mode',"+o $userToOp");
+				if(Channels::addOp($channel,$userToOp,OIRC::$you->getNetwork())){
+					Relay::sendLine($nick,'','mode',"+o $userToOp");
 				}else{
 					$returnmessage = "\x034\x02ERROR:\x02 couldn't op $userToOp: already op or user not found.";
 					$sendPm = true;
@@ -267,8 +267,8 @@ if(substr($parts[0],0,1)=='/'){
 			if(OIRC::$you->isOp()){
 				unset($parts[0]);
 				$userToOp = trim(implode(" ",$parts));
-				if(OIRC::$channels->remOp($channel,$userToOp,OIRC::$you->getNetwork())){
-					OIRC::$relay->sendLine($nick,'','mode',"-o $userToOp");
+				if(Channels::remOp($channel,$userToOp,OIRC::$you->getNetwork())){
+					Relay::sendLine($nick,'','mode',"-o $userToOp");
 				}else{
 					$returnmessage = "\x034\x02ERROR:\x02 couldn't deop $userToOp: no op or user not found.";
 					$sendPm = true;
@@ -283,8 +283,8 @@ if(substr($parts[0],0,1)=='/'){
 			if(OIRC::$you->isOp()){
 				unset($parts[0]);
 				$userToOp = trim(implode(' ',$parts));
-				if(OIRC::$channels->addBan($channel,$userToOp,OIRC::$you->getNetwork())){
-					OIRC::$relay->sendLine($nick,'','mode',"+b $userToOp");
+				if(Channels::addBan($channel,$userToOp,OIRC::$you->getNetwork())){
+					Relay::sendLine($nick,'','mode',"+b $userToOp");
 				}else{
 					$returnmessage = "\x034\x02ERROR:\x02 couldn't ban $userToOp: already banned or user not found.";
 					$sendPm = true;
@@ -300,8 +300,8 @@ if(substr($parts[0],0,1)=='/'){
 			if(OIRC::$you->isOp()){
 				unset($parts[0]);
 				$userToOp = trim(implode(' ',$parts));
-				if(OIRC::$channels->remBan($channel,$userToOp,OIRC::$you->getNetwork())){
-					OIRC::$relay->sendLine($nick,'','mode',"-b $userToOp");
+				if(Channels::remBan($channel,$userToOp,OIRC::$you->getNetwork())){
+					Relay::sendLine($nick,'','mode',"-b $userToOp");
 				}else{
 					$returnmessage = "\x034\x02ERROR:\x02 couldn't deban $userToOp: no ban or user not found.";
 					$sendPm = true;
@@ -333,12 +333,12 @@ if($channel[0] == '*'){
 }
 
 if($sendNormal){
-	OIRC::$sql->query_prepare("UPDATE `{db_prefix}users` SET lastMsg=? WHERE username=? AND channel=? AND online=?",array(time(),$nick,$channel,OIRC::$you->getNetwork()));
-	if(OIRC::$channels->isMode($channel,'c')){
+	Sql::query("UPDATE `{db_prefix}users` SET lastMsg=? WHERE username=? AND channel=? AND online=?",array(time(),$nick,$channel,OIRC::$you->getNetwork()));
+	if(Channels::isMode($channel,'c')){
 		$message = strip_irc_colors($message);
 	}
-	OIRC::$relay->sendLine($nick,in_array($type,array('pm','pmaction')) ? getOtherPmHandler($channel) : '',$type,$message,$channel);
-	if($cache = OIRC::$cache->get('oirc_lines_'.$channel)){
+	Relay::sendLine($nick,in_array($type,array('pm','pmaction')) ? getOtherPmHandler($channel) : '',$type,$message,$channel);
+	if($cache = Cache::get('oirc_lines_'.$channel)){
 		$lines_cached = json_decode($cache,true);
 		if(json_last_error()===0){
 			if(count($lines_cached > 200)){
@@ -355,25 +355,25 @@ if($sendNormal){
 				'chan' => $channel,
 				'uid' => (int)OIRC::$you->getUid()
 			);
-			OIRC::$cache->set('oirc_lines_'.$channel,json_encode($lines_cached),time()+(60*60*24*3));
+			Cache::set('oirc_lines_'.$channel,json_encode($lines_cached),time()+(60*60*24*3));
 		}else{
-			OIRC::$cache->set('oirc_lines_'.$channel,false,1);
+			Cache::set('oirc_lines_'.$channel,false,1);
 		}
 	}
 }
 if($sendPm){
-	OIRC::$relay->sendLine('OmnomIRC',OIRC::$you->getPmHandler(),'server',$returnmessage,$nick);
+	Relay::sendLine('OmnomIRC',OIRC::$you->getPmHandler(),'server',$returnmessage,$nick);
 }
 if($reload){
-	OIRC::$relay->sendLine('OmnomIRC','','reload','THE GAME');
+	Relay::sendLine('OmnomIRC','','reload','THE GAME');
 }
 
-OIRC::$relay->commitBuffer();
+Relay::commitBuffer();
 
 if(isset($_GET['textmode'])){
 	session_start();
 	echo "<!DOCTYPE html><html><head><title>Sending...</title><meta http-equiv=\"refresh\" content=\"1;url=textmode.php?update=".time()."&curline=".((int)$_GET['curline'])."&".OIRC::$you->getUrlParams()."\"></head><body>Sending message...</body></html>";
 }else{
-	OIRC::$json->add('success',true);
-	echo OIRC::$json->get();
+	Json::add('success',true);
+	echo Json::get();
 }
