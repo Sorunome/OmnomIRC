@@ -210,8 +210,8 @@ function getOptions(){
 				}
 			});
 			$("body").css("font-size",oirc.options.get("fontSize").toString(10)+"pt");
-			var j = 0;
 			$("#options").append($.map([0,1],function(mod){
+				var j = 0;
 				return $("<table>").addClass("optionsTable").append(
 					$.map(oirc.options.getAll(true),function(o,i){
 						if(o.hidden){

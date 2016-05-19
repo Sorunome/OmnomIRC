@@ -46,7 +46,8 @@ class Skins {
 		if(!isset(self::$themes[$name])){
 			return '';
 		}
-		return self::$themes[$name]($t);
+		$fn = self::$themes[$name];
+		return $fn($t);
 	}
 	public static function parseScripts(&$page,$type,$include,$inline){
 		foreach($page[$type] as $js){
