@@ -1745,7 +1745,7 @@ var OmnomIRC = function(){
 						self.stopFlash();
 					});
 					if(!self.sound){
-						self.sound = new Audio('beep.wav');
+						self.sound = new Audio('beep.mp3');
 					}
 				}
 			};
