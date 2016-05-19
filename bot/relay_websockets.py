@@ -69,6 +69,7 @@ class Relay(oirc.OircRelay):
 			if port.startswith('unix:'):
 				host = port[5:]
 				port = 0
+			port = int(port)
 		c = self.getHandle(WebSocketsHandler)
 		c.id = 'websockets'
 		c.netChans = self.getNetChans()
@@ -223,9 +224,8 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 			self.log_info('>> '+str({'chan':c,'nick':self.nick,'message':m,'type':t}))
 			self.handle.sendToOther(self.nick,n2,t,m,c,self.network,self.uid)
 	def join(self,c): # updates nick in userlist
-		self.log_info(self.chans)
 		if isinstance(c,str):
-			if self.uid == -1 or not c[0] in '*@':
+			if self.uid == -1 and not (c[0] in '*@'):
 				self.log_info('Tried to join invalid channel: '+str(c))
 				return
 		elif not (self.network in self.netChans) or not (c in self.netChans[self.network]):
@@ -240,9 +240,8 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 			return
 		self.handle.addUser(self.nick,str(c),self.network,self.uid)
 	def part(self,c):
-		return # disabled for now as the client is doing weired stuff
 		c = str(c)
-		if not c in self.chans:
+		if not (c in self.chans):
 			return
 		self.chans[c] -= 1
 		if self.chans[c]<=0:
@@ -271,8 +270,10 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 			data += buf
 			if len(buf) < 1024:
 				break
-		
 		self.log_info('Handshaking...')
+		self.log_info("\r\n\r\n" in data)
+		self.log_info("\n\n" in data)
+		self.log_info(data)
 		key = re.search('\n[sS]ec-[wW]eb[sS]ocket-[kK]ey[\s]*:[\s]*(.*)\r?\n?',data)
 		if key:
 			key = key.group(1).strip()
@@ -359,7 +360,7 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 						})
 						self.checkRelog(r,m)
 						try:
-							if r['mayview']:
+							if r['mayview'] and r['channel'] == m['chan']:
 								self.join(r['channel'])
 						except:
 							self.log_info('tried to join channel '+c)
@@ -392,6 +393,9 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 												'network':self.network
 											})
 											self.checkRelog(r,m)
+											if 'lines' in r:
+												for l in r['lines']:
+													self.sendLine(l['name'],l['name2'],l['type'],l['message'],l['chan'],l['network'],l['uid'])
 								else: # normal message
 									self.addLine('message',msg,m['channel'])
 						elif m['action'] == 'charsHigh':
@@ -405,7 +409,6 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 			for c in self.chans:
 				self.chans[c] = 1 # we want to quit right away
 				self.part(c)
-				self.handle.timeoutUser(self.nick,str(c),self.network)
 			self.socket.close()
 		except:
 			pass

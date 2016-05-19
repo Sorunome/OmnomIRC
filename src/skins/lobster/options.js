@@ -14,10 +14,6 @@ OmnomIRC.prototype.setOptions = function(){
 			disp:'Show Timestamps',
 			default:true
 		},
-		statusBar:{
-			disp:'Show Updates in Browser Status Bar',
-			default:true
-		},
 		hideUserlist:{
 			disp:'Hide Userlist',
 			default:false
@@ -29,14 +25,6 @@ OmnomIRC.prototype.setOptions = function(){
 		scrollWheel:{
 			disp:'Enable Scrollwheel',
 			default:true
-		},
-		browserNotifications:{
-			disp:'Browser Notifications',
-			default:false,
-			before:function(){
-				notification.request();
-				return false;
-			}
 		},
 		wysiwyg:{
 			disp:'Use WYSIWYG editor',

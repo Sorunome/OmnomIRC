@@ -492,6 +492,18 @@ var OmnomIRC = function(){
 					textDeco:{
 						disp:'Enable simple text decorations',
 						default:false
+					},
+					statusBar:{
+						disp:'Show Updates in Browser Status Bar',
+						default:true
+					},
+					browserNotifications:{
+						disp:'Browser Notifications',
+						default:false,
+						before:function(){
+							notification.request();
+							return false;
+						}
 					}
 				},
 				set:function(s,v){
@@ -771,9 +783,9 @@ var OmnomIRC = function(){
 						}
 					},
 					send:function(s,chan,fn){
-						network.getJSON('message.php?message='+base64.encode(s)+'&channel='+chan,function(){
+						network.getJSON('message.php?message='+base64.encode(s)+'&channel='+chan,function(data){
 							if(fn!==undefined){
-								fn();
+								fn(data);
 							}
 						});
 					}
@@ -910,6 +922,11 @@ var OmnomIRC = function(){
 							_self.loaded = true;
 							return true;
 						},
+						unload:function(){
+							if(_self.loaded){
+								request.partChan(_self.handler);
+							}
+						},
 						part:function(){
 							self.part(self.i);
 						},
@@ -942,6 +959,7 @@ var OmnomIRC = function(){
 					load:_self.load,
 					part:_self.part,
 					reload:_self.reload,
+					unload:_self.unload,
 					loaded:function(){
 						return _self.loaded;
 					},
@@ -1369,7 +1387,12 @@ var OmnomIRC = function(){
 					}else{
 						if(!self.sending){
 							self.sending = true;
-							request.send(s,chan,function(){
+							request.send(s,chan,function(data){
+								if(data !== undefined && data.lines !== undefined){
+									$.map(data.lines,function(l){
+										eventOnMessage(l);
+									})
+								}
 								self.sending = false;
 								fn();
 							});
@@ -1574,6 +1597,162 @@ var OmnomIRC = function(){
 				init:self.init,
 				add:self.add,
 				read:self.read
+			};
+		})(),
+		statusBar = (function(){
+			var self = {
+				text:'',
+				started:false,
+				start:function(){
+					if(!options.get('statusBar')){
+						self.started = true; // no need to performthe check 9001 times
+						return;
+					}
+					if(!self.started){
+						setInterval(function(){
+							window.status = self.text;
+							if(parent){
+								try{
+									parent.window.status = self.text;
+								}catch(e){}
+							}
+						},500);
+						self.started = true;
+					}
+				},
+				set:function(s){
+					self.text = s;
+					if(!self.started){
+						self.start();
+					}
+				}
+			};
+			return {
+				set:self.set
+			};
+		})(),
+		notification = (function(){
+			var self = {
+				support_webkit:window.webkitNotifications!==undefined && window.webkitNotifications!==null && window.webkitNotifications,
+				support:function(){
+					return typeof Notification!='undefined' && Notification && Notification.permission!='denied';
+				},
+				show:function(s){
+					var n;
+					if(self.support_webkit){
+						n = window.webkitNotifications.createNotification('omni.png','OmnomIRC Highlight',s);
+						n.show();
+					}else if(self.support()){
+						n = new Notification('OmnomIRC Highlight',{
+							icon:'omni.png',
+							body:s
+						});
+						n.onshow = function(){
+							setTimeout(n.close,30000);
+						};
+					}
+				},
+				request:function(){
+					if(self.support_webkit){
+						window.webkitNotifications.requestPermission(function(){
+							if (window.webkitNotifications.checkPermission() === 0){
+								self.show('Notifications Enabled!');
+								oirc.options.set('browserNotifications',true);
+								document.location.reload();
+							}
+						});
+					}else if(self.support()){
+						Notification.requestPermission(function(status){
+							if (Notification.permission !== status){
+								Notification.permission = status;
+							}
+							if(status==='granted'){
+								self.show('Notifications Enabled!');
+								oirc.options.set('browserNotifications',true);
+								document.location.reload();
+							}
+						});
+					}else{
+						alert('Your browser doesn\'t support notifications');
+					}
+				},
+				sound:false,
+				make:function(s,c){
+					var cur = instant.current();
+					if(cur){
+						if(options.get('browserNotifications')){
+							self.show(s);
+						}
+						if(options.get('ding') && self.sound){
+							self.sound.play();
+						}
+					}
+					self.startFlash();
+					oirc.onnotification(s,c,cur);
+				},
+				doFlash:false,
+				intervalHandler:false,
+				originalTitle:'',
+				target:top.postMessage?top:(top.document.postMessage?top.document:undefined),
+				startFlash:function(){
+					if(self.doFlash){
+						return;
+					}
+					self.doFlash = true;
+					if(top == window){ // no firame, we have to do the flashing manually
+						var alternator = false;
+						self.originalTitle = document.title;
+						self.intervalHandler = setInterval(function(){
+							document.title = (alternator?'[ @] ':'[@ ] ')+self.originalTitle;
+							alternator = !alternator;
+						},500);
+					}else{ // let the forum mod do the flashing!
+						if(self.target!==undefined){
+							self.target.postMessage('startFlash','*');
+						}
+					}
+				},
+				stopFlash:function(noTransmit){
+					if(noTransmit === undefined){
+						noTransmit = false;
+					}
+					if(self.doFlash){
+						if(top == window){ // no firame, we have to do the flashing manually
+							if(self.intervalHandler){
+								clearInterval(self.intervalHandler);
+								self.intervalHandler = false;
+								document.title = self.originalTitle;
+							}
+						}else{ // let the forum mod do the flashing!
+							if(self.target!==undefined){
+								self.target.postMessage('stopFlash','*');
+							}
+						}
+						self.doFlash = false;
+						if(!noTransmit){
+							oirc.ls.set('stopFlash',Math.random().toString(36)+(new Date()).getTime().toString());
+						}
+					}
+				},
+				init:function(){
+					$(window).on('storage',function(e){
+						if(e.originalEvent.key == settings.net()+'stopFlash'){
+							self.stopFlash(true);
+						}
+					}).unload(function(){
+						self.stopFlash(true); // don't message the other tabs as they might still be open
+					}).focus(function(){
+						self.stopFlash();
+					});
+					if(!self.sound){
+						self.sound = new Audio('beep.wav');
+					}
+				}
+			};
+			return {
+				request:self.request,
+				make:self.make,
+				init:self.init
 			};
 		})(),
 		parser = (function(){
@@ -1917,7 +2096,7 @@ var OmnomIRC = function(){
 									}else{
 										tdName = ['(PM)',name];
 										channels.joinPm(line.name,settings.getWholePmIdent(line.uid,line.network));
-										oirc.onnotification('(PM) <'+line.name+'> '+line.message,line.chan);
+										notification.make('(PM) <'+line.name+'> '+line.message,line.chan);
 									}
 								}else{
 									return;
@@ -1936,7 +2115,7 @@ var OmnomIRC = function(){
 									}else{
 										tdMessage = ['(PM)',name,' ',message];
 										channels.joinPm(line.name,settings.getWholePmIdent(line.uid,line.network));
-										oirc.onnotification('* (PM)'+line.name+' '+line.message,line.chan);
+										notofication.make('* (PM)'+line.name+' '+line.message,line.chan);
 										line.type = 'pm';
 									}
 								}else{
@@ -1946,7 +2125,7 @@ var OmnomIRC = function(){
 							break;
 						case 'highlight':
 							if(line.name.toLowerCase() != '*'){
-								oirc.onnotification('('+line.chan+') <'+line.name+'> '+line.message,line.chan);
+								notification.make('('+line.chan+') <'+line.name+'> '+line.message,line.chan);
 							}
 							return;
 						case 'internal':
@@ -2216,6 +2395,9 @@ var OmnomIRC = function(){
 		open:logs.open,
 		close:logs.close
 	};
+	this.statusBar = {
+		set:statusBar.set
+	}
 	this.initinput = function($elem){
 		if($elem === undefined){
 			$elem = $('#message');
@@ -2226,6 +2408,7 @@ var OmnomIRC = function(){
 	};
 	this.connect = function(callback){
 		page.init();
+		notification.init();
 		settings.fetch(function(){
 			instant.init();
 			request.init();

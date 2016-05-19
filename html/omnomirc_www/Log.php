@@ -66,11 +66,9 @@ $channel = OIRC::$sql_query_prepare("SELECT {db_prefix}getchanid(?) AS chan",arr
 $channel = $channel[0]['chan'];
 // $table is NEVER user-defined, it is only {db_prefix}lines_old or {db_prefix}lines!!
 while(true){
-	$res = Sql::query("SELECT * FROM `$table`
+	$res = Sql::query("SELECT `line_number`,`name1`,`name2`,`message`,`type`,`channel`,`time`,`Online`,`uid` FROM `$table`
 		WHERE
 				`channel` = ?
-			AND
-				`type` != 'server'
 			AND
 				`time` >= ?
 			AND

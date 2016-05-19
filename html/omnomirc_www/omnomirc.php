@@ -68,13 +68,9 @@ class OIRC{
 		while(true){
 			$res = Sql::query("SELECT x.* FROM
 				(
-					SELECT * FROM `$table`
+					SELECT `line_number`,`name1`,`name2`,`message`,`type`,`channel`,`time`,`Online`,`uid` FROM `$table`
 					WHERE
-					(
-						`channel` = ?
-						AND
-						`type` != 'server'
-					)
+					`channel` = ?
 					ORDER BY `line_number` DESC
 					LIMIT ?,?
 				) AS x
@@ -657,7 +653,7 @@ class Relay{
 		if(substr($sock,0,5) == 'unix:'){
 			$socket = socket_create(AF_UNIX,SOCK_STREAM,0);
 			if(!socket_connect($socket,substr($sock,5))){
-				self::$socketfail();
+				self::socketfail();
 				return false;
 			}
 		}else{
@@ -666,7 +662,7 @@ class Relay{
 			if($matches){
 				$socket = socket_create(AF_INET,SOCK_STREAM,SOL_TCP);
 				if(!socket_connect($socket,$matches[1],$matches[2])){
-					self::$socketfail();
+					self::socketfail();
 					return false;
 				}
 			}

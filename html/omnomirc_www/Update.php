@@ -74,21 +74,17 @@ while(true){
 	}
 	OIRC::$you->update();
 	if($nick){
-		$query = Sql::query("SELECT * FROM `{db_prefix}lines`
+		$query = Sql::query("SELECT `line_number`,`name1`,`name2`,`message`,`type`,`channel`,`time`,`Online`,`uid` FROM `{db_prefix}lines`
 			WHERE
 				`line_number` > ?
 			AND
 			(
-				(
-					`channel` = ?
-					AND
-					`type`!='server'
-				)
+				`channel` = ?
 				OR
 				name2=?
 		)",array($curline,$channel,OIRC::$you->getPmHandler()));
 	}else{
-		$query = Sql::query("SELECT * FROM `{db_prefix}lines` WHERE `line_number` > ? AND `channel` = ? AND `type`!='server'",array($curline,$channel));
+		$query = Sql::query("SELECT `line_number`,`name1`,`name2`,`message`,`type`,`channel`,`time`,`Online`,`uid` FROM `{db_prefix}lines` WHERE `line_number` > ? AND `channel` = ?",array($curline,$channel));
 	}
 	$result = $query[0];
 	$userSql = OIRC::$you->info();
@@ -110,8 +106,16 @@ while(true){
 			'uid' => -1
 		);
 	}
-	if($result['line_number'] === NULL){
-		$temp = Sql::query("SELECT * FROM `{db_prefix}lines` WHERE `line_number` > ? AND locate(?,`message`) != 0 AND NOT (((`type` = 'pm' OR `type` = 'pmaction') AND `name1` <> ? AND `online` = ?) OR (`type` = 'server'))",array($curline,substr($nick,0,4),$nick,OIRC::$you->getNetwork()));
+	if($result['line_number'] === NULL){ // no new lines, check for highlights
+		$temp = Sql::query("SELECT `line_number`,`name1`,`name2`,`message`,`type`,c.`chan` AS `channel`,`time`,`Online`,`uid` FROM `{db_prefix}lines` l
+			INNER JOIN {db_prefix}channels c ON l.`channel` = c.`channum`
+			WHERE
+				`line_number` > ?
+				AND
+				locate(?,`message`) != 0
+				AND NOT (
+					((`type` = 'pm' OR `type` = 'pmaction') AND `name1` <> ? AND `online` = ?)
+				)",array($curline,substr($nick,0,$numCharsHighlight),$nick,OIRC::$you->getNetwork()));
 		$result = $temp[0];
 		if($result['line_number'] === NULL){
 			$temp = Sql::query("SELECT MAX(line_number) AS max FROM `{db_prefix}lines`");

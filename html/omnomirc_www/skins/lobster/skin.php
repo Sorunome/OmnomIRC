@@ -134,8 +134,7 @@ function getPage(){
 	</div></div>
 	<div id="smileyselect" class="popup">
 	</div>
-	<div id="lastSeenCont" class="popup"></div>
-	<audio id="ding" src="beep.wav" hidden></audio>';
+	<div id="lastSeenCont" class="popup"></div>';
 	return array(
 		'html' => $html,
 		'head' => '<noscript><meta http-equiv="refresh" content="0;url=index.php?textmode"></noscript>',

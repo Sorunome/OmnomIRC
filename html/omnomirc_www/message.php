@@ -345,7 +345,7 @@ if($sendNormal){
 				array_shift($lines_cached);
 			}
 			$lines_cached[] = array(
-				'curLine' => 0,
+				'curline' => 0,
 				'type' => $type,
 				'network' => OIRC::$you->getNetwork(),
 				'time' => (int)time(),
@@ -361,8 +361,19 @@ if($sendNormal){
 		}
 	}
 }
+$lines = array();
 if($sendPm){
-	Relay::sendLine('OmnomIRC',OIRC::$you->getPmHandler(),'server',$returnmessage,$nick);
+	$lines[] = array(
+		'curline' => 0,
+		'type' => 'server',
+		'network' => OIRC::$you->getNetwork(),
+		'time' => (int)time(),
+		'name' => 'OmnomIRC',
+		'message' => $returnmessage,
+		'name2' => OIRC::$you->getPmHandler(),
+		'chan' => $nick,
+		'uid' => -1
+	);
 }
 if($reload){
 	Relay::sendLine('OmnomIRC','','reload','THE GAME');
@@ -375,5 +386,6 @@ if(isset($_GET['textmode'])){
 	echo "<!DOCTYPE html><html><head><title>Sending...</title><meta http-equiv=\"refresh\" content=\"1;url=textmode.php?update=".time()."&curline=".((int)$_GET['curline'])."&".OIRC::$you->getUrlParams()."\"></head><body>Sending message...</body></html>";
 }else{
 	Json::add('success',true);
+	Json::add('lines',$lines);
 	echo Json::get();
 }

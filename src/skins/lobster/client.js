@@ -74,130 +74,6 @@ $(function(){
 				stop:self.stop
 			};
 		})(),
-		notification = (function(){
-			var self = {
-				support_webkit:window.webkitNotifications!==undefined && window.webkitNotifications!==null && window.webkitNotifications,
-				support:function(){
-					return typeof Notification!='undefined' && Notification && Notification.permission!='denied';
-				},
-				show:function(s){
-					var n;
-					if(self.support_webkit){
-						n = window.webkitNotifications.createNotification('omni.png','OmnomIRC Highlight',s);
-						n.show();
-					}else if(self.support()){
-						n = new Notification('OmnomIRC Highlight',{
-							icon:'omni.png',
-							body:s
-						});
-						n.onshow = function(){
-							setTimeout(n.close,30000);
-						};
-					}
-				},
-				request:function(){
-					if(self.support_webkit){
-						window.webkitNotifications.requestPermission(function(){
-							if (window.webkitNotifications.checkPermission() === 0){
-								self.show('Notifications Enabled!');
-								oirc.options.set('browserNotifications',true);
-								document.location.reload();
-							}
-						});
-					}else if(self.support()){
-						Notification.requestPermission(function(status){
-							if (Notification.permission !== status){
-								Notification.permission = status;
-							}
-							if(status==='granted'){
-								self.show('Notifications Enabled!');
-								oirc.options.set('browserNotifications',true);
-								document.location.reload();
-							}
-						});
-					}else{
-						alert('Your browser doesn\'t support notifications');
-					}
-				},
-				make:function(s,c){
-					if(oirc.instant.current()){
-						if(oirc.options.get('browserNotifications')){
-							self.show(s);
-						}
-						if(oirc.options.get('ding')){
-							$('#ding')[0].play();
-						}
-						if(c!=oirc.channels.current().handler){
-							oirc.channels.highlight(c);
-						}
-					}else{
-						if(c!=oirc.channels.current().handler){
-							oirc.channels.highlight(c);
-						}
-					}
-					self.startFlash();
-				},
-				doFlash:false,
-				intervalHandler:false,
-				originalTitle:'',
-				target:top.postMessage?top:(top.document.postMessage?top.document:undefined),
-				startFlash:function(){
-					if(self.doFlash){
-						return;
-					}
-					self.doFlash = true;
-					if(top == window){ // no firame, we have to do the flashing manually
-						var alternator = false;
-						self.originalTitle = document.title;
-						self.intervalHandler = setInterval(function(){
-							document.title = (alternator?'[ @] ':'[@ ] ')+self.originalTitle;
-							alternator = !alternator;
-						},500);
-					}else{ // let the forum mod do the flashing!
-						if(self.target!==undefined){
-							self.target.postMessage('startFlash','*');
-						}
-					}
-				},
-				stopFlash:function(noTransmit){
-					if(noTransmit === undefined){
-						noTransmit = false;
-					}
-					if(self.doFlash){
-						if(top == window){ // no firame, we have to do the flashing manually
-							if(self.intervalHandler){
-								clearInterval(self.intervalHandler);
-								self.intervalHandler = false;
-								document.title = self.originalTitle;
-							}
-						}else{ // let the forum mod do the flashing!
-							if(self.target!==undefined){
-								self.target.postMessage('stopFlash','*');
-							}
-						}
-						self.doFlash = false;
-						if(!noTransmit){
-							oirc.ls.set('stopFlash',Math.random().toString(36)+(new Date()).getTime().toString());
-						}
-					}
-				},
-				init:function(){
-					$(window).on('storage',function(e){
-						if(e.originalEvent.key == settings.net()+'stopFlash'){
-							self.stopFlash(true);
-						}
-					}).unload(function(){
-						self.stopFlash(true); // don't message the other tabs as they might still be open
-					});
-				}
-			};
-			return {
-				request:self.request,
-				make:self.make,
-				stopFlash:self.stopFlash,
-				init:self.init
-			};
-		})(),
 		channels = (function(){
 			var self = {
 				draw:function(){
@@ -300,6 +176,7 @@ $(function(){
 											)
 											.mouseup(function(){
 												if(canClick){
+													oirc.channels.current().unload();
 													channels.join(i);
 												}
 											}),
@@ -1301,16 +1178,14 @@ $(function(){
 					}
 					scroll.init();
 					
-					notification.init();
 					self.registerToggle();
 					if(is_ios){
 						self.calcResize(true);
 					}
 					$(window).resize(function(){
 						self.calcResize(!is_ios);
-					}).trigger('resize').focus(function(){
-						notification.stopFlash();
-					});
+					}).trigger('resize');
+					
 					$('#aboutButton').click(function(e){
 						e.preventDefault();
 						$('#about').toggle();
@@ -1353,7 +1228,7 @@ $(function(){
 						statusTxt = '['+lineDate.toLocaleTimeString()+'] '+statusTxt;
 					}
 					statusTxt += $('<span>').append(tdMessage).text();
-					statusBar.set(statusTxt);
+					oirc.statusBar.set(statusTxt);
 					if((new Date(self.lastMessage)).getDay()!=lineDate.getDay()){
 						$mBox.append($('<tr>').addClass('dateSeperator').append($('<td>')
 							.addClass((oirc.options.get('altLines') && (self.lineHigh = !self.lineHigh)?'lineHigh':''))
@@ -1413,38 +1288,6 @@ $(function(){
 				registerToggle:self.registerToggle,
 				addLine:self.addLine,
 				setSmileys:self.setSmileys
-			};
-		})(),
-		statusBar = (function(){
-			var self = {
-				text:'',
-				started:false,
-				start:function(){
-					if(!oirc.options.get('statusBar')){
-						self.started = true; // no need to performthe check 9001 times
-						return;
-					}
-					if(!self.started){
-						setInterval(function(){
-							window.status = self.text;
-							if(parent){
-								try{
-									parent.window.status = self.text;
-								}catch(e){}
-							}
-						},500);
-						self.started = true;
-					}
-				},
-				set:function(s){
-					self.text = s;
-					if(!self.started){
-						self.start();
-					}
-				}
-			};
-			return {
-				set:self.set
 			};
 		})(),
 		logs = (function(){
@@ -1641,7 +1484,11 @@ $(function(){
 	};
 	oirc.onchannelpart = oirc.channels.part;
 	oirc.ontopicchange = topic.set;
-	oirc.onnotification = notification.make;
+	oirc.onnotification = function(s,c,current){
+		if(c!=oirc.channels.current().handler){
+			oirc.channels.highlight(c);
+		}
+	};
 	oirc.onsmileychange = page.setSmileys;
 	
 	oirc.connect(function(){
