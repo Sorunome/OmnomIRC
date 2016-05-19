@@ -20,73 +20,162 @@
 */
 namespace oirc;
 
-class Json{
-	private $json;
-	private $warnings;
-	private $errors;
-	private $relog;
-	public function clear(){
-		$this->warnings = array();
-		$this->errors = array();
-		$this->json = array();
-	}
-	public function __construct(){
-		$this->clear();
-		$this->relog = 0;
-	}
-	public function addWarning($s){
-		$this->warnings[] = $s;
-	}
-	public function addError($s){
-		$this->errors[] = $s;
-	}
-	public function add($key,$value){
-		$this->json[$key] = $value;
-	}
-	public function get(){
-		global $sql;
-		$this->json['warnings'] = $this->warnings;
-		$this->json['errors'] = $this->errors;
-		$this->json['sql_queries'] = $sql->getNumQueries();
-		if($this->relog!=0){
-			$this->json['relog'] = $this->relog;
+class OIRC{
+	public static $you;
+	public static $config;
+	public static function getLines($res,$table = '{db_prefix}lines',$chan = false){
+		$lines = array();
+		foreach($res as $result){
+			if($result['type']===NULL){
+				continue;
+			}
+			$lines[] = array(
+				'curline' => ($table=='{db_prefix}lines'?(int)$result['line_number']:0),
+				'type' => $result['type'],
+				'network' => (int)$result['Online'],
+				'time' => (int)$result['time'],
+				'name' => $result['name1'],
+				'message' => $result['message'],
+				'name2' => $result['name2'],
+				'chan' => ($chan!==false?$chan:$result['channel']),
+				'uid' => (int)$result['uid']
+			);
 		}
-		return json_encode($this->json);
+		return $lines;
 	}
-	public function hasErrors(){
-		return sizeof($this->errors) > 0;
+	public static function loadChannel($count){
+		if($count < 1){ // nothing to do here
+			return array();
+		}
+		$lines_cached = array();
+		if($cache = Cache::get('oirc_lines_'.OIRC::$you->chan)){
+			$lines_cached = json_decode($cache,true);
+			if(json_last_error()!==0){
+				$lines_cached = array();
+			}
+		}
+		if(($len = count($lines_cached)) >= $count){
+			return array_splice($lines_cached,$len-$count,$len);
+		}
+		$table = '{db_prefix}lines';
+		$linesExtra = array();
+		$offset = count($lines_cached);
+		
+		$count -= $offset;
+		$channel = Sql::query("SELECT {db_prefix}getchanid(?) AS chan",array(OIRC::$you->chan));
+		$channel = $channel[0]['chan'];
+		// $table is NEVER user-defined, only possible values are {db_prefix}lines and {db_prefix}lines_old!!!!!
+		while(true){
+			$res = Sql::query("SELECT x.* FROM
+				(
+					SELECT `line_number`,`name1`,`name2`,`message`,`type`,`channel`,`time`,`Online`,`uid` FROM `$table`
+					WHERE
+					`channel` = ?
+					ORDER BY `line_number` DESC
+					LIMIT ?,?
+				) AS x
+				ORDER BY `line_number` ASC
+				",array($channel,(int)$offset,(int)$count));
+			
+			$lines = self::getLines($res,$table,OIRC::$you->chan);
+			
+			if(count($lines)<$count && $table=='{db_prefix}lines'){
+				$count -= count($lines);
+				$table = '{db_prefix}lines_old';
+				$linesExtra = $lines;
+				continue;
+			}
+			break;
+		}
+		$lines_cached = array_merge($lines_cached,$lines,$linesExtra);
+		Cache::set('oirc_lines_'.OIRC::$you->chan,json_encode($lines_cached),time()+(60*60*24*3));
+		return $lines_cached;
 	}
-	public function hasWarnings(){
-		return sizeof($this->warnings) > 0;
+	public static function getNick($uid,$net){
+		$res = Sql::query("SELECT `name` FROM `{db_prefix}userstuff` WHERE `uid`=? AND `network`=?",array((int)$uid,(int)$net));
+		return $res[0]['name'];
 	}
-	public function doRelog($i){
-		$this->relog = $i;
+	public static function getUid($nick,$net){
+		$res = Sql::query("SELECT `uid` FROM `{db_prefix}userstuff` WHERE LOWER(`name`)=LOWER(?) AND `network`=? AND `uid`<>-1",array($nick,(int)$net));
+		return ($res[0]['uid'] === NULL ? NULL : (int)$res[0]['uid']);
 	}
-	public function getIndex($key){
-		if(isset($this->json[$key])){
-			return $this->json[$key];
+	public static function getCheckLoginUrl(){
+		$net = Networks::get(OIRC::$you->getNetwork());
+		$cl = $net['config']['checkLogin'];
+		$ts = (string)time();
+		$clsid = urlencode(htmlspecialchars(str_replace(';','%^%',hash_hmac('sha512',(isset($_SERVER['HTTP_REFERER'])?$_SERVER['HTTP_REFERER']:'THE GAME'),OIRC::$config['security']['sigKey'].$ts.OIRC::$you->getNetwork()).'|'.$ts)));
+		if(isset($_SERVER['HTTP_REFERER'])){
+			$urlhost = parse_url($_SERVER['HTTP_REFERER']);
+			if($urlhost['host'] != (isset($_SERVER['HTTP_HOST'])?$_SERVER['HTTP_HOST']:$_SERVER['SERVER_NAME'])){
+				$clsid = '';
+			}
+		}
+		$cl .= '?sid='.$clsid.'&network='.(OIRC::$you->getNetwork());
+		return $cl;
+	}
+}
+
+class Json{
+	private static $json = array();
+	private static $warnings = array();
+	private static $errors = array();
+	private static $relog = 0;
+	public static function clear(){
+		self::$warnings = array();
+		self::$errors = array();
+		self::$json = array();
+	}
+	public static function addWarning($s){
+		self::$warnings[] = $s;
+	}
+	public static function addError($s){
+		self::$errors[] = $s;
+	}
+	public static function add($key,$value){
+		self::$json[$key] = $value;
+	}
+	public static function get(){
+		self::$json['warnings'] = self::$warnings;
+		self::$json['errors'] = self::$errors;
+		self::$json['sql_queries'] = Sql::getNumQueries();
+		if(self::$relog!=0){
+			self::$json['relog'] = self::$relog;
+		}
+		return json_encode(self::$json);
+	}
+	public static function hasErrors(){
+		return sizeof(self::$errors) > 0;
+	}
+	public static function hasWarnings(){
+		return sizeof(self::$warnings) > 0;
+	}
+	public static function doRelog($i){
+		self::$relog = $i;
+	}
+	public static function getIndex($key){
+		if(isset(self::$json[$key])){
+			return self::$json[$key];
 		}
 		return NULL;
 	}
-	public function deleteIndex($key){
-		unset($this->json[$key]);
+	public static function deleteIndex($key){
+		unset(self::$json[$key]);
 	}
 }
-$json = new Json();
+
 
 function errorHandler($errno,$errstr,$errfile,$errline){
-	global $json;
 	if(0 === error_reporting()){
 		return false;
 	}
 	switch($errno){
 		case E_USER_WARNING:
 		case E_USER_NOTICE:
-			$json->addWarning(array('type' => 'php','number' => $errno,'message'=>$errstr,'file' => $errfile,'line' => $errline));
+			Json::addWarning(array('type' => 'php','number' => $errno,'message'=>$errstr,'file' => $errfile,'line' => $errline));
 			break;
 		//case E_USER_ERROR: // no need, already caught by default.
 		default:
-			$json->addError(array('type' => 'php','number' => $errno,'message'=>$errstr,'file' => $errfile,'line' => $errline));
+			Json::addError(array('type' => 'php','number' => $errno,'message'=>$errstr,'file' => $errfile,'line' => $errline));
 	}
 }
 if(!(isset($textmode) && $textmode===true)){
@@ -99,7 +188,22 @@ header('Cache-Control: post-check=0, pre-check=0',false);
 header('Pragma: no-cache');
 date_default_timezone_set('UTC');
 
-include_once(realpath(dirname(__FILE__)).'/config.php');
+function getConfig(){
+	$cfg = explode("\n",file_get_contents(realpath(dirname(__FILE__)).'/config.json.php'));
+	$searchingJson = true;
+	$json = "";
+	foreach($cfg as $line){
+		if($searchingJson){
+			if(trim($line)=='?>'){
+				$searchingJson = false;
+			}
+		}else{
+			$json .= "\n".$line;
+		}
+	}
+	return json_decode($json,true);
+}
+OIRC::$config = getConfig();
 
 if(isset($argv) && php_sapi_name() == 'cli'){
 	// parse command line args into $_GET
@@ -114,39 +218,39 @@ if(isset($argv) && php_sapi_name() == 'cli'){
 }
 
 class Cache{
-	private $mode = 0;
-	private $handle = false;
-	public function __construct($host = 'localhost',$port = 11211){
+	private static $mode = 0;
+	private static $handle = false;
+	public static function init($host = 'localhost',$port = 11211){
 		if(class_exists('Memcached')){
-			$this->handle = new \Memcached;
-			$this->handle->addServer($host,$port);
-			$this->handle->setOption(\Memcached::OPT_COMPRESSION,false); // else python won't be able to do anything
-			$this->mode = 1;
+			self::$handle = new \Memcached;
+			self::$handle->addServer($host,$port);
+			self::$handle->setOption(\Memcached::OPT_COMPRESSION,false); // else python won't be able to do anything
+			self::$mode = 1;
 		}elseif(class_exists('Memcache')){
-			$this->handle = new \Memcache;
-			$this->handle->connect($host,$port);
-			$this->handle->setCompressThreshold(0,1); // disable compression
-			$this->mode = 2;
+			self::$handle = new \Memcache;
+			self::$handle->connect($host,$port);
+			self::$handle->setCompressThreshold(0,1); // disable compression
+			self::$mode = 2;
 		}
 	}
-	public function get($var){
-		switch($this->mode){
+	public static function get($var){
+		switch(self::$mode){
 			case 1:
 			case 2:
-				return $this->handle->get($var);
+				return self::$handle->get($var);
 		}
 		return false;
 	}
-	public function set($var,$val,$time = 0){
-		switch($this->mode){
+	public static function set($var,$val,$time = 0){
+		switch(self::$mode){
 			case 1:
-				return $this->handle->set($var,$val,$time);
+				return self::$handle->set($var,$val,$time);
 			case 2:
-				return $this->handle->set($var,$val,0,$time);
+				return self::$handle->set($var,$val,0,$time);
 		}
 	}
 }
-$memcached = new Cache;
+Cache::init();
 
 function base64_url_encode($input){
 	return strtr(base64_encode($input),'+/=','-_,');
@@ -165,33 +269,31 @@ function refValues($arr){
 	return $arr;
 }
 class Sql{
-	private $mysqliConnection;
-	private $stmt;
-	private $numQueries = 0;
-	private function connectSql(){
-		global $config,$json;
-		if(isset($this->mysqliConnection)){
-			return $this->mysqliConnection;
+	private static $mysqliConnection;
+	private static $stmt;
+	private static $numQueries = 0;
+	private static function connectSql(){
+		if(isset(self::$mysqliConnection)){
+			return self::$mysqliConnection;
 		}
-		$mysqli = new \mysqli($config['sql']['server'],$config['sql']['user'],$config['sql']['passwd'],$config['sql']['db']);
+		$mysqli = new \mysqli(OIRC::$config['sql']['server'],OIRC::$config['sql']['user'],OIRC::$config['sql']['passwd'],OIRC::$config['sql']['db']);
 		if($mysqli->connect_errno){
 			die('Could not connect to SQL DB: '.$mysqli->connect_errno.' '.$mysqli->connect_error);
 		}
 		if(!$mysqli->set_charset('utf8')){
-			$json->addError(array('type' => 'mysql','message' => 'Couldn\'t use utf8'));
+			Json::addError(array('type' => 'mysql','message' => 'Couldn\'t use utf8'));
 		}
-		$this->mysqliConnection = $mysqli;
+		self::$mysqliConnection = $mysqli;
 		return $mysqli;
 	}
-	private function reportError($type,$a = array(),$stack = 1,$prep = false){
-		global $json;
+	private static function reportError($type,$a = array(),$stack = 1,$prep = false){
 		if($prep){
-			$mysqli = $this->stmt;
+			$mysqli = self::$stmt;
 		}else{
-			$mysqli = $this->connectSql();
+			$mysqli = self::connectSql();
 		}
 		$trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS,$stack+1);
-		$json->addError(array_merge(array(
+		Json::addError(array_merge(array(
 			'type' => 'mysql',
 			'file' => $trace[$stack]['file'],
 			'line' => $trace[$stack]['line'],
@@ -200,9 +302,9 @@ class Sql{
 			'error' => $mysqli->error,
 		),$a));
 	}
-	private function parseResults($result,$stack = 1){
+	private static function parseResults($result,$stack = 1){
 		if($result===false){
-			$this->reportError('misc',array(),$stack+1);
+			self::reportError('misc',array(),$stack+1);
 			return array();
 		}
 		if($result===true){ //nothing returned
@@ -217,22 +319,23 @@ class Sql{
 		}
 		if($res === array()){
 			$fields = $result->fetch_fields();
-			for($i=0;$i<count($fields);$i++)
+			for($i=0;$i<count($fields);$i++){
 				$res[$fields[$i]->name] = NULL;
+			}
 			$res = array($res);
 		}
 		$result->free();
 		return $res;
 	}
-	public function prepare($query, $stack = 0){
-		$mysqli = $this->connectSql();
-		if(!$this->stmt = $mysqli->prepare($query)){
-			$this->reportError('prepare',array('query' => $query),$stack+1);
+	public static function prepare($query, $stack = 0){
+		$mysqli = self::connectSql();
+		if(!self::$stmt = $mysqli->prepare($query)){
+			self::reportError('prepare',array('query' => $query),$stack+1);
 			return false;
 		}
 		return true;
 	}
-	public function bind_param($params,$stack = 0){
+	public static function bind_param($params,$stack = 0){
 		if(is_array($params)){
 			if(empty($params)){
 				return true; // nothing to do here!
@@ -255,74 +358,50 @@ class Sql{
 		}else{
 			$params = func_get_args();
 		}
-		if(!call_user_func_array(array($this->stmt,'bind_param'),refValues($params))){
-			$this->reportError('bind_param',array(),$stack+1,true);
+		if(!call_user_func_array(array(self::$stmt,'bind_param'),refValues($params))){
+			self::reportError('bind_param',array(),$stack+1,true);
 			return false;
 		}
 		return true;
 	}
-	public function execute($stack = 0){
-		if(!$this->stmt->execute()){
-			$this->reportError('execute',array(),$stack+1,true);
+	public static function execute($stack = 0){
+		if(!self::$stmt->execute()){
+			self::reportError('execute',array(),$stack+1,true);
 			return false;
 		}
 		return true;
 	}
-	public function close_prepare(){
-		$this->stmt->close();
+	public static function close_prepare(){
+		self::$stmt->close();
 	}
-	public function query_prepare($query,$params = array(),$stack = 0){
-		global $config;
-		$this->numQueries++;
-		$query = str_replace('{db_prefix}',$config['sql']['prefix'],$query);
-		if($this->prepare($query,$stack+1) && $this->bind_param($params,$stack+1) && $this->execute($stack +1)){
-			$result = $this->stmt->get_result();
-			if($result === false && $this->stmt->errno == 0){ // bug prevention
+	public static function query($query,$params = array(),$stack = 0){
+		self::$numQueries++;
+		$query = str_replace('{db_prefix}',OIRC::$config['sql']['prefix'],$query);
+		if(self::prepare($query,$stack+1) && self::bind_param($params,$stack+1) && self::execute($stack +1)){
+			$result = self::$stmt->get_result();
+			if($result === false && self::$stmt->errno == 0){ // bug prevention
 				$result = true;
 			}
-			$res = $this->parseResults($result,$stack + 1);
-			$this->close_prepare();
+			$res = self::parseResults($result,$stack + 1);
+			self::close_prepare();
 			return $res;
 		}
 		return array();
 	}
-	public function query(){
-		global $config;
-		$this->numQueries++;
-		$mysqli = $this->connectSql();
-		$params = func_get_args();
-		$query = str_replace('{db_prefix}',$config['sql']['prefix'],$params[0]);
-		$args = array();
-		for($i=1;$i<count($params);$i++)
-			$args[$i-1] = $mysqli->real_escape_string($params[$i]);
-		
-		if($mysqli->errno==1065){ //empty
-			return array();
-		}
-		if($mysqli->errno!=0){
-			$this->reportError('query',array('query' => vsprintf($query,$args)));
-			return array();
-		}
-		
-		$result = $mysqli->query(vsprintf($query,$args));
-		$res = $this->parseResults($result);
-		return $res;
-	}
-	public function insertId($stmt = false){
+	public static function insertId($stmt = false){
 		if($stmt){
-			return $this->stmt->insert_id;
+			return self::$stmt->insert_id;
 		}
-		$mysqli = $this->connectSql();
+		$mysqli = self::connectSql();
 		return $mysqli->insert_id;
 	}
-	public function getNumQueries(){
-		return $this->numQueries;
+	public static function getNumQueries(){
+		return self::$numQueries;
 	}
 }
-$sql = new Sql();
-class GlobalVars{
-	public function set($s,$c,$t = NULL){ //set a global variable
-		global $sql;
+
+class Vars{
+	public static function set($s,$c,$t = NULL){ //set a global variable
 		$type = NULL;
 		if($t===NULL){ //no third parameter, we detect the type
 			switch(gettype($c)){
@@ -412,17 +491,16 @@ class GlobalVars{
 		if($type===NULL){ //if we couldn't set a type return false
 			return false;
 		}
-		$r = $sql->query_prepare("SELECT id,type FROM {db_prefix}vars WHERE name=?",array($s));
+		$r = Sql::query("SELECT id,type FROM {db_prefix}vars WHERE name=?",array($s));
 		$r = $r[0];
 		if(isset($r['id'])){ //check if we need to update or add a new
-			$sql->query_prepare("UPDATE {db_prefix}vars SET value=?,type=? WHERE name=?",array($c,$type,$s));
+			Sql::query("UPDATE {db_prefix}vars SET value=?,type=? WHERE name=?",array($c,$type,$s));
 		}else{
-			$sql->query_prepare("INSERT INTO {db_prefix}vars (name,value,type) VALUES (?,?,?)",array($s,$c,(int)$type));
+			Sql::query("INSERT INTO {db_prefix}vars (name,value,type) VALUES (?,?,?)",array($s,$c,(int)$type));
 		}
 		return true;
 	}
-	public function get($s){
-		global $sql;
+	public static function get($s){
 		$params = $s;
 		if(!is_array($params)){
 			$params = array($params);
@@ -431,7 +509,7 @@ class GlobalVars{
 		foreach($params as $p){
 			$ret[$p] = NULL;
 		}
-		foreach($sql->query_prepare("SELECT value,type,name FROM {db_prefix}vars WHERE ".implode(' OR ',array_fill(0,count($params),'name=?')),$params) as $res){
+		foreach(Sql::query("SELECT value,type,name FROM {db_prefix}vars WHERE ".implode(' OR ',array_fill(0,count($params),'name=?')),$params) as $res){
 			if(!$res['name']){
 				continue;
 			}
@@ -470,98 +548,96 @@ class GlobalVars{
 		return $ret;
 	}
 }
-$vars = new GlobalVars();
-class Secure{
-	private function sign($s,$u,$n,$t){
-		global $config;
-		return $t.'|'.hash_hmac('sha512',$s.$u,$n.$config['security']['sigKey'].$t);
+
+class Security{
+	private static function sign($s,$u,$n,$t){
+		return $t.'|'.hash_hmac('sha512',$s.$u,$n.OIRC::$config['security']['sigKey'].$t);
 	}
-	private function sign_guest($s,$u,$n,$t){
-		global $config;
-		return $t.'|'.hash_hmac('sha512',$u.$s,$config['security']['sigKey'].$n.$t);
+	private static function sign_guest($s,$u,$n,$t){
+		return $t.'|'.hash_hmac('sha512',$u.$s,OIRC::$config['security']['sigKey'].$n.$t);
 	}
-	public function checkSig($sig,$nick,$uid,$network){
-		global $json,$networks;
+	public static function checkSig($sig,$nick,$uid,$network){
 		$sigParts = explode('|',$sig);
 		$ts = time();
 		$hard = 60*60*24;
 		$soft = 60*5;
-		$nets = $networks->getNetsarray();
+		$nets = Networks::getNetsarray();
 		$doGuest = isset($nets[$network]['config']['guests']) && $nets[$network]['config']['guests'] >= 2;
 		if($sig != '' && $nick != '' && isset($sigParts[1]) && ((int)$sigParts[0])==$sigParts[0]){
 			$sts = (int)$sigParts[0];
 			$sigs = $sigParts[1];
 			if($sts > ($ts - $hard - $soft) && $sts < ($ts + $hard + $soft)){
-				if($this->sign($nick,$uid,$network,(string)$sts) == $sig || ($doGuest && $this->sign_guest($nick,$uid,$network,(string)$sts) == $sig)){
+				if(self::sign($nick,$uid,$network,(string)$sts) == $sig || ($doGuest && self::sign_guest($nick,$uid,$network,(string)$sts) == $sig)){
 					if(!($sts > ($ts - $hard) && $sts < ($ts + $hard))){
-						$json->doRelog(1);
+						Json::doRelog(1);
 					}
 					return true;
 				}
-				$json->doRelog(3);
+				Json::doRelog(3);
 				return false;
 			}else{
-				if($this->sign($nick,$uid,$network,(string)$sts) == $sig || ($doGuest && $this->sign_guest($nick,$uid,$network,(string)$sts) == $sig)){
-					$json->doRelog(2);
+				if(self::sign($nick,$uid,$network,(string)$sts) == $sig || ($doGuest && self::sign_guest($nick,$uid,$network,(string)$sts) == $sig)){
+					Json::doRelog(2);
 				}else{
-					$json->doRelog(3);
+					Json::doRelog(3);
 				}
 				return false;
 			}
 		}
-		$json->doRelog(3);
+		Json::doRelog(3);
 		return false;
 	}
-	public function getGuestSig($nick,$network){
-		return $this->sign_guest($nick,'-1',$network,(string)time());
+	public static function getGuestSig($nick,$network){
+		return self::sign_guest($nick,'-1',$network,(string)time());
 	}
 }
-$security = new Secure();
+
 class Networks{
-	private $nets;
-	public function __construct(){
-		global $config;
-		$this->nets = array();
-		foreach($config['networks'] as $n){
-			$this->nets[$n['id']] = $n;
+	private static $nets;
+	public static function init(){
+		self::$nets = array();
+		foreach(OIRC::$config['networks'] as $n){
+			self::$nets[$n['id']] = $n;
 		}
 	}
-	public function get($i){
-		if(isset($this->nets[$i])){
-			return $this->nets[$i];
+	public static function get($i){
+		if(isset(self::$nets[$i])){
+			return self::$nets[$i];
 		}
 		return NULL;
 	}
-	public function getNetsarray(){
-		return $this->nets;
+	public static function getNetsarray(){
+		return self::$nets;
 	}
-	public function getNetworkId(){
-		global $config;
+	public static function getNetworkId(){
 		if(isset($_GET['network'])){
-			if(($n = $this->get((int)$_GET['network'])) != NULL){
+			if(($n = self::get((int)$_GET['network'])) != NULL){
 				if($n['type'] == 1 || isset($_GET['serverident']) && $n['type']==0){
 					return $n['id'];
 				}
 			}
 		}
-		return $config['settings']['defaultNetwork'];
+		return OIRC::$config['settings']['defaultNetwork'];
 	}
 }
-$networks = new Networks();
+Networks::init();
+
 class Relay{
-	private $sendBuffer = array();
-	public function sendLine($n1,$n2,$t,$m,$c = NULL,$s = NULL,$uid = NULL){
-		global $you,$sql,$config;
+	private static $sendBuffer = array();
+	private static function socketfail(){
+		shell_exec('php '.realpath(dirname(__FILE__)).'/admin.php internalAction=deactivateBot'); // TODO: some better way to do this :P
+	}
+	public static function sendLine($n1,$n2,$t,$m,$c = NULL,$s = NULL,$uid = NULL){
 		if($c === NULL){
-			$c = $you->chan;
+			$c = OIRC::$you->chan;
 		}
 		if($s === NULL){
-			$s = $you->getNetwork();
+			$s = OIRC::$you->getNetwork();
 		}
 		if($uid === NULL){
-			$uid = $you->getUid();
+			$uid = OIRC::$you->getUid();
 		}
-		$this->sendBuffer[] = array(
+		self::$sendBuffer[] = array(
 			'n1' => $n1,
 			'n2' => $n2,
 			't' => $t,
@@ -571,30 +647,34 @@ class Relay{
 			'uid' => $uid
 		);
 	}
-	public function getSocket(){
-		global $config;
-		$sock = $config['settings']['botSocket'];
+	public static function getSocket(){
+		$sock = OIRC::$config['settings']['botSocket'];
 		$socket = false;
 		if(substr($sock,0,5) == 'unix:'){
 			$socket = socket_create(AF_UNIX,SOCK_STREAM,0);
-			socket_connect($socket,substr($sock,5));
+			if(!socket_connect($socket,substr($sock,5))){
+				self::socketfail();
+				return false;
+			}
 		}else{
 			$matches = array();
 			preg_match('/^([\\w\\.]+):(\\d+)/',$sock,$matches);
 			if($matches){
 				$socket = socket_create(AF_INET,SOCK_STREAM,SOL_TCP);
-				socket_connect($socket,$matches[1],$matches[2]);
+				if(!socket_connect($socket,$matches[1],$matches[2])){
+					self::socketfail();
+					return false;
+				}
 			}
 		}
 		return $socket;
 	}
-	public function commitBuffer(){
-		global $config,$sql;
-		if(sizeof($this->sendBuffer)>0){
+	public static function commitBuffer(){
+		if(sizeof(self::$sendBuffer)>0){
 			$values = '';
 			$valArray = array();
-			foreach($this->sendBuffer as $line){
-				$values .= '(?,?,?,?,?,?,?,UNIX_TIMESTAMP(CURRENT_TIMESTAMP)),';
+			foreach(self::$sendBuffer as $line){
+				$values .= '(?,?,?,?,{db_prefix}getchanid(?),?,?,UNIX_TIMESTAMP(CURRENT_TIMESTAMP)),';
 				if($line['n1'] == '' && $line['n2'] == ''){
 					continue;
 				}
@@ -610,16 +690,16 @@ class Relay{
 			}
 			if(sizeof($valArray) > 0){
 				$values = rtrim($values,',');
-				$sql->query_prepare("INSERT INTO `{db_prefix}lines` (name1,name2,type,message,channel,online,uid,time) VALUES $values",$valArray);
+				Sql::query("INSERT INTO `{db_prefix}lines` (name1,name2,type,message,channel,online,uid,time) VALUES $values",$valArray);
 			}
 			
 			
-			if($config['settings']['useBot']){
-				$sock = $config['settings']['botSocket'];
+			if(OIRC::$config['settings']['useBot']){
+				$sock = OIRC::$config['settings']['botSocket'];
 				
-				if($socket = $this->getSocket()){
+				if($socket = self::getSocket()){
 					$socketBuf = '';
-					foreach($this->sendBuffer as $line){
+					foreach(self::$sendBuffer as $line){
 						$socketBuf .= trim(json_encode($line))."\n";
 					}
 					socket_set_nonblock($socket);
@@ -627,39 +707,36 @@ class Relay{
 					socket_close($socket);
 				}
 			}
-			$this->sendBuffer = array();
-			if(substr($config['settings']['curidFilePath'],0,1) == '/'){
-				file_put_contents($config['settings']['curidFilePath'],$sql->insertId());
+			self::$sendBuffer = array();
+			if(substr(OIRC::$config['settings']['curidFilePath'],0,1) == '/'){
+				file_put_contents(OIRC::$config['settings']['curidFilePath'],Sql::insertId());
 			}else{
-				file_put_contents(realpath(dirname(__FILE__)).'/'.$config['settings']['curidFilePath'],$sql->insertId());
+				file_put_contents(realpath(dirname(__FILE__)).'/'.OIRC::$config['settings']['curidFilePath'],Sql::insertId());
 			}
 		}
 	}
 }
-$relay = new Relay();
+
 class Users{
-	public function notifyJoin($nick,$channel,$net,$uid = -1){
-		global $relay;
+	public static function notifyJoin($nick,$channel,$net,$uid = -1){
 		if($nick){
-			$relay->sendLine($nick,'','join','',$channel,(int)$net,(int)$uid);
+			Relay::sendLine($nick,'','join','',$channel,(int)$net,(int)$uid);
 		}
 	}
-	public function notifyPart($nick,$channel,$net,$uid = -1){
-		global $relay;
+	public static function notifyPart($nick,$channel,$net,$uid = -1){
 		if($nick){
-			$relay->sendLine($nick,'','part','',$channel,(int)$net,(int)$uid);
+			Relay::sendLine($nick,'','part','',$channel,(int)$net,(int)$uid);
 		}
 	}
-	public function clean(){
-		global $sql;
-		$result = $sql->query_prepare("SELECT `username`,`channel`,`online`,`uid` FROM `{db_prefix}users` WHERE (`time` < ? and `time`!=0) AND `isOnline`=1",array(strtotime('-5 minutes')));
-		$sql->query_prepare("UPDATE `{db_prefix}users` SET `isOnline`=0 WHERE (`time` < ? and `time`!=0) AND `isOnline`=1",array(strtotime('-5 minutes')));
+	public static function clean(){
+		$result = Sql::query("SELECT `username`,`channel`,`online`,`uid` FROM `{db_prefix}users` WHERE (`time` < ? and `time`!=0) AND `isOnline`=1",array(strtotime('-5 minutes')));
+		Sql::query("UPDATE `{db_prefix}users` SET `isOnline`=0 WHERE (`time` < ? and `time`!=0) AND `isOnline`=1",array(strtotime('-5 minutes')));
 		foreach($result as $row){
-			$this->notifyPart($row['username'],$row['channel'],(int)$row['online'],(int)$row['uid']);
+			self::notifyPart($row['username'],$row['channel'],(int)$row['online'],(int)$row['uid']);
 		}
 	}
 }
-$users = new Users();
+
 class You{
 	public $nick;
 	private $sig;
@@ -672,34 +749,34 @@ class You{
 	private $chanName;
 	public $chan;
 	public function __construct($n = false){
-		global $security,$json,$ADMINPAGE,$config,$networks;
+		global $ADMINPAGE;
 		if($n!==false){
 			$this->nick = $n;
 		}elseif(isset($_GET['nick'])){
 			$this->nick = base64_url_decode($_GET['nick']);
 		}else{
-			$json->addError('Nick not set');
+			Json::addError('Nick not set');
 			$this->nick = '';
 		}
 		if(isset($_GET['signature'])){
 			$this->sig = base64_url_decode($_GET['signature']);
 		}else{
-			$json->addError('Signature not set');
+			Json::addError('Signature not set');
 			$this->sig = '';
 		}
 		if(isset($_GET['id'])){
 			$this->id = (int)$_GET['id'];
 		}else{
-			$json->addWarning('ID not set, some features may be unavailable');
+			Json::addWarning('ID not set, some features may be unavailable');
 			$this->id = -1;
 		}
 		
-		$this->network = $networks->getNetworkId();
+		$this->network = Networks::getNetworkId();
 		
 		if($this->network == 0){ // server network, do aditional validating
-			if(!isset($_GET['serverident']) || !$security->checkSig($this->sig,$this->nick,$this->id,$this->network)){
-				$json->addError('Login attempt as server');
-				echo $json->get();
+			if(!isset($_GET['serverident']) || !Security::checkSig($this->sig,$this->nick,$this->id,$this->network)){
+				Json::addError('Login attempt as server');
+				echo Json::get();
 				die();
 			}
 			$this->globalOps = false;
@@ -707,12 +784,12 @@ class You{
 			$this->loggedIn = true;
 		}else{
 			$this->globalOps = NULL;
-			$this->loggedIn = $security->checkSig($this->sig,$this->nick,$this->id,$this->network);
+			$this->loggedIn = Security::checkSig($this->sig,$this->nick,$this->id,$this->network);
 		}
 		$this->infoStuff = NULL;
 		if(!$this->loggedIn){
 			if(!isset($_GET['noLoginErrors'])){
-				$json->addWarning('Not logged in');
+				Json::addWarning('Not logged in');
 				$this->nick = '';
 			}else{
 				$this->nick = false;
@@ -730,7 +807,7 @@ class You{
 			if($ADMINPAGE!==true){
 				$order = -1;
 				$defaultChan = '';
-				foreach($config['channels'] as $chan){
+				foreach(OIRC::$config['channels'] as $chan){
 					if($chan['enabled']){
 						foreach($chan['networks'] as $cn){
 							if($cn['id'] == $this->network && ($order == -1 || $cn['order']<$order)){
@@ -740,7 +817,7 @@ class You{
 						}
 					}
 				}
-				$json->addWarning('Didn\'t set a channel, defaulting to '.$defaultChan);
+				Json::addWarning('Didn\'t set a channel, defaulting to '.$defaultChan);
 			}else{
 				$defaultChan = 'false';
 			}
@@ -748,33 +825,32 @@ class You{
 		}
 	}
 	public function setChan($channel){
-		global $json,$config;
 		if($channel == ''){
-			$json->addError('Invalid channel');
-			echo $json->get();
+			Json::addError('Invalid channel');
+			echo Json::get();
 			die();
 		}
 		if(!preg_match('/^\d+$/',$channel) && $channel[0]!="*" && $channel[0]!="#" && $channel[0]!="@" && $channel[0]!="&"){
-			$json->addError('Invalid channel');
-			echo $json->get();
+			Json::addError('Invalid channel');
+			echo Json::get();
 			die();
 		}
 		if(($channel[0] == '*' || $channel[0] == '@') && (!$this->loggedIn || $this->id == -1)){
-			$json->add('message','<span style="color:#C73232;"><b>ERROR:</b> Pm/oirc chans not available for guests</span>');
-			$json->addError('Pm not available for guests');
-			echo $json->get();
+			Json::add('message','<span style="color:#C73232;"><b>ERROR:</b> Pm/oirc chans not available for guests</span>');
+			Json::addError('Pm not available for guests');
+			echo Json::get();
 			die();
 		}
 		
 		if($channel[0] == '*' && $this->getPmHandler() != '' && (!preg_match('/^(\[\d+,\d+\]){2}$/',ltrim($channel,'*')) || strpos($channel,$this->getPmHandler())===false)){
-			$json->addError('Invalid PM channel');
-			echo $json->get();
+			Json::addError('Invalid PM channel');
+			echo Json::get();
 			die();
 		}
 		$this->chanName = $channel;
 		if($channel[0]=='#' || $channel[0]=='&' || preg_match('/^[0-9]+$/',$channel)){
 			$foundChan = false;
-			foreach($config['channels'] as $chan){
+			foreach(OIRC::$config['channels'] as $chan){
 				if($chan['enabled']){
 					foreach($chan['networks'] as $cn){
 						if(($cn['id'] == $this->network || $this->network == 0 /* super sneaky server network */) && (strtolower($cn['name'])==strtolower($channel) || $chan['id']==$channel)){
@@ -790,12 +866,12 @@ class You{
 				}
 			}
 			if(!$foundChan){
-				$json->addError('Invalid channel');
-				echo $json->get();
+				Json::addError('Invalid channel');
+				echo Json::get();
 				die();
 			}
 		}
-		$this->chan = $channel;
+		$this->chan = strtolower($channel);
 	}
 	public function channelName(){
 		return $this->chanName;
@@ -804,40 +880,38 @@ class You{
 		return 'nick='.base64_url_encode($this->nick).'&signature='.base64_url_encode($this->sig).'&id='.($this->id).'&channel='.(preg_match('/^[0-9]+$/',$this->chan)?$this->chan:base64_url_encode($this->chan)).'&network='.$this->getNetwork();
 	}
 	public function update(){
-		global $sql,$users,$relay,$config;
 		if($this->chan[0]=='*' || $this->nick == ''){
 			return;
 		} // INSERT INTO `{db_prefix}users` (`username`,`channel`,`online`,`time`) VALUES ('Sorunome',0,1,9001) ON DUPLICATE KEY UPDATE `time`=UNIX_TIMESTAMP(CURRENT_TIMESTAMP)
-		$result = $sql->query_prepare("SELECT usernum,time,isOnline,uid FROM `{db_prefix}users` WHERE `username`=? AND `channel`=? AND `online`=?",array($this->nick,$this->chan,$this->getNetwork()));
+		$result = Sql::query("SELECT usernum,time,isOnline,uid FROM `{db_prefix}users` WHERE `username`=? AND `channel`=? AND `online`=?",array($this->nick,$this->chan,$this->getNetwork()));
 		if($result[0]['usernum']!==NULL){ //Update  
-			$sql->query_prepare("UPDATE `{db_prefix}users` SET `time`=UNIX_TIMESTAMP(CURRENT_TIMESTAMP),`isOnline`=1,`uid`=? WHERE `usernum`=?",array($this->getUid(),(int)$result[0]['usernum']));
+			Sql::query("UPDATE `{db_prefix}users` SET `time`=UNIX_TIMESTAMP(CURRENT_TIMESTAMP),`isOnline`=1,`uid`=? WHERE `usernum`=?",array($this->getUid(),(int)$result[0]['usernum']));
 			if((int)$result[0]['isOnline'] == 0){
-				$users->notifyJoin($this->nick,$this->chan,$this->getNetwork(),$this->getUid());
+				Users::notifyJoin($this->nick,$this->chan,$this->getNetwork(),$this->getUid());
 			}
 		}else{
-			$sql->query_prepare("INSERT INTO `{db_prefix}users` (`username`,`channel`,`time`,`online`,`uid`) VALUES (?,?,UNIX_TIMESTAMP(CURRENT_TIMESTAMP),?,?)",array($this->nick,$this->chan,$this->getNetwork(),$this->getUid()));
-			$users->notifyJoin($this->nick,$this->chan,$this->getNetwork(),$this->getUid());
+			Sql::query("INSERT INTO `{db_prefix}users` (`username`,`channel`,`time`,`online`,`uid`) VALUES (?,?,UNIX_TIMESTAMP(CURRENT_TIMESTAMP),?,?)",array($this->nick,$this->chan,$this->getNetwork(),$this->getUid()));
+			Users::notifyJoin($this->nick,$this->chan,$this->getNetwork(),$this->getUid());
 		}
-		if(!$config['settings']['useBot']){
-			$users->clean();
+		if(!OIRC::$config['settings']['useBot']){
+			Users::clean();
 		}
-		$relay->commitBuffer();
+		Relay::commitBuffer();
 	}
 	public function info(){
-		global $sql;
 		if($this->infoStuff !== NULL){
 			return $this->infoStuff;
 		}
-		$temp = $sql->query_prepare("SELECT usernum,name,ignores,kicks,globalOp,globalBan,network,uid FROM `{db_prefix}userstuff` WHERE uid=? AND network=?",array($this->id,$this->network));
+		$temp = Sql::query("SELECT usernum,name,ignores,kicks,globalOp,globalBan,network,uid FROM `{db_prefix}userstuff` WHERE uid=? AND network=?",array($this->id,$this->network));
 		$userSql = $temp[0];
 		if($this->loggedIn && $this->network != 0 /* server network has no info */){
 			if($userSql['uid']===NULL){
-				$sql->query_prepare("INSERT INTO `{db_prefix}userstuff` (name,uid,network) VALUES (?,?,?)",array($this->nick,$this->id,$this->network));
-				$temp = $sql->query_prepare("SELECT usernum,name,ignores,kicks,globalOp,globalBan,network,uid FROM `{db_prefix}userstuff` WHERE usernum=?",array($sql->insertId()));
+				Sql::query("INSERT INTO `{db_prefix}userstuff` (name,uid,network) VALUES (?,?,?)",array($this->nick,$this->id,$this->network));
+				$temp = Sql::query("SELECT usernum,name,ignores,kicks,globalOp,globalBan,network,uid FROM `{db_prefix}userstuff` WHERE usernum=?",array(Sql::insertId()));
 				$userSql = $temp[0];
 			}
 			if($userSql['name'] != $this->nick){
-				$sql->query_prepare("UPDATE `{db_prefix}userstuff` SET `name`=? WHERE uid=? AND network=?",array($this->nick,$this->id,$this->network));
+				Sql::query("UPDATE `{db_prefix}userstuff` SET `name`=? WHERE uid=? AND network=?",array($this->nick,$this->id,$this->network));
 				$userSql['name'] = $this->nick;
 			}
 		}
@@ -845,8 +919,7 @@ class You{
 		return $userSql;
 	}
 	public function isGlobalOp(){
-		global $config,$networks;
-		if(!$config['info']['installed']){
+		if(!OIRC::$config['info']['installed']){
 			return true;
 		}
 		if($this->globalOps !== NULL){
@@ -861,7 +934,7 @@ class You{
 			$this->globalOps = true;
 			return true;
 		}
-		$net = $networks->get($this->getNetwork());
+		$net = Networks::get($this->getNetwork());
 		if($net['config']['checkLoginAbs'] !== ''){
 			$returnPosition = json_decode(trim(shell_exec('php '.escapeshellarg($net['config']['checkLoginAbs']).'/index.php op='.(int)$this->id)),true);
 		}else{
@@ -875,7 +948,6 @@ class You{
 		return false;
 	}
 	public function isOp(){
-		global $config,$channels;
 		if($this->ops !== NULL){
 			return $this->ops;
 		}
@@ -883,7 +955,7 @@ class You{
 			$this->ops = true;
 			return true;
 		}
-		if($channels->isOp($this->chan,$this->nick,$this->network)){
+		if(Channels::isOp($this->chan,$this->nick,$this->network)){
 			$this->ops = true;
 			return true;
 		}
@@ -891,18 +963,16 @@ class You{
 		return false;
 	}
 	public function isGlobalBanned(){
-		global $networks,$channels;
 		$userSql = $this->info();
 		return $userSql['globalBan']=='1';
 	}
 	public function isBanned(){
-		global $networks,$channels;
 		$userSql = $this->info();
-		if($userSql['globalBan']=='1' || $channels->isBanned($this->chan,$this->nick,$this->network)){
+		if($userSql['globalBan']=='1' || Channels::isBanned($this->chan,$this->nick,$this->network)){
 			return true;
 		}
 		if(!$this->isLoggedIn()){
-			$n = $networks->get($this->network);
+			$n = Networks::get($this->network);
 			if($n===NULL || $n['config']['guests'] == 0){
 				return true;
 			}
@@ -925,7 +995,6 @@ class You{
 		return '['.$this->network.','.$this->id.']';
 	}
 	public function getWholePmHandler($nick,$net = false){
-		global $omnomirc;
 		$youhandler = $this->getPmHandler();
 		if($youhandler == ''){
 			return '';
@@ -933,8 +1002,8 @@ class You{
 		if($net === false){
 			$net = $this->network;
 		}
-		$uid = $omnomirc->getUid($nick,$net);
-		if($uid === NULL){
+		$uid = OIRC::getUid($nick,$net);
+		if($uid === NULL || $uid == -1){
 			return '';
 		}
 		$otherhandler = '['.$net.','.$uid.']';
@@ -949,129 +1018,43 @@ class You{
 		}
 	}
 }
-$you = new You();
-class OmnomIRC{
-	public function getLines($res,$table = '{db_prefix}lines',$overrideIgnores = false){
-		global $you;
-		$lines = array();
-		foreach($res as $result){
-			if($result['type']===NULL){
-				continue;
-			}
-			$lines[] = array(
-				'curLine' => ($table=='{db_prefix}lines'?(int)$result['line_number']:0),
-				'type' => $result['type'],
-				'network' => (int)$result['Online'],
-				'time' => (int)$result['time'],
-				'name' => $result['name1'],
-				'message' => $result['message'],
-				'name2' => $result['name2'],
-				'chan' => $result['channel'],
-				'uid' => (int)$result['uid']
-			);
-		}
-		return $lines;
-	}
-	public function loadChannel($count){
-		global $you,$sql,$memcached;
-		if($count < 1){ // nothing to do here
-			return array();
-		}
-		$lines_cached = array();
-		if($cache = $memcached->get('oirc_lines_'.$you->chan)){
-			$lines_cached = json_decode($cache,true);
-			if(json_last_error()!==0){
-				$lines_cached = array();
-			}
-		}
-		if(($len = count($lines_cached)) >= $count){
-			return array_splice($lines_cached,$len-$count,$len);
-		}
-		$table = '{db_prefix}lines';
-		$linesExtra = array();
-		$offset = count($lines_cached);
-		
-		$count -= $offset;
-		// $table is NEVER user-defined, only possible values are {db_prefix}lines and {db_prefix}lines_old!!!!!
-		while(true){
-			$res = $sql->query_prepare("SELECT x.* FROM
-				(
-					SELECT * FROM `$table`
-					WHERE
-					(
-						`type` != 'server'
-						AND
-						LOWER(`channel`) = LOWER(?)
-					)
-					ORDER BY `line_number` DESC
-					LIMIT ?,?
-				) AS x
-				ORDER BY `line_number` ASC
-				",array($you->chan,(int)$offset,(int)$count));
-			
-			$lines = $this->getLines($res,$table,true); // we don't want ignores to land in cache, thus override them!
-			
-			if(count($lines)<$count && $table=='{db_prefix}lines'){
-				$count -= count($lines);
-				$table = '{db_prefix}lines_old';
-				$linesExtra = $lines;
-				continue;
-			}
-			break;
-		}
-		$lines_cached = array_merge($lines_cached,$lines,$linesExtra);
-		$memcached->set('oirc_lines_'.$you->chan,json_encode($lines_cached),time()+(60*60*24*3));
-		return $lines_cached;
-	}
-	public function getNick($uid,$net){
-		global $sql;
-		$res = $sql->query_prepare("SELECT `name` FROM `{db_prefix}userstuff` WHERE `uid`=? AND `network`=?",array((int)$uid,(int)$net));
-		return $res[0]['name'];
-	}
-	public function getUid($nick,$net){
-		global $sql;
-		$res = $sql->query_prepare("SELECT `uid` FROM `{db_prefix}userstuff` WHERE LOWER(`name`)=LOWER(?) AND `network`=? AND `uid`<>-1",array($nick,(int)$net));
-		return ($res[0]['uid'] === NULL ? NULL : (int)$res[0]['uid']);
-	}
-}
-$omnomirc = new OmnomIRC();
+OIRC::$you = new You();
+
 class Channels{
-	private $lastFetchType;
-	private $allowed_types = array('ops','bans');
-	private $chanIdCache = array();
-	private function getChanId($chan,$create = false){
-		global $sql;
-		if(isset($this->chanIdCache[$chan])){
-			return $this->chanIdCache[$chan];
+	private static $lastFetchType;
+	private static $allowed_types = array('ops','bans');
+	private static $chanIdCache = array();
+	private static function getChanId($chan,$create = false){
+		if(isset(self::$chanIdCache[$chan])){
+			return self::$chanIdCache[$chan];
 		}
-		$tmp = $sql->query_prepare("SELECT `channum` FROM `{db_prefix}channels` WHERE chan=LOWER(?)",array($chan));
+		$tmp = Sql::query("SELECT `channum` FROM `{db_prefix}channels` WHERE chan=LOWER(?)",array($chan));
 		$tmp = $tmp[0];
 		if($tmp['channum']===NULL){
 			if($create){
-				$sql->query_prepare("INSERT INTO `{db_prefix}channels` (`chan`) VALUES (LOWER(?))",array($chan));
-				return $this->chanIdCache[$chan] = (int)$sql->insertId();
+				Sql::query("INSERT INTO `{db_prefix}channels` (`chan`) VALUES (LOWER(?))",array($chan));
+				return self::$chanIdCache[$chan] = (int)Sql::insertId();
 			}else{
 				return -1;
 			}
 		}
-		return $this->chanIdCache[$chan] = (int)$tmp['channum'];
+		return self::$chanIdCache[$chan] = (int)$tmp['channum'];
 	}
-	private function isTypeById($type,$id,$nick,$network){
-		global $sql,$omnomirc;
-		$uid = $omnomirc->getUid($nick,$network);
+	private static function isTypeById($type,$id,$nick,$network){
+		$uid = OIRC::getUid($nick,$network);
 		if($uid === NULL){
 			return false;
 		}
 		// $type is NEVER user-defined, only possible values 'ops' and 'bans'
-		if(!in_array($type,$this->allowed_types)){
+		if(!in_array($type,self::$allowed_types)){
 			return false;
 		}
-		$res = $sql->query_prepare("SELECT `$type` FROM `{db_prefix}channels` WHERE `channum`=?",array($id));
+		$res = Sql::query("SELECT `$type` FROM `{db_prefix}channels` WHERE `channum`=?",array($id));
 		$res = json_decode($res[0][$type],true);
 		if(json_last_error() || !isset($res[0])){
 			return false;
 		}
-		$this->lastFetchType = $res;
+		self::$lastFetchType = $res;
 		foreach($res as $i => $r){
 			if($r['uid'] == $uid && $r['net'] == (int)$network){
 				return $i;
@@ -1079,71 +1062,66 @@ class Channels{
 		}
 		return false;
 	}
-	private function addType($type,$chan,$nick,$network){
-		global $sql,$omnomirc;
-		$uid = $omnomirc->getUid($nick,$network);
+	private static function addType($type,$chan,$nick,$network){
+		$uid = OIRC::getUid($nick,$network);
 		if($uid === NULL){
 			return false;
 		}
 		
-		$id = $this->getChanId($chan,true);
-		if($this->isTypeById($type,$id,$nick,$network)!==false){
+		$id = self::getChanId($chan,true);
+		if(self::isTypeById($type,$id,$nick,$network)!==false){
 			return false;
 		}
-		$res = $this->lastFetchType;
+		$res = self::$lastFetchType;
 		$res[] = array(
 			'uid' => (int)$uid,
 			'net' => (int)$network
 		);
 		// $type is NEVER user-defined, only possible values 'ops' and 'bans'
-		if(!in_array($type,$this->allowed_types)){
+		if(!in_array($type,self::$allowed_types)){
 			return false;
 		}
-		$sql->query_prepare("UPDATE `{db_prefix}channels` SET `$type`=? WHERE `channum`=?",array(json_encode($res),$id));
+		Sql::query("UPDATE `{db_prefix}channels` SET `$type`=? WHERE `channum`=?",array(json_encode($res),$id));
 		return true;
 	}
-	private function remType($type,$chan,$nick,$network){
-		global $sql;
-		$id = $this->getChanId($chan);
+	private static function remType($type,$chan,$nick,$network){
+		$id = self::getChanId($chan);
 		if($id == -1){
 			return false;
 		}
-		$offset = $this->isTypeById($type,$id,$nick,$network);
+		$offset = self::isTypeById($type,$id,$nick,$network);
 		if($offset===false){
 			return false;
 		}
-		$res = $this->lastFetchType;
+		$res = self::$lastFetchType;
 		unset($res[$offset]);
 		// $type is NEVER user-defined, only possible values 'ops' and 'bans'
-		if(!in_array($type,$this->allowed_types)){
+		if(!in_array($type,self::$allowed_types)){
 			return false;
 		}
-		$sql->query_prepare("UPDATE `{db_prefix}channels` SET `$type`=? WHERE `channum`=?",array(json_encode($res),$id));
+		Sql::query("UPDATE `{db_prefix}channels` SET `$type`=? WHERE `channum`=?",array(json_encode($res),$id));
 		return true;
 	}
-	private function isType($type,$chan,$nick,$network){
-		global $sql;
-		$id = $this->getChanId($chan);
+	private static function isType($type,$chan,$nick,$network){
+		$id = self::getChanId($chan);
 		if($id == -1){
 			return false;
 		}
-		return $this->isTypeById($type,$id,$nick,$network)!==false;
+		return self::isTypeById($type,$id,$nick,$network)!==false;
 	}
-	public function setTopic($chan,$topic){
-		global $sql,$memcached;
-		$memcached->set('oirc_topic_'.$chan,$topic);
-		$sql->query_prepare("UPDATE `{db_prefix}channels` SET `topic`=? WHERE `channum`=?",array($topic,$this->getChanId($chan,true)));
+	public static function setTopic($chan,$topic){
+		Cache::set('oirc_topic_'.$chan,$topic);
+		Sql::query("UPDATE `{db_prefix}channels` SET `topic`=? WHERE `channum`=?",array($topic,self::getChanId($chan,true)));
 	}
-	public function getTopic($chan){
-		global $sql,$memcached;
-		if($cache = $memcached->get('oirc_topic_'.$chan)){
+	public static function getTopic($chan){
+		if($cache = Cache::get('oirc_topic_'.$chan)){
 			return $cache;
 		}
-		$id = $this->getChanId($chan);
+		$id = self::getChanId($chan);
 		if($id == -1){
 			$cache = '';
 		}else{
-			$res = $sql->query_prepare("SELECT `topic` FROM `{db_prefix}channels` WHERE `channum`=?",array($id));
+			$res = Sql::query("SELECT `topic` FROM `{db_prefix}channels` WHERE `channum`=?",array($id));
 			$res = $res[0]['topic'];
 			if($res===NULL){
 				$cache = '';
@@ -1151,33 +1129,33 @@ class Channels{
 				$cache = $res;
 			}
 		}
-		$memcached->set('oirc_topic_'.$chan,$cache);
+		Cache::set('oirc_topic_'.$chan,$cache);
 		return $cache;
 	}
-	public function addOp($chan,$nick,$network){
-		return $this->addType('ops',$chan,$nick,$network);
+	public static function addOp($chan,$nick,$network){
+		return self::addType('ops',$chan,$nick,$network);
 	}
-	public function remOp($chan,$nick,$network){
-		return $this->remType('ops',$chan,$nick,$network);
+	public static function remOp($chan,$nick,$network){
+		return self::remType('ops',$chan,$nick,$network);
 	}
-	public function addBan($chan,$nick,$network){
-		return $this->addType('bans',$chan,$nick,$network);
+	public static function addBan($chan,$nick,$network){
+		return self::addType('bans',$chan,$nick,$network);
 	}
-	public function remBan($chan,$nick,$network){
-		return $this->remType('bans',$chan,$nick,$network);
+	public static function remBan($chan,$nick,$network){
+		return self::remType('bans',$chan,$nick,$network);
 	}
-	public function isOp($chan,$nick,$network){
-		return $this->isType('ops',$chan,$nick,$network);
+	public static function isOp($chan,$nick,$network){
+		return self::isType('ops',$chan,$nick,$network);
 	}
-	public function isBanned($chan,$nick,$network){
-		return $this->isType('bans',$chan,$nick,$network);
+	public static function isBanned($chan,$nick,$network){
+		return self::isType('bans',$chan,$nick,$network);
 	}
-	private function getModesArray($chan){
+	private static function getModesArray($chan){
 		$modes = array(
 			'+' => array(),
 			'-' => array()
 		);
-		$modestring = $this->getModes($chan);
+		$modestring = self::getModes($chan);
 		$add = NULL;
 		for($i=0;$i<strlen($modestring);$i++){
 			$c = $modestring[$i];
@@ -1198,8 +1176,8 @@ class Channels{
 		}
 		return $modes;
 	}
-	public function isMode($chan,$c,$default = false){
-		$modestring = $this->getModes($chan);
+	public static function isMode($chan,$c,$default = false){
+		$modestring = self::getModes($chan);
 		$char = strpos($modestring,$c);
 		if($char===false){
 			return $default;
@@ -1207,25 +1185,22 @@ class Channels{
 		$minus = strpos($modestring,'-');
 		return $char < $minus;
 	}
-	public function getModes($chan){
-		global $sql,$memcached;
-		if($cache = $memcached->get('oirc_chanmodes_'.$chan)){
+	public static function getModes($chan){
+		if($cache = Cache::get('oirc_chanmodes_'.$chan)){
 			return $cache;
 		}
-		$modestring = $sql->query_prepare("SELECT `modes` FROM `{db_prefix}channels` WHERE chan=LOWER(?)",array($chan));
+		$modestring = Sql::query("SELECT `modes` FROM `{db_prefix}channels` WHERE chan=LOWER(?)",array($chan));
 		$modestring = $modestring[0]['modes'];
 		if($modestring === NULL){
 			$cache = '+-';
 		}else{
 			$cache = $modestring;
 		}
-		$memcached->set('oirc_chanmodes_'.$chan,$cache);
+		Cache::set('oirc_chanmodes_'.$chan,$cache);
 		return $cache;
 	}
-	public function setMode($chan,$s){
-		global $sql,$you,$memcached;
-		
-		$network = $you->getNetwork();
+	public static function setMode($chan,$s){
+		$network = OIRC::$you->getNetwork();
 		$space = strpos($s,' ');
 		$modesWithArgs = 'ob';
 		$allowedModes = 'obc';
@@ -1247,7 +1222,7 @@ class Channels{
 			}
 			$args = array_reverse($args);
 		}
-		$modes = $this->getModesArray($chan);
+		$modes = self::getModesArray($chan);
 		
 		$add = NULL;
 		for($i=0;$i<strlen($modestring);$i++){
@@ -1269,10 +1244,10 @@ class Channels{
 								$arg = array_pop($args);
 								switch($c){
 									case 'o':
-										$this->addOp($chan,$arg,$network);
+										self::addOp($chan,$arg,$network);
 										break;
 									case 'b':
-										$this->addBan($chan,$arg,$network);
+										self::addBan($chan,$arg,$network);
 										break;
 								}
 							}else{
@@ -1284,10 +1259,10 @@ class Channels{
 								$arg = array_pop($args);
 								switch($c){
 									case 'o':
-										$this->remOp($chan,$arg,$network);
+										self::remOp($chan,$arg,$network);
 										break;
 									case 'b':
-										$this->remBan($chan,$arg,$network);
+										self::remBan($chan,$arg,$network);
 										break;
 								}
 							}else{
@@ -1306,9 +1281,8 @@ class Channels{
 		foreach($modes['-'] as $m => $t){
 			$newModes .= $m;
 		}
-		$memcached->set('oirc_chanmodes_'.$chan,$newModes);
-		$sql->query_prepare("UPDATE `{db_prefix}channels` SET `modes`=? WHERE `channum`=?",array($newModes,$this->getChanId($chan,true)));
+		Cache::set('oirc_chanmodes_'.$chan,$newModes);
+		Sql::query("UPDATE `{db_prefix}channels` SET `modes`=? WHERE `channum`=?",array($newModes,self::getChanId($chan,true)));
 		return true;
 	}
 }
-$channels = new Channels();

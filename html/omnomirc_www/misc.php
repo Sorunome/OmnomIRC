@@ -23,60 +23,60 @@ include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 
 header('Content-Type:application/json');
 if(isset($_GET['ident'])){
-	$json->add('loggedin',$you->isLoggedIn());
-	$json->add('isglobalop',$you->isGlobalOp());
-	$json->add('isglobalbanned',$you->isGlobalBanned());
-	$banned = $you->isBanned();
-	$json->add('isbanned',$banned);
-	$json->add('mayview',!$banned);
-	$json->add('channel',$you->chan);
-	$json->add('network',$you->getNetwork());
+	Json::add('loggedin',OIRC::$you->isLoggedIn());
+	Json::add('isglobalop',OIRC::$you->isGlobalOp());
+	Json::add('isglobalbanned',OIRC::$you->isGlobalBanned());
+	$banned = OIRC::$you->isBanned();
+	Json::add('isbanned',$banned);
+	Json::add('mayview',!$banned);
+	Json::add('channel',OIRC::$you->chan);
+	Json::add('network',OIRC::$you->getNetwork());
 }elseif(isset($_GET['getcurline'])){
-	$json->clear();
-	$json->add('curline',(int)file_get_contents($config['settings']['curidFilePath']));
+	Json::clear();
+	Json::add('curline',(int)file_get_contents(OIRC::$config['settings']['curidFilePath']));
 }elseif(isset($_GET['cleanUsers'])){
-	$users->clean();
-	$relay->commitBuffer();
-	$json->clear();
-	$json->add('success',true);
+	Users::clean();
+	Relay::commitBuffer();
+	Json::clear();
+	Json::add('success',true);
 }elseif(isset($_GET['userinfo'])){
-	$json->clear();
-	if($you->isBanned()){
-		$json->addError('banned');
+	Json::clear();
+	if(OIRC::$you->isBanned()){
+		Json::addError('banned');
 	}elseif(isset($_GET['name']) && isset($_GET['chan']) && isset($_GET['online'])){
-		$temp = $sql->query_prepare("SELECT `lastMsg` FROM `{db_prefix}users` WHERE username=? AND channel=? AND online=?",array(base64_url_decode($_GET['name']),(preg_match('/^[0-9]+$/',$_GET['chan'])?$_GET['chan']:base64_url_decode($_GET['chan'])),(int)$_GET['online']));
-		$json->add('last',(int)$temp[0]['lastMsg']);
+		$temp = Sql::query("SELECT `lastMsg` FROM `{db_prefix}users` WHERE username=? AND channel=? AND online=?",array(base64_url_decode($_GET['name']),(preg_match('/^[0-9]+$/',$_GET['chan'])?$_GET['chan']:base64_url_decode($_GET['chan'])),(int)$_GET['online']));
+		Json::add('last',(int)$temp[0]['lastMsg']);
 	}else{
-		$json->addError('Bad parameters');
+		Json::addError('Bad parameters');
 	}
 }elseif(isset($_GET['openpm'])){
-	$json->clear();
-	if($you->isBanned()){
-		$json->addError('banned');
+	Json::clear();
+	if(OIRC::$you->isBanned()){
+		Json::addError('banned');
 	}else{
-		$temp = $sql->query_prepare("SELECT `name`,`network`,`uid` FROM `{db_prefix}userstuff` WHERE LOWER(`name`)=LOWER(?) AND `network`=?",array(base64_url_decode($_GET['openpm']),isset($_GET['checknet'])?$_GET['checknet']:$you->getNetwork()));
-		$json->add('chanid','*'.$you->getWholePmHandler($temp[0]['name'],$temp[0]['network']));
-		$json->add('channick',$temp[0]['name']);
+		$temp = Sql::query("SELECT `name`,`network`,`uid` FROM `{db_prefix}userstuff` WHERE LOWER(`name`)=LOWER(?) AND `network`=?",array(base64_url_decode($_GET['openpm']),isset($_GET['checknet'])?$_GET['checknet']:OIRC::$you->getNetwork()));
+		Json::add('chanid','*'.OIRC::$you->getWholePmHandler($temp[0]['name'],$temp[0]['network']));
+		Json::add('channick',$temp[0]['name']);
 	}
 }elseif(isset($_GET['identName'])){
-	$json->clear();
-	$json->add('success',false);
+	Json::clear();
+	Json::add('success',false);
 	$name = base64_url_decode($_GET['identName']);
-	$nets = $networks->getNetsarray();
-	if(!isset($nets[$you->getNetwork()]['config']['guests']) || $nets[$you->getNetwork()]['config']['guests'] < 2){
-		$json->add('message','feature not available');
+	$nets = Networks::getNetsarray();
+	if(!isset($nets[OIRC::$you->getNetwork()]['config']['guests']) || $nets[OIRC::$you->getNetwork()]['config']['guests'] < 2){
+		Json::add('message','feature not available');
 	}elseif(!preg_match('/^[a-zA-Z0-9\\-_]{4,20}$/',$name)){
-		$json->add('message','invalid nickname (chars and digits, 4-20)');
+		Json::add('message','invalid nickname (chars and digits, 4-20)');
 	}else{
-		$res = $sql->query_prepare("SELECT `uid` FROM {db_prefix}users WHERE `username`=? AND `online`=? AND (`uid`<>-1 OR (`lastMsg` >= ? AND `isOnline`=0) OR `isOnline`=1) LIMIT 1",array($name,$you->getNetwork(),strtotime('-30 minutes')));
+		$res = Sql::query("SELECT `uid` FROM {db_prefix}users WHERE `username`=? AND `online`=? AND (`uid`<>-1 OR (`lastMsg` >= ? AND `isOnline`=0) OR `isOnline`=1) LIMIT 1",array($name,OIRC::$you->getNetwork(),strtotime('-30 minutes')));
 		$res = $res[0];
-		if($res['uid'] === NULL || ($you->isLoggedIn() && $res['uid'] == -1 && $name == $you->nick /* network must be already correct */)){
-			$json->add('success',true);
-			$json->add('signature',$security->getGuestSig($name,$you->getNetwork()));
+		if($res['uid'] === NULL || (OIRC::$you->isLoggedIn() && $res['uid'] == -1 && $name == OIRC::$you->nick /* network must be already correct */)){
+			Json::add('success',true);
+			Json::add('signature',Security::getGuestSig($name,OIRC::$you->getNetwork()));
 		}else{
-			$json->add('message','nickname already taken');
+			Json::add('message','nickname already taken');
 		}
 	}
 }
 
-echo $json->get();
+echo Json::get();

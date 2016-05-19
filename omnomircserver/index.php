@@ -1,3 +1,9 @@
+<?php
+if($_SERVER['HTTP_X_FORWARDED_PROTO'] != 'https'){
+	header('Location: https://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI']);
+	exit;
+}
+?>
 <!DOCTYPE html>
 <html lang="en">
 	<head>
@@ -53,7 +59,8 @@
 			<div class="container">
 				<h1>OmnomIRC</h1>
 				<p>OmnomIRC is a fully customizable and open source IRC-style chatbox software, ready to be integrated into your forum or website. Supports SMF, myBB, AcmlmBoard XD and phpBB3!</p>
-				<img alt="oirc" src="oirc.png"><br>
+				<p>Have a demo below:</p>
+				<iframe src="https://www.omnimaga.org/omnomirc/index.php?network=6" style="width:100%;height:280px;margin:0;padding:0;border-style:none;"></iframe>
 				<?php
 				function file_get_contents_curl($url){
 					$ch = curl_init();
@@ -69,7 +76,7 @@
 				echo '<p>Latest release: <a href="https://github.com/Sorunome/OmnomIRC/releases/tag/'.$latest['name'].'">'.$latest['name'].'</a></p>'.
 					'<p>Downloads: <a class="btn btn-primary btn-lg" role="button" href="'.$latest['zipball_url'].'">.zip &raquo;</a> <a class="btn btn-primary btn-lg" role="button" href="'.$latest['tarball_url'].'">.tar.gz &raquo;</a></p>'.
 					'<p>Release Notes:</p>'.
-					'<p>'.json_decode(file_get_contents('http://omnomirc.omnimaga.org/getReleaseNotes.php?version='.$latest['name']),true)['notes'].'</p>';
+					'<p>'.json_decode(file_get_contents('https://omnomirc.omnimaga.org/getReleaseNotes.php?version='.$latest['name']),true)['notes'].'</p>';
 				?>
 				
 			</div>

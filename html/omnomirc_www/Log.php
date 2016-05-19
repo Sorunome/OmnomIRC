@@ -21,15 +21,15 @@
 namespace oirc;
 include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 
-$net = $networks->get($you->getNetwork());
-if(!$you->isLoggedIn() && $net['config']['guests'] == 0){
+$net = Networks::get(OIRC::$you->getNetwork());
+if(!OIRC::$you->isLoggedIn() && $net['config']['guests'] == 0){
 	$msg = 'You need to log in to be able to view chat!';
 	if(isset($_GET['noLoginErrors'])){
-		$json->add('message',$msg);
+		Json::add('message',$msg);
 	}else{
-		$json->addError($msg);
+		Json::addError($msg);
 	}
-	echo $json->get();
+	echo Json::get();
 	die();
 }
 
@@ -37,37 +37,38 @@ if(isset($_GET['offset'])){
 	$offset = (int)$_GET['offset'];
 }else{
 	$offset = 0;
-	$json->addWarning('Didn\'t set an offset, defaulting to zero.');
+	Json::addWarning('Didn\'t set an offset, defaulting to zero.');
 }
-$channel = $you->chan;
 
-if($you->isBanned()){
-	$json->add('banned',true);
-	$json->add('admin',false);
-	$json->add('lines',array());
-	$json->add('users',array());
-	echo $json->get();
+
+if(OIRC::$you->isBanned()){
+	Json::add('banned',true);
+	Json::add('admin',false);
+	Json::add('lines',array());
+	Json::add('users',array());
+	echo Json::get();
 	die();
 }
-$json->add('banned',false);
-$json->add('admin',$you->isGlobalOp());
+Json::add('banned',false);
+Json::add('admin',OIRC::$you->isGlobalOp());
 
 if(isset($_GET['day'])){
-	$t_low = (int)DateTime::createFromFormat('Y-n-j H:i:s',base64_url_decode($_GET['day']).' 00:00:00')->getTimestamp();
+	$t_low = (int)\DateTime::createFromFormat('Y-n-j H:i:s',base64_url_decode($_GET['day']).' 00:00:00')->getTimestamp();
 }else{
 	$t_low = (int)time();
-	$json->addWarning('No day set, defaulting to today');
+	Json::addWarning('No day set, defaulting to today');
 }
 $t_high = $t_low + (3600 * 24);
 $lines = array();
 $table = '{db_prefix}lines_old';
+
+$channel = OIRC::$sql_query_prepare("SELECT {db_prefix}getchanid(?) AS chan",array(OIRC::$you->chan));
+$channel = $channel[0]['chan'];
 // $table is NEVER user-defined, it is only {db_prefix}lines_old or {db_prefix}lines!!
 while(true){
-	$res = $sql->query_prepare("SELECT * FROM `$table`
+	$res = Sql::query("SELECT `line_number`,`name1`,`name2`,`message`,`type`,`channel`,`time`,`Online`,`uid` FROM `$table`
 		WHERE
 				`channel` = ?
-			AND
-				`type` != 'server'
 			AND
 				`time` >= ?
 			AND
@@ -75,18 +76,8 @@ while(true){
 			ORDER BY `line_number` ASC
 			LIMIT ?,1000",array($channel,$t_low,$t_high,(int)$offset));
 	
-	foreach($res as $result){
-		$lines[] = array(
-			'curLine' => ($table=='{db_prefix}lines'?(int)$result['line_number']:0),
-			'type' => $result['type'],
-			'network' => (int)$result['Online'],
-			'time' => (int)$result['time'],
-			'name' => $result['name1'],
-			'message' => $result['message'],
-			'name2' => $result['name2'],
-			'chan' => $result['channel']
-		);
-	}
+	$lines = array_merge($lines,self::getLines($res,$table,true));
+	
 	if(count($lines)<1000 && $table == '{db_prefix}lines_old'){
 		$table = '{db_prefix}lines';
 		continue;
@@ -94,7 +85,7 @@ while(true){
 	break;
 }
 
-$json->add('lines',$lines);
+Json::add('lines',$lines);
 
 
-echo $json->get();
+echo Json::get();

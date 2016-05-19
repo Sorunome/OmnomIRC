@@ -22,10 +22,10 @@ namespace oirc;
 include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 header('Content-Type:application/json');
 
-$net = $networks->get($you->getNetwork());
-if(!$you->isLoggedIn() && $net['config']['guests'] == 0){
-	$json->add('message','You need to log in to be able to view chat!');
-	echo $json->get();
+$net = Networks::get(OIRC::$you->getNetwork());
+if(!OIRC::$you->isLoggedIn() && $net['config']['guests'] == 0){
+	Json::add('message','You need to log in to be able to view chat!');
+	echo Json::get();
 	exit;
 }
 
@@ -35,51 +35,52 @@ if(isset($_GET['userlist'])){
 	$count = (int)$_GET['count'];
 	if($count > 200){
 		$count = 200;
-		$json->addWarning('Exceeded max count (200)');
+		Json::addWarning('Exceeded max count (200)');
 	}
 }else{
 	$count = 1;
-	$json->addWarning('Didn\'t set a count, defaulting to one.');
+	Json::addWarning('Didn\'t set a count, defaulting to one.');
 }
-$channel = $you->chan;
-if($you->isBanned()){
-	$json->add('banned',true);
-	$json->add('admin',false);
-	$json->add('lines',array());
-	$json->add('users',array());
-	echo $json->get();
+$channel = OIRC::$you->chan;
+if(OIRC::$you->isBanned()){
+	Json::add('banned',true);
+	Json::add('admin',false);
+	Json::add('lines',array());
+	Json::add('users',array());
+	echo Json::get();
 	die();
 }
-$json->add('banned',false);
-$json->add('admin',$you->isGlobalOp());
+Json::add('banned',false);
+Json::add('admin',OIRC::$you->isGlobalOp());
 
-$lines = $omnomirc->loadChannel($count);
+$lines = OIRC::loadChannel($count);
 if(!isset($_GET['userlist'])){
 	array_push($lines,array(
-		'curLine' => (int)file_get_contents($config['settings']['curidFilePath']),
+		'curline' => (int)file_get_contents(OIRC::$config['settings']['curidFilePath']),
 		'type' => 'topic',
 		'network' => 0,
 		'time' => time(),
 		'name' => '',
-		'message' => $channels->getTopic($channel),
+		'message' => Channels::getTopic($channel),
 		'name2' => '',
 		'chan' => $channel,
 		'uid' => -1
 	));
 }
-$json->add('lines',$lines);
-$users = $sql->query_prepare("SELECT `username` AS `nick`,`online` AS `network` FROM `{db_prefix}users` WHERE `channel`=? AND `isOnline`=1 AND `username` IS NOT NULL ORDER BY `username`",array($channel));
+Json::add('lines',$lines);
+$users = Sql::query("SELECT `username` AS `nick`,`online` AS `network` FROM `{db_prefix}users` WHERE `channel`=? AND `isOnline`=1 AND `username` IS NOT NULL ORDER BY `username`",array((string)$channel)); // cast to string else (int)0 will be intepreted wrong by mysql
 if($users[0]['nick'] === NULL){
 	$users = array();
 }
-$json->add('users',$users);
-if($you->isLoggedIn()){
-	$userSql = $you->info();
+
+Json::add('users',$users);
+if(OIRC::$you->isLoggedIn()){
+	$userSql = OIRC::$you->info();
 	$ignorelist = '';
 	if($userSql['name']!==NULL) {
 		$i = explode("\n",$userSql['ignores']);
 		array_pop($i); // last element is always garbage
-		$json->add('ignores',$i);
+		Json::add('ignores',$i);
 	}
 }
-echo $json->get();
+echo Json::get();

@@ -306,14 +306,16 @@ class Main():
 		except Exception as inst:
 			self.log_error('curline error: '+str(inst))
 			self.log_error(traceback.format_exc())
-	def addUser(self,u,c,i,uid=-1):
+	def addUser(self,u,c,i,uid=-1,donotify = True):
 		temp = sql.query("SELECT usernum,isOnline FROM {db_prefix}users WHERE username=%s AND channel=%s AND online=%s",[u,c,int(i)])
+		notify = True
 		if(len(temp)==0):
-			sql.query("INSERT INTO `{db_prefix}users` (`username`,`channel`,`online`,`uid`) VALUES (%s,%s,%s,%s)",[u,c,int(i),int(uid)])
-			return True
+			sql.query("INSERT INTO `{db_prefix}users` (`username`,`channel`,`online`,`time`,`uid`) VALUES (%s,%s,%s,0,%s)",[u,c,int(i),int(uid)])
 		else:
 			sql.query("UPDATE `{db_prefix}users` SET `isOnline`=1,`uid`=%s,`time`=0 WHERE `usernum`=%s",[int(uid),int(temp[0]['usernum'])])
-			return temp[0]['isOnline'] == 0
+			notify = (temp[0]['isOnline'] == 0)
+		if notify and donotify:
+			self.sendToOther(u,'','join','',c,i)
 	def removeUser(self,u,c,i):
 		sql.query("UPDATE `{db_prefix}users` SET `isOnline`=0 WHERE `username` = %s AND `channel` = %s AND online=%s",[u,c,int(i)])
 	def timeoutUser(self,u,c,i):
@@ -379,7 +381,7 @@ class Main():
 		
 		if do_sql:
 			c = oirc.makeUnicode(str(c))
-			sql.query("INSERT INTO `{db_prefix}lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`,`uid`) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)",[n1,n2,m,t,c,str(int(time.time())),int(s),uid])
+			sql.query("INSERT INTO `{db_prefix}lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`,`uid`) VALUES (%s,%s,%s,%s,{db_prefix}getchanid(%s),%s,%s,%s)",[n1,n2,m,t,c,str(int(time.time())),int(s),uid])
 			try:
 				lines_cached = memcached.get('oirc_lines_'+c)
 				if lines_cached:
@@ -406,11 +408,7 @@ class Main():
 				print('(handle) (relay) ERROR: couldn\'t update memcached: ',inst)
 			if t=='topic':
 				memcached.set('oirc_topic_'+c,m)
-				temp = sql.query("SELECT channum FROM `{db_prefix}channels` WHERE chan=%s",[c.lower()])
-				if len(temp)==0:
-					sql.query("INSERT INTO `{db_prefix}channels` (chan,topic) VALUES(%s,%s)",[c.lower(),m])
-				else:
-					sql.query("UPDATE `{db_prefix}channels` SET topic=%s WHERE chan=%s",[m,c.lower()])
+				sql.query("UPDATE `{db_prefix}channels` SET topic=%s WHERE channum={db_prefix}getchanid(%s)",[m,c])
 			if t=='action' or t=='message':
 				sql.query("UPDATE `{db_prefix}users` SET lastMsg=UNIX_TIMESTAMP(CURRENT_TIMESTAMP) WHERE username=%s AND channel=%s AND online=%s",[n1,c,int(s)])
 		self.updateCurline()

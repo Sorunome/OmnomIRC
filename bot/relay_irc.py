@@ -286,14 +286,14 @@ class Bot_OIRC(irc.Bot,oirc.OircRelayHandle):
 		c = self.chanToId(c)
 		if c != -1:
 			self.handle.sendToOther(n1,n2,t,m,c,self.id)
-	def addUser(self,u,c):
+	def addUser(self,u,c,donotify = True):
 		c = self.chanToId(c)
 		if c != -1:
 			if c in self.userlist:
 				self.userlist[c].append(u)
 			else:
 				self.userlist[c] = [u]
-			self.handle.addUser(u,c,self.id)
+			self.handle.addUser(u,c,self.id,donotify = donotify)
 	def removeUser(self,u,c):
 		c = self.chanToId(c)
 		if c != -1:
@@ -369,7 +369,6 @@ class Bot_OIRC(irc.Bot,oirc.OircRelayHandle):
 				else:
 					self.addLine(nick,'','message',message,chan)
 		elif line[1]=='JOIN':
-			self.addLine(nick,'','join','',chan)
 			self.addUser(nick,chan)
 			if nick.lower()==self.nick.lower():
 				self.getUsersInChan(chan)
@@ -392,7 +391,7 @@ class Bot_OIRC(irc.Bot,oirc.OircRelayHandle):
 		elif line[1]=='NICK':
 			self.handleNickChange(nick,line[2][1:])
 		elif line[1]=='352':
-			self.addUser(line[7],line[3])
+			self.addUser(line[7],line[3],donotify = False)
 		elif line[1]=='315':
 			self.addLine('OmnomIRC','','reload_userlist','THE GAME',line[3])
 	def serveFn(self,line):

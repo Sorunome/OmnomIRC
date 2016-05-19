@@ -19,8 +19,9 @@
  *  along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
  */
 'use strict';
-(function(){
-	var adminconfig = [],
+$(function(){
+	var oirc = new OmnomIRC(),
+		adminconfig = [],
 		sendEdit = function(page,json,fn){
 			oirc.network.post('admin.php?set='+page,{data:JSON.stringify(json)},function(data){
 				var alertStr = '';
@@ -768,7 +769,6 @@
 			});
 		},
 		loadPage = function(p){
-			oirc.indicator.start();
 			$('#adminContent').text('Loading...');
 			oirc.network.getJSON('admin.php?get='+encodeURIComponent(p),function(data){
 				$('#adminContent').empty();
@@ -818,16 +818,28 @@
 						break;
 				}
 				window.location.hash = '#'+p;
-				oirc.indicator.stop();
 			});
 		};
 		
 		
-		$('#adminNav a').click(function(e){
-			e.preventDefault();
-			loadPage($(this).data('page'));
-		});
+		
+		oirc.error.init();
+		oirc.onerror = oirc.error.addError;
+		oirc.onwarning = oirc.error.addWarning;
+		
 		oirc.settings.fetch(function(){
+			
+			$('#adminNav a').click(function(e){
+				e.preventDefault();
+				loadPage($(this).data('page'));
+			});
+			$('#adminContent').height($(window).height() - 50);
+			$(window).resize(function(){
+				if(!(navigator.userAgent.match(/(iPod|iPhone|iPad)/i) && navigator.userAgent.match(/AppleWebKit/i))){
+					$('#adminContent').height($(window).height() - 50);
+				}
+			});
+			
 			oirc.network.getJSON('config.php?nologinerrors&admincfg',function(data){
 				adminconfig = data;
 				var hash = window.location.hash;
@@ -840,10 +852,4 @@
 				loadPage(hash);
 			});
 		});
-		$('#adminContent').height($(window).height() - 50);
-		$(window).resize(function(){
-			if(!(navigator.userAgent.match(/(iPod|iPhone|iPad)/i) && navigator.userAgent.match(/AppleWebKit/i))){
-				$('#adminContent').height($(window).height() - 50);
-			}
-		});
-})();
+});

@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS `{db_prefix}lines` (
   `name2` varchar(45) DEFAULT NULL,
   `message` varchar(1024) DEFAULT NULL,
   `type` varchar(45) NOT NULL,
-  `channel` varchar(45) NOT NULL,
+  `channel` int(10) NOT NULL,
   `time` varchar(45) NOT NULL,
   `Online` int(10) NOT NULL DEFAULT '0',
   `uid` int(10) NOT NULL DEFAULT '-1',
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS `{db_prefix}lines_old` (
   `name2` varchar(45) DEFAULT NULL,
   `message` varchar(1024) DEFAULT NULL,
   `type` varchar(45) NOT NULL,
-  `channel` varchar(45) NOT NULL,
+  `channel` int(10) NOT NULL,
   `time` varchar(45) NOT NULL,
   `Online` int(10) NOT NULL DEFAULT '0',
   `uid` int(10) NOT NULL DEFAULT '-1',
@@ -99,6 +99,7 @@ ALTER TABLE `{db_prefix}users`
 
 ALTER TABLE `{db_prefix}userstuff` ADD UNIQUE (`uid` ,`network`) COMMENT '';
 
+ALTER TABLE `{db_prefix}channels` ADD UNIQUE (`chan`) COMMENT '';
 
 
 DROP EVENT IF EXISTS `Clean up Userstuff`;
@@ -126,3 +127,16 @@ CREATE EVENT `Flush Logs Nightly` ON SCHEDULE EVERY 1 DAY STARTS '2013-10-31 00:
 END$$
 DELIMITER ;
 SET GLOBAL event_scheduler = "ON";
+
+DELIMITER $$
+DROP FUNCTION IF EXISTS `{db_prefix}getchanid`$$
+CREATE FUNCTION `{db_prefix}getchanid`(`chan_in` VARCHAR(45)) RETURNS INT(11) NOT DETERMINISTIC NO SQL SQL SECURITY DEFINER BEGIN
+	DECLARE chan_id INT DEFAULT -1;
+	SELECT `channum` INTO chan_id FROM `{db_prefix}channels` WHERE `chan`=LOWER(chan_in);
+	IF chan_id = -1 THEN
+		INSERT INTO `{db_prefix}channels` (`chan`) VALUES (LOWER(chan_in));
+		return LAST_INSERT_ID();
+	END IF;
+	return chan_id;
+END$$
+DELIMITER ;

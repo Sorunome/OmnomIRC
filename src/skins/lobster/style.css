@@ -580,12 +580,24 @@ span#message {
 	font-size:1.2em;
 	vertical-align:top;
 }
-#textDecoForm{
+span#message br {
+	display:none;
+}
+span#message,span#message * {
+	white-space:nowrap;
+}
+#textDecoForm {
 	position:absolute;
 	background:#A1C2FF;
 	border:0.1em solid #69F;
 	border-radius:0.5em;
 	bottom:3em;
+	padding:0.3em;
+}
+#textDecoForm .colorbutton {
+	display:inline-block;
+	height:1em;
+	width:2em;
 }
 #send {
 	padding:0 0.6em;

@@ -1,6 +1,6 @@
 <?php
 //UPDATER FROMVERSION=SED_INSERT_FROMVERSION
-namespace oirc;
+namespace oirc\updater;
 error_reporting(0);
 $NEWVERSION='SED_INSERT_NEWVERSION';
 
@@ -29,7 +29,23 @@ $DOWNLOADDIR = 'https://omnomirc.omnimaga.org/'.$NEWVERSION;
 $DOWNLOADDIR_PATH = '/'.$NEWVERSION;
 
 array_unshift($files,'');
-include_once(realpath(dirname(__FILE__)).'/config.php');
+
+function getConfig(){
+	$cfg = explode("\n",file_get_contents(realpath(dirname(__FILE__)).'/config.json.php'));
+	$searchingJson = true;
+	$json = "";
+	foreach($cfg as $line){
+		if($searchingJson){
+			if(trim($line)=='?>'){
+				$searchingJson = false;
+			}
+		}else{
+			$json .= "\n".$line;
+		}
+	}
+	return json_decode($json,true);
+}
+$config = getConfig();
 
 function updateCheckLogins(){
 	global $config,$clfiles,$updateHooks,$DOWNLOADDIR_PATH;
@@ -93,7 +109,7 @@ class Sqli{
 		if(isset($this->mysqliConnection)){
 			return $this->mysqliConnection;
 		}
-		$mysqli = new mysqli($config['sql']['server'],$config['sql']['user'],$config['sql']['passwd'],$config['sql']['db']);
+		$mysqli = new \mysqli($config['sql']['server'],$config['sql']['user'],$config['sql']['passwd'],$config['sql']['db']);
 		if($mysqli->connect_errno){
 			die('{"errors":["ERROR: Couldn\'t connect to SQL. Maybe insufficiant Database priviliges?"],"step":1}');
 		}
@@ -104,10 +120,19 @@ class Sqli{
 		return $mysqli;
 	}
 	public function query(){
+		global $config;
 		//ini_set('memory_limit','-1');
 		$mysqli = $this->connectSql();
+		while($mysqli->more_results()){
+				$mysqli->next_result();
+				if($result = $mysqli->store_result()){
+						$result->free();
+				}
+		}
+
 		$params = func_get_args();
 		$query = $params[0];
+		$query = str_replace('{db_prefix}',$config['sql']['prefix'],$query);
 		$args = Array();
 		for($i=1;$i<count($params);$i++)
 			$args[$i-1] = $mysqli->real_escape_string($params[$i]);
@@ -317,14 +342,29 @@ if(!isset($_GET['server'])){
 	}elseif($step%2 == 0 && sizeof($files)*2 > $step){
 		$file = file_get_contents($DOWNLOADDIR.'/html/'.$files[$step/2].'.s');
 		if(!$file || $file == ''){
-			echo '{"errors":["ERROR: no route to download server"],"step":1}';
+			echo json_encode(array(
+				'errors' => array(
+					'ERROR: no route to download server ('.$DOWNLOADDIR.'/html/'.$files[$step/2].'.s)'
+				),
+				'step' => $step+1
+			));
+			die();
+		}
+		$folder = dirname(dirname(__FILE__).'/'.$files[$step/2]);
+		if(!is_dir($folder) && !mkdir($folder,0777,true)){
+			echo json_encode(array(
+				'errors' => array(
+					'Unable to create directory '.$folder.', please create it manually or change permissions and retry'
+				),
+				'step' => $step+1
+			));
 			die();
 		}
 		if(!file_put_contents(realpath(dirname(__FILE__)).'/'.$files[$step/2],$file)){
 			echo json_encode(array(
 				'errors' => array(
-						'Unable to write to '.$files[$step/2].', please download <a href="'.$DOWNLOADDIR.'/'.$files[$step/2].'.s">the file</a> manually or change permissions and retry.'
-					),
+					'Unable to write to '.$files[$step/2].', please download <a href="'.$DOWNLOADDIR.'/'.$files[$step/2].'.s">the file</a> manually or change permissions and retry.'
+				),
 				'step' => $step+1
 			));
 			die();
