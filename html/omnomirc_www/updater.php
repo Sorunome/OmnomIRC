@@ -1,7 +1,7 @@
 <?php
 namespace oirc;
 error_reporting(E_ALL);
-$installScriptVersion = '2.10.1.1';
+$installScriptVersion = '2.11';
 include_once(realpath(dirname(__FILE__)).'/config.php');
 // IMPORTANT!!!! sqli object ONLY FOR INSTALLATION SCRIPT
 class Sql{
