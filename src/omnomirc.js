@@ -934,9 +934,11 @@ var OmnomIRC = function(){
 							if(!exists){
 								return;
 							}
-							network.getJSON('Load.php?userlist&channel='+self.handlerB64,function(data){
+							network.getJSON('Load.php?userlist&channel='+_self.handlerB64,function(data){
 								if(!data.banned){
-									users.setUsers(data.users);
+									if(data.users){
+										users.setUsers(data.users);
+									}
 								}else{
 									send.internal('<span style="color:#C73232;"><b>ERROR:</b> banned</span>');
 								}
@@ -964,7 +966,8 @@ var OmnomIRC = function(){
 						return _self.loaded;
 					},
 					setI:_self.setI,
-					is:_self.is
+					is:_self.is,
+					reloadUserlist:_self.reloadUserlist
 				};
 			},
 			self = {

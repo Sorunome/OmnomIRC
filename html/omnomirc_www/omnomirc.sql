@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS `{db_prefix}permissions` (
 DROP TABLE IF EXISTS `{db_prefix}channels`;
 CREATE TABLE IF NOT EXISTS `{db_prefix}channels` (
   `channum` int(11) NOT NULL AUTO_INCREMENT,
-  `chan` varchar(45) NOT NULL DEFAULT '',
+  `chan` varchar(45) NOT NULL,
   `topic` varchar(1024) NOT NULL DEFAULT '',
   `ops` TEXT NOT NULL DEFAULT '',
   `bans` TEXT NOT NULL DEFAULT '',
