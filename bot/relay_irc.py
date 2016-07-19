@@ -113,7 +113,6 @@ editPattern = [
 ]
 
 class Relay(oirc.OircRelay):
-	relayType = -42
 	bot = False
 	topicBot = False
 	def getColorCache(self):

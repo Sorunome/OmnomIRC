@@ -42,7 +42,6 @@ editPattern = [
 ]
 
 class Relay(oirc.OircRelay):
-	relayType = -42
 	def initRelay(self):
 		self.relayType = relayType
 		self.server = server.Server(self.config['server'],self.config['port'],self.getHandle(CalculatorHandler))
