@@ -296,7 +296,8 @@ if(OIRC::$you->isGlobalOp()){
 					'curidFilePath' => OIRC::$config['settings']['curidFilePath'],
 					'signatureKey' => OIRC::$config['security']['sigKey'],
 					'ircPasswd' => OIRC::$config['security']['ircPwd'],
-					'experimental' => OIRC::$config['settings']['experimental']
+					'experimental' => OIRC::$config['settings']['experimental'],
+					'cache' => OIRC::$config['cache']
 				));
 				Json::add('pattern',array(
 					array(
@@ -323,6 +324,36 @@ if(OIRC::$you->isGlobalOp()){
 						'name' => 'irc password',
 						'type' => 'text',
 						'var' => 'ircPasswd'
+					),
+					array(
+						'type' => 'newline'
+					),
+					array(
+						'name' => 'Caching',
+						'type' => 'dropdown',
+						'var' => 'cache/type',
+						'options' => array(
+							array(
+								'name' => 'No caching',
+								'val' => 0
+							),
+							array(
+								'name' => 'Memcached',
+								'val' => 1,
+								'pattern' => array(
+									array(
+										'name' => 'Host (default: localhost)',
+										'type' => 'text',
+										'var' => 'cache/host'
+									),
+									array(
+										'name' => 'Port (default: 11211)',
+										'type' => 'number',
+										'var' => 'cache/port'
+									)
+								)
+							)
+						)
 					),
 					array(
 						'type' => 'newline'
@@ -498,6 +529,7 @@ if(OIRC::$you->isGlobalOp()){
 				OIRC::$config['security']['sigKey'] = $jsonData['signatureKey'];
 				OIRC::$config['security']['ircPwd'] = $jsonData['ircPasswd'];
 				OIRC::$config['settings']['experimental'] = $jsonData['experimental'];
+				OIRC::$config['cache'] = $jsonData['cache'];
 				writeConfig();
 				break;
 			case 'ex':
