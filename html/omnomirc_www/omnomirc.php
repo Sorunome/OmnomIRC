@@ -231,7 +231,7 @@ class Cache{
 					self::$submode = 0;
 				}elseif(class_exists('Memcache')){
 					self::$handle = new \Memcache;
-					self::$handle->connect('localhost',11211);
+					self::$handle->connect(OIRC::$config['cache']['host'],OIRC::$config['cache']['port']);
 					self::$handle->setCompressThreshold(0,1); // disable compression
 					self::$submode = 1;
 				}
