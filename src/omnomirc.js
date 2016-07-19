@@ -19,7 +19,7 @@
  *  along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
  */
 'use strict';
-var OmnomIRC = function(){
+function OmnomIRC(){
 	var OMNOMIRCSERVER = 'https://omnomirc.omnimaga.org',
 		$input = false,
 		eventOnMessage = function(line,loadMode){
@@ -179,9 +179,6 @@ var OmnomIRC = function(){
 				loggedIn:function(){
 					return self.signature !== '';
 				},
-				guestLevel:function(){
-					return self.guestLevel;
-				},
 				getWholePmIdent:function(uid,net){
 					var otherhandler = '['+net.toString()+','+uid.toString()+']';
 					if(net < self.net){
@@ -208,7 +205,9 @@ var OmnomIRC = function(){
 					return self.net;
 				},
 				loggedIn:self.loggedIn,
-				guestLevel:self.guestLevel,
+				guestLevel:function(){
+					return self.guestLevel;
+				},
 				getPmIdent:function(){
 					return self.pmIdent;
 				},
