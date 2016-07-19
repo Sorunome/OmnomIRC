@@ -1,0 +1,98 @@
+#omnomirc_bar,#omnomirc_cont{
+	box-sizing:border-box;
+	position:fixed;
+	z-index:9001;
+	font-size:14px;
+	
+	right:16px;
+	padding:5px;
+	
+}
+#omnomirc_bar {
+	bottom:0;
+	margin:0;
+	height:25px;
+	width:150px;
+	background: #B5B5B5;
+	background: linear-gradient(#B5B5B5,white);
+	border:1px solid black;
+	cursor:pointer;
+}
+#omnomirc_cont {
+	bottom:24px;
+	width:540px;
+	background: #D5D5D5;
+	border: 1px solid black;
+}
+#omnomirc_messagebox {
+	height:450px;
+	overflow-y:auto;
+}
+#omnomirc_messagebox .oirc_line {
+	display:inline-block;
+	background:white;
+	border: 1px solid white;
+	border-radius:5px;
+	padding:5px;
+	margin-left:5px;
+	margin-bottom:5px;
+	max-width:100%;
+}
+#omnomirc_messagebox .oirc_linenotice {
+	display:inline-block;
+	font-size:12px;
+	padding-left: 5px;
+	margin-bottom:5px;
+}
+#omnomirc_messagebox .oirc_line .oirc_name {
+	display:block;
+	font-size:12px
+}
+
+
+/*irc colors start*/
+.oirc_fg-0,.oirc_fg-00	{color: #FFFFFF;}
+.oirc_fg-1,.oirc_fg-01	{color: #000000;}
+.oirc_fg-2,.oirc_fg-02	{color: #3636B2;}
+.oirc_fg-3,.oirc_fg-03	{color: #2A8C2A;}
+.oirc_fg-4,.oirc_fg-04	{color: #C33B3B;}
+.oirc_fg-5,.oirc_fg-05	{color: #800000;}
+.oirc_fg-6,.oirc_fg-06	{color: #80267F;}
+.oirc_fg-7,.oirc_fg-07	{color: #FF7f00;}
+.oirc_fg-8,.oirc_fg-08	{color: #FFFF00;}
+.oirc_fg-9,.oirc_fg-09	{color: #3DCC3D;}
+.oirc_fg-10				{color: #008080;}
+.oirc_fg-11				{color: #2F8C74;}
+.oirc_fg-12				{color: #4545E6;}
+.oirc_fg-13				{color: #B037B0;}
+.oirc_fg-14				{color: #4C4C4C;}
+.oirc_fg-15				{color: #959595;}
+
+.oirc_bg--1				{background:transparent;}
+.oirc_bg-0,.oirc_bg-00	{background: #ffffff;}
+.oirc_bg-1,.oirc_bg-01	{background: #000000;}
+.oirc_bg-2,.oirc_bg-02	{background: #3636B2;}
+.oirc_bg-3,.oirc_bg-03	{background: #2A8C2A;}
+.oirc_bg-4,.oirc_bg-04	{background: #C33B3B;}
+.oirc_bg-5,.oirc_bg-05	{background: #800000;}
+.oirc_bg-6,.oirc_bg-06	{background: #80267F;}
+.oirc_bg-7,.oirc_bg-07	{background: #FF7f00;}
+.oirc_bg-8,.oirc_bg-08	{background: #FFFF00;}
+.oirc_bg-9,.oirc_bg-09	{background: #3DCC3D;}
+.oirc_bg-10				{background: #008080;}
+.oirc_bg-11				{background: #2F8C74;}
+.oirc_bg-12				{background: #4545E6;}
+.oirc_bg-13				{background: #B037B0;}
+.oirc_bg-14				{background: #4C4C4C;}
+.oirc_bg-15				{background: #959595;}
+
+.oirc_uName-19	{color: #000000;}
+.oirc_uName-20	{color: #800000;}
+.oirc_uName-22	{color: #551955;}
+.oirc_uName-24	{color: #AA5500;}
+.oirc_uName-25	{color: #008000;}
+.oirc_uName-26	{color: #195555;}
+.oirc_uName-27	{color: #006060;}
+.oirc_uName-28	{color: #000080;}
+.oirc_uName-29	{color: #606060;}
+/*irc colors end*/

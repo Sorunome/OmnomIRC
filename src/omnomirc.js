@@ -21,6 +21,7 @@
 'use strict';
 function OmnomIRC(){
 	var OMNOMIRCSERVER = 'https://omnomirc.omnimaga.org',
+		CLASSPREFIX = '',
 		$input = false,
 		eventOnMessage = function(line,loadMode){
 			if(loadMode === undefined){
@@ -1780,7 +1781,7 @@ function OmnomIRC(){
 							while(n[i]){
 								sum += n.charCodeAt(i++);
 							}
-							cn = $('<span>').append($('<span>').addClass('uName-'+rcolors[sum % 9].toString()).html(n)).html();
+							cn = $('<span>').append($('<span>').addClass(CLASSPREFIX+'uName-'+rcolors[sum % 9].toString()).html(n)).html();
 							break;
 						case '2': //server
 							if(net!==undefined && net.checkLogin!==undefined && uid!=-1){
@@ -1910,7 +1911,7 @@ function OmnomIRC(){
 						}
 						if(didChange){
 							colorStr += '</span>'+
-									'<span class="fg-'+textDecoration.fg+' bg-'+textDecoration.bg+'" style="'+(textDecoration.bold?'font-weight:bold;':'')+(textDecoration.underline?'text-decoration:underline;':'')+(textDecoration.italic?'font-style:italic;':'')+'">';
+									'<span class="'+CLASSPREFIX+'fg-'+textDecoration.fg+' '+CLASSPREFIX+'bg-'+textDecoration.bg+'" style="'+(textDecoration.bold?'font-weight:bold;':'')+(textDecoration.underline?'text-decoration:underline;':'')+(textDecoration.italic?'font-style:italic;':'')+'">';
 						}else{
 							colorStr+=arrayResults[i];
 						}
@@ -2421,6 +2422,9 @@ function OmnomIRC(){
 	this.disconnect = function(){
 		instant.kill();
 		request.kill();
+	};
+	this.setClassPrefix = function(prefix){
+		CLASSPREFIX = prefix;
 	};
 	
 	this.onerror = function(){};
