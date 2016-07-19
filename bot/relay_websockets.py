@@ -220,7 +220,7 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 			n2 = c[1:].replace(self.pmHandler,'')
 			
 		if c!='':
-			self.log_info('<< '+str({'chan':c,'nick':self.nick,'message':m,'type':t,'uid':self.uid}))
+			self.log_info('<< '+str({'chan':c,'nick':self.nick,'message':m,'type':t}))
 			self.handle.sendToOther(self.nick,n2,t,m,c,self.network,self.uid)
 	def join(self,c): # updates nick in userlist
 		if isinstance(c,str):

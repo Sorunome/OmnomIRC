@@ -368,7 +368,7 @@ class Main():
 		if not oircOnly:
 			oircOnly = (t in ('join','part','quit') and uid!=-1)
 			if not str(c) in self.chanIds:
-				self.log_error('(relay) (relay) Invalid channel '+str(c)+', dropping message')
+				self.log_error('(relay) Invalid channel '+str(c)+', dropping message')
 				return
 		
 		
