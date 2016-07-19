@@ -22,11 +22,7 @@ namespace oirc;
 include_once(realpath(dirname(__FILE__)).'/omnomirc.php');
 class Skins {
 	public static $handle;
-	private static $hooks = array(
-		'' => '\oirc\skins\lobster\getPage',
-		'options' => '\oirc\skins\lobster\getOptions',
-		'admin' => '\oirc\skins\lobster\getAdmin'
-	);
+	private static $hooks = array();
 	private static $themes = array();
 	public static function theme($name,$function){
 		self::$themes[$name] = $function;
@@ -85,10 +81,12 @@ class Skins {
 		if(!preg_match('/^[\w]+$/',$name)){
 			$name = 'lobster';
 		}
-		include_once(realpath(dirname(__FILE__)).'/skins/lobster/skin.php');
 		$path = realpath(dirname(__FILE__)).'/skins/'.$name;
 		if(file_exists($path.'/skin.php')){
 			include_once($path.'/skin.php');
+		}else{
+			$name = 'lobster';
+			include_once(realpath(dirname(__FILE__)).'/skins/lobster/skin.php');
 		}
 		$page = false;
 		foreach(self::$hooks as $action => $function){

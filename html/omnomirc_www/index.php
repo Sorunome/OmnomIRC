@@ -40,7 +40,7 @@ if(strpos($_SERVER['HTTP_USER_AGENT'],'textmode;')!==false || isset($_GET['textm
 	exit;
 }
 
-$page = Skins::getSkin('lobster');
+$page = Skins::getSkin(isset($_GET['skin'])?$_GET['skin']:'lobster');
 
 Skins::parseScripts($page,'js',function(&$page,$file){
 	$page['head'] .= '<script type="text/javascript" src="'.htmlentities($file).'"></script>';
@@ -60,6 +60,15 @@ echo '<!DOCTYPE html><html><head>
 	<meta charset="utf-8" />
 	<title>'.$page['title'].'</title>
 	<link rel="icon" type="image/png" href="'.htmlentities($page['favicon']).'">
+	<noscript><meta http-equiv="refresh" content="0;url=index.php?textmode"></noscript>
+	<style type="text/css">
+		html,body {
+			width:100%;
+			height:100%;
+			padding:0;
+			margin:0;
+		}
+	</style>
 	'.$page['head'].'
 </head>
 <body>'.$page['html'].'</body></html>';
