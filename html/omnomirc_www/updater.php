@@ -447,6 +447,7 @@ if(!isset($_GET['server'])){
 			$config['settings']['hostname'] = isset($_SERVER['HTTP_HOST'])?$_SERVER['HTTP_HOST']:$_SERVER['SERVER_NAME'];
 			if(class_exists('Memcached') || class_exists('Memcache')){
 				if(($s = @socket_create(AF_INET,SOCK_STREAM,SOL_TCP)) && @socket_connect($s,'localhost',11211)){
+					socket_close($s);
 					$config['cache']['type'] = 1;
 					$config['cache']['host'] = 'localhost';
 					$config['cache']['port'] = 11211;
