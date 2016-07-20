@@ -222,6 +222,7 @@ class Cache{
 	private static $submode = 0;
 	private static $handle = false;
 	public static function init(){
+		self::$mode = OIRC::$config['cache']['type'];
 		switch(OIRC::$config['cache']['type']){
 			case 1:
 				if(class_exists('Memcached')){
@@ -234,10 +235,11 @@ class Cache{
 					self::$handle->connect(OIRC::$config['cache']['host'],OIRC::$config['cache']['port']);
 					self::$handle->setCompressThreshold(0,1); // disable compression
 					self::$submode = 1;
+				}else{
+					self::$mode = 0;
 				}
 				break;
 		}
-		self::$mode = OIRC::$config['cache']['type'];
 	}
 	public static function get($var){
 		switch(self::$mode){
