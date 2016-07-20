@@ -56,7 +56,7 @@ function OmnomIRC(){
 						remember = false;
 					}
 					console.log('trying login');
-					network.getJSON('misc.php?identName='+base64.encode(name)+'&nick='+base64.encode(name)+'&signature='+base64.encode(sig)+'&id=-1&network='+self.getNetwork().id,function(data){
+					network.getJSON('misc.php?identName='+base64.encode(name)+'&nick='+base64.encode(name)+'&signature='+base64.encode(sig)+'&id=-1&network='+self.net,function(data){
 						if(data.success){
 							if(remember){
 								ls.set('guestName',name);
@@ -289,6 +289,7 @@ function OmnomIRC(){
 		})(),
 		network = (function(){
 			var self = {
+				didRelog:false,
 				removeSig:function(s){
 					try{
 						var parts = s.split('signature='),
@@ -342,7 +343,8 @@ function OmnomIRC(){
 						if(data.relog==1){
 							settings.fetch(undefined,true); // everything is still fine, no need to block the rest of the thread
 							fn(data);
-						}else if(data.relog==2){
+						}else if(data.relog==2 && !self.didRelog){
+							self.didRelog = true;
 							settings.fetch(function(){
 								recall();
 							},true);

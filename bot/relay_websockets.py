@@ -223,6 +223,10 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 			self.log_info('<< '+str({'chan':c,'nick':self.nick,'message':m,'type':t}))
 			self.handle.sendToOther(self.nick,n2,t,m,c,self.network,self.uid)
 	def join(self,c): # updates nick in userlist
+		try:
+			c = int(c)
+		except:
+			pass
 		if isinstance(c,str):
 			if self.uid == -1 and not (c[0] in '*@'):
 				self.log_info('Tried to join invalid channel: '+str(c))
