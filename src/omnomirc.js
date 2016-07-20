@@ -56,7 +56,7 @@ function OmnomIRC(){
 						remember = false;
 					}
 					console.log('trying login');
-					network.getJSON('misc.php?identName='+base64.encode(name)+'&nick='+base64.encode(name)+'&signature='+base64.encode(sig)+'&id=-1&network='+self.getNetwork(),function(data){
+					network.getJSON('misc.php?identName='+base64.encode(name)+'&nick='+base64.encode(name)+'&signature='+base64.encode(sig)+'&id=-1&network='+self.getNetwork().id,function(data){
 						if(data.success){
 							if(remember){
 								ls.set('guestName',name);
