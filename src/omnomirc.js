@@ -19,8 +19,9 @@
  *  along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
  */
 'use strict';
-var OmnomIRC = function(){
+function OmnomIRC(){
 	var OMNOMIRCSERVER = 'https://omnomirc.omnimaga.org',
+		CLASSPREFIX = '',
 		$input = false,
 		eventOnMessage = function(line,loadMode){
 			if(loadMode === undefined){
@@ -179,9 +180,6 @@ var OmnomIRC = function(){
 				loggedIn:function(){
 					return self.signature !== '';
 				},
-				guestLevel:function(){
-					return self.guestLevel;
-				},
 				getWholePmIdent:function(uid,net){
 					var otherhandler = '['+net.toString()+','+uid.toString()+']';
 					if(net < self.net){
@@ -208,7 +206,9 @@ var OmnomIRC = function(){
 					return self.net;
 				},
 				loggedIn:self.loggedIn,
-				guestLevel:self.guestLevel,
+				guestLevel:function(){
+					return self.guestLevel;
+				},
 				getPmIdent:function(){
 					return self.pmIdent;
 				},
@@ -934,9 +934,11 @@ var OmnomIRC = function(){
 							if(!exists){
 								return;
 							}
-							network.getJSON('Load.php?userlist&channel='+self.handlerB64,function(data){
+							network.getJSON('Load.php?userlist&channel='+_self.handlerB64,function(data){
 								if(!data.banned){
-									users.setUsers(data.users);
+									if(data.users){
+										users.setUsers(data.users);
+									}
 								}else{
 									send.internal('<span style="color:#C73232;"><b>ERROR:</b> banned</span>');
 								}
@@ -964,7 +966,8 @@ var OmnomIRC = function(){
 						return _self.loaded;
 					},
 					setI:_self.setI,
-					is:_self.is
+					is:_self.is,
+					reloadUserlist:_self.reloadUserlist
 				};
 			},
 			self = {
@@ -1778,7 +1781,7 @@ var OmnomIRC = function(){
 							while(n[i]){
 								sum += n.charCodeAt(i++);
 							}
-							cn = $('<span>').append($('<span>').addClass('uName-'+rcolors[sum % 9].toString()).html(n)).html();
+							cn = $('<span>').append($('<span>').addClass(CLASSPREFIX+'uName-'+rcolors[sum % 9].toString()).html(n)).html();
 							break;
 						case '2': //server
 							if(net!==undefined && net.checkLogin!==undefined && uid!=-1){
@@ -1829,7 +1832,7 @@ var OmnomIRC = function(){
 						text = text.replace(RegExp("(^|[\\s>])((?:(?:f|ht)tps?:\/\/(?:www\\.)?)"+url+ier+"*)","g"),'$1\x01$2')
 									.replace(RegExp("(^|[\\s>])("+url+ier+"*)","g"),'$1\x04$2');
 					});
-					return text.replace(RegExp("(^|[^a-zA-Z0-9_\x01\x04])((?:(?:f|ht)tps?:\/\/)"+ier+"+)","g"),'$1<a target="_blank" href="$2">$2</a>')
+					return text.replace(RegExp("(^|[^a-zA-Z0-9_\x01\x04\"])((?:(?:f|ht)tps?:\/\/)"+ier+"+)","g"),'$1<a target="_blank" href="$2">$2</a>')
 							.replace(RegExp("(^|[^a-zA-Z0-9_\x01\x04/])(www\\."+ier+"+)","g"),'$1<a target="_blank" href="http://$2">$2</a>')
 							.replace(RegExp("(^|.)\x01("+ier+"+)","g"),'$1<a target="_top" href="$2">$2</a>')
 							.replace(RegExp("(^|.)\x04("+ier+"+)","g"),'$1<a target="_top" href="http://$2">$2</a>');
@@ -1908,7 +1911,7 @@ var OmnomIRC = function(){
 						}
 						if(didChange){
 							colorStr += '</span>'+
-									'<span class="fg-'+textDecoration.fg+' bg-'+textDecoration.bg+'" style="'+(textDecoration.bold?'font-weight:bold;':'')+(textDecoration.underline?'text-decoration:underline;':'')+(textDecoration.italic?'font-style:italic;':'')+'">';
+									'<span class="'+CLASSPREFIX+'fg-'+textDecoration.fg+' '+CLASSPREFIX+'bg-'+textDecoration.bg+'" style="'+(textDecoration.bold?'font-weight:bold;':'')+(textDecoration.underline?'text-decoration:underline;':'')+(textDecoration.italic?'font-style:italic;':'')+'">';
 						}else{
 							colorStr+=arrayResults[i];
 						}
@@ -2419,6 +2422,9 @@ var OmnomIRC = function(){
 	this.disconnect = function(){
 		instant.kill();
 		request.kill();
+	};
+	this.setClassPrefix = function(prefix){
+		CLASSPREFIX = prefix;
 	};
 	
 	this.onerror = function(){};

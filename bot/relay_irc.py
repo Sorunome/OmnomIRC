@@ -113,7 +113,6 @@ editPattern = [
 ]
 
 class Relay(oirc.OircRelay):
-	relayType = -42
 	bot = False
 	topicBot = False
 	def getColorCache(self):
@@ -394,6 +393,9 @@ class Bot_OIRC(irc.Bot,oirc.OircRelayHandle):
 			self.addUser(line[7],line[3],donotify = False)
 		elif line[1]=='315':
 			self.addLine('OmnomIRC','','reload_userlist','THE GAME',line[3])
+	def afterStop(self):
+		for i,ch in self.channels.items():
+			self.addLine('OmnomIRC','','reload_userlist','THE GAME',ch)
 	def serveFn(self,line):
 		if self.main:
 			self.doMain(line)

@@ -81,7 +81,7 @@ while(true){
 			(
 				`channel` = ?
 				OR
-				name2=?
+				`name2`=?
 		)",array($curline,$channel,OIRC::$you->getPmHandler()));
 	}else{
 		$query = Sql::query("SELECT `line_number`,`name1`,`name2`,`message`,`type`,`channel`,`time`,`Online`,`uid` FROM `{db_prefix}lines` WHERE `line_number` > ? AND `channel` = ?",array($curline,$channel));

@@ -136,7 +136,7 @@ class Sqli{
 		$args = Array();
 		for($i=1;$i<count($params);$i++)
 			$args[$i-1] = $mysqli->real_escape_string($params[$i]);
-		$result = $mysqli->multi_query(vsprintf($query,$args));
+		$mysqli->multi_query(vsprintf($query,$args));
 		if($mysqli->errno==1065){ //empty
 			return array();
 		}
@@ -144,10 +144,13 @@ class Sqli{
 			return;
 			die('{"errors":["ERROR: Insufficient permissions to execute SQL query, please grant your user all priviliges to the database"],"step":1}');
 		}
-		if($result===true){ //nothing returned
-			return Array();
+		if(!($result = $mysqli->store_result())){
+			return array();
 		}
-		$res = Array();
+		if($result===true){ //nothing returned
+			return array();
+		}
+		$res = array();
 		$i = 0;
 		while($row = $result->fetch_assoc()){
 			$res[] = $row;
@@ -196,6 +199,21 @@ exit;
 		die('{"errors":["ERROR: Couldn\'t write config, please make file config.json.php writeable for PHP"],"step":1}');
 	}
 }
+function getCacheConfig(){
+	global $sql;
+	$defaults = array(
+		'use' => false,
+		'email' => '',
+		'key' => '',
+		'url' => ''
+	);
+	$res = $sql->query("SELECT `value` FROM {db_prefix}vars WHERE `name`='update_cache'");
+	$a = json_decode($res[0],true);
+	if(!$a){
+		return $defaults;
+	}
+	return array_merge($defaults,$a);
+}
 function getPage($title,$head,$body){
 	global $config;
 	$theme = -1;
@@ -227,6 +245,7 @@ function getPage($title,$head,$body){
 			'</html>';
 }
 if(!isset($_GET['server'])){
+	$cacheconfig = getCacheConfig();
 	echo getPage('OmnomIRC Installer Updater '.$NEWVERSION,'
 	<script type="text/javascript">
 		(function($){
@@ -307,12 +326,27 @@ if(!isset($_GET['server'])){
 					}else if(offset_after_files+5 == step){
 						$("#container").append(
 							(data.msg?data.msg+"<br><br>":""),
-							"To finish the update hit the button below.",
-							"<br>",
-							$("<a>").attr("href","admin.php?finishUpdate'.(isset($_GET['network'])?'&network='.$_GET['network']:'').'").append(
-								$("<button>").text("Finish")
-							)
+							"To finish the update hit the button below.<br><br>",
+							"Automatically update Cloudflare cache:",
+							$("<input>").attr("id","cache_use").attr("type","checkbox")'.($cacheconfig['use']?'.attr("checked","checked")':'').',"<br>",
+							"Email:",$("<input>").attr("id","cache_email").attr("type","text").val('.json_encode($cacheconfig['email']).'),"<br>",
+							"API key:",$("<input>").attr("id","cache_key").attr("type","text").val('.json_encode($cacheconfig['key']).'),"<br>",
+							"URL:",$("<input>").attr("id","cache_url").attr("type","text").val('.json_encode($cacheconfig['url']).'),"<br><br>",
+							$("<button>").text("Finish").click(function(e){
+								e.preventDefault();
+								if($("#cache_use")[0].checked){
+									getStep(step,{
+										"email":$("#cache_email").val(),
+										"key":$("#cache_key").val(),
+										"url":$("#cache_url").val()
+									});
+								}else{
+									window.location.href = "admin.php?finishUpdate'.(isset($_GET['network'])?'&network='.$_GET['network']:'').'";
+								}
+							})
 						);
+					}else if(offset_after_files+6 == step){
+						window.location.href = "admin.php?finishUpdate'.(isset($_GET['network'])?'&network='.$_GET['network']:'').'";
 					}else{
 						$("#container").append("Something went wrong!");
 					}
@@ -430,6 +464,124 @@ if(!isset($_GET['server'])){
 			}
 		}
 		echo '{"step":'.($step+1).'}';
+	}elseif($offset_after_files+5 == $step){
+		$email = $_POST['email'];
+		$key = $_POST['key'];
+		$domain = isset($_SERVER['HTTP_HOST'])?$_SERVER['HTTP_HOST']:$_SERVER['SERVER_NAME'];
+		
+		$ch = curl_init();
+		curl_setopt_array($ch,array(
+			CURLOPT_VERBOSE => false,
+			CURLOPT_FORBID_REUSE => true,
+			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_HEADER => false,
+			CURLOPT_TIMEOUT => 30,
+			CURLOPT_SSL_VERIFYPEER => true,
+			CURLOPT_FOLLOWLOCATION => true,
+			CURLOPT_HTTPHEADER => array(
+				'X-Auth-Email: '.$email,
+				'X-Auth-Key: '.$key,
+				'Content-type: application/json'
+			),
+			CURLOPT_URL => 'https://api.cloudflare.com/client/v4/zones?'.http_build_query(array(
+				'name' => $_POST['url'],
+				'page' => 1,
+				'per_page' => 1
+			))
+		));
+		$json_result = json_decode(curl_exec($ch),true);
+		curl_close($ch);
+		if(!$json_result){
+			echo json_encode(array(
+				'step' => $step,
+				'errors' => array('Something went wrong connecting to cloudflare!')
+			));
+			exit;
+		}
+		if(!$json_result['success']){
+			$errors = array();
+			foreach($json_result['errors'] as $e){
+				$errors[] = $e['message'];
+			}
+			echo json_encode(array(
+				'step' => $step,
+				'errors' => $errors
+			));
+			exit;
+		}
+		if(sizeof($json_result['result']) < 1){
+			echo json_encode(array(
+				'step' => $step,
+				'errors' => array('Domain not found in cloudflare!')
+			));
+			exit;
+		}
+		$zone = $json_result['result'][0]['id'];
+		
+		$urlroot = isset($_SERVER['HTTP_X_FORWARDED_PROTO'])?$_SERVER['HTTP_X_FORWARDED_PROTO']:(isset($_SERVER['REQUEST_SCHEME'])?$_SERVER['REQUEST_SCHEME']:(isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on'?'https':'http'));
+		$urlroot .= '://'.$domain.dirname($_SERVER['REQUEST_URI']);
+		$cf_files = array();
+		foreach($files as $f){
+			if(in_array(pathinfo($f,PATHINFO_EXTENSION),array('html','css','js'))){
+				$cf_files[] = $urlroot.'/'.$f;
+			}
+		}
+		$ch = curl_init();
+		curl_setopt_array($ch,array(
+			CURLOPT_VERBOSE => false,
+			CURLOPT_FORBID_REUSE => true,
+			CURLOPT_RETURNTRANSFER => true,
+			CURLOPT_HEADER => false,
+			CURLOPT_TIMEOUT => 30,
+			CURLOPT_SSL_VERIFYPEER => true,
+			CURLOPT_FOLLOWLOCATION => true,
+			CURLOPT_HTTPHEADER => array(
+				'X-Auth-Email: '.$email,
+				'X-Auth-Key: '.$key,
+				'Content-type: application/json'
+			),
+			CURLOPT_POSTFIELDS => json_encode(array(
+				'files' => $cf_files
+			)),
+			CURLOPT_CUSTOMREQUEST => 'DELETE',
+			CURLOPT_URL => 'https://api.cloudflare.com/client/v4/zones/'.$zone.'/purge_cache'
+		));
+		$json_result = json_decode(curl_exec($ch),true);
+		curl_close($ch);
+		if(!$json_result){
+			echo json_encode(array(
+				'step' => $step,
+				'errors' => array('Something went wrong connecting to cloudflare!')
+			));
+			exit;
+		}
+		if(!$json_result['success']){
+			$errors = array();
+			foreach($json_result['errors'] as $e){
+				$errors[] = $e['message'];
+			}
+			echo json_encode(array(
+				'step' => $step,
+				'errors' => $errors
+			));
+			exit;
+		}
+		$s = json_encode(array(
+			'use' => true,
+			'email' => $_POST['email'],
+			'key' => $_POST['key'],
+			'url' => $_POST['url']
+		));
+		$r = $sql->query("SELECT id,type FROM {db_prefix}vars WHERE name='update_cache'");
+		$r = $r[0];
+		if(isset($r['id'])){ //check if we need to update or add a new
+			$sql->query("UPDATE {db_prefix}vars SET value='%s',type=5 WHERE name='update_cache'",$s);
+		}else{
+			$sql->query("INSERT INTO {db_prefix}vars (name,value,type) VALUES ('update_cache','%s',5)",$s);
+		}
+		echo json_encode(array(
+			'step' => $step+1
+		));
 	}else{
 		die('{"errors":["Unkown updater step"],"step":1}');
 	}

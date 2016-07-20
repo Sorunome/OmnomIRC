@@ -67,16 +67,18 @@ $(function(){
 						d = data;
 						// first run, we might as well change the other same input box thingies here
 						if(typeof(v) === "boolean"){
-							$('[data-var="'+s+'"').each(function(){
+							$('[data-var="'+s+'"]').each(function(){
 								this.checked = v;
 							});
 							if(v){
-								$('[data-varbox="'+s+'"').show();
+								$('[data-varbox="'+s+'"]').show();
 							}else{
-								$('[data-varbox="'+s+'"').hide();
+								$('[data-varbox="'+s+'"]').hide();
 							}
 						}else{
-							$('[data-var="'+s+'"').val(v);
+							$('[data-var="'+s+'"]').val(v);
+							$('[data-varbox="'+s+'"]').hide();
+							$('[data-varbox="'+s+'"][data-valbox="'+v+'"]').show();
 						}
 					}
 					s = s.split('/');
@@ -101,11 +103,24 @@ $(function(){
 							$input = $('<input>').attr('type','checkbox').change(function(){setVal(prop.var,this.checked);});
 							$input[0].checked = getVal(prop.var);
 							if(prop.pattern){
-								$more = getLiveInputSettings(data,prop.pattern).attr('data-varbox',prop.var).css('display','');
+								$more = getLiveInputSettings(data,prop.pattern).attr('data-varbox',prop.var);
 								if(!$input[0].checked){
 									$more.hide();
 								}
 							}
+							break;
+						case 'dropdown':
+							$more = $('<span>');
+							$input = $('<select>').append($.map(prop.options,function(o){
+								if(o.pattern){
+									$more.append(getLiveInputSettings(data,o.pattern).attr('data-varbox',prop.var).attr('data-valbox',o.val));
+								}
+								return $('<option>').val(o.val).text(o.name);
+							})).val(getVal(prop.var)).change(function(){
+								setVal(prop.var,this.value);
+							});
+							$more.children().hide();
+							$more.find('[data-valbox="'+getVal(prop.var)+'"]').show();
 							break;
 						case 'newline':
 							return '<br>';

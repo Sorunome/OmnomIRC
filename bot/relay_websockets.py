@@ -30,7 +30,6 @@ name = 'The Game'
 editPattern = False
 
 class Relay(oirc.OircRelay):
-	relayType = 1
 	def log_info(self,s):
 		self.handle.log('websockets','info',s)
 	def log_error(self,s):
@@ -149,7 +148,7 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 		if self.charsHigh == '':
 			self.charsHigh = self.nick.lower()
 	def get_log_prefix(self):
-		return '['+str(self.client_address)+'] [Network: '+str(self.network)+'] '
+		return '['+str(self.client_address)+'] [Network: '+str(self.network)+'] [Uid: '+str(self.uid)+'] '
 	def setup(self):
 		self.log_prefix = self.get_log_prefix()
 		self.log_info('connection established, new web-client')
@@ -221,7 +220,7 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 			n2 = c[1:].replace(self.pmHandler,'')
 			
 		if c!='':
-			self.log_info('>> '+str({'chan':c,'nick':self.nick,'message':m,'type':t}))
+			self.log_info('<< '+str({'chan':c,'nick':self.nick,'message':m,'type':t}))
 			self.handle.sendToOther(self.nick,n2,t,m,c,self.network,self.uid)
 	def join(self,c): # updates nick in userlist
 		if isinstance(c,str):
@@ -319,19 +318,21 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 						self.log_info('ident callback: '+str(r))
 						self.banned = r['isglobalbanned']
 						self.network = r['network']
-						self.log_prefix = self.get_log_prefix()
 						if r['loggedin']:
 							self.identified = True
 							self.nick = m['nick']
 							self.sig = m['signature']
 							self.uid = m['id']
 							self.pmHandler = '['+str(self.network)+','+str(self.uid)+']'
+							self.log_prefix = self.get_log_prefix()
 							self.log_info('Identified as user')
 						else:
 							self.identified = False
 							self.nick = ''
 							self.pmHandler = '**'
+							self.log_prefix = self.get_log_prefix()
 							self.log_info('Identified as guest')
+						
 						for a in self.msgStack: # let's pop the whole stack!
 							self.on_message(a)
 						self.msgStack = []

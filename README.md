@@ -9,7 +9,7 @@ Full:
 * Chrome 14+
 * Opera 10.6+
 * Mobile Safari
-* Android defualt browser
+* Android default browser
 * Mobile Firefox
 * Mobile Chrome
 

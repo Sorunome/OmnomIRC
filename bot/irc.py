@@ -181,6 +181,9 @@ class Bot(threading.Thread):
 				self.s.close() # just to make sure that the socket is actually closed
 			except:
 				pass
+			self.afterStop()
+	def afterStop(self):
+		return
 	def serveFn(self,line):
 		return
 	def getUsersInChan(self,c):
@@ -230,4 +233,3 @@ class Bot(threading.Thread):
 				self.log(' Restarting bot')
 				time.sleep(15)
 		self.log(' Good bye from bot')
-

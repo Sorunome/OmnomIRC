@@ -5,7 +5,7 @@ read -p "New OmnomIRC version:" newversion
 tmp=$(mktemp)
 
 echo "building sourcefiles / updating..."
-./build.sh
+make mini
 sed "s/$oldversion/$newversion/" html/omnomirc_www/config.json.php > $tmp
 cp $tmp html/omnomirc_www/config.json.php
 sed "s/$oldversion/$newversion/" html/omnomirc_www/updater.php > $tmp
@@ -27,7 +27,10 @@ for f in $(git diff --name-only master dev); do
 	ext="${file##*.}"
 	case $base in
 		bot)
-			scp $f "sorunome.de:/var/www/omnomirc.omnimaga.org/$newversion/bot/$file.s"
+			if [ "$file" != ".gitignore" ] &&
+					[ "$file" != "documentroot.cfg" ]; then
+				scp $f "sorunome.de:/var/www/omnomirc.omnimaga.org/$newversion/bot/$file.s"
+			fi
 			;;
 		html/checkLogin)
 			if [ "$file" != "config.json.php" ]; then
@@ -39,6 +42,7 @@ for f in $(git diff --name-only master dev); do
 					[ "$file" != "updater.php" ] &&
 					[ "$file" != "config.backup.php" ] &&
 					[ "$file" != "omnomirc_curid" ] &&
+					[ "$file" != ".gitignore" ] &&
 					[ "$ext" != "sql" ]; then
 				scp $f "sorunome.de:/var/www/omnomirc.omnimaga.org/$newversion/html/$file.s"
 			fi

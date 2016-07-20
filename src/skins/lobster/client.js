@@ -792,10 +792,13 @@ $(function(){
 						var range = sel.getRangeAt(0),
 							preCaretRange = range.cloneRange(),
 							extra = 0,
-							nodeRange = document.createRange();
+							nodeRange = document.createRange(),
+							nodes;
 						preCaretRange.selectNodeContents(elem);
 						preCaretRange.setEnd(range.endContainer,range.endOffset);
-						for(var node in preCaretRange.commonAncestorContainer.getElementsByTagName('img')){
+						nodes = preCaretRange.commonAncestorContainer.getElementsByTagName('img');
+						for(var i = 0;i < nodes.length;i++){
+							var node = nodes[i];
 							if(node.dataset.code){
 								nodeRange.selectNode(node);
 								if(preCaretRange.compareBoundaryPoints(Range.START_TO_START,nodeRange) != 1 && preCaretRange.compareBoundaryPoints(Range.END_TO_END,nodeRange) != -1){
@@ -832,7 +835,8 @@ $(function(){
 						haveStart = false;
 					}
 					// Loop through all child nodes
-					for(var node in el.childNodes){
+					for(var i = 0;i < el.childNodes.length;i++){
+						var node = el.childNodes[i];
 						if(node.nodeType == 3){ // we have a text node
 							if(node.length >= pos){
 								// finally add our range

@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS `{db_prefix}permissions` (
 DROP TABLE IF EXISTS `{db_prefix}channels`;
 CREATE TABLE IF NOT EXISTS `{db_prefix}channels` (
   `channum` int(11) NOT NULL AUTO_INCREMENT,
-  `chan` varchar(45) NOT NULL DEFAULT '',
+  `chan` varchar(45) NOT NULL,
   `topic` varchar(1024) NOT NULL DEFAULT '',
   `ops` TEXT NOT NULL DEFAULT '',
   `bans` TEXT NOT NULL DEFAULT '',
@@ -103,7 +103,7 @@ ALTER TABLE `{db_prefix}channels` ADD UNIQUE (`chan`) COMMENT '';
 
 
 DROP EVENT IF EXISTS `Clean up Userstuff`;
-CREATE EVENT `Clean up Userstuff` ON SCHEDULE EVERY 1 DAY STARTS '2013-10-31 00:00:00' ON COMPLETION NOT PRESERVE ENABLE COMMENT 'Clean up the db' DO DELETE FROM {db_prefix}userstuff
+CREATE EVENT `Clean up Userstuff` ON SCHEDULE EVERY 1 DAY ON COMPLETION NOT PRESERVE ENABLE COMMENT 'Clean up the db' DO DELETE FROM {db_prefix}userstuff
 	WHERE (ignores = '' OR ignores IS NULL)
 	AND (ops = '' OR ops IS NULL)
 	AND (bans = '' OR bans IS NULL)
@@ -112,13 +112,13 @@ CREATE EVENT `Clean up Userstuff` ON SCHEDULE EVERY 1 DAY STARTS '2013-10-31 00:
 	AND globalBan = '0';
 
 DROP EVENT IF EXISTS `Clean up Userslist`;
-CREATE EVENT `Clean up Userslist` ON SCHEDULE EVERY 1 DAY STARTS '2013-10-31 00:00:00' ON COMPLETION NOT PRESERVE ENABLE COMMENT 'Clean up the Userlist' DO DELETE FROM {db_prefix}users
+CREATE EVENT `Clean up Userslist` ON SCHEDULE EVERY 1 DAY ON COMPLETION NOT PRESERVE ENABLE COMMENT 'Clean up the Userlist' DO DELETE FROM {db_prefix}users
 	WHERE (lastMsg = '' OR lastMsg IS NULL)
 	AND isOnline='0';
 
 DELIMITER $$
 DROP EVENT IF EXISTS `Flush Logs Nightly`$$
-CREATE EVENT `Flush Logs Nightly` ON SCHEDULE EVERY 1 DAY STARTS '2013-10-31 00:00:00' ON COMPLETION NOT PRESERVE ENABLE COMMENT 'Flushes the logs into the archive table' DO BEGIN
+CREATE EVENT `Flush Logs Nightly` ON SCHEDULE EVERY 1 DAY  ON COMPLETION NOT PRESERVE ENABLE COMMENT 'Flushes the logs into the archive table' DO BEGIN
 	SET @time := (select max(`time`) from `{db_prefix}lines`);
 	INSERT INTO `{db_prefix}lines_old` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`Online`,`uid`)
 	SELECT `name1`,`name2`,`message`,`type`,`channel`,`time`,`Online`,`uid`

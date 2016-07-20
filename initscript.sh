@@ -1,7 +1,7 @@
 #!/bin/sh
 ### BEGIN INIT INFO
 # Provides:          omnomirc
-# Required-Start:    $local_fs $network $named $time $syslog unreal
+# Required-Start:    $local_fs $network $named $time $syslog
 # Required-Stop:     $local_fs $network $named $time $syslog
 # Default-Start:     2 3 4 5
 # Default-Stop:      0 1 6
@@ -13,12 +13,11 @@ FOLDER="/bot"
 RUNAS=bot
  
 PIDFILE=/var/run/omnomirc.pid
-LOGFILE=/var/log/omnomirc.log
 CURIDFILE=/run/omnomirc_curid
  
 ####Script####
 start() {
-  if [ -f /var/run/$PIDNAME ] && kill -0 $(cat /var/run/$PIDNAME); then
+  if [ -f "$PIDFILE" ] && kill -0 $(cat "$PIDFILE"); then
     echo 'Service already running' >&2
     return 1
   fi
@@ -26,8 +25,8 @@ start() {
   echo "0" > $CURIDFILE
   chmod 777 $CURIDFILE
   cd $FOLDER
-  local CMD="./omnomirc.sh &> \"$LOGFILE\" & echo \$!"
-  su -c "$CMD" $RUNAS > "$PIDFILE"
+  local CMD="./omnomirc.sh &> /dev/null & echo \$!"
+  su -s /bin/bash -c "$CMD" $RUNAS > "$PIDFILE"
   echo 'Service started' >&2
 }
  

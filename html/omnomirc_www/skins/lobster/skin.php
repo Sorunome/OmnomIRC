@@ -137,7 +137,7 @@ function getPage(){
 	<div id="lastSeenCont" class="popup"></div>';
 	return array(
 		'html' => $html,
-		'head' => '<noscript><meta http-equiv="refresh" content="0;url=index.php?textmode"></noscript>',
+		'head' => '',
 		'js' => array(
 			array(
 				'file' => 'options.js',
@@ -453,3 +453,7 @@ function getTheme($t){
 	return $css;
 }
 \oirc\Skins::theme('lobster','\oirc\skins\lobster\getTheme');
+
+\oirc\Skins::hook('','\oirc\skins\lobster\getPage');
+\oirc\Skins::hook('options','\oirc\skins\lobster\getOptions');
+\oirc\Skins::hook('admin','\oirc\skins\lobster\getAdmin');

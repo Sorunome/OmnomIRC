@@ -219,24 +219,31 @@ if(isset($argv) && php_sapi_name() == 'cli'){
 
 class Cache{
 	private static $mode = 0;
+	private static $submode = 0;
 	private static $handle = false;
-	public static function init($host = 'localhost',$port = 11211){
-		if(class_exists('Memcached')){
-			self::$handle = new \Memcached;
-			self::$handle->addServer($host,$port);
-			self::$handle->setOption(\Memcached::OPT_COMPRESSION,false); // else python won't be able to do anything
-			self::$mode = 1;
-		}elseif(class_exists('Memcache')){
-			self::$handle = new \Memcache;
-			self::$handle->connect($host,$port);
-			self::$handle->setCompressThreshold(0,1); // disable compression
-			self::$mode = 2;
+	public static function init(){
+		self::$mode = OIRC::$config['cache']['type'];
+		switch(OIRC::$config['cache']['type']){
+			case 1:
+				if(class_exists('Memcached')){
+					self::$handle = new \Memcached;
+					self::$handle->addServer(OIRC::$config['cache']['host'],OIRC::$config['cache']['port']);
+					self::$handle->setOption(\Memcached::OPT_COMPRESSION,false); // else python won't be able to do anything
+					self::$submode = 0;
+				}elseif(class_exists('Memcache')){
+					self::$handle = new \Memcache;
+					self::$handle->connect(OIRC::$config['cache']['host'],OIRC::$config['cache']['port']);
+					self::$handle->setCompressThreshold(0,1); // disable compression
+					self::$submode = 1;
+				}else{
+					self::$mode = 0;
+				}
+				break;
 		}
 	}
 	public static function get($var){
 		switch(self::$mode){
 			case 1:
-			case 2:
 				return self::$handle->get($var);
 		}
 		return false;
@@ -244,10 +251,12 @@ class Cache{
 	public static function set($var,$val,$time = 0){
 		switch(self::$mode){
 			case 1:
-				return self::$handle->set($var,$val,$time);
-			case 2:
+				if(self::$submode == 0){
+					return self::$handle->set($var,$val,$time);
+				}
 				return self::$handle->set($var,$val,0,$time);
 		}
+		return false;
 	}
 }
 Cache::init();

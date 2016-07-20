@@ -272,6 +272,7 @@ class Main():
 				try:
 					self.log_info('Found relay "'+relay_file+'", importing...')
 					relay = __import__('relay_'+relay_file)
+					relay.Relay.relayType = relay.relayType
 					self.relayTypes[relay.relayType] = {
 						'module':relay,
 						'file':relay_file,
@@ -315,7 +316,7 @@ class Main():
 			sql.query("UPDATE `{db_prefix}users` SET `isOnline`=1,`uid`=%s,`time`=0 WHERE `usernum`=%s",[int(uid),int(temp[0]['usernum'])])
 			notify = (temp[0]['isOnline'] == 0)
 		if notify and donotify:
-			self.sendToOther(u,'','join','',c,i)
+			self.sendToOther(u,'','join','',c,i,uid)
 	def removeUser(self,u,c,i):
 		sql.query("UPDATE `{db_prefix}users` SET `isOnline`=0 WHERE `username` = %s AND `channel` = %s AND online=%s",[u,c,int(i)])
 	def timeoutUser(self,u,c,i):
@@ -350,7 +351,7 @@ class Main():
 		except:
 			oircOnly = True
 		for r in self.relays:
-			if (oircOnly and r.relayType==1) or not oircOnly:
+			if (oircOnly and r.relayType==-1) or not oircOnly:
 				r.relayTopic(s,c,i)
 	def sendToOther(self,n1,n2,t,m,c,s,uid = -1,do_sql = True):
 		if self.isChanOfMode(c,'c'):
@@ -367,8 +368,7 @@ class Main():
 		if not oircOnly:
 			oircOnly = (t in ('join','part','quit') and uid!=-1)
 			if not str(c) in self.chanIds:
-				self.log_error('(relay)')
-				print('(handle) (relay) Invalid channel '+str(c)+', dropping message')
+				self.log_error('(relay) Invalid channel '+str(c)+', dropping message')
 				return
 		
 		

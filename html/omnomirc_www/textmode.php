@@ -39,9 +39,23 @@ if(isset($_GET['message'])){
 	}
 	$banned = false;
 	if(isset($_GET['update']) && isset($_GET['curline']) && !(isset($_SESSION['content']) && $_SESSION['content']==='')){
-		$curline = (int)$_GET['curline'];
-		$query = Sql::query("SELECT * FROM `{db_prefix}lines` WHERE `line_number` > ? AND (`channel` = ? OR (`channel` = ?  AND `online` = ?)) ORDER BY `line_number` ASC",array((int)$curline,OIRC::$you->chan,OIRC::$you->nick,OIRC::$you->getNetwork()));
-		$lines = OIRC::getLines($query);
+		if(OIRC::$you->isBanned()){
+			$lines = array();
+		}else{
+			$channel = Sql::query("SELECT {db_prefix}getchanid(?) AS chan",array(OIRC::$you->chan));
+			$channel = $channel[0]['chan'];
+			$curline = (int)$_GET['curline'];
+			$query = Sql::query("SELECT `line_number`,`name1`,`name2`,`message`,`type`,`channel`,`time`,`Online`,`uid` FROM `{db_prefix}lines`
+				WHERE
+					`line_number` > ?
+				AND
+				(
+					`channel` = ?
+					OR
+					`name2` = ?
+				) ORDER BY `line_number` ASC",array($curline,$channel,OIRC::$you->getPmHandler()));
+			$lines = OIRC::getLines($query);
+		}
 	}else{
 		$curline = 0;
 		if(OIRC::$you->isBanned()){
