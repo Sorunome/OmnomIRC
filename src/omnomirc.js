@@ -506,6 +506,10 @@ function OmnomIRC(){
 							notification.request();
 							return false;
 						}
+					},
+					wysiwyg:{
+						disp:'Use WYSIWYG editor',
+						default:false
 					}
 				},
 				set:function(s,v){
@@ -1604,6 +1608,321 @@ function OmnomIRC(){
 				read:self.read
 			};
 		})(),
+		wysiwyg = (function(){
+			var self = {
+				menuOpen:false,
+				msgVal:'',
+				$textDecoForm:false,
+				hideMenu:function(){
+					self.$textDecoForm.css('display','none');
+					self.menuOpen = false;
+				},
+				reverseParse:function(s){
+					if(s.indexOf('<') === -1){ // no tags, nothing to do!
+						return $('<span>').html(s).text();
+					}
+					var bold = false,
+						italic = false,
+						underline = false,
+						fg = '-1',
+						bg = '-1';
+					s = s.replace(/<img([^>]*?)>/gi,function(match,args){
+						var m = args.match(/data-code="([^"]*)"/);
+						if(m){
+							return m[1];
+						}
+						return '';
+					});
+					s = s.replace(/<span([^>]*?)>([^<]*?)<\/span>/gi,function(match,args,str){
+						if(!args){
+							return str;
+						}
+						
+						s = '';
+						if((args.indexOf('bold')==-1) == bold){
+							bold = !bold;
+							s += '\x02';
+						}
+						if((args.indexOf('italic')==-1) == italic){
+							italic = !italic;
+							s += '\x1d';
+						}
+						if((args.indexOf('underline')==-1) == underline){
+							underline = !underline;
+							s += '\x1f';
+						}
+						var dfg = args.match(/fg-(\d+)/),
+							dbg = args.match(/bg-(\d+)/);
+						if(!dfg){
+							dfg = '-1';
+						}
+						if(!dbg){
+							dbg = '-1';
+						}
+						
+						if(dbg != bg || dfg != fg){
+							if((fg!='-1' && dfg == '-1') || (bg!='-1' && dbg == '-1')){
+								s = '\x0f';
+								if(bold){
+									s += '\x02';
+								}
+								if(italic){
+									s += '\x1d';
+								}
+								if(underline){
+									s += '\x1f';
+								}
+							}
+							s += '\x03';
+							fg = dfg;
+							if(fg != '-1'){
+								s += fg;
+							}
+							bg = dbg;
+							if(bg != '-1'){
+								s += ','+bg;
+							}
+						}
+						
+						return s+str;
+					});
+					return $('<span>').html(s).text();
+				},
+				getCaretCharacterOffsetWithin:function(elem){
+					var sel = window.getSelection();
+					if(sel.rangeCount > 0){
+						var range = sel.getRangeAt(0),
+							preCaretRange = range.cloneRange(),
+							extra = 0,
+							nodeRange = document.createRange(),
+							nodes;
+						preCaretRange.selectNodeContents(elem);
+						preCaretRange.setEnd(range.endContainer,range.endOffset);
+						nodes = preCaretRange.commonAncestorContainer.getElementsByTagName('img');
+						for(var i = 0;i < nodes.length;i++){
+							var node = nodes[i];
+							if(node.dataset.code){
+								nodeRange.selectNode(node);
+								if(preCaretRange.compareBoundaryPoints(Range.START_TO_START,nodeRange) != 1 && preCaretRange.compareBoundaryPoints(Range.END_TO_END,nodeRange) != -1){
+									extra += node.dataset.code.length;
+								}
+							}
+						}
+						return preCaretRange.toString().length + extra;
+					}
+					return 0;
+				},
+				getWholeSelection:function(elem){
+					var sel = window.getSelection(),
+						start,
+						range = sel.getRangeAt(0),
+						range_copy = range.cloneRange(),
+						end = self.getCaretCharacterOffsetWithin(elem);
+					range.collapse(true);
+					sel.removeAllRanges();
+					sel.addRange(range);
+					start = self.getCaretCharacterOffsetWithin(elem);
+					sel.removeAllRanges();
+					sel.addRange(range_copy);
+					return [start,end];
+				},
+				setCaretCharacterOffsetWithin:function(el,pos,length,range,haveStart){
+					if(length === undefined){
+						length = 0;
+					}
+					if(range === undefined){
+						range = document.createRange();
+					}
+					if(haveStart === undefined){
+						haveStart = false;
+					}
+					// Loop through all child nodes
+					for(var i = 0;i < el.childNodes.length;i++){
+						var node = el.childNodes[i];
+						if(node.nodeType == 3){ // we have a text node
+							if(node.length >= pos){
+								// finally add our range
+								var sel = window.getSelection();
+								if(!haveStart){
+									range.setStart(node,pos);
+									haveStart = true;
+									pos += length;
+								}
+								if(haveStart && (node.length >= pos)){ // outside as if length is same we just do our stuff
+									range.setEnd(node,pos);
+									sel.removeAllRanges();
+									sel.addRange(range);
+									return -1; // we are done
+								}
+							}
+							pos -= node.length;
+						}else if(node.nodeType == 1){ // we might have an image!
+							if(node.tagName == 'IMG' && node.dataset.code){
+								if(node.dataset.code.length >= pos){
+									// finally add our range
+									var sel = window.getSelection();
+									if(!haveStart){
+										range.setStartAfter(node);
+										haveStart = true;
+										pos += length;
+									}
+									if(haveStart && (node.dataset.code.length >= pos)){ // outside as if length is same we just do our stuff
+										range.setEndAfter(node);
+										sel.removeAllRanges();
+										sel.addRange(range);
+										return -1; // we are done
+									}
+								}
+								pos -= node.dataset.code.length;
+							}else{
+								pos = self.setCaretCharacterOffsetWithin(node,pos,length,range,haveStart);
+								if(pos < 0){
+									return -1; // no need to finish the for loop
+								}
+							}
+						}else{
+							pos = self.setCaretCharacterOffsetWithin(node,pos,length,range,haveStart);
+							if(pos < 0){
+								return -1; // no need to finish the for loop
+							}
+						}
+					}
+					return pos; // needed because of recursion stuff
+				},
+				surroundSelection:function(before,after){
+					var sel = window.getSelection();
+					if(sel.rangeCount > 0){
+						var range = sel.getRangeAt(0),
+							startNode = range.startContainer,
+							startOffset = range.startOffset,
+							startTextNode = document.createTextNode(before),
+							endTextNode = document.createTextNode(after),
+							boundaryRange = range.cloneRange();
+						boundaryRange.collapse(false);
+						boundaryRange.insertNode(endTextNode);
+						boundaryRange.setStart(startNode,startOffset);
+						boundaryRange.collapse(true);
+						boundaryRange.insertNode(startTextNode);
+						
+						range.setStartAfter(startTextNode);
+						range.setEndBefore(endTextNode);
+						sel.removeAllRanges();
+						sel.addRange(range);
+					}
+				},
+				updateContent:function(start,end){
+					if(start === undefined){
+						start = end = self.getCaretCharacterOffsetWithin($input[0]);
+					}
+					
+					self.msgVal = self.reverseParse($input.html());
+					$input.html(parser.parse(self.msgVal));
+					var range = document.createRange();
+					
+					self.setCaretCharacterOffsetWithin($input[0],start,end-start);
+				},
+				init:function(){
+					if(!self.support()){
+						return;
+					}
+					var id = $input.attr('id'),
+						$newElem = $('<span>').attr({
+							contenteditable:'true',
+							accesskey:'i',
+							id:id
+						}).css({
+							display:'inline-block',
+							height:'1em',
+							padding:'0.3em 0.2em 0.2em 0.3em',
+							fontSize:'1.2em',
+							verticalAlign:'top',
+							whiteSpace:'nowrap',
+							backgroundColor:$input.css('backgroundColor')
+						});
+					for(var i in ['Top','Bottom','Left','Right']){
+						for(var j in ['Style','Width','Color']){
+							$newElem.css('border'+i+j,$input.css('border'+i+j));
+						}
+					}
+					$input.replaceWith($newElem);
+					$input = $newElem;
+					
+					self.$textDecoForm = $('<div>').css({
+						position:'absolute',
+						bottom:'3em'
+					}).attr('id',CLASSPREFIX+'textDecoForm').append(
+						$('<button>').css('font-weight','bold').text('B').click(function(e){
+							e.preventDefault();
+							var pos = self.getWholeSelection($input[0]);
+							self.surroundSelection('\x02','\x02');
+							self.updateContent(pos[0],pos[1]);
+						}),'&nbsp;',
+						$('<button>').css('font-style','italic').text('I').click(function(e){
+							e.preventDefault();
+							var pos = self.getWholeSelection($input[0]);
+							self.surroundSelection('\x1d','\x1d');
+							self.updateContent(pos[0],pos[1]);
+						}),'&nbsp;',
+						$('<button>').css('text-decoration','underline').text('U').click(function(e){
+							e.preventDefault();
+							var pos = self.getWholeSelection($input[0]);
+							self.surroundSelection('\x1f','\x1f');
+							self.updateContent(pos[0],pos[1]);
+						}),'<br>',
+						$.map([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15],function(i){
+							return [(i%4 == 0)?'<br>':'',$('<span>').css({
+								display:'inline-block',
+								height:'1em',
+								width:'2em'
+							}).addClass(CLASSPREFIX+'colorbutton').addClass(CLASSPREFIX+'bg-'+i).click(function(e){
+								e.preventDefault();
+								var pos = self.getWholeSelection($input[0]);
+								self.surroundSelection('\x03'+i,'\x0f');
+								self.updateContent(pos[0],pos[1]);
+							})];
+						})
+					).hide().insertBefore($input);
+					
+					oirc.onsetval = function(s){
+						self.msgVal = s;
+						$input.html(parser.parse(s));
+					};
+					oirc.ongetval = function(){
+						return self.msgVal;
+					}
+					$input.on('input',function(e){
+						self.updateContent(); // we need the first argument to be undefined
+					});
+					$input.mouseup(function(e){
+						var sel = window.getSelection();
+						if(sel.isCollapsed){
+							return;
+						}
+						e.preventDefault();
+						self.$textDecoForm.show().css('left',Math.max(e.pageX-52,0));
+						self.menuOpen = true;
+						
+						
+					});
+					$(document).mousedown(function(e){
+						if(!$(e.target).closest(self.$textDecoForm).length && self.menuOpen){
+							self.hideMenu();
+						}
+					});
+					
+					
+				},
+				support:function(){
+					return (('contentEditable' in document.documentElement) && options.get('wysiwyg'));
+				}
+			};
+			return {
+				init:self.init,
+				getMsg:self.getMsg,
+				support:self.support,
+				updateContent:self.updateContent
+			}
+		})(),
 		statusBar = (function(){
 			var self = {
 				text:'',
@@ -2403,13 +2722,28 @@ function OmnomIRC(){
 	this.statusBar = {
 		set:statusBar.set
 	}
-	this.initinput = function($elem){
+	this.initinput = function($elem,doWysiwyg){
 		if($elem === undefined){
 			$elem = $('#message');
 		}
 		$input = $elem;
+		if(doWysiwyg){
+			wysiwyg.init();
+		}
 		tab.init();
 		oldMessages.init();
+		
+		$input.keypress(function(e){
+			if(e.which == 13){ // we hit enter
+				e.preventDefault();
+				if(!$input.attr('disabled')){
+					send.send(function(){
+						send.val('');
+						$input.focus();
+					});
+				}
+			}
+		});
 	};
 	this.connect = function(callback){
 		page.init();

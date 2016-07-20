@@ -44,13 +44,6 @@ function getPage(){
 	}
 	$hotlinksHTML .= '</tr>';
 	
-	$colorButtonsHTML = '<br>';
-	for($i = 0;$i < 16;$i++){
-		$colorButtonsHTML .= '<span class="colorbutton bg-'.$i.'" data-num="'.$i.'"></span>';
-		if(($i+1) % 4 == 0){
-			$colorButtonsHTML .= '<br>';
-		}
-	}
 	
 	$html = '
 	<div id="header">
@@ -96,12 +89,6 @@ function getPage(){
 	
 	<div id="footer">
 		<img id="smileyMenuButton" src="smileys/smiley.gif" style="margin-left:2px;margin-right:2px;">
-		<div id="textDecoForm" style="display:none;">
-			<button id="textDecoFormBold" style="font-weight:bold;">B</button>
-			<button id="textDecoFormItalic" style="font-style:italic;">I</button>
-			<button id="textDecoFormUnderline" style="text-decoration:underline;">U</button><br>
-			'.$colorButtonsHTML.'
-		</div>
 		<div id="loginForm" style="display:none;">
 			<button style="display:none;">Pick Username</button>
 			<div id="pickUsernamePopup" style="display:none;">
@@ -110,7 +97,7 @@ function getPage(){
 			<span id="guestName" style="display:none;"></span>
 		</div>
 		<form style="Display:inline;" name="irc" action="javascript:void(0)" id="sendMessage">
-			<span contenteditable="true" accesskey="i" id="message"></span>
+			<input type="text" id="message">
 			<input type="submit" value="Send" id="send" />
 		</form>
 		<div id="icons">
