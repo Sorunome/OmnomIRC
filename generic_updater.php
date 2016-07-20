@@ -343,7 +343,7 @@ if(!isset($_GET['server'])){
 								}else{
 									window.location.href = "admin.php?finishUpdate'.(isset($_GET['network'])?'&network='.$_GET['network']:'').'";
 								}
-							});
+							})
 						);
 					}else if(offset_after_files+6 == step){
 						window.location.href = "admin.php?finishUpdate'.(isset($_GET['network'])?'&network='.$_GET['network']:'').'";
