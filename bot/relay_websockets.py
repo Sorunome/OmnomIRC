@@ -97,7 +97,7 @@ class Relay(oirc.OircRelay):
 				for c in client.chans:
 					client.sendLine('OmnomIRC',client.pmHandler,'reload_userlist','THE GAME',c,0,-1)
 		self.server.stop()
-	def relayMessage(self,n1,n2,t,m,c,s,uid): #self.server.inputHandlers
+	def relayMessage(self,n1,n2,t,m,c,s,uid,curline = 0): #self.server.inputHandlers
 		c = str(c)
 		if hasattr(self.server,'inputHandlers'):
 			m_lower = m.lower()
@@ -113,9 +113,9 @@ class Relay(oirc.OircRelay):
 								or
 								str(n2) == client.pmHandler
 							):
-							client.sendLine(n1,n2,t,m,c,s,uid)
+							client.sendLine(n1,n2,t,m,c,s,uid,curline)
 						elif client.identified and t!='pm' and t!='pmaction' and client.charsHigh in m_lower:
-							client.sendLine(n1,n2,'highlight',m,c,s,uid)
+							client.sendLine(n1,n2,'highlight',m,c,s,uid,curline)
 				except Exception as inst:
 					self.log_error(inst)
 					self.log_error(traceback.format_exc())
@@ -223,6 +223,10 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 			self.log_info('<< '+str({'chan':c,'nick':self.nick,'message':m,'type':t}))
 			self.handle.sendToOther(self.nick,n2,t,m,c,self.network,self.uid)
 	def join(self,c): # updates nick in userlist
+		try:
+			c = int(c)
+		except:
+			pass
 		if isinstance(c,str):
 			if self.uid == -1 and not (c[0] in '*@'):
 				self.log_info('Tried to join invalid channel: '+str(c))
@@ -246,11 +250,11 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 		if self.chans[c]<=0:
 			self.chans.pop(c,None)
 			self.handle.timeoutUser(self.nick,str(c),self.network)
-	def sendLine(self,n1,n2,t,m,c,s,uid): #name 1, name 2, type, message, channel, source
+	def sendLine(self,n1,n2,t,m,c,s,uid,curline = 0): #name 1, name 2, type, message, channel, source
 		if self.banned:
 			return False
 		s = json.dumps({'line':{
-			'curline':0,
+			'curline':curline,
 			'type':t,
 			'network':s,
 			'time':int(time.time()),
@@ -401,6 +405,30 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 									self.addLine('message',msg,m['channel'])
 						elif m['action'] == 'charsHigh':
 							self.setCharsHigh(int(m['chars']))
+						elif m['action'] == 'postfetch':
+							c = m['channel']
+							try:
+								c = str(int(c))
+							except:
+								c = b64encode_wrap(c)
+							if m['curline'] < self.handle.curline: # we only want to actually do stuff if we are behind
+								r = oirc.execPhp('Update.php',{
+									'high':len(self.charsHigh),
+									'lineNum':m['curline'],
+									'channel':c,
+									'nick':b64encode_wrap(self.nick),
+									'signature':b64encode_wrap(self.sig),
+									'id':self.uid,
+									'network':self.network,
+									'nopoll':1
+								})
+								if 'lines' in r:
+									for l in r['lines']:
+										self.sendLine(l['name'],l['name2'],l['type'],l['message'],l['chan'],l['network'],l['uid'],l['curline'])
+								if 'users' in r:
+									self.send_message(json.dumps({
+										'users':r['users']
+									}))
 		except:
 			self.log_error(traceback.format_exc())
 		return True

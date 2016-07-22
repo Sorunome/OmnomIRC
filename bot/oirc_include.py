@@ -90,7 +90,7 @@ class OircRelay:
 		self.stopRelay()
 	def stopRelay(self):
 		return
-	def relayMessage(self,n1,n2,t,m,c,s,uid):
+	def relayMessage(self,n1,n2,t,m,c,s,uid,curline):
 		return
 	def relayTopic(self,s,c,i):
 		return

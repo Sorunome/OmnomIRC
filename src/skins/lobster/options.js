@@ -26,10 +26,6 @@ OmnomIRC.prototype.setOptions = function(){
 			disp:'Enable Scrollwheel',
 			default:true
 		},
-		wysiwyg:{
-			disp:'Use WYSIWYG editor',
-			default:false
-		},
 		fontSize:{
 			disp:'Font Size',
 			default:9,

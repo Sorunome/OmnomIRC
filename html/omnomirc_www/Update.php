@@ -35,12 +35,14 @@ if(!OIRC::$you->isLoggedIn() && $net['config']['guests'] == 0){
 
 if(isset($_GET['lineNum'])){
 	$curline = (int)$_GET['lineNum'];
-	if($curline < (int)file_get_contents(OIRC::$config['settings']['curidFilePath'])-200){
-		Json::addWarning('lineNum too far in the past, giving only 200');
-		$curline = (int)file_get_contents(OIRC::$config['settings']['curidFilePath'])-200;
+	if($curline < Oirc::getCurid()-200){
+		Json::addWarning('lineNum too far in the past, loading channel instead');
+		$_GET['count'] = 200;
+		include_once(realpath(dirname(__FILE__)).'/Load.php');
+		exit;
 	}
 }else{
-	$curline = (int)file_get_contents(OIRC::$config['settings']['curidFilePath']);
+	$curline = Oirc::getCurid();
 	Json::addWarning('lineNum not set, defaulting to newest one ('.$curline.')');
 }
 if(OIRC::$you->isBanned()){
@@ -62,13 +64,19 @@ $countBeforeQuit = 0;
 OIRC::$you->update();
 $channel = Sql::query("SELECT {db_prefix}getchanid(?) AS chan",array(OIRC::$you->chan));
 $channel = $channel[0]['chan'];
+
 while(true){
 	if($countBeforeQuit++ >= 50){//Timeout after 25 seconds.
 		OIRC::$you->update();
 		echo Json::get();
 		die();
 	}
-	if((int)file_get_contents(OIRC::$config['settings']['curidFilePath'])<=$curline){
+	if(Oirc::getCurid()<=$curline){
+		if(isset($_GET['nopoll']) && $_GET['nopoll']){
+			Json::add('lines',array());
+			echo Json::get();
+			exit;
+		}
 		usleep(500000);
 		continue;
 	}

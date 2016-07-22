@@ -73,7 +73,7 @@ class Relay(oirc.OircRelay):
 		self.channels = chans
 	def stopRelay(self):
 		self.server.stop()
-	def relayMessage(self,n1,n2,t,m,c,s,uid = -1):
+	def relayMessage(self,n1,n2,t,m,c,s,uid = -1,curline = 0):
 		for calc in self.server.inputHandlers:
 			try:
 				if calc.connectedToIRC and (not (s==self.id and n1==calc.calcName)) and calc.idToChan(c).lower()==calc.chan.lower():

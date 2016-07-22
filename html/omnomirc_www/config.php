@@ -91,6 +91,7 @@ if(isset($_GET['js'])){
 		'smileys' => $v['smileys'],
 		'networks' => $dispNetworks,
 		'network' => OIRC::$you->getNetwork(),
+		'defaultNetwork' => OIRC::$config['settings']['defaultNetwork'],
 		'checkLoginUrl' => $cl,
 		'defaults' => $v['defaults_'.(string)$net]?$v['defaults_'.(string)$net]:array(),
 		'spLinks' => $spLinks,

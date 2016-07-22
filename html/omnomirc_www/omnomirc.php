@@ -113,6 +113,23 @@ class OIRC{
 		$cl .= '?sid='.$clsid.'&network='.(OIRC::$you->getNetwork());
 		return $cl;
 	}
+	private static function getCuridPath(){
+		$s = self::$config['settings']['curidFilePath'];
+		if($s[0] == '/'){
+			return $s;
+		}
+		return realpath(dirname(__FILE__)).'/'.$s;
+		
+	}
+	public static function getCurid(){
+		return (int)file_get_contents(self::getCuridPath());
+	}
+	public static function setCurid($i){
+		$i = (int)$i;
+		if($i < self::getCurid()){
+			file_put_contents(self::getCuridPath(),$i);
+		}
+	}
 }
 
 class Json{
@@ -696,12 +713,45 @@ class Relay{
 					$line['s'],
 					$line['uid']
 				));
+				
 			}
+			$curline = 0;
 			if(sizeof($valArray) > 0){
 				$values = rtrim($values,',');
 				Sql::query("INSERT INTO `{db_prefix}lines` (name1,name2,type,message,channel,online,uid,time) VALUES $values",$valArray);
+				$curline = Sql::insertId();
 			}
-			
+			foreach(self::$sendBuffer as &$line){
+				if($line['n1'] == '' && $line['n2'] == ''){
+					continue;
+				}
+				if($cache = Cache::get('oirc_lines_'.$line['c'])){
+					$lines_cached = json_decode($cache,true);
+					if(json_last_error()===0){
+						if(count($lines_cached > 200)){
+							array_shift($lines_cached);
+						}
+						
+						$line['curline'] = $curline;
+						$curline++;
+						
+						$lines_cached[] = array(
+							'curline' => $line['curline'],
+							'type' => $line['t'],
+							'network' => $line['s'],
+							'time' => $line['t'],
+							'name' => $line['n1'],
+							'message' => $line['m'],
+							'name2' => $line['n2'],
+							'chan' => $line['c'],
+							'uid' => $line['uid']
+						);
+						Cache::set('oirc_lines_'.$line['c'],json_encode($lines_cached),time()+(60*60*24*3));
+					}else{
+						Cache::set('oirc_lines_'.$line['c'],false,1);
+					}
+				}
+			}
 			
 			if(OIRC::$config['settings']['useBot']){
 				$sock = OIRC::$config['settings']['botSocket'];
@@ -717,11 +767,7 @@ class Relay{
 				}
 			}
 			self::$sendBuffer = array();
-			if(substr(OIRC::$config['settings']['curidFilePath'],0,1) == '/'){
-				file_put_contents(OIRC::$config['settings']['curidFilePath'],Sql::insertId());
-			}else{
-				file_put_contents(realpath(dirname(__FILE__)).'/'.OIRC::$config['settings']['curidFilePath'],Sql::insertId());
-			}
+			Oirc::setCurid(Sql::insertId());
 		}
 	}
 }

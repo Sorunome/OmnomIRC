@@ -168,7 +168,7 @@ class Relay(oirc.OircRelay):
 		self.bot.stopThread()
 		if self.haveTopicBot:
 			self.topicBot.stopThread()
-	def relayMessage(self,n1,n2,t,m,c,s,uid):
+	def relayMessage(self,n1,n2,t,m,c,s,uid,curline = 0):
 		try:
 			if s != self.id:
 				self.bot.sendLine(n1,n2,t,m,c,s)

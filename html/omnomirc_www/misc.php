@@ -33,7 +33,7 @@ if(isset($_GET['ident'])){
 	Json::add('network',OIRC::$you->getNetwork());
 }elseif(isset($_GET['getcurline'])){
 	Json::clear();
-	Json::add('curline',(int)file_get_contents(OIRC::$config['settings']['curidFilePath']));
+	Json::add('curline',Oirc::getCurid());
 }elseif(isset($_GET['cleanUsers'])){
 	Users::clean();
 	Relay::commitBuffer();
