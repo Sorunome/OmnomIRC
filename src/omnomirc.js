@@ -2256,13 +2256,17 @@ function OmnomIRC(){
 							break;
 						case '2': //server
 							if(net!==undefined && net.checkLogin!==undefined && uid!=-1){
-								addLink = false;
-								if(self.cacheServerNicks[o.toString()+':'+uid.toString()]===undefined){
-									network.getJSON(net.checkLogin+'?c='+uid.toString(10)+'&n='+ne,function(data){
-										self.cacheServerNicks[o.toString()+':'+uid.toString()] = data.nick;
-									},false,false);
+								cn = ss.get('nick'+o.toString()+':'+uid.toString());
+								if(!cn){
+									addLink = false;
+									if(self.cacheServerNicks[o.toString()+':'+uid.toString()]===undefined){
+										network.getJSON(net.checkLogin+'?c='+uid.toString(10)+'&n='+ne,function(data){
+											self.cacheServerNicks[o.toString()+':'+uid.toString()] = data.nick;
+										},false,false);
+									}
+									ss.set('nick'+o.toString()+':'+uid.toString(),cn);
+									cn = self.cacheServerNicks[o.toString()+':'+uid.toString()];
 								}
-								cn = self.cacheServerNicks[o.toString()+':'+uid.toString()];
 							}else{
 								cn = n;
 							}
