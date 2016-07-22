@@ -51,7 +51,7 @@ def modifyRawData(word,word_eol,userdata):
 					chan = cmd[1]
 					for nick in json.loads(' '.join(cmd[2:])):
 						if hexchat.nickcmp(nick,hexchat.get_info('nick'))!=0:
-							hexchat.command('RECV :'+hexchat.strip(nick)+'!()\xA0'+nick+'@'+OMNOMJOINIGNORE+' JOIN :'+chan)
+							hexchat.command('RECV :'+hexchat.strip(nick).replace(' ','\xA0')+'!()\xA0'+nick.replace(' ','\xA0')+'@'+OMNOMJOINIGNORE+' JOIN :'+chan)
 			except Exception as inst:
 				print(__module_name__,': something unexpected happend, please report the following')
 				print('Oirc PM exeption')
@@ -195,7 +195,7 @@ def modifyJoinData(word,word_eol,userdata):
 	if '\xA0' in word_eol[2]: # we need to modify this!
 		if word[2][-len(OMNOMJOINIGNORE):] == OMNOMJOINIGNORE:
 			return hexchat.EAT_ALL
-		hexchat.emit_print('Join',word[2][:-len('@'+OMNOMIDENTSTR)],word[1],word[0]+'@'+OMNOMIDENTSTR)
+		hexchat.emit_print('Join',word[2][:-len('@'+OMNOMIDENTSTR)],word[1],word[0].replace(' ','\xA0')+'@'+OMNOMIDENTSTR)
 		return hexchat.EAT_ALL
 def modifyPartData(word,word_eol,userdata):
 	if '\xA0' in word_eol[1]: # we need to modify this!
@@ -207,11 +207,11 @@ def modifyPartData(word,word_eol,userdata):
 			reason = word[3]
 		else:
 			p_type = 'Part'
-		hexchat.emit_print(p_type,word[1][:-len('@'+OMNOMIDENTSTR)],word[0]+'@'+OMNOMIDENTSTR,word[2],reason)
+		hexchat.emit_print(p_type,word[1][:-len('@'+OMNOMIDENTSTR)],word[0].replace(' ','\xA0')+'@'+OMNOMIDENTSTR,word[2],reason)
 		return hexchat.EAT_ALL
 def modifyKickData(word,word_eol,userdata):
 	if word[1][-1:] == '\xA0': # we need to modify this!
-		kicknick = word[1][:-1]
+		kicknick = word[1][:-1].replace(' ','\xA0')
 		hexchat.emit_print('Kick',word[0],kicknick+'@'+OMNOMIDENTSTR,word[2],word_eol[3])
 		if hexchat.nickcmp(kicknick,hexchat.get_info('nick'))!=0:
 			hexchat.command('RECV :'+kicknick+'!()\xA0'+kicknick+'@'+OMNOMJOINIGNORE+' PART '+word[2])
