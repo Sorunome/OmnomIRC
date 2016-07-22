@@ -954,7 +954,6 @@ function OmnomIRC(){
 					if(c > self.curline){
 						self.curline = c;
 					}
-					console.log(self.curline);
 				},
 				send:function(s,chan,fn){
 					if(self.ws.use){

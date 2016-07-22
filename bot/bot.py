@@ -240,6 +240,7 @@ class Main():
 	chanIds = []
 	live = True
 	networksCache = {}
+	curline = 0
 	def __init__(self):
 		self.config = config
 		self.sql = sql
@@ -306,12 +307,12 @@ class Main():
 			if fp[:1]!='/':
 				fp = oirc.DOCUMENTROOT + '/' + fp
 			if curline == -1:
-				s = str(sql.query("SELECT MAX(line_number) AS max FROM {db_prefix}lines")[0]['max'])
-			else:
-				s = str(curline)
-			f = open(fp,'w')
-			f.write(s)
-			f.close()
+				curline = int(sql.query("SELECT MAX(line_number) AS max FROM {db_prefix}lines")[0]['max'])
+			if curline > self.curline:
+				self.curline = curline
+				f = open(fp,'w')
+				f.write(str(curline))
+				f.close()
 		except Exception as inst:
 			self.log_error('curline error: '+str(inst))
 			self.log_error(traceback.format_exc())

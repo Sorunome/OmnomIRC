@@ -406,27 +406,25 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 						elif m['action'] == 'charsHigh':
 							self.setCharsHigh(int(m['chars']))
 						elif m['action'] == 'postfetch':
-							self.log_info('postfetching!')
 							c = m['channel']
 							try:
 								c = str(int(c))
 							except:
 								c = b64encode_wrap(c)
-							
-							r = oirc.execPhp('Update.php',{
-								'high':len(self.charsHigh),
-								'lineNum':m['curline'],
-								'channel':c,
-								'nick':b64encode_wrap(self.nick),
-								'signature':b64encode_wrap(self.sig),
-								'id':self.uid,
-								'network':self.network,
-								'nopoll':1
-							})
-							self.log_info(r)
-							if 'lines' in r:
-								for l in r['lines']:
-									self.sendLine(l['name'],l['name2'],l['type'],l['message'],l['chan'],l['network'],l['uid'],l['curline'])
+							if m['curline'] < self.handle.curline: # we only want to actually do stuff if we are behind
+								r = oirc.execPhp('Update.php',{
+									'high':len(self.charsHigh),
+									'lineNum':m['curline'],
+									'channel':c,
+									'nick':b64encode_wrap(self.nick),
+									'signature':b64encode_wrap(self.sig),
+									'id':self.uid,
+									'network':self.network,
+									'nopoll':1
+								})
+								if 'lines' in r:
+									for l in r['lines']:
+										self.sendLine(l['name'],l['name2'],l['type'],l['message'],l['chan'],l['network'],l['uid'],l['curline'])
 		except:
 			self.log_error(traceback.format_exc())
 		return True

@@ -47,7 +47,6 @@ def execPhp(f,d = {}):
 	s = []
 	for key,value in d.items():
 		s.append(str(key)+'='+str(value))
-	print(s)
 	res = subprocess.Popen(['php',DOCUMENTROOT+'/'+f] + s,stdout=subprocess.PIPE).communicate()
 	try:
 		return json.loads(makeUnicode(res[0]))
