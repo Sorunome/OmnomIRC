@@ -338,28 +338,6 @@ if($sendNormal){
 		$message = strip_irc_colors($message);
 	}
 	Relay::sendLine($nick,in_array($type,array('pm','pmaction')) ? getOtherPmHandler($channel) : '',$type,$message,$channel);
-	if($cache = Cache::get('oirc_lines_'.$channel)){
-		$lines_cached = json_decode($cache,true);
-		if(json_last_error()===0){
-			if(count($lines_cached > 200)){
-				array_shift($lines_cached);
-			}
-			$lines_cached[] = array(
-				'curline' => 0,
-				'type' => $type,
-				'network' => OIRC::$you->getNetwork(),
-				'time' => (int)time(),
-				'name' => $nick,
-				'message' => $message,
-				'name2' => '',
-				'chan' => $channel,
-				'uid' => (int)OIRC::$you->getUid()
-			);
-			Cache::set('oirc_lines_'.$channel,json_encode($lines_cached),time()+(60*60*24*3));
-		}else{
-			Cache::set('oirc_lines_'.$channel,false,1);
-		}
-	}
 }
 $lines = array();
 if($sendPm){
@@ -376,7 +354,17 @@ if($sendPm){
 	);
 }
 if($reload){
-	Relay::sendLine('OmnomIRC','','reload','THE GAME');
+	$lines[] = array(
+		'curline' => 0,
+		'type' => 'reload',
+		'network' => OIRC::$you->getNetwork(),
+		'time' => (int)time(),
+		'name' => 'OmnomIRC',
+		'message' => 'THE GAME',
+		'name2' => '',
+		'chan' => OIRC::$you->chan,
+		'uid' => -1
+	);
 }
 
 Relay::commitBuffer();

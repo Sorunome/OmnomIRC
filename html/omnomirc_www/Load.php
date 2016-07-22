@@ -56,7 +56,7 @@ Json::add('admin',OIRC::$you->isGlobalOp());
 $lines = OIRC::loadChannel($count);
 if(!isset($_GET['userlist'])){
 	array_push($lines,array(
-		'curline' => (int)file_get_contents(OIRC::$config['settings']['curidFilePath']),
+		'curline' => Oirc::getCurid(),
 		'type' => 'topic',
 		'network' => 0,
 		'time' => time(),

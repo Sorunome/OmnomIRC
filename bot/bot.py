@@ -67,6 +67,7 @@ class Config:
 #sql handler
 class Sql:
 	db = False
+	lastRowId = -1
 	def __init__(self):
 		global config
 	def fetchOneAssoc(self,cur):
@@ -135,6 +136,7 @@ class Sql:
 				self.db = False
 				cur = self.getDbCursor()
 				cur.execute(q.replace('{db_prefix}',config.json['sql']['prefix']),tuple(p))
+			self.lastRowId = cur.lastrowid
 			self.db.commit()
 			rows = []
 			for row in cur:
@@ -176,6 +178,8 @@ class Sql:
 			self.db.close()
 		except:
 			pass
+	def insertId(self):
+		return self.lastRowId
 
 
 #fetch lines off of OIRC
@@ -221,7 +225,7 @@ class OIRCLink(server.ServerHandler):
 					except:
 						self.socket.sendall(bytes('error\n','utf-8'))
 				else:
-					handle.sendToOther(data['n1'],data['n2'],data['t'],data['m'],data['c'],data['s'],data['uid'],False)
+					handle.sendToOther(data['n1'],data['n2'],data['t'],data['m'],data['c'],data['s'],data['uid'],data['curline'],False)
 			except:
 				handle.log('oirc_link','error',traceback.format_exc())
 		return True
@@ -295,14 +299,18 @@ class Main():
 					'editPattern':v['editPattern']
 				})
 		return a
-	def updateCurline(self):
+	def updateCurline(self,curline = -1):
 		global config,sql
 		try:
 			fp = config.json['settings']['curidFilePath']
 			if fp[:1]!='/':
 				fp = oirc.DOCUMENTROOT + '/' + fp
+			if curline == -1:
+				s = str(sql.query("SELECT MAX(line_number) AS max FROM {db_prefix}lines")[0]['max'])
+			else:
+				s = str(curline)
 			f = open(fp,'w')
-			f.write(str(sql.query("SELECT MAX(line_number) AS max FROM {db_prefix}lines")[0]['max']))
+			f.write(s)
 			f.close()
 		except Exception as inst:
 			self.log_error('curline error: '+str(inst))
@@ -353,7 +361,7 @@ class Main():
 		for r in self.relays:
 			if (oircOnly and r.relayType==-1) or not oircOnly:
 				r.relayTopic(s,c,i)
-	def sendToOther(self,n1,n2,t,m,c,s,uid = -1,do_sql = True):
+	def sendToOther(self,n1,n2,t,m,c,s,uid = -1,curline = -1,do_sql = True):
 		if self.isChanOfMode(c,'c'):
 			m = stripIrcColors(m)
 		
@@ -372,16 +380,11 @@ class Main():
 				return
 		
 		
-		for r in self.relays:
-			if (oircOnly and r.relayType==-1) or not oircOnly:
-				try:
-					r.relayMessage(n1,n2,t,m,c,s,uid)
-				except:
-					traceback.print_exc()
 		
 		if do_sql:
 			c = oirc.makeUnicode(str(c))
 			sql.query("INSERT INTO `{db_prefix}lines` (`name1`,`name2`,`message`,`type`,`channel`,`time`,`online`,`uid`) VALUES (%s,%s,%s,%s,{db_prefix}getchanid(%s),%s,%s,%s)",[n1,n2,m,t,c,str(int(time.time())),int(s),uid])
+			curline = int(sql.insertId())
 			try:
 				lines_cached = memcached.get('oirc_lines_'+c)
 				if lines_cached:
@@ -390,7 +393,7 @@ class Main():
 						if len(lines_cached) > 200:
 							lines_cached.pop(0)
 						lines_cached.append({
-							'curLine': 0,
+							'curline': curline,
 							'type': t,
 							'network': int(s),
 							'time': int(time.time()),
@@ -411,7 +414,14 @@ class Main():
 				sql.query("UPDATE `{db_prefix}channels` SET topic=%s WHERE channum={db_prefix}getchanid(%s)",[m,c])
 			if t=='action' or t=='message':
 				sql.query("UPDATE `{db_prefix}users` SET lastMsg=UNIX_TIMESTAMP(CURRENT_TIMESTAMP) WHERE username=%s AND channel=%s AND online=%s",[n1,c,int(s)])
-		self.updateCurline()
+		self.updateCurline(curline)
+		
+		for r in self.relays:
+			if (oircOnly and r.relayType==-1) or not oircOnly:
+				try:
+					r.relayMessage(n1,n2,t,m,c,s,uid,curline)
+				except:
+					traceback.print_exc()
 	def findRelay(self,id):
 		for r in self.relays:
 			if id == r.id:

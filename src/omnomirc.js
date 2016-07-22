@@ -22,20 +22,41 @@
 function OmnomIRC(){
 	var OMNOMIRCSERVER = 'https://omnomirc.omnimaga.org',
 		CLASSPREFIX = '',
+		SESSIONSUPPORT = (function(){
+			try{
+				sessionStorage.setItem('test',1);
+				var success = sessionStorage.getItem('test') == 1;
+				sessionStorage.removeItem('test');
+				return success;
+			}catch(e){
+				return false;
+			}
+		})(),
 		$input = false,
 		eventOnMessage = function(line,loadMode){
 			if(loadMode === undefined){
 				loadMode = false;
 			}
-			request.setCurLine(line.curline);
+			request.setCurline(line.curline);
 			if(line.name === null || line.network == -1){
 				return;
 			}
 			if(oirc.onmessageraw !== false){
 				oirc.onmessageraw(line,loadMode);
-				return;
+			}else{
+				parser.addLine(line,loadMode);
 			}
-			parser.addLine(line,loadMode);
+			if(!loadMode && line.chan == ss.get('chan')){
+				var lines = ss.get('lines');
+				lines.push(line);
+				if(lines.length > 200){
+					lines.shift();
+				}
+				ss.set('lines',lines);
+				
+				ss.set('users',users.getUsers());
+			}
+			
 		},
 		settings = (function(){
 			var self = {
@@ -44,7 +65,6 @@ function OmnomIRC(){
 				signature:'',
 				numHigh:4,
 				uid:-1,
-				checkLoginUrl:'',
 				net:'',
 				networks:{},
 				pmIdent:false,
@@ -86,6 +106,72 @@ function OmnomIRC(){
 					self.setIdent(nick,sig,uid);
 					request.identify();
 				},
+				fetchCallback(fn,clOnly,data){
+					if(!clOnly){
+						try{
+							sessionStorage.setItem('defaultNetwork',data.defaultNetwork);
+						}catch(e){}
+						ss.set('config',data);
+						
+						self.hostname = data.hostname;
+						
+						channels.setChans(data.channels);
+						parser.setSmileys(data.smileys);
+						oirc.onsmileychange(data.smileys);
+						parser.setSpLinks(data.spLinks);
+						
+						self.guestLevel = data.guests;
+						self.networks = {};
+						$.each(data.networks,function(i,n){
+							self.networks[n.id] = n;
+						});
+						self.net = data.network;
+						ls.setPrefix(self.net);
+						options.setDefaults(data.defaults);
+						options.setExtraChanMsg(data.extraChanMsg);
+						request.setData(data.websockets.use,data.websockets.host,data.websockets.port,data.websockets.ssl);
+					}
+					var clData = ss.get('checkLogin');
+					if(clData){
+						self.nick = clData.nick;
+						self.signature = clData.signature;
+						self.uid = clData.uid;
+						self.pmIdent = '['+self.net.toString()+','+self.uid.toString()+']';
+						self.isGuest = data.signature === '';
+						
+						if(fn !== undefined){
+							fn();
+						}
+						return;
+					}
+					if(self.loggedIn() && self.isGuest){
+						self.identGuest(self.nick,function(data){
+							if(data.success){
+								self.signature = data.signature;
+							}
+							if(fn !== undefined){
+								fn();
+							}
+						});
+					}else{
+						network.getJSON(data.checkLoginUrl+'&network='+self.net.toString()+'&jsoncallback=?',function(data){
+							ss.set('checkLogin',{
+								nick:data.nick,
+								signature:data.signature,
+								uid:data.uid
+							});
+							self.nick = data.nick;
+							self.signature = data.signature;
+							self.uid = data.uid;
+							self.pmIdent = '['+self.net.toString()+','+self.uid.toString()+']';
+							self.isGuest = data.signature === '';
+							
+							if(fn!==undefined){
+								fn();
+							}
+						},true,false);
+					}
+				},
 				fetch:function(fn,clOnly){
 					if(clOnly===undefined){
 						clOnly = false;
@@ -102,50 +188,14 @@ function OmnomIRC(){
 						})
 						return;
 					}
+					var data = ss.get('config');
+					if(data){
+						self.fetchCallback(fn,clOnly,data);
+						return;
+					}
+					ss.determinePrefix();
 					network.getJSON('config.php?js'+(document.URL.split('network=')[1]!==undefined?'&network='+document.URL.split('network=')[1].split('&')[0].split('#')[0]:'')+(clOnly?'&clonly':''),function(data){
-						var set;
-						if(!clOnly){
-							self.hostname = data.hostname;
-							channels.setChans(data.channels);
-							parser.setSmileys(data.smileys);
-							oirc.onsmileychange(data.smileys);
-							parser.setSpLinks(data.spLinks);
-							
-							self.guestLevel = data.guests;
-							self.networks = {};
-							$.each(data.networks,function(i,n){
-								self.networks[n.id] = n;
-							});
-							self.net = data.network;
-							ls.setPrefix(self.net);
-							options.setDefaults(data.defaults);
-							options.setExtraChanMsg(data.extraChanMsg);
-							request.setData(data.websockets.use,data.websockets.host,data.websockets.port,data.websockets.ssl);
-						}
-						
-						self.checkLoginUrl = data.checkLoginUrl;
-						if(self.loggedIn() && self.isGuest){
-							self.identGuest(self.nick,function(data){
-								if(data.success){
-									self.signature = data.signature;
-								}
-								if(fn !== undefined){
-									fn();
-								}
-							});
-						}else{
-							network.getJSON(self.checkLoginUrl+'&network='+self.net.toString()+'&jsoncallback=?',function(data){
-								self.nick = data.nick;
-								self.signature = data.signature;
-								self.uid = data.uid;
-								self.pmIdent = '['+self.net.toString()+','+self.uid.toString()+']';
-								self.isGuest = data.signature === '';
-								
-								if(fn!==undefined){
-									fn();
-								}
-							},true,false);
-						}
+						self.fetchCallback(fn,clOnly,data);
 					},true,false);
 				},
 				setIdent:function(nick,sig,uid){
@@ -224,7 +274,11 @@ function OmnomIRC(){
 			var self = {
 				prefix:(document.URL.split('network=')[1]!==undefined?document.URL.split('network=')[1].split('&')[0].split('#')[0]:''),
 				setPrefix:function(p){
-					self.prefix = p;
+					if(!p){
+						self.prefix = '';
+						return;
+					}
+					self.prefix = p.toString();
 				},
 				getCookie:function(c_name){
 					var i,x,y,ARRcookies=document.cookie.split(";");
@@ -249,6 +303,7 @@ function OmnomIRC(){
 					if(self.haveSupport===null){
 						try{
 							localStorage.setItem('test',1);
+							self.haveSupport = (localStorage.getItem('test') == 1);
 							localStorage.removeItem('test');
 							self.haveSupport = true;
 						}catch(e){
@@ -280,12 +335,68 @@ function OmnomIRC(){
 						self.setCookie(name,value);
 					}
 				}
-			}
+			};
 			return {
 				setPrefix:self.setPrefix,
 				get:self.get,
 				set:self.set
 			};
+		})(),
+		ss = (function(){
+			var self = {
+				prefix:(document.URL.split('network=')[1]!==undefined?document.URL.split('network=')[1].split('&')[0].split('#')[0]:''),
+				setPrefix:function(p){
+					if(!p){
+						return;
+					}
+					self.prefix = p.toString();
+				},
+				determinePrefix:function(){
+					self.haveSupport = null;
+				},
+				haveSupport:null,
+				support:function(){
+					if(self.haveSupport===null){
+						try{
+							sessionStorage.setItem('test',1);
+							self.haveSupport = (sessionStorage.getItem('test') == 1);
+							sessionStorage.removeItem('test');
+							if(self.haveSupport && self.prefix == ''){
+								self.setPrefix(sessionStorage.getItem('defaultNetwork'));
+							}
+						}catch(e){
+							self.haveSupport = false;
+						}
+					}
+					return self.haveSupport;
+				},
+				get:function(name){
+					if(self.support()){
+						try{
+							return JSON.parse(sessionStorage.getItem(self.prefix+name));
+						}catch(e){
+							return undefined;
+						}
+					}
+					return undefined;
+				},
+				set:function(name,value){
+					if(self.support()){
+						sessionStorage.setItem(self.prefix+name,JSON.stringify(value));
+					}
+				},
+				remove:function(name){
+					if(self.support()){
+						sessionStorage.removeItem(self.prefix+name);
+					}
+				}
+			};
+			return {
+				determinePrefix:self.determinePrefix,
+				get:self.get,
+				set:self.set,
+				remove:self.remove
+			}
 		})(),
 		network = (function(){
 			var self = {
@@ -619,13 +730,10 @@ function OmnomIRC(){
 								self.ws.tryFallback = false;
 								self.ws.socket.close();
 							}catch(e){}
-							network.getJSON('misc.php?getcurline&noLoginErrors',function(data){
-								//channels.current().reloadUserlist(); // this is usually a good idea.
-								self.setCurLine(data.curline);
-								self.ws.use = false;
-								self.old.lastSuccess = (new Date).getTime();
-								self.old.start();
-							});
+							
+							self.ws.use = false;
+							self.old.lastSuccess = (new Date).getTime();
+							self.old.start();
 						}
 					},
 					identify:function(){
@@ -652,6 +760,7 @@ function OmnomIRC(){
 							console.log((self.ws.ssl?'wss://':'ws://')+self.ws.host+':'+self.ws.port.toString()+path.join('/'));
 							console.log(e);
 							self.ws.fallback();
+							return;
 						}
 						self.ws.socket.onopen = function(e){
 							self.ws.connected = true;
@@ -728,7 +837,7 @@ function OmnomIRC(){
 								'Update.php?high='+
 								options.get('charsHigh').toString()+
 								'&channel='+self.old.chan+
-								'&lineNum='+self.curLine.toString(),
+								'&lineNum='+self.curline.toString(),
 							function(data){
 								self.old.handler = false;
 								self.old.lastSuccess = (new Date).getTime();
@@ -796,7 +905,7 @@ function OmnomIRC(){
 						});
 					}
 				},
-				curLine:0,
+				curline:0,
 				joinChan:function(c){
 					if(self.ws.use){
 						self.ws.send({
@@ -841,10 +950,11 @@ function OmnomIRC(){
 						self.old.start();
 					}
 				},
-				setCurLine:function(c){
-					if(c > self.curLine){
-						self.curLine = c;
+				setCurline:function(c){
+					if(c > self.curline){
+						self.curline = c;
 					}
+					console.log(self.curline);
 				},
 				send:function(s,chan,fn){
 					if(self.ws.use){
@@ -881,6 +991,15 @@ function OmnomIRC(){
 					if(self.ws.enabled){
 						self.ws.identify();
 					}
+				},
+				postfetch:function(){
+					if(self.ws.use){
+						self.ws.send({
+							action:'postfetch',
+							channel:channels.current().handler,
+							curline:self.curline
+						});
+					}
 				}
 			};
 			return {
@@ -889,11 +1008,12 @@ function OmnomIRC(){
 				start:self.start,
 				stop:self.stop,
 				kill:self.kill,
-				setCurLine:self.setCurLine,
+				setCurline:self.setCurline,
 				send:self.send,
 				setData:self.setData,
 				init:self.init,
-				identify:self.identify
+				identify:self.identify,
+				postfetch:self.postfetch
 			};
 		})(),
 		channels = (function(){
@@ -1078,6 +1198,20 @@ function OmnomIRC(){
 				},
 				requestHandler:false,
 				load:function(i,fn){
+					var callback = function(data){
+						if(self.current.load(data)){
+							self.chans[i].high = false;
+							self.save();
+							request.joinChan(self.getHandler(i));
+							request.start();
+							tab.load();
+							oldMessages.read();
+							request.postfetch();
+							fn(true,data);
+							return;
+						}
+						fn(false,{});
+					};
 					if(fn === undefined){
 						fn = function(){};
 					}
@@ -1089,20 +1223,27 @@ function OmnomIRC(){
 						if(self.requestHandler!==false){
 							self.requestHandler.abort();
 						}
+						if(ss.get('chan') == self.getHandler(i)){
+							options.set('curChan',i);
+							self.current = Channel(i);
+							var data = {},
+								attrs = ['chan','banned','admin','users','ignores','lines'];
+							for(var j = 0; j < attrs.length; j++){
+								data[attrs[j]] = ss.get(attrs[j]);
+							}
+							callback(data);
+							return;
+						}
 						self.requestHandler = network.getJSON('Load.php?count=125&channel='+self.getHandler(i,true),function(data){
 							options.set('curChan',i);
 							self.current = Channel(i);
-							if(self.current.load(data)){
-								self.chans[i].high = false;
-								self.save();
-								request.joinChan(self.getHandler(i));
-								request.start();
-								tab.load();
-								oldMessages.read();
-								fn(true,data);
-								return;
-							}
-							fn(false,{});
+							ss.set('chan',self.current.handler); // because session storage is per-tab and options is tab-synced
+							ss.set('banned',data.banned);
+							ss.set('admin',data.admin)
+							ss.set('users',data.users);
+							ss.set('ignores',data.ignores);
+							ss.set('lines',data.lines);
+							callback(data);
 						});
 					});
 				},
@@ -1297,7 +1438,10 @@ function OmnomIRC(){
 				add:self.add,
 				remove:self.remove,
 				setUsers:self.setUsers,
-				getNames:self.getNames
+				getNames:self.getNames,
+				getUsers:function(u){
+					return self.users;
+				}
 			};
 		})(),
 		commands = (function(){
@@ -1410,7 +1554,7 @@ function OmnomIRC(){
 				},
 				internal:function(s){
 					eventOnMessage({
-						curLine:0,
+						curline:0,
 						type:'internal',
 						time:Math.floor((new Date()).getTime()/1000),
 						name:'',

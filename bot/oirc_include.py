@@ -47,6 +47,7 @@ def execPhp(f,d = {}):
 	s = []
 	for key,value in d.items():
 		s.append(str(key)+'='+str(value))
+	print(s)
 	res = subprocess.Popen(['php',DOCUMENTROOT+'/'+f] + s,stdout=subprocess.PIPE).communicate()
 	try:
 		return json.loads(makeUnicode(res[0]))
@@ -90,7 +91,7 @@ class OircRelay:
 		self.stopRelay()
 	def stopRelay(self):
 		return
-	def relayMessage(self,n1,n2,t,m,c,s,uid):
+	def relayMessage(self,n1,n2,t,m,c,s,uid,curline):
 		return
 	def relayTopic(self,s,c,i):
 		return
