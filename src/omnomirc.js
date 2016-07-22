@@ -22,16 +22,6 @@
 function OmnomIRC(){
 	var OMNOMIRCSERVER = 'https://omnomirc.omnimaga.org',
 		CLASSPREFIX = '',
-		SESSIONSUPPORT = (function(){
-			try{
-				sessionStorage.setItem('test',1);
-				var success = sessionStorage.getItem('test') == 1;
-				sessionStorage.removeItem('test');
-				return success;
-			}catch(e){
-				return false;
-			}
-		})(),
 		$input = false,
 		eventOnMessage = function(line,loadMode){
 			if(loadMode === undefined){
@@ -110,7 +100,7 @@ function OmnomIRC(){
 					self.setIdent(nick,sig,uid);
 					request.identify();
 				},
-				fetchCallback(fn,clOnly,data){
+				fetchCallback:function(fn,clOnly,data){
 					if(!clOnly){
 						try{
 							sessionStorage.setItem('defaultNetwork',data.defaultNetwork);

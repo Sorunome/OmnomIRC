@@ -40,15 +40,13 @@ for f in $(git diff --name-only master dev); do
 			;;
 	esac
 done
-echo ${normal_files[@]}
-exit
+
 tmp1=$(mktemp)
 tmp2=$(mktemp)
 cp generic_updater.php $tmp1
-
-sed "s/SED_INSERT_FILES/$(join , ${normal_files[@]})/" $tmp1 > $tmp2
-sed "s/SED_INSERT_CLFILES/$(join , ${cl_files[@]})/" $tmp2 > $tmp1
-sed "s/SED_INSERT_BOTFILES/$(join , ${bot_files[@]})/" $tmp1 > $tmp2
+sed "s/SED_INSERT_FILES/$(echo $(join , ${normal_files[@]}) | sed 's/\//\\\//g')/" $tmp1 > $tmp2
+sed "s/SED_INSERT_CLFILES/$(echo $(join , ${cl_files[@]}) | sed 's/\//\\\//g')/" $tmp2 > $tmp1
+sed "s/SED_INSERT_BOTFILES/$(echo $(join , ${bot_files[@]})| sed 's/\//\\\//g')/" $tmp1 > $tmp2
 sed "s/SED_INSERT_FROMVERSION/$1/" $tmp2 > $tmp1
 sed "s/SED_INSERT_NEWVERSION/$2/" $tmp1 > $tmp2
 

@@ -208,7 +208,7 @@ function getCacheConfig(){
 		'url' => ''
 	);
 	$res = $sql->query("SELECT `value` FROM {db_prefix}vars WHERE `name`='update_cache'");
-	$a = json_decode($res[0],true);
+	$a = json_decode($res[0]['value'],true);
 	if(!$a){
 		return $defaults;
 	}
@@ -586,4 +586,3 @@ if(!isset($_GET['server'])){
 		die('{"errors":["Unkown updater step"],"step":1}');
 	}
 }
-?>
