@@ -36,8 +36,10 @@ if(!OIRC::$you->isLoggedIn() && $net['config']['guests'] == 0){
 if(isset($_GET['lineNum'])){
 	$curline = (int)$_GET['lineNum'];
 	if($curline < Oirc::getCurid()-200){
-		Json::addWarning('lineNum too far in the past, giving only 200');
-		$curline = Oirc::getCurid()-200;
+		Json::addWarning('lineNum too far in the past, loading channel instead');
+		$_GET['count'] = 200;
+		include_once(realpath(dirname(__FILE__)).'/Load.php');
+		exit;
 	}
 }else{
 	$curline = Oirc::getCurid();

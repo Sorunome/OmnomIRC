@@ -37,10 +37,12 @@ function OmnomIRC(){
 			if(loadMode === undefined){
 				loadMode = false;
 			}
-			request.setCurline(line.curline);
-			if(line.name === null || line.network == -1){
+			if(line.name === null || line.network == -1 || (!loadMode && !request.isNew(line.curline))){
+				request.setCurline(line.curline);
 				return;
 			}
+			request.setCurline(line.curline);
+			
 			if(oirc.onmessageraw !== false){
 				oirc.onmessageraw(line,loadMode);
 			}else{
@@ -54,7 +56,9 @@ function OmnomIRC(){
 				}
 				ss.set('lines',lines);
 				
-				ss.set('users',users.getUsers());
+				if(['part','quit','join','nick'].indexOf(line.type) != -1){
+					ss.set('users',users.getUsers());
+				}
 			}
 			
 		},
@@ -775,12 +779,18 @@ function OmnomIRC(){
 							try{
 								var data = JSON.parse(e.data);
 								console.log(data);
-								if(self.ws.allowLines && data.line!==undefined){
-									if(eventOnMessage(data.line)){
-										self.ws.tryFallback = false;
-										delete self.ws.socket;
+								if(self.ws.allowLines){
+									if(data.line !== undefined){
+										if(eventOnMessage(data.line)){
+											self.ws.tryFallback = false;
+											delete self.ws.socket;
+										}
+									}
+									if(data.users !== undefined){
+										users.setUsers(data.users);
 									}
 								}
+								
 								if(data.relog!==undefined && data.relog!=0 && data.relog < 3){
 									if(!self.ws.didRelog){
 										self.ws.didRelog = true;
@@ -1001,6 +1011,9 @@ function OmnomIRC(){
 							curline:self.curline
 						});
 					}
+				},
+				isNew:function(cid){
+					return cid == 0 || cid > self.curline;
 				}
 			};
 			return {
@@ -1014,7 +1027,8 @@ function OmnomIRC(){
 				setData:self.setData,
 				init:self.init,
 				identify:self.identify,
-				postfetch:self.postfetch
+				postfetch:self.postfetch,
+				isNew:self.isNew
 			};
 		})(),
 		channels = (function(){
@@ -1427,6 +1441,7 @@ function OmnomIRC(){
 				},
 				setUsers:function(u){
 					self.users = u;
+					ss.set('users',self.users);
 					self.draw();
 				},
 				getNames:function(){

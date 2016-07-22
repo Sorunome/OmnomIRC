@@ -425,6 +425,10 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 								if 'lines' in r:
 									for l in r['lines']:
 										self.sendLine(l['name'],l['name2'],l['type'],l['message'],l['chan'],l['network'],l['uid'],l['curline'])
+								if 'users' in r:
+									self.send_message(json.dumps({
+										'users':r['users']
+									}))
 		except:
 			self.log_error(traceback.format_exc())
 		return True
