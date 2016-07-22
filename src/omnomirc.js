@@ -188,10 +188,12 @@ function OmnomIRC(){
 						})
 						return;
 					}
-					var data = ss.get('config');
-					if(data){
-						self.fetchCallback(fn,clOnly,data);
-						return;
+					if(!clOnly){
+						var data = ss.get('config');
+						if(data){
+							self.fetchCallback(fn,clOnly,data);
+							return;
+						}
 					}
 					ss.determinePrefix();
 					network.getJSON('config.php?js'+(document.URL.split('network=')[1]!==undefined?'&network='+document.URL.split('network=')[1].split('&')[0].split('#')[0]:'')+(clOnly?'&clonly':''),function(data){
