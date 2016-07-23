@@ -91,6 +91,8 @@ function OmnomIRC(){
 					ls.set('guestName','');
 					ls.set('guestSig','');
 					self.setIdent('','',-1);
+					ss.remove('config');
+					ss.remove('checkLogin');
 					request.identify();
 				},
 				login:function(nick,sig,uid){
@@ -100,73 +102,73 @@ function OmnomIRC(){
 					self.setIdent(nick,sig,uid);
 					request.identify();
 				},
-				fetchCallback:function(fn,clOnly,data){
-					if(!clOnly){
-						try{
-							sessionStorage.setItem('defaultNetwork',data.defaultNetwork);
-						}catch(e){}
-						ss.set('config',data);
-						
-						self.hostname = data.hostname;
-						
-						channels.setChans(data.channels);
-						parser.setSmileys(data.smileys);
-						oirc.onsmileychange(data.smileys);
-						parser.setSpLinks(data.spLinks);
-						
-						self.guestLevel = data.guests;
-						self.networks = {};
-						$.each(data.networks,function(i,n){
-							self.networks[n.id] = n;
-						});
-						self.net = data.network;
-						ls.setPrefix(self.net);
-						options.setDefaults(data.defaults);
-						options.setExtraChanMsg(data.extraChanMsg);
-						request.setData(data.websockets.use,data.websockets.host,data.websockets.port,data.websockets.ssl);
-					}
-					var clData = ss.get('checkLogin');
-					if(clData){
-						self.nick = clData.nick;
-						self.signature = clData.signature;
-						self.uid = clData.uid;
-						self.pmIdent = '['+self.net.toString()+','+self.uid.toString()+']';
-						self.isGuest = data.signature === '';
-						
-						if(fn !== undefined){
-							fn();
-						}
-						return;
-					}
-					if(self.loggedIn() && self.isGuest){
-						self.identGuest(self.nick,function(data){
-							if(data.success){
-								self.signature = data.signature;
-							}
-							if(fn !== undefined){
-								fn();
-							}
-						});
-					}else{
-						network.getJSON(data.checkLoginUrl+'&network='+self.net.toString()+'&jsoncallback=?',function(data){
-							ss.set('checkLogin',{
-								nick:data.nick,
-								signature:data.signature,
-								uid:data.uid
+				fetch:function(fn,clOnly){
+					var callback = function(data){
+						if(!clOnly){
+							try{
+								sessionStorage.setItem('defaultNetwork',data.defaultNetwork);
+							}catch(e){}
+							ss.set('config',data);
+							
+							self.hostname = data.hostname;
+							
+							channels.setChans(data.channels);
+							parser.setSmileys(data.smileys);
+							oirc.onsmileychange(data.smileys);
+							parser.setSpLinks(data.spLinks);
+							
+							self.guestLevel = data.guests;
+							self.networks = {};
+							$.each(data.networks,function(i,n){
+								self.networks[n.id] = n;
 							});
-							self.nick = data.nick;
-							self.signature = data.signature;
-							self.uid = data.uid;
+							self.net = data.network;
+							ls.setPrefix(self.net);
+							options.setDefaults(data.defaults);
+							options.setExtraChanMsg(data.extraChanMsg);
+							request.setData(data.websockets.use,data.websockets.host,data.websockets.port,data.websockets.ssl);
+						}
+						var clData = ss.get('checkLogin');
+						if(clData){
+							self.nick = clData.nick;
+							self.signature = clData.signature;
+							self.uid = clData.uid;
 							self.pmIdent = '['+self.net.toString()+','+self.uid.toString()+']';
 							self.isGuest = data.signature === '';
 							
-							if(fn!==undefined){
+							if(fn !== undefined){
 								fn();
 							}
-						},true,false);
-					}
-				},
-				fetch:function(fn,clOnly){
+							return;
+						}
+						if(self.loggedIn() && self.isGuest){
+							self.identGuest(self.nick,function(data){
+								if(data.success){
+									self.signature = data.signature;
+								}
+								if(fn !== undefined){
+									fn();
+								}
+							});
+						}else{
+							network.getJSON(data.checkLoginUrl+'&network='+self.net.toString()+'&jsoncallback=?',function(data){
+								ss.set('checkLogin',{
+									nick:data.nick,
+									signature:data.signature,
+									uid:data.uid
+								});
+								self.nick = data.nick;
+								self.signature = data.signature;
+								self.uid = data.uid;
+								self.pmIdent = '['+self.net.toString()+','+self.uid.toString()+']';
+								self.isGuest = data.signature === '';
+								
+								if(fn!==undefined){
+									fn();
+								}
+							},true,false);
+						}
+					};
 					if(clOnly===undefined){
 						clOnly = false;
 					}
@@ -185,19 +187,22 @@ function OmnomIRC(){
 					if(!clOnly){
 						var data = ss.get('config');
 						if(data){
-							self.fetchCallback(fn,clOnly,data);
+							callback(data);
 							return;
 						}
 					}
 					ss.determinePrefix();
-					network.getJSON('config.php?js'+(document.URL.split('network=')[1]!==undefined?'&network='+document.URL.split('network=')[1].split('&')[0].split('#')[0]:'')+(clOnly?'&clonly':''),function(data){
-						self.fetchCallback(fn,clOnly,data);
-					},true,false);
+					network.getJSON('config.php?js'+(document.URL.split('network=')[1]!==undefined?'&network='+document.URL.split('network=')[1].split('&')[0].split('#')[0]:'')+(clOnly?'&clonly':''),callback,true,false);
 				},
 				setIdent:function(nick,sig,uid){
 					self.nick = nick;
 					self.signature = sig;
 					self.uid = uid;
+					ss.set('checkLogin',{
+						nick:nick,
+						signature:sig,
+						uid:uid
+					});
 				},
 				getUrlParams:function(){
 					return 'nick='+base64.encode(self.nick)+'&signature='+base64.encode(self.signature)+'&time='+(+new Date()).toString()+'&id='+self.uid+'&network='+self.net+'&noLoginErrors';

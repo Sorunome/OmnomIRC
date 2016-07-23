@@ -828,6 +828,9 @@ $(function(){
 									')'
 								).show();
 								$(window).trigger('resize');
+								setTiemout(function(){
+									$(window).trigger('resize');
+								},500);
 							});
 						},
 						loginFail = function(){
