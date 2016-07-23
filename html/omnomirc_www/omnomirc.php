@@ -739,7 +739,7 @@ class Relay{
 							'curline' => $line['curline'],
 							'type' => $line['t'],
 							'network' => $line['s'],
-							'time' => $line['t'],
+							'time' => (int)time(),
 							'name' => $line['n1'],
 							'message' => $line['m'],
 							'name2' => $line['n2'],
