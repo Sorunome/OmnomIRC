@@ -143,7 +143,7 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 		self.chans = {}
 		self.msgStack = []
 		self.pmHandler = '**'
-		self.firstRun = True
+		self.upgraded_to_sockets = False
 		
 		self.log_prefix = self.get_log_prefix()
 		self.log_info('connection established, new web-client')
@@ -158,6 +158,8 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 	def recieve(self):
 		if not self.handshake_done:
 			return self.handshake()
+		elif not self.upgraded_to_sockets:
+			return self.more_headers()
 		else:
 			return self.read_next_message()
 	def read_next_message(self):
@@ -166,13 +168,14 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 		except:
 			self.log_info('nothing to recieve')
 			return False
-		if not self.firstRun:
-			if b1 & 0x0F == 0x8:
-				self.log_info('Client asked to close connection')
-				return False
-			if not b1 & 0x80:
-				self.log_info('Client must always be masked')
-				return False
+		
+		if b1 & 0x0F == 0x8:
+			self.log_info('Client asked to close connection')
+			return False
+		if not b1 & 0x80:
+			self.log_info('Client must always be masked')
+			return False
+		
 		self.firstRun = False
 		length = b2 & 127
 		if length == 126:
@@ -266,19 +269,29 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 			'uid':uid
 		}})
 		self.send_message(s)
+	def more_headers(self):
+		data = ''
+		buf = ''
+		self.log_info('more headers...')
+		while True:
+			buf = oirc.makeUnicode(self.socket.recv(1))
+			data += buf
+			if ('\r\n\r\n' in data) or ('\n\n' in data) or not buf:
+				break
+		
+		self.upgraded_to_sockets = ('\r\n\r\n' in data) or ('\n\n' in data)
+		return True
 	def handshake(self):
 		data = ''
 		buf = ''
 		while True:
-			buf = oirc.makeUnicode(self.socket.recv(1024)).strip()
+			buf = oirc.makeUnicode(self.socket.recv(1024))
 			data += buf
 			if len(buf) < 1024:
 				break
 		self.log_info('Handshaking...')
-		self.log_info("\r\n\r\n" in data)
-		self.log_info("\n\n" in data)
-		self.log_info(data)
-		key = re.search('\n[sS]ec-[wW]eb[sS]ocket-[kK]ey[\s]*:[\s]*(.*)\r?\n?',data)
+		
+		key = re.search('\n[sS]ec-[wW]eb[sS]ocket-[kK]ey[\s]*:[\s]*([^\r\n]*)\r?\n?',data)
 		if key:
 			key = key.group(1).strip()
 		else:
@@ -288,10 +301,12 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 		response = 'HTTP/1.1 101 Switching Protocols\r\n'
 		response += 'Upgrade: websocket\r\n'
 		response += 'Connection: Upgrade\r\n'
-		protocol = re.search('\n[sS]ec-[wW]eb[sS]ocket-[pP]rotocol[\s]*:[\s]*(.*)\r?\n?',data)
+		protocol = re.search('\n[sS]ec-[wW]eb[sS]ocket-[pP]rotocol[\s]*:[\s]*([^\r\n]*)\r?\n?',data)
 		if protocol:
 			response += 'Sec-WebSocket-Protocol: %s\r\n' % protocol.group(1).strip()
 		response += 'Sec-WebSocket-Accept: %s\r\n\r\n' % digest
+		
+		self.upgraded_to_sockets = ('\r\n\r\n' in data) or ('\n\n' in data)
 		self.handshake_done = self.socket.send(bytes(response,'latin_1'))
 		return True
 	def checkRelog(self,r,m):
