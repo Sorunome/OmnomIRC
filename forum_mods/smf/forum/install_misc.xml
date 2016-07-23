@@ -325,7 +325,7 @@ function SetOIRCChan(){
 			<div class="windowbg" id="upshrinkHeaderOIRC">
 				<span class="topslice"><span></span></span>
 				<div class="content">
-					<iframe style="width:100%;height:'.$modSettings['oirc_height'].'px;margin:0;padding:0;border-style:none;" src="'.$modSettings['oirc_framehtml'].'"></iframe>
+					<iframe style="width:100%;height:'.$modSettings['oirc_height'].'px;margin:0;padding:0;border-style:none;" src="'.$modSettings['oirc_framehtml'].'&amp;uid='.$context['user']['id'].'"></iframe>
 					<script type="text/javascript">
 					(function(){
 						var doFlash = false,

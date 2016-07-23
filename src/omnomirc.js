@@ -23,6 +23,9 @@ function OmnomIRC(){
 	var OMNOMIRCSERVER = 'https://omnomirc.omnimaga.org',
 		CLASSPREFIX = '',
 		$input = false,
+		getURLParam = function(name){
+			return document.URL.split(name+'=')[1]!==undefined?document.URL.split(name+'=')[1].split('&')[0].split('#')[0]:'';
+		},
 		eventOnMessage = function(line,loadMode){
 			if(loadMode === undefined){
 				loadMode = false;
@@ -88,9 +91,9 @@ function OmnomIRC(){
 					},true,false);
 				},
 				logout:function(){
-					ls.set('guestName','');
-					ls.set('guestSig','');
 					self.setIdent('','',-1);
+					ls.remove('guestName');
+					ls.remove('guestSig');
 					ss.remove('config');
 					ss.remove('checkLogin');
 					request.identify();
@@ -135,6 +138,13 @@ function OmnomIRC(){
 							self.uid = clData.uid;
 							self.pmIdent = '['+self.net.toString()+','+self.uid.toString()+']';
 							self.isGuest = data.signature === '';
+							var url_uid = getURLParam('uid');
+							if(url_uid !== '' && url_uid != self.uid){ // if we dictate the UID then we better use that!
+								ss.remove('config');
+								ss.remove('checkLogin');
+								self.fetch(fn,clOnly);
+								return;
+							}
 							
 							if(fn !== undefined){
 								fn();
@@ -192,7 +202,7 @@ function OmnomIRC(){
 						}
 					}
 					ss.determinePrefix();
-					network.getJSON('config.php?js'+(document.URL.split('network=')[1]!==undefined?'&network='+document.URL.split('network=')[1].split('&')[0].split('#')[0]:'')+(clOnly?'&clonly':''),callback,true,false);
+					network.getJSON('config.php?js&network='+getURLParam('network')+(clOnly?'&clonly':''),callback,true,false);
 				},
 				setIdent:function(nick,sig,uid){
 					self.nick = nick;
@@ -273,7 +283,7 @@ function OmnomIRC(){
 		})(),
 		ls = (function(){
 			var self = {
-				prefix:(document.URL.split('network=')[1]!==undefined?document.URL.split('network=')[1].split('&')[0].split('#')[0]:''),
+				prefix:getURLParam('network'),
 				setPrefix:function(p){
 					if(!p){
 						self.prefix = '';
@@ -335,17 +345,26 @@ function OmnomIRC(){
 					}else{
 						self.setCookie(name,value);
 					}
+				},
+				remove:function(name,value){
+					name = self.prefix+name;
+					if(self.support()){
+						localStorage.removeItem(name);
+					}else{
+						self.setCookie(name,'',-1);
+					}
 				}
 			};
 			return {
 				setPrefix:self.setPrefix,
 				get:self.get,
-				set:self.set
+				set:self.set,
+				remove:self.remove
 			};
 		})(),
 		ss = (function(){
 			var self = {
-				prefix:(document.URL.split('network=')[1]!==undefined?document.URL.split('network=')[1].split('&')[0].split('#')[0]:''),
+				prefix:getURLParam('network'),
 				setPrefix:function(p){
 					if(!p){
 						return;
@@ -2269,8 +2288,8 @@ function OmnomIRC(){
 											self.cacheServerNicks[o.toString()+':'+uid.toString()] = data.nick;
 										},false,false);
 									}
-									ss.set('nick'+o.toString()+':'+uid.toString(),cn);
 									cn = self.cacheServerNicks[o.toString()+':'+uid.toString()];
+									ss.set('nick'+o.toString()+':'+uid.toString(),cn);
 								}
 							}else{
 								cn = n;

@@ -26,7 +26,7 @@ if((isset($oirc_userpages[CURRENT_PAGE]) && $oirc_userpages[CURRENT_PAGE]) || (!
 		</tr>
 		<tr class="cell1">
 			<td style="text-align: center;">
-				<iframe id="ircbox" src="'.Settings::pluginGet('oirc_frameurl').'" style="width:100%;height:'.Settings::pluginGet('oirc_height').'px;border-style:none;"></iframe>
+				<iframe id="ircbox" src="'.Settings::pluginGet('oirc_frameurl').'&amp;uid='.$loguser['id'].'" style="width:100%;height:'.Settings::pluginGet('oirc_height').'px;border-style:none;"></iframe>
 			</td>
 		</tr>
 	</table>
