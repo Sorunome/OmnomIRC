@@ -321,6 +321,27 @@ function getAdmin(){
 		)
 	);
 }
+function logout(){
+	return array(
+		'js' => array(
+			array(
+				'type' => 'inline',
+				'file' => '$(function(){
+					var oirc = new OmnomIRC();
+					oirc.settings.logout();
+				});'
+			)
+		),
+		'css' => array(
+			array(
+				'type' => 'inline',
+				'file' => 'html,body,* {
+					background-color:transparent !important;
+				}'
+			)
+		)
+	);
+}
 
 function getTheme($t){
 	$bg = \oirc\getColor($t['colors']['bg']);
@@ -444,3 +465,4 @@ function getTheme($t){
 \oirc\Skins::hook('','\oirc\skins\lobster\getPage');
 \oirc\Skins::hook('options','\oirc\skins\lobster\getOptions');
 \oirc\Skins::hook('admin','\oirc\skins\lobster\getAdmin');
+\oirc\Skins::hook('logout','\oirc\skins\lobster\logout');

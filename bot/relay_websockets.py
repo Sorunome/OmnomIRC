@@ -131,29 +131,30 @@ def b64encode_wrap(s):
 # websockethandler skeleton from https://gist.github.com/jkp/3136208
 class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 	magic = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
-	sig = ''
-	network = -1
-	uid = -1
-	nick = ''
-	identified = False
-	globalop = False
-	banned = True
-	charsHigh = ''
-	chans = {}
-	msgStack = []
-	pmHandler = '**'
-	firstRun = True
+	def setup(self):
+		self.sig = ''
+		self.network = -1
+		self.uid = -1
+		self.nick = ''
+		self.identified = False
+		self.globalop = False
+		self.banned = True
+		self.charsHigh = ''
+		self.chans = {}
+		self.msgStack = []
+		self.pmHandler = '**'
+		self.firstRun = True
+		
+		self.log_prefix = self.get_log_prefix()
+		self.log_info('connection established, new web-client')
+		self.handshake_done = False
+		return True
 	def setCharsHigh(self,i):
 		self.charsHigh = self.nick[:i].lower()
 		if self.charsHigh == '':
 			self.charsHigh = self.nick.lower()
 	def get_log_prefix(self):
 		return '['+str(self.client_address)+'] [Network: '+str(self.network)+'] [Uid: '+str(self.uid)+'] '
-	def setup(self):
-		self.log_prefix = self.get_log_prefix()
-		self.log_info('connection established, new web-client')
-		self.handshake_done = False
-		return True
 	def recieve(self):
 		if not self.handshake_done:
 			return self.handshake()
