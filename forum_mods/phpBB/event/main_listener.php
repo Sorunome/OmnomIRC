@@ -94,7 +94,7 @@ class main_listener implements EventSubscriberInterface
 			'OIRC_SHOW' => $show,
 			'OIRC_TITLE' => $config['oirc_title'],
 			'OIRC_HEIGHT' => $config['oirc_height'],
-			'OIRC_FRAMEURL' => $config['oirc_frameurl'],
+			'OIRC_FRAMEURL' => $config['oirc_frameurl'].'&amp;uid='.$user->data['user_id'],
 			'OIRC_DOMAIN' => $config['oirc_domain']
 		));
 	}

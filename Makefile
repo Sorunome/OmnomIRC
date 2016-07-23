@@ -1,9 +1,12 @@
-.PHONY: debug mini all info
+.PHONY: debug mini all info mods
 WORKDIR=/home/sorunome/public_html/oirc
 
 OIRCHTML=html/omnomirc_www
 UGLIFYOPTIONS="-m --comments -v"
 
+all: debug mods
+mods:
+	$(MAKE) -C forum_mods all
 debug: mini
 	for f in $$(find $(OIRCHTML)); do \
 		f=$${f:18}; \
@@ -13,7 +16,6 @@ debug: mini
 			[[ $$f != updater.php ]] && [[ $$f != omnomirc_curid ]] && \
 			[[ $$f != *.sql ]] && [[ ! -d "$(WORKDIR)/$$f" ]]; then \
 			dir=$$(dirname "$${f}"); \
-			echo $$f; \
 			mkdir -p "$(WORKDIR)/$$dir"; \
 			cp "$(OIRCHTML)/$$f" "$(WORKDIR)/$$f"; \
 		fi \

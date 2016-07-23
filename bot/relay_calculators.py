@@ -89,9 +89,11 @@ class Relay(oirc.OircRelay):
 #gCn bridge
 class CalculatorHandler(server.ServerHandler,oirc.OircRelayHandle):
 	connectedToIRC=False
-	chan=''
-	calcName=''
-	stopnow=False
+	def setup(self):
+		self.chan = ''
+		self.calcName = ''
+		self.stopnow = False
+		return True
 	def userJoin(self):
 		c = self.chanToId(self.chan)
 		if c!=-1:
