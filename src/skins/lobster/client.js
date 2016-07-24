@@ -225,7 +225,7 @@ $(function(){
 				join:function(i,fn){
 					indicator.start();
 					$('#message').attr('disabled','true');
-					$('#MessageBox').empty();
+					$('#MessageBox').empty().css('transition','none');
 					$('.chan').removeClass('curchan');
 					oirc.channels.load(i,function(success,data){
 						if(success){
@@ -243,6 +243,7 @@ $(function(){
 							fn(success);
 						}
 						scroll.down();
+						$('#MessageBox').css('transition','');
 						indicator.stop();
 					});
 				}
