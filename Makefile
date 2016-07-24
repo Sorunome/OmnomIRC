@@ -4,9 +4,6 @@ WORKDIR=/home/sorunome/public_html/oirc
 OIRCHTML=html/omnomirc_www
 UGLIFYOPTIONS="-m --comments -v"
 
-all: debug mods
-mods:
-	$(MAKE) -C forum_mods all
 debug: mini
 	for f in $$(find $(OIRCHTML)); do \
 		f=$${f:18}; \
@@ -25,6 +22,9 @@ debug: mini
 		cp "src/$$f" "$(WORKDIR)/$$f";	\
 	done
 	chmod go+w $(WORKDIR)/*
+all: debug mods
+mods:
+	$(MAKE) -C forum_mods all
 mini:
 	for f in $$(find src -name '*.js'); do \
 		f=$${f:4}; \
