@@ -87,10 +87,11 @@ class Relay(oirc.OircRelay):
 			self.startRelay_wrap()
 		else:
 			self.config = cfg
-			self.channels = chans
-			nc = self.getNetChans()
-			for client in self.server.inputHandlers:
-				client.netChans = nc
+		
+		self.channels = chans
+		nc = self.getNetChans()
+		for client in self.server.inputHandlers:
+			client.netChans = nc
 	def stopRelay(self):
 		if hasattr(self.server,'inputHandlers'):
 			for client in self.server.inputHandlers:
