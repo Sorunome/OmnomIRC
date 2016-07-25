@@ -232,7 +232,7 @@ function getPage($title,$head,$body){
 			'<head>'.
 				'<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />'.
 				'<link rel="icon" type="image/png" href="omni.png">'.
-				'<link rel="stylesheet" type="text/css" href="style.css" />'.
+				'<link rel="stylesheet" type="text/css" href="skins/lobster/style.min.css" />'.
 				($theme!=-1?'<link rel="stylesheet" type="text/css" href="theme.php?theme='.$theme.'" />':'').
 				'<script src="btoa.js"></script>'.
 				'<script type="text/javascript" src="jquery-1.11.3.min.js"></script>'.

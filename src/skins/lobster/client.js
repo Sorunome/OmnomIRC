@@ -225,7 +225,7 @@ $(function(){
 				join:function(i,fn){
 					indicator.start();
 					$('#message').attr('disabled','true');
-					$('#MessageBox').empty();
+					$('#MessageBox').empty().css('transition','none');
 					$('.chan').removeClass('curchan');
 					oirc.channels.load(i,function(success,data){
 						if(success){
@@ -243,6 +243,7 @@ $(function(){
 							fn(success);
 						}
 						scroll.down();
+						$('#MessageBox').css('transition','');
 						indicator.stop();
 					});
 				}
@@ -777,11 +778,14 @@ $(function(){
 					if(allowHeightChange){
 						$('#scrollBarLine').css('top',parseInt($('#header').outerHeight(),10));
 						
+						$('#message').css('width',htmlWidth*(self.hide_userlist?1:0.91) - 12*em - ($('#loginForm').width()));
+						
+						footerHeight = $('#footer').outerHeight();
 						
 						$('#mBoxCont').css('height',htmlHeight - footerHeight - headerHeight - 0.2*em);
 						$('html,body').height(htmlHeight);
 						
-						$('#message').css('width',htmlWidth*(self.hide_userlist?1:0.91) - 12*em - ($('#loginForm').width()));
+						
 					}
 					if(self.show_scrollbar){
 						var widthOffset = (htmlWidth/100)*self.mBoxContWidthOffset;
@@ -828,9 +832,6 @@ $(function(){
 									')'
 								).show();
 								$(window).trigger('resize');
-								setTiemout(function(){
-									$(window).trigger('resize');
-								},500);
 							});
 						},
 						loginFail = function(){

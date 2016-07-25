@@ -723,8 +723,13 @@ class Relay{
 			}
 			foreach(self::$sendBuffer as &$line){
 				if($line['n1'] == '' && $line['n2'] == ''){
+					$line['curline'] = 0;
 					continue;
 				}
+				
+				$line['curline'] = $curline;
+				$curline++;
+				
 				if($cache = Cache::get('oirc_lines_'.$line['c'])){
 					$lines_cached = json_decode($cache,true);
 					if(json_last_error()===0){
@@ -732,14 +737,11 @@ class Relay{
 							array_shift($lines_cached);
 						}
 						
-						$line['curline'] = $curline;
-						$curline++;
-						
 						$lines_cached[] = array(
 							'curline' => $line['curline'],
 							'type' => $line['t'],
 							'network' => $line['s'],
-							'time' => $line['t'],
+							'time' => (int)time(),
 							'name' => $line['n1'],
 							'message' => $line['m'],
 							'name2' => $line['n2'],
