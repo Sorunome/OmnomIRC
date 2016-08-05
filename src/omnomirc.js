@@ -132,7 +132,7 @@ function OmnomIRC(){
 							request.setData(data.websockets.use,data.websockets.host,data.websockets.port,data.websockets.ssl);
 						}
 						var clData = ss.get('checkLogin');
-						if(clData){
+						if(clData && !clOnly){
 							self.nick = clData.nick;
 							self.signature = clData.signature;
 							self.uid = clData.uid;
