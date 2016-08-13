@@ -32,5 +32,3 @@ $lang = array_merge($lang,array(
 	'ACP_OIRC_CONFIG_NETWORK' => 'Network',
 	'ACP_OIRC_CONFIG_OIRCURL' => 'OmnomIRC URL',
 ));
-
-?>
