@@ -71,7 +71,7 @@ while(true){
 		echo Json::get();
 		die();
 	}
-	if(Oirc::getCurid()<=$curline){
+	if(Oirc::getCurid()>=$curline){
 		if(isset($_GET['nopoll']) && $_GET['nopoll']){
 			Json::add('lines',array());
 			echo Json::get();
