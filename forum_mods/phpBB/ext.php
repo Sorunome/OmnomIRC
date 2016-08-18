@@ -8,5 +8,3 @@ class ext extends \phpbb\extension\base
 		return parent::enable_step($old_state);
 	}
 }
-
-?>

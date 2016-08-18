@@ -6,8 +6,11 @@ class release_1_0_0 extends \phpbb\db\migration\migration
 {
 	public function effectively_installed()
 	{
-		global $oirc_config,$only_include_oirc;
+		global $oirc_config,$only_include_oirc,$request;
 		$only_include_oirc = true;
+		if(isset($request)){ // fix for phpbb forums, else the superglobals aren't available
+			$request->enable_super_globals();
+		}
 		include_once(realpath(dirname(__FILE__)).'/../checkLogin/index.php');
 		if(isset($this->config['oirc_config_installed'])){
 			$oirc_config['installed'] = $this->config['oirc_config_installed']?true:false;
@@ -24,8 +27,11 @@ class release_1_0_0 extends \phpbb\db\migration\migration
 	}
 	public function update_data()
 	{
-		global $oirc_config,$only_include_oirc;
+		global $oirc_config,$only_include_oirc,$request;
 		$only_include_oirc = true;
+		if(isset($request)){ // fix for phpbb forums, else the superglobals aren't available
+			$request->enable_super_globals();
+		}
 		include_once(realpath(dirname(__FILE__)).'/../checkLogin/index.php');
 		$u = parse_url($oirc_config['oircUrl']);
 		return array(
@@ -104,4 +110,3 @@ class release_1_0_0 extends \phpbb\db\migration\migration
 		);
 	}
 }
-?>

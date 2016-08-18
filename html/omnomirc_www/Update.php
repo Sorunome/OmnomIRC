@@ -1,4 +1,4 @@
-<?PHP
+<?php
 /*
     OmnomIRC COPYRIGHT 2010,2011 Netham45
                        2012-2016 Sorunome

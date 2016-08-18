@@ -27,5 +27,3 @@ $lang = array_merge($lang,array(
 	'UCP_OIRC_SETTINGS' => 'OmnomIRC Settings',
 	'UCP_OIRC_SETTING_SAVED' => 'Settings saved!',
 ));
-
-?>

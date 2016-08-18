@@ -24,8 +24,11 @@ class main_listener implements EventSubscriberInterface
 	
 	private function getOircConfig()
 	{
-		global $oirc_config,$only_include_oirc;
+		global $oirc_config,$only_include_oirc,$request;
 		$only_include_oirc = true;
+		if(isset($request)){ // fix for phpbb forums, else the superglobals aren't available
+			$request->enable_super_globals();
+		}
 		include_once(realpath(dirname(__FILE__)).'/../checkLogin/index.php');
 	}
 	
@@ -327,4 +330,3 @@ class main_listener implements EventSubscriberInterface
 		$event->set_data($data);
 	}
 }
-?>

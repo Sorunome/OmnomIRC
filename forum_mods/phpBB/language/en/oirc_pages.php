@@ -21,5 +21,3 @@ $lang = array_merge($lang,array(
 	'OIRC_PAGES_SWITCH_SIMPLE' => 'Switch to simple settings',
 	'OIRC_PAGES_CHECK_ALL' => 'Check all:',
 ));
-
-?>

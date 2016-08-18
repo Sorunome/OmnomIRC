@@ -30,16 +30,8 @@ function OmnomIRC(){
 			if(loadMode === undefined){
 				loadMode = false;
 			}
-			if(line.name === null || line.network == -1 || (!loadMode && !request.isNew(line.curline))){
-				request.setCurline(line.curline);
+			if(loadMode && line.type == 'highlight'){
 				return;
-			}
-			request.setCurline(line.curline);
-			
-			if(oirc.onmessageraw !== false){
-				oirc.onmessageraw(line,loadMode);
-			}else{
-				parser.addLine(line,loadMode);
 			}
 			if(!loadMode && line.chan == ss.get('chan')){
 				var lines = ss.get('lines');
@@ -52,6 +44,17 @@ function OmnomIRC(){
 				if(['part','quit','join','nick'].indexOf(line.type) != -1){
 					ss.set('users',users.getUsers());
 				}
+			}
+			if(line.name === null || line.network == -1 || (!loadMode && !request.isNew(line.curline))){
+				request.setCurline(line.curline);
+				return;
+			}
+			request.setCurline(line.curline);
+			
+			if(oirc.onmessageraw !== false){
+				oirc.onmessageraw(line,loadMode);
+			}else{
+				parser.addLine(line,loadMode);
 			}
 			
 		},
@@ -275,6 +278,9 @@ function OmnomIRC(){
 				},
 				isGuest:function(){
 					return self.isGuest;
+				},
+				numHigh:function(){
+					return self.numHigh;
 				},
 				getWholePmIdent:self.getWholePmIdent,
 				logout:self.logout,
@@ -977,6 +983,7 @@ function OmnomIRC(){
 					}
 				},
 				setCurline:function(c){
+					console.log("Curline: "+c);
 					if(c > self.curline){
 						self.curline = c;
 					}
@@ -1227,6 +1234,7 @@ function OmnomIRC(){
 				},
 				requestHandler:false,
 				load:function(i,fn){
+					console.log("loading channel");
 					var callback = function(data){
 						if(self.current.load(data)){
 							self.chans[i].high = false;
@@ -1260,6 +1268,7 @@ function OmnomIRC(){
 							for(var j = 0; j < attrs.length; j++){
 								data[attrs[j]] = ss.get(attrs[j]);
 							}
+							console.log(data);
 							callback(data);
 							return;
 						}

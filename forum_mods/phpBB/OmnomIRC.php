@@ -160,4 +160,3 @@ function getOircPagePicker($disp_pages_tmp = false){ // oirc_disppages
 	</script>';
 	return $html;
 }
-?>

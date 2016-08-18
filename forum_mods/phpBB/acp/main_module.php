@@ -50,6 +50,9 @@ class main_module
 		);
 		global $oirc_config,$only_include_oirc;
 		$only_include_oirc = true;
+		if(isset($request)){ // fix for phpbb forums, else the superglobals aren't available
+			$request->enable_super_globals();
+		}
 		include_once(realpath(dirname(__FILE__)).'/../checkLogin/index.php');
 		
 		include_once(realpath(dirname(__FILE__)).'/../OmnomIRC.php');
@@ -114,5 +117,3 @@ class main_module
 		));
 	}
 }
-
-?>

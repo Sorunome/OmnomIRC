@@ -126,7 +126,7 @@ class OIRC{
 	}
 	public static function setCurid($i){
 		$i = (int)$i;
-		if($i < self::getCurid()){
+		if($i > self::getCurid()){
 			file_put_contents(self::getCuridPath(),$i);
 		}
 	}
@@ -963,7 +963,7 @@ class You{
 		$userSql = $temp[0];
 		if($this->loggedIn && $this->network != 0 /* server network has no info */){
 			if($userSql['uid']===NULL){
-				Sql::query("INSERT INTO `{db_prefix}userstuff` (name,uid,network) VALUES (?,?,?)",array($this->nick,$this->id,$this->network));
+				Sql::query("INSERT INTO `{db_prefix}userstuff` (name,uid,network,ignores) VALUES (?,?,?,'')",array($this->nick,$this->id,$this->network));
 				$temp = Sql::query("SELECT usernum,name,ignores,kicks,globalOp,globalBan,network,uid FROM `{db_prefix}userstuff` WHERE usernum=?",array(Sql::insertId()));
 				$userSql = $temp[0];
 			}
