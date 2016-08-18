@@ -1,4 +1,4 @@
-<?PHP
+<?php
 /*
     OmnomIRC COPYRIGHT 2010,2011 Netham45
                        2012-2016 Sorunome
@@ -71,7 +71,7 @@ while(true){
 		echo Json::get();
 		die();
 	}
-	if(Oirc::getCurid()>=$curline){
+	if(Oirc::getCurid()<=$curline){
 		if(isset($_GET['nopoll']) && $_GET['nopoll']){
 			Json::add('lines',array());
 			echo Json::get();

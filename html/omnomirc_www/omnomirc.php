@@ -126,7 +126,7 @@ class OIRC{
 	}
 	public static function setCurid($i){
 		$i = (int)$i;
-		if($i < self::getCurid()){
+		if($i > self::getCurid()){
 			file_put_contents(self::getCuridPath(),$i);
 		}
 	}
