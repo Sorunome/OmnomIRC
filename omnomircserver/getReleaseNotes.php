@@ -10,9 +10,4 @@ if(isset($_GET['version'])){
 		$resp = $res;
 	}
 }
-if(isset($_GET['jsoncallback'])){
-	echo $_GET['jsoncallback'].'('.json_encode(array('notes' => $resp)).')';
-}else{
-	echo json_encode(array('notes' => $resp));
-}
-?>
+echoJson(array('notes' => $resp));

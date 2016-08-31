@@ -62,7 +62,7 @@ $t_high = $t_low + (3600 * 24);
 $lines = array();
 $table = '{db_prefix}lines_old';
 
-$channel = OIRC::$sql_query_prepare("SELECT {db_prefix}getchanid(?) AS chan",array(OIRC::$you->chan));
+$channel = Sql::query("SELECT {db_prefix}getchanid(?) AS chan",array(OIRC::$you->chan));
 $channel = $channel[0]['chan'];
 // $table is NEVER user-defined, it is only {db_prefix}lines_old or {db_prefix}lines!!
 while(true){
@@ -76,7 +76,7 @@ while(true){
 			ORDER BY `line_number` ASC
 			LIMIT ?,1000",array($channel,$t_low,$t_high,(int)$offset));
 	
-	$lines = array_merge($lines,self::getLines($res,$table,true));
+	$lines = array_merge($lines,OIRC::getLines($res,$table,true));
 	
 	if(count($lines)<1000 && $table == '{db_prefix}lines_old'){
 		$table = '{db_prefix}lines';

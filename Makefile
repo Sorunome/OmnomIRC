@@ -26,12 +26,13 @@ all: debug mods
 mods:
 	$(MAKE) -C forum_mods all
 mini:
+	# --mangle-props 1 --reserve-domprops --reserved-file jqueryprops.json --reserved-file omnomircprops.json
 	for f in $$(find src -name '*.js'); do \
 		f=$${f:4}; \
 		dir=$$(dirname "$${f}"); \
 		f="$${f%.js}"; \
 		mkdir -p "$(OIRCHTML)/$$dir"; \
-		uglifyjs $(UGLIFYOPTIONS) "src/$$f.js" -o "$(OIRCHTML)/$$f.min.js"; \
+		uglifyjs $(UGLIFYOPTIONS) "src/$$f.js" -o "$(OIRCHTML)/$$f.min.js" --comments --support-ie8 --reserved 'OmnomIRC,$$' --compress; \
 		git add "$(OIRCHTML)/$$f.min.js"; \
 	done
 	for f in $$(find src -name '*.css'); do \

@@ -149,4 +149,3 @@ class Sql{
 	}
 }
 $sql = new Sql();
-?>

@@ -391,13 +391,11 @@ $(function(){
 				},
 				enableWheel:function(){
 					self.$mBoxCont.bind('DOMMouseScroll mousewheel',function(e){
-						var oldTop = self.$mBox[0].style.top;
 						self.moveWindow((/Firefox/i.test(navigator.userAgent)?(e.originalEvent.detail*(-20)):(e.originalEvent.wheelDelta/2)));
-						//if(oldTop != $mBox[0].style.top){
-							e.preventDefault();
-							e.stopPropagation();
-							e.cancelBubble = true;
-						//}
+						
+						e.preventDefault();
+						e.stopPropagation();
+						e.cancelBubble = true;
 					});
 					if(self.is_touch){
 						self.touchScroll(self.$mBoxCont,function(d){
@@ -858,9 +856,7 @@ $(function(){
 				},
 				init:function(){
 					var nua = navigator.userAgent,
-						is_android = ((nua.indexOf('Mozilla/5.0') > -1 && nua.indexOf('Android ') > -1 && nua.indexOf('AppleWebKit') > -1) && !(nua.indexOf('Chrome') > -1)),
-						is_ios = (nua.match(/(iPod|iPhone|iPad)/i) && nua.match(/AppleWebKit/i)),
-						is_mobile_webkit = (nua.match(/AppleWebKit/i) && nua.match(/Android/i));
+						is_ios = (nua.match(/(iPod|iPhone|iPad)/i) && nua.match(/AppleWebKit/i));
 					
 					$('body').css('font-size',oirc.options.get('fontSize').toString(10)+'pt');
 					self.hide_userlist = oirc.options.get('hideUserlist');
@@ -907,7 +903,7 @@ $(function(){
 				maxLines:200,
 				lastMessage:0,
 				lineHigh:false,
-				addLine:function(tdName,tdMessage,line){
+				addLine:function(tdName,tdMessage,line,loadMode){
 					var $mBox = $('#MessageBox'),
 						statusTxt = '',
 						lineDate = new Date(line.time*1000);
@@ -1002,8 +998,7 @@ $(function(){
 					$('#logDate').val(self.months[self.month-1]+' '+self.day.toString(10)+' '+self.year.toString(10));
 				},
 				displayDatePicker:function(){
-					var d = new Date(self.year,self.month,self.day),
-						week = ['Sun','Mon','Tue','Wen','Thu','Fri','Sat'],
+					var week = ['Sun','Mon','Tue','Wen','Thu','Fri','Sat'],
 						days = (new Date(self.year,self.month,0)).getDate(),
 						firstDayOfWeek = (new Date(self.year,self.month-1,1)).getDay(),
 						i = 0;

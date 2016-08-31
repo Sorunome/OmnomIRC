@@ -1,4 +1,12 @@
 <?php
+function echoJson($data){
+	if(isset($_GET['jsoncallback']) && preg_match('/^\w{1,64}$/',$_GET['jsoncallback'])){
+		echo $_GET['jsoncallback'].'('.json_encode($data).')';
+	}else{
+		echo json_encode($data);
+	}
+}
+
 class Vars{
 	private $config;
 	public function __construct(){
@@ -157,4 +165,3 @@ class Vars{
 	}
 }
 $vars = new Vars();
-?>

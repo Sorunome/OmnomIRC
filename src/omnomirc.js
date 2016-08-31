@@ -33,7 +33,7 @@ function OmnomIRC(){
 			if(loadMode && line.type == 'highlight'){
 				return;
 			}
-			if(!loadMode && line.chan == ss.get('chan')){
+			if(!loadMode && line.type != 'highlight' && line.chan == ss.get('chan')){
 				var lines = ss.get('lines');
 				lines.push(line);
 				if(lines.length > 200){
@@ -799,17 +799,18 @@ function OmnomIRC(){
 							try{
 								var data = JSON.parse(e.data);
 								console.log(data);
-								if(self.ws.allowLines){
+								//if(self.ws.allowLines){
 									if(data.line !== undefined){
 										if(eventOnMessage(data.line)){
 											self.ws.tryFallback = false;
 											delete self.ws.socket;
 										}
+										console.log("Added line!");
 									}
 									if(data.users !== undefined){
 										users.setUsers(data.users);
 									}
-								}
+								//}
 								
 								if(data.relog!==undefined && data.relog!=0 && data.relog < 3){
 									if(!self.ws.didRelog){
@@ -822,7 +823,10 @@ function OmnomIRC(){
 										},true);
 									}
 								}
-							}catch(e){};
+							}catch(e){
+								console.log('ERROR!');
+								console.log(e);
+							};
 						};
 						self.ws.socket.onclose = function(e){
 							console.log('CLOOOOOOOOOSE');
@@ -1286,7 +1290,6 @@ function OmnomIRC(){
 					});
 				},
 				join:function(s){
-					var addChan = true;
 					s = s.trim();
 					if(!s){
 						return -1;
@@ -1301,8 +1304,7 @@ function OmnomIRC(){
 					if(fn === undefined){
 						fn = function(){};
 					}
-					var addChan = true,
-						callback = function(nick,id){
+					var callback = function(nick,id){
 							nick = nick.trim();
 							if(nick.substr(0,1)!='*'){
 								nick = '*'+s;
@@ -2000,7 +2002,6 @@ function OmnomIRC(){
 					
 					self.msgVal = self.reverseParse($input.html());
 					$input.html(parser.parse(self.msgVal));
-					var range = document.createRange();
 					
 					self.setCaretCharacterOffsetWithin($input[0],start,end-start);
 				},
