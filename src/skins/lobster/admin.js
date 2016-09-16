@@ -520,8 +520,7 @@ $(function(){
 				$('<button>').text('New Smiley').click(function(e){
 					e.preventDefault();
 					var url = prompt('New image location'),
-						code = prompt('New smiley code'),
-						regex = '';
+						code = prompt('New smiley code');
 					if(url!=='' && url!==null && code!=='' && code!==null){
 						smileys.push({
 							pic:url,
