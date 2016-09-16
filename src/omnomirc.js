@@ -799,7 +799,7 @@ function OmnomIRC(){
 							try{
 								var data = JSON.parse(e.data);
 								console.log(data);
-								//if(self.ws.allowLines){
+								if(self.ws.allowLines){
 									if(data.line !== undefined){
 										if(eventOnMessage(data.line)){
 											self.ws.tryFallback = false;
@@ -810,7 +810,7 @@ function OmnomIRC(){
 									if(data.users !== undefined){
 										users.setUsers(data.users);
 									}
-								//}
+								}
 								
 								if(data.relog!==undefined && data.relog!=0 && data.relog < 3){
 									if(!self.ws.didRelog){
@@ -2030,6 +2030,7 @@ function OmnomIRC(){
 					}
 					$input.replaceWith($newElem);
 					$input = $newElem;
+					$input.on('update',self.updateContent);
 					
 					self.$textDecoForm = $('<div>').css({
 						position:'absolute',

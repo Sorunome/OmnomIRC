@@ -736,13 +736,13 @@ $(function(){
 									title:s.title
 								})
 								.click(function(){
-									if(!wysiwyg.support()){
+									if($('#message').is('input')){
 										replaceText(' '+s.code,$('#message')[0]);
 									}else{
 										var range = window.getSelection().getRangeAt(0);
 										range.deleteContents();
 										range.insertNode(document.createTextNode(' '+s.code));
-										wysiwyg.updateContent();
+										$('#message').trigger('update');
 									}
 								})):''),' '];
 								
@@ -952,36 +952,12 @@ $(function(){
 					self.lastMessage = line.time*1000;
 					
 					return;
-				},
-				setSmileys:function(sm){
-					$('#smileyselect').empty().append(
-						$.map(sm,function(s){
-							return [(s.inMenu?($('<img>')
-								.attr({
-									src:s.pic,
-									alt:s.alt,
-									title:s.title
-								})
-								.click(function(){
-									if(!wysiwyg.support()){
-										replaceText(' '+s.code,$('#message')[0]);
-									}else{
-										var range = window.getSelection().getRangeAt(0);
-										range.deleteContents();
-										range.insertNode(document.createTextNode(' '+s.code));
-										wysiwyg.updateContent();
-									}
-								})):''),' '];
-								
-						})
-					);
 				}
 			};
 			return {
 				init:self.init,
 				registerToggle:self.registerToggle,
-				addLine:self.addLine,
-				setSmileys:self.setSmileys
+				addLine:self.addLine
 			};
 		})(),
 		logs = (function(){
@@ -1182,7 +1158,7 @@ $(function(){
 			oirc.channels.highlight(c);
 		}
 	};
-	oirc.onsmileychange = page.setSmileys;
+	oirc.onsmileychange = smileys.set;
 	
 	oirc.connect(function(){
 		if(oirc.options.get('enable')){
