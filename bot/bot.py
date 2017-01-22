@@ -21,6 +21,7 @@
 #	along with OmnomIRC.  If not, see <http://www.gnu.org/licenses/>.
 
 import server,traceback,signal,json,time,datetime,pymysql,sys,re,os,argparse,requests,oirc_include as oirc,importlib
+from multiprocessing.pool import ThreadPool
 
 RSP_RESTART = 101
 RSP_STARTFAIL = 2
@@ -505,7 +506,7 @@ class Message:
 			oircOnly = True
 		for n in self.parent.network.nets:
 			if (oircOnly and n.type == 'websockets') or not oircOnly:
-				n.relayTopic(s,c,i)
+				self.parent.pool.apply_async(n.relayTopic,(s,c,i))
 	def send(self,n1,n2,t,m,c,s,uid = -1,curline = -1,do_sql = True):
 		if self.parent.mode.get(c,'c'):
 			m = oirc.stripIrcColors(m)
@@ -561,7 +562,7 @@ class Message:
 		for n in self.parent.network.nets:
 			if (oircOnly and n.type == 'websockets') or not oircOnly:
 				try:
-					n.relayMessage(n1,n2,t,m,c,s,uid,curline)
+					self.parent.pool.apply_async(n.relayMessage,(n1,n2,t,m,c,s,uid,curline))
 				except:
 					self.error(traceback.format_exc())
 	def debug(self,s):
@@ -604,6 +605,8 @@ class Main:
 		self.sql = Sql(self)
 		self.config.can_postload = True
 		self.config.postLoad()
+		
+		self.pool = ThreadPool()
 		
 		# we need the relay types before we can add the networks
 		self.relay = Relay(self)
