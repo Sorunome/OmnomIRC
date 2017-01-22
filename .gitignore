@@ -1,2 +1,7 @@
+__pycache__
+bot/logs
+bot/sandbox
+bot/omnomirc_curid
+
 /update.php
 /doc

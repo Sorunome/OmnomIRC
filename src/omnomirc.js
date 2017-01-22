@@ -1549,13 +1549,45 @@ function OmnomIRC(){
 		send = (function(){
 			var self = {
 				sending:false,
+				send_real:function(fn,s,chan,sync_fn){
+					if(sync_fn){
+						fn();
+					}
+					if(!self.sending){
+						self.sending = true;
+						request.send(s,chan,function(data){
+							if(data !== undefined && data.lines !== undefined){
+								$.map(data.lines,function(l){
+									eventOnMessage(l);
+								})
+							}
+							self.sending = false;
+							if(!sync_fn){
+								fn();
+							}
+						});
+					}else{
+						setTimeout(function(){
+							if(sync_fn){
+								self.send_real(function(){},s,chan,sync_fn); // we already executed fn, so we don't want to bother about that again
+							}else{
+								self.send_real(fn,s,chan,sync_fn);
+							}
+						},1000);
+					}
+				},
 				send:function(fn,s,chan){
+					var sync_fn = true;
 					if(typeof fn === 'string'){
 						s = fn;
 						fn = undefined;
 					}
 					if(fn === undefined){
 						fn = function(){};
+					}
+					if(typeof s === 'boolean'){
+						sync_fn = s;
+						s = undefined;
 					}
 					if(s === undefined){
 						s = send.val();
@@ -1579,18 +1611,7 @@ function OmnomIRC(){
 					if(s[0] == '/' && commands.parse(s.substr(1))){
 						fn();
 					}else{
-						if(!self.sending){
-							self.sending = true;
-							request.send(s,chan,function(data){
-								if(data !== undefined && data.lines !== undefined){
-									$.map(data.lines,function(l){
-										eventOnMessage(l);
-									})
-								}
-								self.sending = false;
-								fn();
-							});
-						}
+						self.send_real(fn,s,chan,sync_fn);
 					}
 				},
 				internal:function(s){
@@ -2478,7 +2499,7 @@ function OmnomIRC(){
 					return s;
 				},
 				addLine:function(line,loadMode){
-					if(line.type!='highlight' && line.chan.toString().toLowerCase()!=channels.current().handler.toLowerCase() && line.name2 !== settings.getPmIdent()){
+					if(!loadMode && line.type!='highlight' && line.chan.toString().toLowerCase()!=channels.current().handler.toLowerCase() && line.name2 !== settings.getPmIdent()){
 						return;
 					}
 					var name = self.name(line.name,line.network,line.uid),

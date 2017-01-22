@@ -22,28 +22,12 @@
 
 import server,traceback,struct,re,oirc_include as oirc
 
-relayType = 2
-defaultCfg = {
-	'server':'mydomain.com',
-	'port':4295
-}
 name = 'CalcNet'
-editPattern = [
-	{
-		'name':'Server',
-		'type':'text',
-		'var':'server'
-	},
-	{
-		'name':'Port',
-		'type':'number',
-		'var':'port'
-	}
-]
+version = '1.0.0'
+
 
 class Relay(oirc.OircRelay):
 	def initRelay(self):
-		self.relayType = relayType
 		self.server = server.Server(self.config['server'],self.config['port'],self.getHandle(CalculatorHandler))
 	def startRelay(self):
 		self.server.start()
@@ -97,13 +81,13 @@ class CalculatorHandler(server.ServerHandler,oirc.OircRelayHandle):
 	def userJoin(self):
 		c = self.chanToId(self.chan)
 		if c!=-1:
-			self.handle.addUser(self.calcName,c,self.id)
+			self.handle.user.add(self.calcName,c,self.id)
 	def userPart(self):
 		c = self.chanToId(self.chan)
 		if c!=-1:
-			self.handle.removeUser(self.calcName,c,self.id)
+			self.handle.user.remove(self.calcName,c,self.id)
 	def close(self):
-		self.log_info('Giving signal to quit calculator...')
+		self.debug('Giving signal to quit calculator...')
 		try:
 			if self.connectedToIRC:
 				self.addLine('quit','')
@@ -121,7 +105,7 @@ class CalculatorHandler(server.ServerHandler,oirc.OircRelayHandle):
 	def addLine(self,t,m):
 		c = self.chanToId(self.chan)
 		if c!=-1:
-			self.handle.sendToOther(self.calcName,'',t,m,c,self.id)
+			self.handle.message.send(self.calcName,'',t,m,c,self.id)
 	def sendLine(self,n1,n2,t,m,c,s): #name 1, name 2, type, message, channel, source
 		c = self.idToChan(c)
 		if c!='':
@@ -154,7 +138,7 @@ class CalculatorHandler(server.ServerHandler,oirc.OircRelayHandle):
 			message = struct.pack('<H',len(message)+1)+b'b'+message+b'*'
 			self.socket.sendall(message)
 		except Exception as inst:
-			self.log_error(traceback.format_exc())
+			self.error(traceback.format_exc())
 	def findchan(self,chan,chans):
 		for key,value in chans.items():
 			if chan.lower() == value.lower():
@@ -172,7 +156,7 @@ class CalculatorHandler(server.ServerHandler,oirc.OircRelayHandle):
 			self.userJoin()
 		self.channels = chans
 	def setup(self):
-		self.log_info('New calculator')
+		self.debug('New calculator')
 		self.defaultChan = next(iter(self.channels.values()))
 		return True
 	def recieve(self):
@@ -181,11 +165,11 @@ class CalculatorHandler(server.ServerHandler,oirc.OircRelayHandle):
 		except socket.timeout:
 			return True
 		except Exception as err:
-			self.log_error(str(err))
+			self.error(str(err))
 			return False
 		data = oirc.makeUnicode(r_bytes)
 		if len(r_bytes) == 0: # eof
-			self.log_info('EOF recieved')
+			self.debug('EOF recieved')
 			return False
 		try:
 			printString = '';
@@ -241,8 +225,8 @@ class CalculatorHandler(server.ServerHandler,oirc.OircRelayHandle):
 				parts = printString.split('\n')
 				for p in parts:
 					if p != '':
-						self.log_info(p)
+						self.debug(p)
 		except Exception as inst:
-			self.log_error(str(inst))
-			self.log_error(traceback.format_exc())
+			self.error(str(inst))
+			self.error(traceback.format_exc())
 		return True

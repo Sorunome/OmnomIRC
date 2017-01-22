@@ -24,16 +24,11 @@ import server,traceback,re,struct,json,time,errno,oirc_include as oirc
 from base64 import b64encode
 from hashlib import sha1
 
-relayType = -1
-defaultCfg = False
-name = 'The Game'
-editPattern = False
+
+name = 'Websocket relay'
+version = '1.0.0'
 
 class Relay(oirc.OircRelay):
-	def log_info(self,s):
-		self.handle.log('websockets','info',s)
-	def log_error(self,s):
-		self.handle.log('websockets','error',s)
 	def getNetChans(self):
 		retn = {}
 		for n in self.handle.config.json['networks']:
@@ -48,7 +43,7 @@ class Relay(oirc.OircRelay):
 		return retn
 	def errhandler(self):
 		if self.config['portpoking']:
-			self.log_info('Port in use, trying different port...')
+			self.info('Port in use, trying different port...')
 			self.config['port'] += 1
 			if self.config['port'] > 65535 or self.config['port'] < 10000:
 				self.config['port'] = 10000
@@ -56,7 +51,6 @@ class Relay(oirc.OircRelay):
 			self.initRelay()
 			self.startRelay()
 	def initRelay(self):
-		self.relayType = relayType
 		port = self.config['intport']
 		host = self.config['host']
 		if host == '':
@@ -118,8 +112,8 @@ class Relay(oirc.OircRelay):
 						elif client.identified and t!='pm' and t!='pmaction' and client.charsHigh in m_lower:
 							client.sendLine(n1,n2,'highlight',m,c,s,uid,curline)
 				except Exception as inst:
-					self.log_error(inst)
-					self.log_error(traceback.format_exc())
+					self.error(inst)
+					self.error(traceback.format_exc())
 	def joinThread(self):
 		self.server.join()
 
@@ -130,9 +124,10 @@ def b64encode_wrap(s):
 	return oirc.makeUnicode(b64encode(bytes(s,'utf-8')))
 
 # websockethandler skeleton from https://gist.github.com/jkp/3136208
-class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
-	magic = '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'
-	def setup(self):
+class WebSocketsHandler(server.WebSocketHandler,oirc.OircRelayHandle):
+	def log(self,s):
+		self.debug(s)
+	def setup_extra(self):
 		self.sig = ''
 		self.network = -1
 		self.uid = -1
@@ -142,77 +137,18 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 		self.banned = True
 		self.charsHigh = ''
 		self.chans = {}
-		self.msgStack = []
 		self.pmHandler = '**'
-		self.upgraded_to_sockets = False
+		self.msgStack = []
 		
 		self.log_prefix = self.get_log_prefix()
-		self.log_info('connection established, new web-client')
-		self.handshake_done = False
-		return True
+		return
 	def setCharsHigh(self,i):
 		self.charsHigh = self.nick[:i].lower()
 		if self.charsHigh == '':
 			self.charsHigh = self.nick.lower()
 	def get_log_prefix(self):
 		return '['+str(self.client_address)+'] [Network: '+str(self.network)+'] [Uid: '+str(self.uid)+'] '
-	def recieve(self):
-		if not self.handshake_done:
-			return self.handshake()
-		elif not self.upgraded_to_sockets:
-			return self.more_headers()
-		else:
-			return self.read_next_message()
-	def read_next_message(self):
-		try:
-			b1,b2 = self.socket.recv(2)
-		except:
-			self.log_info('nothing to recieve')
-			return False
-		
-		if b1 & 0x0F == 0x8:
-			self.log_info('Client asked to close connection')
-			return False
-		if not b1 & 0x80:
-			self.log_info('Client must always be masked')
-			return False
-		
-		self.firstRun = False
-		length = b2 & 127
-		if length == 126:
-			length = struct.unpack(">H", self.socket.recv(2))[0]
-		elif length == 127:
-			length = struct.unpack(">Q", self.socket.recv(8))[0]
-		masks = self.socket.recv(4)
-		decoded = b""
-		for char in self.socket.recv(length):
-			decoded += bytes([char ^ masks[len(decoded) % 4]])
-		try:
-			return self.on_message(json.loads(oirc.makeUnicode(decoded)))
-		except Exception as inst:
-			self.log_error(traceback.format_exc())
-			return True
-	def send_message(self, message):
-		try:
-			header = bytearray()
-			message = oirc.makeUnicode(message)
-			
-			length = len(message)
-			self.socket.send(bytes([129]))
-			if length <= 125:
-				self.socket.send(bytes([length]))
-			elif length >= 126 and length <= 65535:
-				self.socket.send(bytes([126]))
-				self.socket.send(struct.pack(">H",length))
-			else:
-				self.socket.send(bytes([127]))
-				self.socket.send(struct.pack(">Q",length))
-			self.socket.send(bytes(message,'utf-8'))
-		except IOError as e:
-			self.log_error(traceback.format_exc())
-			if e.errno == errno.EPIPE:
-				return self.close()
-		return True
+	
 	def addLine(self,t,m,c):
 		n2 = ''
 		if isinstance(c,str) and len(c) > 0 and c[0]=='*':
@@ -225,8 +161,8 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 			n2 = c[1:].replace(self.pmHandler,'')
 			
 		if c!='':
-			self.log_info('<< '+str({'chan':c,'nick':self.nick,'message':m,'type':t}))
-			self.handle.sendToOther(self.nick,n2,t,m,c,self.network,self.uid)
+			self.debug('<< '+str({'chan':c,'nick':self.nick,'message':m,'type':t}))
+			self.handle.message.send(self.nick,n2,t,m,c,self.network,self.uid)
 	def join(self,c): # updates nick in userlist
 		try:
 			c = int(c)
@@ -234,10 +170,10 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 			pass
 		if isinstance(c,str):
 			if self.uid == -1 and not (c[0] in '*@'):
-				self.log_info('Tried to join invalid channel: '+str(c))
+				self.debug('Tried to join invalid channel: '+str(c))
 				return
 		elif not (self.network in self.netChans) or not (c in self.netChans[self.network]):
-			self.log_info('Tried to join invalid channel: '+str(c))
+			self.debug('Tried to join invalid channel: '+str(c))
 			return
 		c = str(c)
 		if c in self.chans:
@@ -246,7 +182,7 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 			self.chans[c] = 1
 		if self.nick == '' or (isinstance(c,str) and len(c) > 0 and c[0]=='*'): # no userlist on PMs
 			return
-		self.handle.addUser(self.nick,str(c),self.network,self.uid)
+		self.handle.user.add(self.nick,str(c),self.network,self.uid)
 	def part(self,c):
 		c = str(c)
 		if not (c in self.chans):
@@ -254,7 +190,7 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 		self.chans[c] -= 1
 		if self.chans[c]<=0:
 			self.chans.pop(c,None)
-			self.handle.timeoutUser(self.nick,str(c),self.network)
+			self.handle.user.timeout(self.nick,str(c),self.network)
 	def sendLine(self,n1,n2,t,m,c,s,uid,curline = 0): #name 1, name 2, type, message, channel, source
 		if self.banned:
 			return False
@@ -270,56 +206,16 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 			'uid':uid
 		}})
 		self.send_message(s)
-	def more_headers(self):
-		data = ''
-		buf = ''
-		self.log_info('more headers...')
-		while True:
-			buf = oirc.makeUnicode(self.socket.recv(1))
-			data += buf
-			if ('\r\n\r\n' in data) or ('\n\n' in data) or not buf:
-				break
-		
-		self.upgraded_to_sockets = ('\r\n\r\n' in data) or ('\n\n' in data)
-		return True
-	def handshake(self):
-		data = ''
-		buf = ''
-		while True:
-			buf = oirc.makeUnicode(self.socket.recv(1024))
-			data += buf
-			if len(buf) < 1024:
-				break
-		self.log_info('Handshaking...')
-		
-		key = re.search('\n[sS]ec-[wW]eb[sS]ocket-[kK]ey[\s]*:[\s]*([^\r\n]*)\r?\n?',data)
-		if key:
-			key = key.group(1).strip()
-		else:
-			self.log_info('Missing Key!')
-			return False
-		digest = b64encode(sha1((key + self.magic).encode('latin_1')).digest()).strip().decode('latin_1')
-		response = 'HTTP/1.1 101 Switching Protocols\r\n'
-		response += 'Upgrade: websocket\r\n'
-		response += 'Connection: Upgrade\r\n'
-		protocol = re.search('\n[sS]ec-[wW]eb[sS]ocket-[pP]rotocol[\s]*:[\s]*([^\r\n]*)\r?\n?',data)
-		if protocol:
-			response += 'Sec-WebSocket-Protocol: %s\r\n' % protocol.group(1).strip()
-		response += 'Sec-WebSocket-Accept: %s\r\n\r\n' % digest
-		
-		self.upgraded_to_sockets = ('\r\n\r\n' in data) or ('\n\n' in data)
-		self.handshake_done = self.socket.send(bytes(response,'latin_1'))
-		return True
 	def checkRelog(self,r,m):
 		if 'relog' in r:
 			self.send_message(json.dumps({'relog':r['relog']}))
 			if r['relog']==2:
-				self.log_info('Pushing message to msg stack')
+				self.debug('Pushing message to msg stack')
 				self.msgStack.append(m)
 	def on_message(self,m):
 		try:
 			if 'action' in m:
-				self.log_info('>> '+str(m))
+				self.debug('>> '+str(m))
 				if m['action'] == 'ident':
 					try:
 						r = oirc.execPhp('misc.php',{
@@ -331,12 +227,12 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 							'network':m['network']
 						})
 					except:
-						self.log_error(traceback.format_exc())
+						self.error(traceback.format_exc())
 						self.identified = False
 						self.send_message(json.dumps({'relog':3}))
 						return True
 					try:
-						self.log_info('ident callback: '+str(r))
+						self.debug('ident callback: '+str(r))
 						self.banned = r['isglobalbanned']
 						self.network = r['network']
 						if r['loggedin']:
@@ -346,13 +242,13 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 							self.uid = m['id']
 							self.pmHandler = '['+str(self.network)+','+str(self.uid)+']'
 							self.log_prefix = self.get_log_prefix()
-							self.log_info('Identified as user')
+							self.debug('Identified as user')
 						else:
 							self.identified = False
 							self.nick = ''
 							self.pmHandler = '**'
 							self.log_prefix = self.get_log_prefix()
-							self.log_info('Identified as guest')
+							self.debug('Identified as guest')
 						
 						for a in self.msgStack: # let's pop the whole stack!
 							self.on_message(a)
@@ -385,7 +281,7 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 							if r['mayview'] and r['channel'] == m['chan']:
 								self.join(r['channel'])
 						except:
-							self.log_info('tried to join channel '+c)
+							self.debug('tried to join channel '+c)
 					elif m['action'] == 'partchan':
 						self.part(m['chan'])
 					elif self.identified:
@@ -428,7 +324,7 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 								c = str(int(c))
 							except:
 								c = b64encode_wrap(c)
-							if m['curline'] < self.handle.curline: # we only want to actually do stuff if we are behind
+							if m['curline'] < self.handle.message.curline: # we only want to actually do stuff if we are behind
 								r = oirc.execPhp('Update.php',{
 									'high':len(self.charsHigh),
 									'lineNum':m['curline'],
@@ -447,10 +343,10 @@ class WebSocketsHandler(server.ServerHandler,oirc.OircRelayHandle):
 										'users':r['users']
 									}))
 		except:
-			self.log_error(traceback.format_exc())
+			self.error(traceback.format_exc())
 		return True
 	def close(self):
-		self.log_info('connection closed')
+		self.debug('connection closed')
 		try:
 			for c in self.chans:
 				self.chans[c] = 1 # we want to quit right away

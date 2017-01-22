@@ -63,18 +63,17 @@ def stripIrcColors(s):
 	return re.sub(r"(\x02|\x0F|\x16|\x1D|\x1F|\x03(\d{1,2}(,\d{1,2})?)?)",'',s)
 
 class OircRelay:
-	relayType = -1
-	id = -1
 	def __init__(self,n,handle):
 		self.id = int(n['id'])
 		self.config = n['config']
 		self.channels = n['channels']
+		self.type = n['type']
 		self.handle = handle
 		self.initRelay()
 	def initRelay(self):
 		return
 	def startRelay_wrap(self):
-		self.handle.removeAllUsersNetwork(self.id)
+		self.handle.user.removeAllNetwork(self.id)
 		self.startRelay()
 	def startRelay(self):
 		return
@@ -86,7 +85,7 @@ class OircRelay:
 		self.config = cfg
 		self.startRelay_wrap()
 	def stopRelay_wrap(self):
-		self.handle.removeAllUsersNetwork(self.id)
+		self.handle.user.removeAllNetwork(self.id)
 		self.stopRelay()
 	def stopRelay(self):
 		return
@@ -96,9 +95,11 @@ class OircRelay:
 		return
 	def joinThread(self):
 		return
-	def log_info(self,s):
+	def debug(self,s):
+		self.handle.log(self.id,'debug',s)
+	def info(self,s):
 		self.handle.log(self.id,'info',s)
-	def log_error(self,s):
+	def error(self,s):
 		self.handle.log(self.id,'error',s)
 	def getHandle(self,c):
 		c.handle = self.handle
@@ -123,11 +124,13 @@ class OircRelayHandle:
 			if c.lower() == ch.lower():
 				return i
 		return -1
-	def log_info(self,s):
+	def debug(self,s):
+		self.handle.log(self.id,'debug',self.log_prefix+str(s))
+	def info(self,s):
 		self.handle.log(self.id,'info',self.log_prefix+str(s))
-	def log_error(self,s):
+	def error(self,s):
 		self.handle.log(self.id,'error',self.log_prefix+str(s))
 	def addLine(self,n1,n2,t,m,c):
 		c = self.chanToId(c)
 		if c != -1:
-			self.handle.sendToOther(n1,n2,t,m,c,self.id)
+			self.handle.message.send(n1,n2,t,m,c,self.id)

@@ -1,0 +1,70 @@
+[
+	{
+		"name": "Color Nicks",
+		"type": "checkbox",
+		"var": "colornicks"
+	},
+	{
+		"type": "newline"
+	},
+	{
+		"name": "Nick",
+		"type": "text",
+		"var": "main.nick"
+	},
+	{
+		"name": "Server",
+		"type": "text",
+		"var": "main.server"
+	},
+	{
+		"name": "Port",
+		"type": "number",
+		"var": "main.port"
+	},
+	{
+		"name": "SSL",
+		"type": "checkbox",
+		"var": "main.ssl"
+	},
+	{
+		"name": "Nickserv (leave emtpy for none)",
+		"type": "text",
+		"var": "main.nickserv"
+	},
+	{
+		"name": "Advanced settings",
+		"type": "more",
+		"pattern": [
+			{
+				"name": "Topicbot",
+				"type": "info"
+			},
+			{
+				"name": "Nick (leave empty for no seperate topic bot)",
+				"type": "text",
+				"var": "topic.nick"
+			},
+			{
+				"name": "Server",
+				"type": "text",
+				"var": "topic.server"
+			},
+			{
+				"name": "Port",
+				"type": "number",
+				"var": "topic.port"
+			},
+			{
+				"name": "SSL",
+				"type": "checkbox",
+				"var": "topic.ssl"
+			},
+			{
+				"name": "Nickserv (leave empty for none)",
+				"type": "text",
+				"var": "topic.nickserv"
+			}
+		]
+	}
+]

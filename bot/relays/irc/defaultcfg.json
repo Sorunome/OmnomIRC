@@ -1,0 +1,17 @@
+{
+	"main": {
+		"nick": "OmnomIRC",
+		"server": "irc server",
+		"port": 6667,
+		"nickserv": "",
+		"ssl": false
+	},
+	"topic": {
+		"nick": "",
+		"server": "irc server",
+		"port": 6667,
+		"nickserv": "",
+		"ssl": false
+	},
+	"colornicks": false
+}

@@ -55,12 +55,12 @@ $(function(){
 					if(d === undefined){
 						d = data;
 					}
-					s = s.split('/');
+					s = s.split('.');
 					if(s.length == 1){
 						return d[s[0]]
 					}
 					var p = s.shift();
-					return getVal(s.join('/'),d[p]);
+					return getVal(s.join('.'),d[p]);
 				},
 				setVal = function(s,v,d){
 					if(d === undefined){
@@ -81,13 +81,13 @@ $(function(){
 							$('[data-varbox="'+s+'"][data-valbox="'+v+'"]').show();
 						}
 					}
-					s = s.split('/');
+					s = s.split('.');
 					if(s.length == 1){
 						d[s[0]] = v;
 						return;
 					}
 					var p = s.shift();
-					setVal(s.join('/'),v,d[p]);
+					setVal(s.join('.'),v,d[p]);
 				};
 			return $('<span>').css('display','inline-block').append(
 				$.map(pattern,function(prop){
