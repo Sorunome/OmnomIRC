@@ -1,0 +1,65 @@
+[
+	{
+		"name": "bot socket",
+		"type": "text",
+		"var": "botSocket"
+	},
+	{
+		"name": "hostname",
+		"type": "text",
+		"var": "hostname"
+	},
+	{
+		"name": "curid file path",
+		"type": "text",
+		"var": "curidFilePath"
+	},
+	{
+		"name": "Signature key",
+		"type": "text",
+		"var": "signatureKey"
+	},
+	{
+		"name": "IRC password",
+		"type": "text",
+		"var": "ircPasswd"
+	},
+	{
+		"type": "newline"
+	},
+	{
+		"name": "Caching",
+		"type": "dropdown",
+		"var": "cache.type",
+		"options": [
+			{
+				"name": "No caching",
+				"val": 0
+			},
+			{
+				"name": "Memcached",
+				"val": 1,
+				"pattern": [
+					{
+						"name": "Host (default: localhost)",
+						"type": "text",
+						"var": "cache.host"
+					},
+					{
+						"name": "Port (default: 11211)",
+						"type": "number",
+						"var": "cache.port"
+					}
+				]
+			}
+		]
+	},
+	{
+		"type": "newline"
+	},
+	{
+		"name": "Turn on experimental settings (not recommended)",
+		"type": "checkbox",
+		"var": "experimental"
+	}
+]

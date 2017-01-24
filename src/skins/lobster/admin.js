@@ -137,7 +137,7 @@ $(function(){
 							}),'<br>',$more,'<br>']
 					}
 					$input.attr('data-var',prop.var);
-					return [prop.name+':&nbsp;',$input,'<br>',($more?$more:'')];
+					return [prop.name+':&nbsp;',$input,'<br>',($more?$more:''),($more?'<br>':'')];
 				})
 			);
 		},

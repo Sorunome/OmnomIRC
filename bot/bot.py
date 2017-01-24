@@ -278,29 +278,29 @@ class Relay:
 				self.error('"'+s+'": missing relay.py file')
 				continue
 			
-			# defaultcfg.json needs to exist and be valid json
-			f = self.path(s,'defaultcfg.json')
+			# config.json needs to exist and be valid json
+			f = self.path(s,'config.json')
 			if not os.path.isfile(f):
-				self.error('"'+s+'": missing defaultcfg.json file')
+				self.error('"'+s+'": missing config.json file')
 				continue
 			with open(f,'r') as ff:
 				try:
-					json.load(ff)
+					config = json.load(ff)
+					if not 'name' in config:
+						self.error('"'+s+'" config.json is missing name')
+					
+					if not 'version' in config:
+						self.error('"'+s+'" config.json is missing version')
+					
+					if not 'defaultCfg' in config:
+						self.error('"'+s+'" config.json is missing defaultCfg')
+					
+					if not 'editPattern' in config:
+						self.error('"'+s+'" config.json is missing editPattern')
 				except ValueError:
-					self.error('"'+s+'" defaultcfg.json is invalid JSON')
+					self.error('"'+s+'" config.json is invalid JSON')
 					continue
 			
-			# editpattern.json needs to exist and be valid json
-			f = self.path(s,'editpattern.json')
-			if not os.path.isfile(f):
-				self.error('"'+s+'": missing editpattern.json file')
-				continue
-			with open(f,'r') as ff:
-				try:
-					json.load(ff)
-				except ValueError:
-					self.error('"'+s+'" editpattern.json is invalid JSON')
-					continue
 			
 			# OK, we have a valid relay type! Let's try to import it
 			sys.path.insert(0,self.path(s,''))
@@ -327,15 +327,7 @@ class Relay:
 				self.error('"'+s+'": relay doesn\'t have the Relay-class!')
 				continue
 			
-			if not hasattr(r,'name'):
-				self.error('"'+s+'": relay doesn\'t have a name!')
-				continue
-			
-			if not hasattr(r,'version'):
-				self.error('"'+s+'": relay doesn\'t have a version!')
-				continue
-			
-			if r.version == '0.0.0':
+			if config['version'] == '0.0.0':
 				reloading = True
 			elif reloading and self.versioncompare(self.types[s]['version'],r.version) < 1:
 				self.debug('"'+s+'" is outdated, skipping it')
@@ -344,9 +336,9 @@ class Relay:
 			
 			self.types[s] = {
 				'module':r,
-				'name':r.name,
+				'name':config['name'],
 				'class':r.Relay,
-				'version':r.version
+				'version':config['version']
 			}
 			if reloading and not firstImport:
 				self.info('Reloaded relay type "'+s+'"')
@@ -361,14 +353,14 @@ class Relay:
 		a = []
 		for i,v in self.types.items():
 			if i!='websockets':
-				with open(self.path(i,'defaultcfg.json')) as f:
-					with open(self.path(i,'editpattern.json')) as g:
-						a.append({
-							'id':i,
-							'name':v['name'],
-							'defaultCfg':json.load(f),
-							'editPattern':json.load(g)
-						})
+				with open(self.path(i,'config.json')) as f:
+					ff = json.load(f)
+					a.append({
+						'id':i,
+						'name':v['name'],
+						'defaultCfg':ff['defaultCfg'],
+						'editPattern':ff['editPattern']
+					})
 		return a
 	def debug(self,s):
 		self.parent.log('relay types','debug',s)
@@ -462,7 +454,6 @@ class Network:
 		for n in self.nets:
 			if n.type == s:
 				self.restart(n)
-				
 	def debug(self,s):
 		self.parent.log('network','debug',s)
 	def info(self,s):
@@ -682,6 +673,7 @@ class Main:
 			self.oircLink = OIRCLinkServer(self,res.group(1),int(res.group(2)),OIRCLink)
 		self.oircLink.start()
 		return True
+	@oirc.async
 	def update(self):
 		self.info('Got signal to update config!')
 		

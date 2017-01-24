@@ -130,33 +130,7 @@ if(OIRC::$you->isGlobalOp()){
 					'prefix' => OIRC::$config['sql']['prefix'],
 					'passwd' => ''
 				));
-				Json::add('pattern',array(
-					array(
-						'name' => 'Server',
-						'type' => 'text',
-						'var' => 'server'
-					),
-					array(
-						'name' => 'Database',
-						'type' => 'text',
-						'var' => 'db'
-					),
-					array(
-						'name' => 'User',
-						'type' => 'text',
-						'var' => 'user'
-					),
-					array(
-						'name' => 'Password',
-						'type' => 'text',
-						'var' => 'passwd'
-					),
-					array(
-						'name' => 'Database Prefix',
-						'type' => 'text',
-						'var' => 'prefix'
-					)
-				));
+				Json::add('pattern',json_decode(file_get_contents(realpath(dirname(__FILE__)).'/editPatterns/sql.json'),true));
 				break;
 			case 'smileys':
 				Json::add('smileys',Vars::get('smileys'));
@@ -218,61 +192,7 @@ if(OIRC::$you->isGlobalOp()){
 				break;
 			case 'ws':
 				Json::add('websockets',OIRC::$config['websockets']);
-				Json::add('pattern',array(
-					array(
-						'name' => 'Enable Websockets',
-						'type' => 'checkbox',
-						'var' => 'use'
-					),
-					array(
-						'name' => 'SSL',
-						'type' => 'checkbox',
-						'var' => 'ssl',
-						'pattern' => array(
-							array(
-								'name' => 'Certificate File',
-								'type' => 'text',
-								'var' => 'certfile'
-							),
-							array(
-								'name' => 'Private Key File',
-								'type' => 'text',
-								'var' => 'keyfile'
-							)
-						)
-					),
-					array(
-						'name' => 'Advanced settings',
-						'type' => 'more',
-						'pattern' => array(
-							array(
-								'name' => 'Host (only set if different from setting in "misc")',
-								'type' => 'text',
-								'var' => 'host'
-							),
-							array(
-								'name' => 'Enable Port-poking (will disable internal port)',
-								'type' => 'checkbox',
-								'var' => 'portpoking'
-							),
-							array(
-								'name' => 'External Port',
-								'type' => 'number',
-								'var' => 'port'
-							),
-							array(
-								'name' => 'Internal Port (e.g. for nginx/apache forwarding)',
-								'type' => 'text',
-								'var' => 'intport'
-							),
-							array(
-								'name' => 'Force client-sided ssl (e.g. for nginx/apache forwarding)',
-								'type' => 'checkbox',
-								'var' => 'fssl'
-							)
-						)
-					)
-				));
+				Json::add('pattern',json_decode(file_get_contents(realpath(dirname(__FILE__)).'/editPatterns/websockets.json'),true));
 				break;
 			case 'misc':
 				Json::add('misc',array(
@@ -284,71 +204,7 @@ if(OIRC::$you->isGlobalOp()){
 					'experimental' => OIRC::$config['settings']['experimental'],
 					'cache' => OIRC::$config['cache']
 				));
-				Json::add('pattern',array(
-					array(
-						'name' => 'bot socket',
-						'type' => 'text',
-						'var' => 'botSocket'
-					),
-					array(
-						'name' => 'hostname',
-						'type' => 'text',
-						'var' => 'hostname'
-					),
-					array(
-						'name' => 'curid file path',
-						'type' => 'text',
-						'var' => 'curidFilePath'
-					),
-					array(
-						'name' => 'signature key',
-						'type' => 'text',
-						'var' => 'signatureKey'
-					),
-					array(
-						'name' => 'irc password',
-						'type' => 'text',
-						'var' => 'ircPasswd'
-					),
-					array(
-						'type' => 'newline'
-					),
-					array(
-						'name' => 'Caching',
-						'type' => 'dropdown',
-						'var' => 'cache/type',
-						'options' => array(
-							array(
-								'name' => 'No caching',
-								'val' => 0
-							),
-							array(
-								'name' => 'Memcached',
-								'val' => 1,
-								'pattern' => array(
-									array(
-										'name' => 'Host (default: localhost)',
-										'type' => 'text',
-										'var' => 'cache/host'
-									),
-									array(
-										'name' => 'Port (default: 11211)',
-										'type' => 'number',
-										'var' => 'cache/port'
-									)
-								)
-							)
-						)
-					),
-					array(
-						'type' => 'newline'
-					),
-					array(
-						'name' => 'Turn on experimental settings (not recommended)',
-						'type' => 'checkbox',
-						'var' => 'experimental'
-					)
-				));
+				Json::add('pattern',json_decode(file_get_contents(realpath(dirname(__FILE__)).'/editPatterns/misc.json'),true));
 				break;
 			case 'ex':
 				Json::add('ex',array(
@@ -356,23 +212,7 @@ if(OIRC::$you->isGlobalOp()){
 					'minified' => !isset(OIRC::$config['settings']['minified'])||OIRC::$config['settings']['minified'],
 					'betaUpdates' => isset(OIRC::$config['settings']['betaUpdates'])&&OIRC::$config['settings']['betaUpdates']
 				));
-				Json::add('pattern',array(
-					array(
-						'name' => 'use bot',
-						'type' => 'checkbox',
-						'var' => 'useBot'
-					),
-					array(
-						'name' => 'use minfied sources',
-						'type' => 'checkbox',
-						'var' => 'minified'
-					),
-					array(
-						'name' => 'fetch beta updates',
-						'type' => 'checkbox',
-						'var' => 'betaUpdates'
-					)
-				));
+				Json::add('pattern',json_decode(file_get_contents(realpath(dirname(__FILE__)).'/editPatterns/experimental.json'),true));
 				break;
 			case 'releaseNotes':
 				Json::add('version',OIRC::$config['info']['version']);
