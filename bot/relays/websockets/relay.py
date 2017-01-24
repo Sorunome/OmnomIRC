@@ -92,7 +92,7 @@ class Relay(oirc.OircRelay):
 				for c in client.chans:
 					client.sendLine('OmnomIRC',client.pmHandler,'reload_userlist','THE GAME',c,0,-1)
 		self.server.stop()
-	def relayMessage(self,n1,n2,t,m,c,s,uid,curline = 0): #self.server.inputHandlers
+	def relayMessage(self,n1,n2,t,m,c,s,uid,curline = 0):
 		c = str(c)
 		if hasattr(self.server,'inputHandlers'):
 			m_lower = m.lower()

@@ -695,6 +695,25 @@ class Relay{
 		}
 		return $socket;
 	}
+	public static function sendRaw($json){
+		if(OIRC::$config['settings']['useBot']){
+			if($socket = self::getSocket()){
+				$s = json_encode($json)."\n";
+				socket_write($socket,$s,strlen($s));
+				$b = '';
+				socket_set_option($socket,SOL_SOCKET,SO_RCVTIMEO,array('sec' => 2,'usec' => 0));
+				while($buf = socket_read($socket,2048)){
+					$b .= $buf;
+					if(strpos($b,"\n")!==false){
+						break;
+					}
+				}
+				socket_close($socket);
+				return json_decode($b,true);
+			}
+		}
+		return false;
+	}
 	public static function commitBuffer(){
 		if(sizeof(self::$sendBuffer)>0){
 			$values = '';

@@ -227,6 +227,9 @@ class OIRCLink(server.ServerHandler):
 					s = json.dumps(self.parent.relay.data())+'\n'
 					self.info('Sending out network information... '+str(s))
 					self.socket.sendall(bytes(s,'utf-8'))
+				elif data['t'] == 'server_restartNetwork':
+					i = int(data['nid'])
+					self.parent.network.restart(i)
 				elif data['t'] == 'server_updateFile':
 					try:
 						if '..' in data['n2']:
@@ -347,7 +350,7 @@ class Relay:
 			}
 			if reloading and not firstImport:
 				self.info('Reloaded relay type "'+s+'"')
-				# TODO: reload all the active instances
+				self.parent.network.restartType(s)
 			else:
 				self.info('Found relay type "'+s+'"')
 	def new(self,n):
@@ -440,7 +443,26 @@ class Network:
 					r = self.add(n)
 					if r:
 						r.startRelay_wrap()
-		
+	@oirc.async
+	def restart(self,i):
+		n = i
+		if type(n) == int:
+			for nn in self.nets:
+				if nn.id == i:
+					n = nn
+					break
+		if type(n) == int: # network not found
+			return
+		n.stopRelay_wrap()
+		n.joinThread()
+		n = self.parent.relay.new(n.net)
+		n.startRelay_wrap()
+	def restartType(self,s):
+		# we use three seperate for-loops as this might increase performance
+		for n in self.nets:
+			if n.type == s:
+				self.restart(n)
+				
 	def debug(self,s):
 		self.parent.log('network','debug',s)
 	def info(self,s):
@@ -506,7 +528,7 @@ class Message:
 			oircOnly = True
 		for n in self.parent.network.nets:
 			if (oircOnly and n.type == 'websockets') or not oircOnly:
-				self.parent.pool.apply_async(n.relayTopic,(s,c,i))
+				n.relayTopic_wrap(s,c,i)
 	def send(self,n1,n2,t,m,c,s,uid = -1,curline = -1,do_sql = True):
 		if self.parent.mode.get(c,'c'):
 			m = oirc.stripIrcColors(m)
@@ -562,7 +584,7 @@ class Message:
 		for n in self.parent.network.nets:
 			if (oircOnly and n.type == 'websockets') or not oircOnly:
 				try:
-					self.parent.pool.apply_async(n.relayMessage,(n1,n2,t,m,c,s,uid,curline))
+					n.relayMessage_wrap(n1,n2,t,m,c,s,uid,curline)
 				except:
 					self.error(traceback.format_exc())
 	def debug(self,s):

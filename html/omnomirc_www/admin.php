@@ -198,24 +198,9 @@ if(OIRC::$you->isGlobalOp()){
 						)
 					)
 				);
-				if(OIRC::$config['settings']['useBot']){
-					if($socket = Relay::getSocket()){
-						$s = json_encode(array('t' => 'server_getRelayTypes'))."\n";
-						socket_write($socket,$s,strlen($s));
-						$b = '';
-						socket_set_option($socket,SOL_SOCKET,SO_RCVTIMEO,array('sec' => 2,'usec' => 0));
-						while($buf = socket_read($socket,2048)){
-							$b .= $buf;
-							if(strpos($b,"\n")!==false){
-								break;
-							}
-						}
-						socket_close($socket);
-						if($a = json_decode($b,true)){
-							foreach($a as $b){
-								$networkTypes[$b['id']] = $b;
-							}
-						}
+				if($a = Relay::sendRaw(array('t' => 'server_getRelayTypes'))){
+					foreach($a as $b){
+						$networkTypes[$b['id']] = $b;
 					}
 				}
 				Json::add('networkTypes',$networkTypes);
@@ -517,6 +502,13 @@ if(OIRC::$you->isGlobalOp()){
 				}
 				OIRC::$config['networks'] = $jsonData;
 				writeConfig();
+				break;
+			case 'restartNetwork':
+				if(isset($_GET['id']) && (int)$_GET['nid'] == $_GET['nid']){
+					Relay::sendRaw(array('t' => 'server_restartNetwork','nid' => (int)$_GET['nid']));
+				}else{
+					Json::addError('Invalid network ID');
+				}
 				break;
 			case 'ws':
 				OIRC::$config['websockets'] = $jsonData;

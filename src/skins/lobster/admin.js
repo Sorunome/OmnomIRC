@@ -628,7 +628,14 @@ $(function(){
 									default:
 										if(netTypes[net.type]){
 											$netSpecific = $('<span>').append(
-												$('<b>').text(netTypes[net.type].name + ' Network'),'<br>',
+												$('<b>').text(netTypes[net.type].name + ' Network'),' (',$('<a>').text('restart').click(function(e){
+													e.preventDefault();
+													if(confirm('Are you sure you want to restart the network '+net.name+'?')){
+														oirc.network.getJSON('admin.php?set=restartNetwork&nid='+encodeURIComponent(net.id),function(data){
+															
+														});
+													}
+												}),')<br>',
 												getLiveInputSettings(net.config,netTypes[net.type].editPattern)
 											);
 										}

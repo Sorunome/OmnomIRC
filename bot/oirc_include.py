@@ -62,9 +62,19 @@ def execPhp(f,d = {}):
 def stripIrcColors(s):
 	return re.sub(r"(\x02|\x0F|\x16|\x1D|\x1F|\x03(\d{1,2}(,\d{1,2})?)?)",'',s)
 
+def async(func):
+	def func_wrapper(*args):
+		self = args[0]
+		if hasattr(self,'parent'):
+			self = self.parent
+		if hasattr(self,'handle'):
+			self = self.handle
+		return self.pool.apply_async(func,args)
+	return func_wrapper
 class OircRelay:
 	def __init__(self,n,handle):
 		self.id = int(n['id'])
+		self.net = n
 		self.config = n['config']
 		self.channels = n['channels']
 		self.type = n['type']
@@ -72,11 +82,13 @@ class OircRelay:
 		self.initRelay()
 	def initRelay(self):
 		return
+	@async
 	def startRelay_wrap(self):
 		self.handle.user.removeAllNetwork(self.id)
 		self.startRelay()
 	def startRelay(self):
 		return
+	@async
 	def updateRelay_wrap(self,cfg):
 		if self.id == int(cfg['id']):
 			self.updateRelay(cfg['config'],cfg['channels'])
@@ -89,8 +101,14 @@ class OircRelay:
 		self.stopRelay()
 	def stopRelay(self):
 		return
+	@async
+	def relayMessage_wrap(self,n1,n2,t,m,c,s,uid,curline):
+		self.relayMessage(n1,n2,t,m,c,s,uid,curline)
 	def relayMessage(self,n1,n2,t,m,c,s,uid,curline):
 		return
+	@async
+	def relayTopic_wrap(self,s,c,i):
+		self.relayTopic(self,s,c,i)
 	def relayTopic(self,s,c,i):
 		return
 	def joinThread(self):
