@@ -9,8 +9,8 @@ The `relay.py` file must implement a class called `Relay`. For that you must fir
 The `Relay`-class must inherit from `oirc.OircRelay`.  
 The following methods can be implemented:
 
-| Name | Must | args | purpose |
-|------|------|------|---------|
+| Name | Required | args | purpose |
+|------|----------|------|---------|
 | initRelay  | no  | _none_ | some additional initializing, such as parsing config and thelike
 | startRelay | yes | _none_ | starts the relay, based on the config etc.
 | updateRelay | no | newCfg | update the relay, based on the passed new config

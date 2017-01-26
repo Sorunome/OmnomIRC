@@ -47,9 +47,8 @@ exit;
 			}
 			Json::add('message',$m."\nconfig written");
 		}
-		if(!INTERNAL && OIRC::$config['settings']['useBot']){
-			Relay::sendLine('','','server_updateconfig','');
-			Relay::commitBuffer();
+		if(!INTERNAL){
+			Relay::sendRaw(array('t' => 'server_updateconfig'));
 		}
 	}else{
 		Json::addError('Couldn\'t write config');
