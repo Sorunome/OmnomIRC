@@ -24,9 +24,6 @@
 import irc,json,oirc_include as oirc
 
 
-name = 'IRC'
-version = '1.0.0'
-
 class Relay(oirc.OircRelay):
 	bot = False
 	topicBot = False

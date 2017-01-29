@@ -685,12 +685,13 @@ class Relay{
 		}else{
 			$matches = array();
 			preg_match('/^([\\w\\.]+):(\\d+)/',$sock,$matches);
-			if($matches){
-				$socket = socket_create(AF_INET,SOCK_STREAM,SOL_TCP);
-				if(!socket_connect($socket,$matches[1],$matches[2])){
-					self::socketfail();
-					return false;
-				}
+			if(!$matches){
+				return false;
+			}
+			$socket = socket_create(AF_INET,SOCK_STREAM,SOL_TCP);
+			if(!socket_connect($socket,$matches[1],$matches[2])){
+				self::socketfail();
+				return false;
 			}
 		}
 		return $socket;

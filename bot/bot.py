@@ -190,8 +190,8 @@ class Sql:
 #fetch lines off of OIRC
 class OIRCLinkServer(server.Server):
 	def __init__(self,parent,host,port,handler,errhandler = False):
-		server.Server.__init__(self,host,port,handler,errhandler)
 		self.parent = parent
+		server.Server.__init__(self,host,port,handler,errhandler)
 	def getHandler(self,client,address):
 		return self.handler(self.parent,client,address)
 class OIRCLink(server.ServerHandler):
@@ -643,18 +643,19 @@ class Main:
 					self.logCache[id] = str(id)
 			id = self.logCache[id]
 		id = str(id)
-		with open(self.args.logpath+'/omnomirc.'+level,'a+') as f:
-			s = datetime.datetime.now().strftime('[%a, %d %b %Y %H:%M:%S.%f]')+' ['+id+'] '+prefix+message
-			f.write(s+'\n')
-			if self.args.verbose:
-				if self.args.verbose > 1:
-					if level == 'debug':
-						print(s)
-				elif self.args.verbose > 0:
-					if level == 'info':
-						print(s)
-			elif level == 'error':
-				print(s)
+		s = datetime.datetime.now().strftime('[%a, %d %b %Y %H:%M:%S.%f]')+' ['+id+'] '+prefix+message
+		if (self.args.loglevel and (
+				(self.args.loglevel > 0 and level == 'info') or
+				(self.args.loglevel > 1)
+			)) or level == 'error':
+			with open(self.args.logpath+'/omnomirc.'+level,'a+') as f:
+				f.write(s+'\n')
+		
+		if (self.args.verbose and (
+				(self.args.verbose > 0 and level == 'info') or
+				(self.args.verbose > 1 and level == 'debug')
+			)) or level == 'error':
+			print(s)
 		if level == 'error':
 			self.log(id,'info',message,'ERROR: ')
 		if level == 'info':
@@ -759,6 +760,7 @@ if __name__ == "__main__":
 	parser.prog = 'omnomirc.sh' # we want this to be run via the shellscript
 	parser.add_argument('-v','--verbose',help='increase output verbosity',action='count')
 	parser.add_argument('-l','--logpath',help='file log location')
+	parser.add_argument('-L','--loglevel',help='increase log level to logfiles',action='count')
 	args = parser.parse_args()
 	if args.logpath == None:
 		args.logpath = FILEROOT+'/logs'

@@ -39,7 +39,7 @@ The `config.json` file implements some config stuff necesarry for the bot:
 | editPattern | Edit pattern of how to edit the relay (more below)
 
 #### editPattern
-An edit pattern is an array of object things to display to be able to edit the config easily in the admin panel. The array contains of objects. Each object must have the key `type`, additional keys may have an effect:  
+An edit pattern is an array of object things to display to be able to edit the config easily in the admin panel. The array contains objects. Each object must have the key `type`, additional keys may have an effect:  
 * `name`: display name of the object
 * `var`: var to edit, object notation is working (e.g. `main.server`)
 
