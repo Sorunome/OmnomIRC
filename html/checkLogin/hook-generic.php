@@ -25,4 +25,3 @@ function hook_get_login(){
 		'uid' => (int)$uid
 	);
 }
-?>

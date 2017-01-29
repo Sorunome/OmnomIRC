@@ -184,7 +184,7 @@ if(OIRC::$you->isGlobalOp()){
 					$s = @file_get_contents(OIRC::$config['networks'][$_GET['i']]['config']['checkLogin'].'?server='.getCheckLoginChallenge().'&action=get');
 					if($s != ''){
 						$success = true;
-						$json->add('checkLogin',json_decode($s,true));
+						Json::add('checkLogin',json_decode($s,true));
 					}
 				}
 				Json::add('success',$success);
