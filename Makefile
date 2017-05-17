@@ -1,5 +1,6 @@
 .PHONY: debug mini all info mods
 WORKDIR=/home/sorunome/public_html/oirc
+SHELL := /bin/bash
 
 OIRCHTML=html/omnomirc_www
 UGLIFYOPTIONS="-m --comments -v"
