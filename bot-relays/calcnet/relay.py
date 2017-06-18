@@ -3,7 +3,7 @@
 
 
 #	OmnomIRC COPYRIGHT 2010,2011 Netham45
-#					   2012-2016 Sorunome
+#					   2012-2017 Sorunome
 #
 #	This file is part of OmnomIRC.
 #
@@ -22,27 +22,11 @@
 
 import server,traceback,struct,re,oirc_include as oirc
 
-name = 'CalcNet'
-version = '1.0.0'
-
-
 class Relay(oirc.OircRelay):
 	def initRelay(self):
 		self.server = server.Server(self.config['server'],self.config['port'],self.getHandle(CalculatorHandler))
 	def startRelay(self):
 		self.server.start()
-	def getChanStuff(self):
-		chans = {}
-		defaultChan = ''
-		for ch in config.json['channels']:
-			if ch['enabled']:
-				for c in ch['networks']:
-					if c['id'] == self.id:
-						chans[ch['id']] = c['name']
-						if defaultChan == '':
-							defaultChan = c['name']
-						break
-		return [chans,defaultChan]
 	def updateRelay(self,cfg,chans):
 		if self.config['server'] != cfg['server'] or self.config['port'] != cfg['port']:
 			self.config = cfg

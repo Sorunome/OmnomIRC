@@ -1,7 +1,7 @@
 <?php
 /*
 	OmnomIRC COPYRIGHT 2010,2011 Netham45
-					   2012-2016 Sorunome
+					   2012-2017 Sorunome
 
 	This file is part of OmnomIRC.
 
@@ -299,15 +299,17 @@ class Sql{
 	private static $stmt;
 	private static $numQueries = 0;
 	private static function connectSql(){
-		if(isset(self::$mysqliConnection)){
+		if (isset(self::$mysqliConnection)) {
 			return self::$mysqliConnection;
 		}
-		$mysqli = new \mysqli(OIRC::$config['sql']['server'],OIRC::$config['sql']['user'],OIRC::$config['sql']['passwd'],OIRC::$config['sql']['db']);
-		if($mysqli->connect_errno){
+		$mysqli = new \mysqli(OIRC::$config['sql']['server'], OIRC::$config['sql']['user'], OIRC::$config['sql']['passwd'], OIRC::$config['sql']['db']);
+		if ($mysqli->connect_errno) {
 			die('Could not connect to SQL DB: '.$mysqli->connect_errno.' '.$mysqli->connect_error);
 		}
-		if(!$mysqli->set_charset('utf8')){
-			Json::addError(array('type' => 'mysql','message' => 'Couldn\'t use utf8'));
+		if(!$mysqli->set_charset('utf8mb4')){
+			if(!$mysqli->set_charset('utf8')){
+				Json::addError(array('type' => 'mysql','message' => 'Couldn\'t use utf8'));
+			}
 		}
 		self::$mysqliConnection = $mysqli;
 		return $mysqli;

@@ -3,7 +3,7 @@
 
 
 #	OmnomIRC COPYRIGHT 2010,2011 Netham45
-#					   2012-2016 Sorunome
+#					   2012-2017 Sorunome
 #
 #	This file is part of OmnomIRC.
 #
@@ -97,7 +97,7 @@ class Sql:
 					password=self.parent.config.json['sql']['passwd'],
 					db=self.parent.config.json['sql']['db'],
 					unix_socket='/var/run/mysqld/mysqld.sock',
-					charset='utf8',
+					charset='utf8mb4',
 					cursorclass=pymysql.cursors.DictCursor)
 			except:
 				try:
@@ -106,7 +106,7 @@ class Sql:
 						user=self.parent.config.json['sql']['user'],
 						password=self.parent.config.json['sql']['passwd'],
 						db=self.parent.config.json['sql']['db'],
-						charset='utf8',
+						charset='utf8mb4',
 						cursorclass=pymysql.cursors.DictCursor)
 				except:
 					try:
@@ -116,7 +116,7 @@ class Sql:
 							passwd=self.parent.config.json['sql']['passwd'],
 							db=self.parent.config.json['sql']['db'],
 							unix_socket='/var/run/mysqld/mysqld.sock',
-							charset='utf8',
+							charset='utf8mb4',
 							cursorclass=pymysql.cursors.DictCursor)
 					except:
 						self.db = pymysql.connect(
@@ -124,7 +124,7 @@ class Sql:
 							user=self.parent.config.json['sql']['user'],
 							passwd=self.parent.config.json['sql']['passwd'],
 							db=self.parent.config.json['sql']['db'],
-							charset='utf8',
+							charset='utf8mb4',
 							cursorclass=pymysql.cursors.DictCursor)
 			return self.db.cursor()
 	def query(self,q,p = []):
@@ -133,6 +133,7 @@ class Sql:
 			cur = self.getDbCursor()
 			try:
 				cur.execute(q.replace('{db_prefix}',self.parent.config.json['sql']['prefix']),tuple(p))
+				self.db.commit()
 			except:
 				try:
 					self.db.close()
@@ -141,8 +142,8 @@ class Sql:
 				self.db = False
 				cur = self.getDbCursor()
 				cur.execute(q.replace('{db_prefix}',self.parent.config.json['sql']['prefix']),tuple(p))
+				self.db.commit()
 			self.lastRowId = cur.lastrowid
-			self.db.commit()
 			rows = []
 			for row in cur:
 				if row == None:
@@ -631,9 +632,9 @@ class Main:
 		
 		self.logCache = {}
 		self.oircLink = None
-	def log(self,id,level,message,prefix = ''):
+	def log(self, id, level, message, prefix = '', doPrint = True):
 		message = str(message)
-		if isinstance(id,int):
+		if isinstance(id, int):
 			if not id in self.logCache:
 				for n in self.config.json['networks']:
 					if n['id'] == id:
@@ -643,25 +644,27 @@ class Main:
 					self.logCache[id] = str(id)
 			id = self.logCache[id]
 		id = str(id)
-		s = datetime.datetime.now().strftime('[%a, %d %b %Y %H:%M:%S.%f]')+' ['+id+'] '+prefix+message
+		s = datetime.datetime.now().strftime('[%a, %d %b %Y %H:%M:%S.%f]') + ' [' + id + '] ' + prefix + message
 		if (self.args.loglevel and (
 				(self.args.loglevel > 0 and level == 'info') or
 				(self.args.loglevel > 1)
 			)) or level == 'error':
-			with open(self.args.logpath+'/omnomirc.'+level,'a+') as f:
-				f.write(s+'\n')
+			with open(self.args.logpath + '/omnomirc.' + level, 'a+') as f:
+				f.write(s + '\n')
 		
-		if (self.args.verbose and (
-				(self.args.verbose > 0 and level == 'info') or
-				(self.args.verbose > 1 and level == 'debug')
-			)) or level == 'error':
+		if (doPrint and self.args.verbose and (
+				(self.args.verbose == None and level == 'error') or
+				(self.args.verbose == 0 and level == 'info') or
+				(self.args.verbose >= 1 and level == 'debug')
+			)):
+			doPrint = False
 			print(s)
 		if level == 'error':
-			self.log(id,'info',message,'ERROR: ')
+			self.log(id, 'info', message, 'ERROR: ', doPrint)
 		if level == 'info':
 			if not prefix:
 				prefix = 'INFO: '
-			self.log(id,'debug',message,prefix)
+			self.log(id, 'debug', message, prefix, doPrint)
 	def startLink(self):
 		sock = self.config.json['settings']['botSocket']
 		if sock.startswith('unix:'):

@@ -136,7 +136,7 @@ if(OIRC::$you->isGlobalOp()){
 				break;
 			case 'networks':
 				foreach(OIRC::$config['networks'] as &$n){
-					if($n['type'] == 1){
+					if($n['type'] === 1){
 						$v = Vars::get(array('extra_chan_msg_'.(string)$n['id'],'defaults_'.(string)$n['id']));
 						$m = $v['extra_chan_msg_'.(string)$n['id']];
 						if($m!==NULL){

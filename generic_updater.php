@@ -9,6 +9,10 @@ $clfiles = array(SED_INSERT_CLFILES);
 $updateHooks = false; // do we need to update hooks? true for all, array for specific hooks
 $botFiles = array(SED_INSERT_BOTFILES);
 
+// ALTER TABLE irc_lines CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+// ALTER TABLE irc_lines CHANGE message message VARCHAR(1024) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL;
+// REPAIR TABLE irc_lines;
+// OPTIMIZE TABLE irc_lines;
 
 
 function lastUpdateStuff(){

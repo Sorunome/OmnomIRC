@@ -1,7 +1,7 @@
 /**
  * @license
  * OmnomIRC COPYRIGHT 2010,2011 Netham45
- *                    2012-2016 Sorunome
+ *                    2012-2017 Sorunome
  *
  *  This file is part of OmnomIRC.
  *
@@ -545,7 +545,7 @@ $(function(){
 				'<div style="font-weight:bold">Network Settings</div>',
 				$('<div>').append(
 						$.map(nets,function(net,i){
-							if(net.type===0){ // no server networks displaying
+							if (net.type == "server") { // no server networks displaying
 								return undefined;
 							}
 							return [$('<span>').text(net.name),' ',$('<a>').text('edit').click(function(e){
@@ -685,26 +685,23 @@ $(function(){
 									specificConfig,
 									maxId;
 								if(name!=='' && name!==null){
-									var netType = parseInt($(this).val(),10);
-									switch(netType){
-										case 1: // omnomirc
-											specificConfig = {
-												'checkLogin':'link to checkLogin file',
-												'checkLoginAbs':'',
-												'spLinks':[],
-												'theme':-1,
-												'defaults':{},
-												'guests':0
-											};
-											break;
-										default:
-											if(netTypes[netType]){
-												specificConfig = netTypes[netType].defaultCfg
-											}else{
-												specificConfig = false;
-											}
+									var netType = $(this).val();
+									if (netType === "1") {
+										netType = 1;
+										specificConfig = {
+											'checkLogin':'link to checkLogin file',
+											'checkLoginAbs':'',
+											'spLinks':[],
+											'theme':-1,
+											'defaults':{},
+											'guests':0
+										};
+									} else if(netTypes[netType]) {
+										specificConfig = netTypes[netType].defaultCfg
+									} else {
+										specificConfig = false;
 									}
-									if(specificConfig){
+									if (specificConfig) {
 										maxId = 0;
 										$.each(nets,function(i,v){
 											if(v.id > maxId){
