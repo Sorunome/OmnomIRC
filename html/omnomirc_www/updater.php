@@ -1,7 +1,7 @@
 <?php
 namespace oirc\install;
 error_reporting(E_ALL);
-$installScriptVersion = '2.11.2.5';
+$installScriptVersion = '2.12';
 
 function getConfig(){
 	$cfg = explode("\n",file_get_contents(realpath(dirname(__FILE__)).'/config.json.php'));

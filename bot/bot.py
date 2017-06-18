@@ -31,7 +31,17 @@ try:
 except:
 	try:
 		import bmemcached
-		memcached = bmemcached.Client(['127.0.0.1:11211'], compression = None)
+		class BMemcached__wrap:
+			def __init__(self):
+				self.memcached = bmemcached.Client(['127.0.0.1:11211'], compression = None)
+			def get(self, s):
+				return self.memcached.get(s)
+			def set(self, s, val, time=0):
+				return self.memcached.set(s, val, compress_level = 0)
+			def delete(self,s):
+				return self.memcached.delete(s)
+				
+		memcached = BMemcached__wrap()
 	except:
 		print('no memcached available')
 		class Memcached_fake:
@@ -563,7 +573,7 @@ class Message:
 							'chan': c,
 							'uid': uid
 						})
-						memcached.set('oirc_lines_'+c, json.dumps(lines_cached,separators=(',',':')),int(time.time())+(60*60*24*3), compress_level = 0)
+						memcached.set('oirc_lines_'+c, json.dumps(lines_cached,separators=(',',':')),int(time.time())+(60*60*24*3))
 					except:
 						traceback.print_exc()
 						memcached.delete('oirc_lines_'+c)
