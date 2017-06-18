@@ -1,0 +1,20 @@
+{
+	"name": "CalcNet",
+	"version": "1.0.0",
+	"defaultCfg": {
+		"server": "mydomain.com",
+		"port": 4295
+	},
+	"editPattern": [
+		{
+			"name": "Server",
+			"type": "text",
+			"var": "server"
+		},
+		{
+			"name": "Port",
+			"type": "number",
+			"var": "port"
+		}
+	]
+}

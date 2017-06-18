@@ -10,7 +10,6 @@ $updateHooks = false; // do we need to update hooks? true for all, array for spe
 $botFiles = array(SED_INSERT_BOTFILES);
 
 
-
 function lastUpdateStuff(){
 	global $config,$NEWVERSION,$DOWNLOADDIR,$sql;
 	$msg = '';
@@ -25,8 +24,8 @@ function lastUpdateStuff(){
 }
 
 
-$DOWNLOADDIR = 'https://omnomirc.omnimaga.org/'.$NEWVERSION;
-$DOWNLOADDIR_PATH = '/'.$NEWVERSION;
+$DOWNLOADDIR = 'https://omnomirc.omnimaga.org/core/'.$NEWVERSION;
+$DOWNLOADDIR_PATH = '/core/'.$NEWVERSION;
 
 array_unshift($files,'');
 

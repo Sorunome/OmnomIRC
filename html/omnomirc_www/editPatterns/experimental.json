@@ -1,0 +1,17 @@
+[
+	{
+		"name": "use bot",
+		"type": "checkbox",
+		"var": "useBot"
+	},
+	{
+		"name": "use minified sources",
+		"type": "checkbox",
+		"var": "minified"
+	},
+	{
+		"name": "fetch beta updates",
+		"type": "checkbox",
+		"var": "betaUpdates"
+	}
+]

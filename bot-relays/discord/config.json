@@ -1,0 +1,20 @@
+{
+	"name": "Discord",
+	"version": "0.0.1",
+	"defaultCfg": {
+		"token": "",
+		"server": ""
+	},
+	"editPattern": [
+		{
+			"name": "Token",
+			"type": "text",
+			"var": "token"
+		},
+		{
+			"name": "Sever name or ID",
+			"type": "text",
+			"var": "server"
+		}
+	]
+}

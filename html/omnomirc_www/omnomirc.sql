@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS `{db_prefix}lines` (
   `uid` int(10) NOT NULL DEFAULT '-1',
   PRIMARY KEY (`line_number`),
   KEY `time` (`time`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8mb4 ;
 
 DROP TABLE IF EXISTS `{db_prefix}lines_old`;
 CREATE TABLE IF NOT EXISTS `{db_prefix}lines_old` (
@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS `{db_prefix}lines_old` (
   `uid` int(10) NOT NULL DEFAULT '-1',
   PRIMARY KEY (`line_number`),
   KEY `time` (`time`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8mb4 ;
 
 DROP TABLE IF EXISTS `{db_prefix}permissions`;
 CREATE TABLE IF NOT EXISTS `{db_prefix}permissions` (
@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS `{db_prefix}permissions` (
   `modes` varchar(120) NOT NULL,
   `isChanModes` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`generic_autoincrementing_prikey`)
-) ENGINE=MyISAM DEFAULT CHARSET=utf8 ;
+) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 ;
 
 DROP TABLE IF EXISTS `{db_prefix}channels`;
 CREATE TABLE IF NOT EXISTS `{db_prefix}channels` (
@@ -50,7 +50,7 @@ CREATE TABLE IF NOT EXISTS `{db_prefix}channels` (
   `bans` TEXT NOT NULL DEFAULT '',
   `modes` TEXT NOT NULL DEFAULT '',
   PRIMARY KEY (`channum`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8mb4 ;
 
 DROP TABLE IF EXISTS `{db_prefix}users`;
 CREATE TABLE IF NOT EXISTS `{db_prefix}users` (
@@ -63,7 +63,7 @@ CREATE TABLE IF NOT EXISTS `{db_prefix}users` (
   `isOnline` tinyint(2) NOT NULL DEFAULT '1',
   `uid` INT NOT NULL DEFAULT '-1',
   PRIMARY KEY (`usernum`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8mb4 ;
 
 DROP TABLE IF EXISTS `{db_prefix}userstuff`;
 CREATE TABLE IF NOT EXISTS `{db_prefix}userstuff` (
@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS `{db_prefix}userstuff` (
   `globalBan` int(10) NOT NULL,
   `uid` int(11) NOT NULL DEFAULT '-1',
   PRIMARY KEY (`usernum`)
-) ENGINE=MyISAM  DEFAULT CHARSET=utf8 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=utf8mb4 ;
 
 DROP TABLE IF EXISTS `{db_prefix}vars`;
 CREATE TABLE IF NOT EXISTS `{db_prefix}vars` (
@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS `{db_prefix}vars` (
   `value` text NOT NULL,
   `type` int(11) NOT NULL,
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB  DEFAULT CHARSET=utf8 ;
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8mb4 ;
 
 
 ALTER TABLE `{db_prefix}lines`

@@ -1,0 +1,55 @@
+[
+	{
+		"name": "Enable Websockets",
+		"type": "checkbox",
+		"var": "use"
+	},
+	{
+		"name": "SSL",
+		"type": "checkbox",
+		"var": "ssl",
+		"pattern": [
+			{
+				"name": "Certificate File",
+				"type": "text",
+				"var": "certfile"
+			},
+			{
+				"name": "Private Key File",
+				"type": "text",
+				"var": "keyfile"
+			}
+		]
+	},
+	{
+		"name": "Advanced settings",
+		"type": "more",
+		"pattern": [
+			{
+				"name": "Host (only set if different from setting in \"misc\")",
+				"type": "text",
+				"var": "host"
+			},
+			{
+				"name": "Enable Port-poking (will disable internal port)",
+				"type": "checkbox",
+				"var": "portpoking"
+			},
+			{
+				"name": "External Port",
+				"type": "number",
+				"var": "port"
+			},
+			{
+				"name": "Internal Port (e.g. for nginx/apache forwarding)",
+				"type": "text",
+				"var": "intport"
+			},
+			{
+				"name": "Force client-sided ssl (e.g. for nginx/apache forwarding)",
+				"type": "checkbox",
+				"var": "fssl"
+			}
+		]
+	}
+]

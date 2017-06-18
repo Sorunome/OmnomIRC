@@ -1,0 +1,27 @@
+[
+	{
+		"name": "Server",
+		"type": "text",
+		"var": "server"
+	},
+	{
+		"name": "Database",
+		"type": "text",
+		"var": "db"
+	},
+	{
+		"name": "User",
+		"type": "text",
+		"var": "user"
+	},
+	{
+		"name": "Password",
+		"type": "text",
+		"var": "passwd"
+	},
+	{
+		"name": "Database Prefix",
+		"type": "text",
+		"var": "prefix"
+	}
+]

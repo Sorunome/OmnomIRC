@@ -1,3 +1,4 @@
+
 #!/usr/bin/python3
 ## -*- coding: utf-8 -*-
 
@@ -22,95 +23,6 @@
 
 import irc,json,oirc_include as oirc
 
-relayType = 3
-defaultCfg = {
-	'main':{
-		'nick':'OmnomIRC',
-		'server':'irc server',
-		'port':6667,
-		'nickserv':'',
-		'ssl':False
-	},
-	'topic':{
-		'nick':'',
-		'server':'irc server',
-		'port':6667,
-		'nickserv':'',
-		'ssl':False
-	},
-	'colornicks':False
-}
-name = 'IRC'
-editPattern = [
-	{
-		'name':'Color Nicks',
-		'type':'checkbox',
-		'var':'colornicks'
-	},
-	{
-		'type':'newline'
-	},
-	{
-		'name':'Nick',
-		'type':'text',
-		'var':'main/nick'
-	},
-	{
-		'name':'Server',
-		'type':'text',
-		'var':'main/server'
-	},
-	{
-		'name':'Port',
-		'type':'number',
-		'var':'main/port'
-	},
-	{
-		'name':'SSL',
-		'type':'checkbox',
-		'var':'main/ssl'
-	},
-	{
-		'name':'Nickserv (leave emtpy for none)',
-		'type':'text',
-		'var':'main/nickserv'
-	},
-	{
-		'name':'Advanced settings',
-		'type':'more',
-		'pattern':[
-			{
-				'name':'Topicbot',
-				'type':'info'
-			},
-			{
-				'name':'Nick (leave emtpy for no seperate topic bot)',
-				'type':'text',
-				'var':'topic/nick'
-			},
-			{
-				'name':'Server',
-				'type':'text',
-				'var':'topic/server'
-			},
-			{
-				'name':'Port',
-				'type':'number',
-				'var':'topic/port'
-			},
-			{
-				'name':'SSL',
-				'type':'checkbox',
-				'var':'topic/ssl'
-			},
-			{
-				'name':'Nickserv (leave emtpy for none)',
-				'type':'text',
-				'var':'topic/nickserv'
-			}
-		]
-	}
-]
 
 class Relay(oirc.OircRelay):
 	bot = False
@@ -132,7 +44,6 @@ class Relay(oirc.OircRelay):
 		return bot_class(cfg[t]['server'],cfg[t]['port'],cfg[t]['nick'],cfg[t]['nickserv'],cfg[t]['ssl'],t=='main',
 						self.haveTopicBot,cfg['topic']['nick'],cfg['colornicks'],self.getColorCache())
 	def initRelay(self):
-		self.relayType = relayType
 		self.haveTopicBot = self.config['topic']['nick'] != ''
 		self.bot = self.newBot('main',self.config)
 		if self.haveTopicBot:
@@ -211,9 +122,9 @@ class Bot_OIRC(irc.Bot,oirc.OircRelayHandle):
 			self.log_prefix = '[Topicbot] '
 	def log(self,s,level='info'): # re-write the bot handler
 		if level=='error':
-			self.log_error(s)
+			self.error(s)
 		else:
-			self.log_info(s)
+			self.debug(s)
 	def send_safe(self,s):
 		if self.main:
 			self.send(s)
@@ -244,7 +155,7 @@ class Bot_OIRC(irc.Bot,oirc.OircRelayHandle):
 		c = self.idToChan(c)
 		if c != '' and (self.topicbotExists ^ self.main):
 			self.s.sendall(bytes('TOPIC %s :%s\r\n' % (c,s),'utf-8'))
-			self.log_info('>> '+c+' '+s)
+			self.debug('>> '+c+' '+s)
 	def colorizeNick(self,n):
 		rcolors = ['03','04','06','08','09','10','11','12','13']
 		i = 0
@@ -284,7 +195,7 @@ class Bot_OIRC(irc.Bot,oirc.OircRelayHandle):
 	def addLine(self,n1,n2,t,m,c):
 		c = self.chanToId(c)
 		if c != -1:
-			self.handle.sendToOther(n1,n2,t,m,c,self.id)
+			self.handle.message.send(n1,n2,t,m,c,self.id)
 	def addUser(self,u,c,donotify = True):
 		c = self.chanToId(c)
 		if c != -1:
@@ -292,13 +203,13 @@ class Bot_OIRC(irc.Bot,oirc.OircRelayHandle):
 				self.userlist[c].append(u)
 			else:
 				self.userlist[c] = [u]
-			self.handle.addUser(u,c,self.id,donotify = donotify)
+			self.handle.user.add(u,c,self.id,donotify = donotify)
 	def removeUser(self,u,c):
 		c = self.chanToId(c)
 		if c != -1:
 			if c in self.userlist:
 				self.userlist[c].remove(u)
-			self.handle.removeUser(u,c,self.id)
+			self.handle.user.remove(u,c,self.id)
 	def handleQuit(self,n,m):
 		for c,us in self.userlist.items():
 			removedUsers = []
@@ -344,7 +255,7 @@ class Bot_OIRC(irc.Bot,oirc.OircRelayHandle):
 			for c in userchunks:
 				self.send_safe('PRIVMSG '+nick+' :OIRCUSERS '+chan+' '+c)
 		except:
-			self.log_error(traceback.format_exc())
+			self.error(traceback.format_exc())
 			return
 	def doMain(self,line):
 		for i in range(len(line)):
@@ -386,7 +297,7 @@ class Bot_OIRC(irc.Bot,oirc.OircRelayHandle):
 		elif line[1]=='TOPIC':
 			if nick.lower()!=self.nick.lower() and nick.lower().rstrip('_')!=self.topicNick.lower().rstrip('_'):
 				self.addLine(nick,'','topic',message,chan)
-				self.handle.sendTopicToOther(message,self.chanToId(chan),self.id)
+				self.handle.message.topic(message,self.chanToId(chan),self.id)
 		elif line[1]=='NICK':
 			self.handleNickChange(nick,line[2][1:])
 		elif line[1]=='352':
@@ -402,7 +313,7 @@ class Bot_OIRC(irc.Bot,oirc.OircRelayHandle):
 	def delUsersInChan(self,c):
 		c = self.chanToId(c)
 		if c != -1:
-			self.handle.removeAllUsersChan(c,self.id)
+			self.handle.user.removeAllChan(c,self.id)
 	def getUsersInChan(self,c):
 		self.delUsersInChan(c)
 		self.send_safe('WHO %s' % c)

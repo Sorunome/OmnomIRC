@@ -19,7 +19,7 @@ if($resp['version'] == 0){
 	$resp['latest'] = true;
 }
 if(!$resp['latest']){
-	$resp['updater'] = '/'.$resp['version'].'/updater.php.s';
+	$resp['updater'] = '/core/'.$resp['version'].'/updater.php.s';
 }
 
 echoJson($resp);

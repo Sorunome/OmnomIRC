@@ -41,8 +41,7 @@ exit;
 	}
 }
 $oirc_config = getConfig();
-header('Access-Control-Allow-Origin: '.$oirc_config['oircUrl']);
-date_default_timezone_set('UTC');
+
 function base64_url_encode($input) {
 	return strtr(base64_encode($input),'+/=','-_,');
 }
@@ -53,6 +52,10 @@ function base64_url_decode($input){
 if(isset($only_include_oirc) && $only_include_oirc){
 	return;
 }
+
+header('Access-Control-Allow-Origin: '.$oirc_config['oircUrl']);
+date_default_timezone_set('UTC');
+
 if(!isset($_GET['server'])){
 	if(!$oirc_config['installed']){
 		die('Installation is still in progress');
@@ -185,4 +188,3 @@ if(isset($_GET['op'])){
 		}
 	}
 }
-?>

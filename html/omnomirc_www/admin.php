@@ -47,9 +47,8 @@ exit;
 			}
 			Json::add('message',$m."\nconfig written");
 		}
-		if(!INTERNAL && OIRC::$config['settings']['useBot']){
-			Relay::sendLine('','','server_updateconfig','');
-			Relay::commitBuffer();
+		if(!INTERNAL){
+			Relay::sendRaw(array('t' => 'server_updateconfig'));
 		}
 	}else{
 		Json::addError('Couldn\'t write config');
@@ -130,40 +129,14 @@ if(OIRC::$you->isGlobalOp()){
 					'prefix' => OIRC::$config['sql']['prefix'],
 					'passwd' => ''
 				));
-				Json::add('pattern',array(
-					array(
-						'name' => 'Server',
-						'type' => 'text',
-						'var' => 'server'
-					),
-					array(
-						'name' => 'Database',
-						'type' => 'text',
-						'var' => 'db'
-					),
-					array(
-						'name' => 'User',
-						'type' => 'text',
-						'var' => 'user'
-					),
-					array(
-						'name' => 'Password',
-						'type' => 'text',
-						'var' => 'passwd'
-					),
-					array(
-						'name' => 'Database Prefix',
-						'type' => 'text',
-						'var' => 'prefix'
-					)
-				));
+				Json::add('pattern',json_decode(file_get_contents(realpath(dirname(__FILE__)).'/editPatterns/sql.json'),true));
 				break;
 			case 'smileys':
 				Json::add('smileys',Vars::get('smileys'));
 				break;
 			case 'networks':
 				foreach(OIRC::$config['networks'] as &$n){
-					if($n['type'] == 1){
+					if($n['type'] === 1){
 						$v = Vars::get(array('extra_chan_msg_'.(string)$n['id'],'defaults_'.(string)$n['id']));
 						$m = $v['extra_chan_msg_'.(string)$n['id']];
 						if($m!==NULL){
@@ -198,24 +171,9 @@ if(OIRC::$you->isGlobalOp()){
 						)
 					)
 				);
-				if(OIRC::$config['settings']['useBot']){
-					if($socket = Relay::getSocket()){
-						$s = json_encode(array('t' => 'server_getRelayTypes'))."\n";
-						socket_write($socket,$s,strlen($s));
-						$b = '';
-						socket_set_option($socket,SOL_SOCKET,SO_RCVTIMEO,array('sec' => 2,'usec' => 0));
-						while($buf = socket_read($socket,2048)){
-							$b .= $buf;
-							if(strpos($b,"\n")!==false){
-								break;
-							}
-						}
-						socket_close($socket);
-						if($a = json_decode($b,true)){
-							foreach($a as $b){
-								$networkTypes[$b['id']] = $b;
-							}
-						}
+				if($a = Relay::sendRaw(array('t' => 'server_getRelayTypes'))){
+					foreach($a as $b){
+						$networkTypes[$b['id']] = $b;
 					}
 				}
 				Json::add('networkTypes',$networkTypes);
@@ -226,68 +184,14 @@ if(OIRC::$you->isGlobalOp()){
 					$s = @file_get_contents(OIRC::$config['networks'][$_GET['i']]['config']['checkLogin'].'?server='.getCheckLoginChallenge().'&action=get');
 					if($s != ''){
 						$success = true;
-						$json->add('checkLogin',json_decode($s,true));
+						Json::add('checkLogin',json_decode($s,true));
 					}
 				}
 				Json::add('success',$success);
 				break;
 			case 'ws':
 				Json::add('websockets',OIRC::$config['websockets']);
-				Json::add('pattern',array(
-					array(
-						'name' => 'Enable Websockets',
-						'type' => 'checkbox',
-						'var' => 'use'
-					),
-					array(
-						'name' => 'SSL',
-						'type' => 'checkbox',
-						'var' => 'ssl',
-						'pattern' => array(
-							array(
-								'name' => 'Certificate File',
-								'type' => 'text',
-								'var' => 'certfile'
-							),
-							array(
-								'name' => 'Private Key File',
-								'type' => 'text',
-								'var' => 'keyfile'
-							)
-						)
-					),
-					array(
-						'name' => 'Advanced settings',
-						'type' => 'more',
-						'pattern' => array(
-							array(
-								'name' => 'Host (only set if different from setting in "misc")',
-								'type' => 'text',
-								'var' => 'host'
-							),
-							array(
-								'name' => 'Enable Port-poking (will disable internal port)',
-								'type' => 'checkbox',
-								'var' => 'portpoking'
-							),
-							array(
-								'name' => 'External Port',
-								'type' => 'number',
-								'var' => 'port'
-							),
-							array(
-								'name' => 'Internal Port (e.g. for nginx/apache forwarding)',
-								'type' => 'text',
-								'var' => 'intport'
-							),
-							array(
-								'name' => 'Force client-sided ssl (e.g. for nginx/apache forwarding)',
-								'type' => 'checkbox',
-								'var' => 'fssl'
-							)
-						)
-					)
-				));
+				Json::add('pattern',json_decode(file_get_contents(realpath(dirname(__FILE__)).'/editPatterns/websockets.json'),true));
 				break;
 			case 'misc':
 				Json::add('misc',array(
@@ -299,71 +203,7 @@ if(OIRC::$you->isGlobalOp()){
 					'experimental' => OIRC::$config['settings']['experimental'],
 					'cache' => OIRC::$config['cache']
 				));
-				Json::add('pattern',array(
-					array(
-						'name' => 'bot socket',
-						'type' => 'text',
-						'var' => 'botSocket'
-					),
-					array(
-						'name' => 'hostname',
-						'type' => 'text',
-						'var' => 'hostname'
-					),
-					array(
-						'name' => 'curid file path',
-						'type' => 'text',
-						'var' => 'curidFilePath'
-					),
-					array(
-						'name' => 'signature key',
-						'type' => 'text',
-						'var' => 'signatureKey'
-					),
-					array(
-						'name' => 'irc password',
-						'type' => 'text',
-						'var' => 'ircPasswd'
-					),
-					array(
-						'type' => 'newline'
-					),
-					array(
-						'name' => 'Caching',
-						'type' => 'dropdown',
-						'var' => 'cache/type',
-						'options' => array(
-							array(
-								'name' => 'No caching',
-								'val' => 0
-							),
-							array(
-								'name' => 'Memcached',
-								'val' => 1,
-								'pattern' => array(
-									array(
-										'name' => 'Host (default: localhost)',
-										'type' => 'text',
-										'var' => 'cache/host'
-									),
-									array(
-										'name' => 'Port (default: 11211)',
-										'type' => 'number',
-										'var' => 'cache/port'
-									)
-								)
-							)
-						)
-					),
-					array(
-						'type' => 'newline'
-					),
-					array(
-						'name' => 'Turn on experimental settings (not recommended)',
-						'type' => 'checkbox',
-						'var' => 'experimental'
-					)
-				));
+				Json::add('pattern',json_decode(file_get_contents(realpath(dirname(__FILE__)).'/editPatterns/misc.json'),true));
 				break;
 			case 'ex':
 				Json::add('ex',array(
@@ -371,23 +211,7 @@ if(OIRC::$you->isGlobalOp()){
 					'minified' => !isset(OIRC::$config['settings']['minified'])||OIRC::$config['settings']['minified'],
 					'betaUpdates' => isset(OIRC::$config['settings']['betaUpdates'])&&OIRC::$config['settings']['betaUpdates']
 				));
-				Json::add('pattern',array(
-					array(
-						'name' => 'use bot',
-						'type' => 'checkbox',
-						'var' => 'useBot'
-					),
-					array(
-						'name' => 'use minfied sources',
-						'type' => 'checkbox',
-						'var' => 'minified'
-					),
-					array(
-						'name' => 'fetch beta updates',
-						'type' => 'checkbox',
-						'var' => 'betaUpdates'
-					)
-				));
+				Json::add('pattern',json_decode(file_get_contents(realpath(dirname(__FILE__)).'/editPatterns/experimental.json'),true));
 				break;
 			case 'releaseNotes':
 				Json::add('version',OIRC::$config['info']['version']);
@@ -517,6 +341,13 @@ if(OIRC::$you->isGlobalOp()){
 				}
 				OIRC::$config['networks'] = $jsonData;
 				writeConfig();
+				break;
+			case 'restartNetwork':
+				if(isset($_GET['id']) && (int)$_GET['nid'] == $_GET['nid']){
+					Relay::sendRaw(array('t' => 'server_restartNetwork','nid' => (int)$_GET['nid']));
+				}else{
+					Json::addError('Invalid network ID');
+				}
 				break;
 			case 'ws':
 				OIRC::$config['websockets'] = $jsonData;

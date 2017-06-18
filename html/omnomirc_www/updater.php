@@ -1,8 +1,25 @@
 <?php
-namespace oirc;
+namespace oirc\install;
 error_reporting(E_ALL);
-$installScriptVersion = '2.11.2.5';
-include_once(realpath(dirname(__FILE__)).'/config.php');
+$installScriptVersion = '2.12';
+
+function getConfig(){
+	$cfg = explode("\n",file_get_contents(realpath(dirname(__FILE__)).'/config.json.php'));
+	$searchingJson = true;
+	$json = "";
+	foreach($cfg as $line){
+		if($searchingJson){
+			if(trim($line)=='?>'){
+				$searchingJson = false;
+			}
+		}else{
+			$json .= "\n".$line;
+		}
+	}
+	return json_decode($json,true);
+}
+$config = getConfig();
+
 // IMPORTANT!!!! sqli object ONLY FOR INSTALLATION SCRIPT
 class Sql{
 	private function connectSql(){

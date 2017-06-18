@@ -1,7 +1,7 @@
 <?php
 /*
 	OmnomIRC COPYRIGHT 2010,2011 Netham45
-					   2012-2016 Sorunome
+					   2012-2017 Sorunome
 
 	This file is part of OmnomIRC.
 
@@ -299,15 +299,17 @@ class Sql{
 	private static $stmt;
 	private static $numQueries = 0;
 	private static function connectSql(){
-		if(isset(self::$mysqliConnection)){
+		if (isset(self::$mysqliConnection)) {
 			return self::$mysqliConnection;
 		}
-		$mysqli = new \mysqli(OIRC::$config['sql']['server'],OIRC::$config['sql']['user'],OIRC::$config['sql']['passwd'],OIRC::$config['sql']['db']);
-		if($mysqli->connect_errno){
+		$mysqli = new \mysqli(OIRC::$config['sql']['server'], OIRC::$config['sql']['user'], OIRC::$config['sql']['passwd'], OIRC::$config['sql']['db']);
+		if ($mysqli->connect_errno) {
 			die('Could not connect to SQL DB: '.$mysqli->connect_errno.' '.$mysqli->connect_error);
 		}
-		if(!$mysqli->set_charset('utf8')){
-			Json::addError(array('type' => 'mysql','message' => 'Couldn\'t use utf8'));
+		if(!$mysqli->set_charset('utf8mb4')){
+			if(!$mysqli->set_charset('utf8')){
+				Json::addError(array('type' => 'mysql','message' => 'Couldn\'t use utf8'));
+			}
 		}
 		self::$mysqliConnection = $mysqli;
 		return $mysqli;
@@ -685,15 +687,35 @@ class Relay{
 		}else{
 			$matches = array();
 			preg_match('/^([\\w\\.]+):(\\d+)/',$sock,$matches);
-			if($matches){
-				$socket = socket_create(AF_INET,SOCK_STREAM,SOL_TCP);
-				if(!socket_connect($socket,$matches[1],$matches[2])){
-					self::socketfail();
-					return false;
-				}
+			if(!$matches){
+				return false;
+			}
+			$socket = socket_create(AF_INET,SOCK_STREAM,SOL_TCP);
+			if(!socket_connect($socket,$matches[1],$matches[2])){
+				self::socketfail();
+				return false;
 			}
 		}
 		return $socket;
+	}
+	public static function sendRaw($json){
+		if(OIRC::$config['settings']['useBot']){
+			if($socket = self::getSocket()){
+				$s = json_encode($json)."\n";
+				socket_write($socket,$s,strlen($s));
+				$b = '';
+				socket_set_option($socket,SOL_SOCKET,SO_RCVTIMEO,array('sec' => 2,'usec' => 0));
+				while($buf = socket_read($socket,2048)){
+					$b .= $buf;
+					if(strpos($b,"\n")!==false){
+						break;
+					}
+				}
+				socket_close($socket);
+				return json_decode($b,true);
+			}
+		}
+		return false;
 	}
 	public static function commitBuffer(){
 		if(sizeof(self::$sendBuffer)>0){

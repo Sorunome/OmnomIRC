@@ -1,8 +1,8 @@
 .PHONY: debug mini all info mods
 WORKDIR=/home/sorunome/public_html/oirc
+SHELL := /bin/bash
 
 OIRCHTML=html/omnomirc_www
-UGLIFYOPTIONS="-m --comments -v"
 
 debug: mini
 	for f in $$(find $(OIRCHTML)); do \
@@ -32,7 +32,7 @@ mini:
 		dir=$$(dirname "$${f}"); \
 		f="$${f%.js}"; \
 		mkdir -p "$(OIRCHTML)/$$dir"; \
-		uglifyjs $(UGLIFYOPTIONS) "src/$$f.js" -o "$(OIRCHTML)/$$f.min.js" --comments --support-ie8 --reserved 'OmnomIRC,$$' --compress; \
+		uglifyjs "src/$$f.js" -o "$(OIRCHTML)/$$f.min.js" -m -c --comments -v --support-ie8 --reserved 'OmnomIRC,$$' --compress; \
 		git add "$(OIRCHTML)/$$f.min.js"; \
 	done
 	for f in $$(find src -name '*.css'); do \
@@ -44,4 +44,4 @@ mini:
 		git add "$(OIRCHTML)/$$f.min.css"; \
 	done
 info:
-	find . \( -name '*.php' -o -name '*.xml' -o -name '*.css' -o -name '*.html' -o -name '*.py' -o -name '*.sh' -o -name '*.js' -o -name '*.sql' \) \! \( -name '*.min.*' -o -name '\.*' \) -exec wc {} \+ | awk {'print $$4" Lines:"$$1" Bytes:"$$3'} | grep total
+	find . \( -name '*.php' -o -name '*.xml' -o -name '*.css' -o -name '*.html' -o -name '*.py' -o -name '*.sh' -o -name '*.js' -o -name '*.json' -o -name '*.sql' \) \! \( -name '*.min.*' -o -name '\.*' \) -exec wc {} \+ | awk {'print $$4" Lines:"$$1" Bytes:"$$3'} | grep total

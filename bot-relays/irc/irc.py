@@ -20,7 +20,7 @@ def makeUnicode(s):
 
 #irc bot
 class Bot(threading.Thread):
-	def __init__(self,server,port,nick,dssl = False,ns = '',chans = [],logstr = ''):
+	def __init__(self,server,port,nick,dssl = False,ns = '',chans = [],logstr = '',floodLimit = 5):
 		threading.Thread.__init__(self)
 		self.stopnow = False
 		self.restart = False
@@ -35,6 +35,12 @@ class Bot(threading.Thread):
 		self.colorAddingCache = {}
 		self.ssl = dssl
 		self.logstr = logstr
+		
+		self.floodLimit = floodLimit
+		self.floodBuffer = []
+		self.floodProtected = False
+		self.floodNum = 0
+		self.floodTime = int(time.time())
 		
 		self.lastTriedNick = time.time()
 	def log(self,s,level='info'):
@@ -66,14 +72,32 @@ class Bot(threading.Thread):
 		#except:
 		#	traceback.print_exc()
 		self.stopnow = True
-	def send(self,s,overrideRestart = False):
+	def _send(self,s,floodProtection = True):
+		if self.floodLimit == 0 or not floodProtection:
+			self.log('<< '+s.decode('utf-8'))
+			self.s.sendall(s)
+			return
+		if self.floodProtected:
+			self.floodBuffer.append(s)
+			return
+		t = int(time.time())
+		if self.floodTime != t:
+			self.floodTime = t
+			self.floodNum = 0
+		self.floodNum += 1
+		if self.floodNum > self.floodLimit: # we need protection!
+			self.log('Flood protection triggered')
+			self.floodProtected = True
+			self.floodBuffer.append(s)
+			return
+		self.log('<< '+s.decode('utf-8'))
+		self.s.sendall(s)
+	def send(self,s,overrideRestart = False,floodProtection = True):
 		try:
 			try:
-				self.s.sendall(bytes('%s\r\n' % s,'utf-8'))
-				self.log('>> '+s)
+				self._send(bytes('%s\r\n' % s,'utf-8'),floodProtection)
 			except:
-				self.s.sendall(bytes('%s\r\n' % s.encode('utf-8'),'utf-8'))
-				self.log('>> '+s.encode('utf-8'))
+				self._send(bytes('%s\r\n' % s.encode('utf-8'),'utf-8'),floodProtection)
 		except:
 			self.log(traceback.format_exc(),'error')
 			if not self.stopnow and not overrideRestart:
@@ -81,13 +105,14 @@ class Bot(threading.Thread):
 				self.stopThread()
 	def connectToIRC(self):
 		self.s = socket.socket()
-		self.s.settimeout(5)
+		self.s.settimeout(60)
 		if self.ssl:
 			import ssl
 			self.s = ssl.wrap_socket(self.s)
 		self.s.connect((self.server,self.port))
-		self.send('USER %s %s %s :%s' % ('ircbot','host','server','ircbot'))
-		self.send('NICK %s' % (self.nick))
+		self.s.settimeout(1)
+		self.send('USER %s %s %s :%s' % ('ircbot','host','server','ircbot'),floodProtection = False)
+		self.send('NICK %s' % (self.nick),floodProtection = False)
 	def handleNickTaken(self,line):
 		for i in range(len(line)):
 			line[i] = makeUnicode(line[i])
@@ -168,9 +193,20 @@ class Bot(threading.Thread):
 					self.log(' parse Error')
 					self.log(str(inst))
 					self.log(traceback.format_exc(),'error')
+			
+			# time to check for flood control buffer stuff
+			if self.floodProtected:
+				if len(self.floodBuffer) == 0:
+					self.floodProtected = False
+				else:
+					s = self.floodBuffer.pop()
+					self.s.sendall(s)
+					self.log('< flood '+s.decode('utf-8'))
+					if len(self.floodBuffer) == 0:
+						self.floodProtected = False
 		if self.stopnow:
 			if self.quitMsg!='':
-				self.send('QUIT :%s' % self.quitMsg,True)
+				self.send('QUIT :%s' % self.quitMsg,True, floodProtection=False)
 				self.handleQuit(self.nick,self.quitMsg)
 			try:
 				self.s.settimeout(2) # wait for max 2 seconds for the server to quit on us
@@ -233,3 +269,5 @@ class Bot(threading.Thread):
 				self.log(' Restarting bot')
 				time.sleep(15)
 		self.log(' Good bye from bot')
+	def handleQuit(self,n,m):
+		return
