@@ -3,7 +3,6 @@ WORKDIR=/home/sorunome/public_html/oirc
 SHELL := /bin/bash
 
 OIRCHTML=html/omnomirc_www
-UGLIFYOPTIONS="-m --comments -v"
 
 debug: mini
 	for f in $$(find $(OIRCHTML)); do \
@@ -33,7 +32,7 @@ mini:
 		dir=$$(dirname "$${f}"); \
 		f="$${f%.js}"; \
 		mkdir -p "$(OIRCHTML)/$$dir"; \
-		uglifyjs $(UGLIFYOPTIONS) "src/$$f.js" -o "$(OIRCHTML)/$$f.min.js" --comments --support-ie8 --reserved 'OmnomIRC,$$' --compress; \
+		uglifyjs "src/$$f.js" -o "$(OIRCHTML)/$$f.min.js" -m -c --comments -v --support-ie8 --reserved 'OmnomIRC,$$' --compress; \
 		git add "$(OIRCHTML)/$$f.min.js"; \
 	done
 	for f in $$(find src -name '*.css'); do \

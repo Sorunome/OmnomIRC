@@ -27,17 +27,21 @@ RSP_RESTART = 101
 RSP_STARTFAIL = 2
 try:
 	import memcache
-	memcached = memcache.Client(['127.0.0.1:11211'],debug=0)
+	memcached = memcache.Client(['127.0.0.1:11211'], debug = 0)
 except:
-	print('no memcached available')
-	class Memcached_fake:
-		def get(self,str):
-			return False
-		def set(self,str,val,time=0):
-			return False
-		def delete(self,str):
-			return False
-	memcached = Memcached_fake()
+	try:
+		import bmemcached
+		memcached = bmemcached.Client(['127.0.0.1:11211'], compression = None)
+	except:
+		print('no memcached available')
+		class Memcached_fake:
+			def get(self,str):
+				return False
+			def set(self,str,val,time=0):
+				return False
+			def delete(self,str):
+				return False
+		memcached = Memcached_fake()
 
 
 FILEROOT = os.path.dirname(os.path.realpath(__file__))
@@ -559,7 +563,7 @@ class Message:
 							'chan': c,
 							'uid': uid
 						})
-						memcached.set('oirc_lines_'+c,json.dumps(lines_cached,separators=(',',':')),int(time.time())+(60*60*24*3))
+						memcached.set('oirc_lines_'+c, json.dumps(lines_cached,separators=(',',':')),int(time.time())+(60*60*24*3), compress_level = 0)
 					except:
 						traceback.print_exc()
 						memcached.delete('oirc_lines_'+c)
@@ -567,7 +571,7 @@ class Message:
 				self.error('Couldn\'t update memcached: '+str(inst))
 		
 		if t == 'topic':
-			memcached.set('oirc_topic_'+c,m)
+			memcached.set('oirc_topic_'+c, m, compress_level = 0)
 			self.parent.sql.query("UPDATE `{db_prefix}channels` SET topic=%s WHERE channum={db_prefix}getchanid(%s)",[m,c])
 		if t == 'action' or t == 'message':
 			self.parent.sql.query("UPDATE `{db_prefix}users` SET lastMsg=UNIX_TIMESTAMP(CURRENT_TIMESTAMP) WHERE username=%s AND channel=%s AND online=%s",[n1,c,int(s)])
