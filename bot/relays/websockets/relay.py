@@ -29,6 +29,7 @@ name = 'Websocket relay'
 version = '1.0.0'
 
 class Relay(oirc.OircRelay):
+	relayAll = True
 	def getNetChans(self):
 		retn = {}
 		for n in self.handle.config.json['networks']:
