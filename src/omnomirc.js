@@ -1,7 +1,7 @@
 /**
  * @license
  * OmnomIRC COPYRIGHT 2010,2011 Netham45
- *                    2012-2016 Sorunome
+ *                    2012-2017 Sorunome
  *
  *  This file is part of OmnomIRC.
  *
@@ -1562,6 +1562,7 @@ function OmnomIRC(){
 								})
 							}
 							self.sending = false;
+							self.val('');
 							if(!sync_fn){
 								fn();
 							}
@@ -1609,6 +1610,7 @@ function OmnomIRC(){
 						chan = channels.current().handler;
 					}
 					if(s[0] == '/' && commands.parse(s.substr(1))){
+						self.val('');
 						fn();
 					}else{
 						self.send_real(fn,s,chan,sync_fn);
@@ -2948,7 +2950,6 @@ function OmnomIRC(){
 				e.preventDefault();
 				if(!$input.attr('disabled')){
 					send.send(function(){
-						send.val('');
 						$input.focus();
 					});
 				}

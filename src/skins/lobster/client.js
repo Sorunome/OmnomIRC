@@ -1,7 +1,7 @@
 /**
  * @license
  * OmnomIRC COPYRIGHT 2010,2011 Netham45
- *                    2012-2016 Sorunome
+ *                    2012-2017 Sorunome
  *
  *  This file is part of OmnomIRC.
  *
@@ -864,6 +864,10 @@ $(function(){
 					oirc.page.changeLinks();
 					
 					oirc.initinput($('#message'),true);
+					$('#send').click(function(e) {
+						e.preventDefault();
+						oirc.send.send();
+					});
 					
 					if(!oirc.settings.loggedIn()){
 						oirc.send.val('You need to login if you want to chat!');
