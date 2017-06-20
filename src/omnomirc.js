@@ -33,7 +33,7 @@ function OmnomIRC(){
 			if(loadMode && line.type == 'highlight'){
 				return;
 			}
-			if(!loadMode && line.type != 'highlight' && line.chan == ss.get('chan')){
+			if(!loadMode && line.type != 'highlight' && line.type != 'internal' && line.chan == ss.get('chan')){
 				var lines = ss.get('lines');
 				lines.push(line);
 				if(lines.length > 200){
