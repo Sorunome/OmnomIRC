@@ -102,6 +102,7 @@ class DiscordHandle(oirc.OircRelayHandle, threading.Thread):
 		c = self.idToChan(c)
 		if not c:
 			return
+		m = oirc.stripIrcColors(m)
 		msg = ''
 		if t == 'message':
 			msg = '<{}> {}'.format(n1, m)
