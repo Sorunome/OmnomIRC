@@ -2357,7 +2357,7 @@ function OmnomIRC(){
 					if (!text || text === null || text === undefined){
 						return '';
 					}
-					var ier = "[^\\s\x01\x04<\"]"; // url end regex
+					var ier = "[^\\s\x01\x04<>\"]"; // url end regex
 					text = text.replace(RegExp("(\x01|\x04)","g"),"");
 					$.map(self.spLinks,function(url){
 						url = url.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
