@@ -755,7 +755,7 @@ class Relay{
 				if($cache = Cache::get('oirc_lines_'.$line['c'])){
 					$lines_cached = json_decode($cache,true);
 					if(json_last_error()===0){
-						if(count($lines_cached > 200)){
+						if(count($lines_cached) > 200){
 							array_shift($lines_cached);
 						}
 						

@@ -1,7 +1,7 @@
 /**
  * @license
  * OmnomIRC COPYRIGHT 2010,2011 Netham45
- *                    2012-2016 Sorunome
+ *                    2012-2017 Sorunome
  *
  *  This file is part of OmnomIRC.
  *
@@ -33,7 +33,7 @@ function OmnomIRC(){
 			if(loadMode && line.type == 'highlight'){
 				return;
 			}
-			if(!loadMode && line.type != 'highlight' && line.chan == ss.get('chan')){
+			if(!loadMode && line.type != 'highlight' && line.type != 'internal' && line.chan == ss.get('chan')){
 				var lines = ss.get('lines');
 				lines.push(line);
 				if(lines.length > 200){
@@ -1562,6 +1562,7 @@ function OmnomIRC(){
 								})
 							}
 							self.sending = false;
+							self.val('');
 							if(!sync_fn){
 								fn();
 							}
@@ -1609,6 +1610,7 @@ function OmnomIRC(){
 						chan = channels.current().handler;
 					}
 					if(s[0] == '/' && commands.parse(s.substr(1))){
+						self.val('');
 						fn();
 					}else{
 						self.send_real(fn,s,chan,sync_fn);
@@ -2355,7 +2357,7 @@ function OmnomIRC(){
 					if (!text || text === null || text === undefined){
 						return '';
 					}
-					var ier = "[^\\s\x01\x04<\"]"; // url end regex
+					var ier = "(?:(?!&lt;|&gt;|\\s|\x01|\x04|<|>|\\)|\\]).)"; // url end regex
 					text = text.replace(RegExp("(\x01|\x04)","g"),"");
 					$.map(self.spLinks,function(url){
 						url = url.replace(/[\-\[\]\/\{\}\(\)\*\+\?\.\\\^\$\|]/g, "\\$&");
@@ -2948,7 +2950,6 @@ function OmnomIRC(){
 				e.preventDefault();
 				if(!$input.attr('disabled')){
 					send.send(function(){
-						send.val('');
 						$input.focus();
 					});
 				}

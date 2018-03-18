@@ -588,7 +588,7 @@ class Message:
 		self.setCurline(curline)
 		
 		for n in self.parent.network.nets:
-			if (oircOnly and n.type == 'websockets') or not oircOnly:
+			if ((oircOnly and n.type == 'websockets') or not oircOnly):
 				try:
 					n.relayMessage_wrap(n1,n2,t,m,c,s,uid,curline)
 				except:

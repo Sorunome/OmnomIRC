@@ -29,7 +29,15 @@ class Relay(oirc.OircRelay):
 	def startRelay(self):
 		self.server.start()
 	def updateRelay(self, cfg, chans):
-		return
+		self.channels = chans
+		self.server.channels = chans
+		self.server.server = cfg['server']
+		if self.config['token'] != cfg['token']:
+			self.server.stop()
+			self.server.join()
+			self.server.token = cfg['token']
+			self.server.start()
+		self.config = cfg
 	def stopRelay(self):
 		self.server.stop()
 	def relayMessage(self, n1, n2, t, m, c, s, uid = -1, curline = 0):
@@ -45,6 +53,7 @@ class DiscordHandle(oirc.OircRelayHandle, threading.Thread):
 		self.server = server
 		self.loop = asyncio.new_event_loop()
 		self.client = discord.Client(loop = self.loop)
+		self.acceptMessages = False
 		self.setClientFunctions()
 	def chanToId(self, c):
 		for i,ch in self.channels.items():
@@ -68,12 +77,13 @@ class DiscordHandle(oirc.OircRelayHandle, threading.Thread):
 		@self.client.event
 		@asyncio.coroutine
 		def on_ready():
+			self.acceptMessages = True
 			self.info('Logged in as ' + self.client.user.name)
 			self.bot_id = self.client.user.id
 		@self.client.event
 		@asyncio.coroutine
 		def on_message(message):
-			if not message.server:
+			if not message.server or not self.acceptMessages:
 				return
 			if message.author.id == self.bot_id:
 				return
@@ -92,6 +102,7 @@ class DiscordHandle(oirc.OircRelayHandle, threading.Thread):
 		c = self.idToChan(c)
 		if not c:
 			return
+		m = oirc.stripIrcColors(m)
 		msg = ''
 		if t == 'message':
 			msg = '<{}> {}'.format(n1, m)
@@ -113,11 +124,17 @@ class DiscordHandle(oirc.OircRelayHandle, threading.Thread):
 			msg = '* {} has changed nicks to {}'.format(n1, n2)
 		if not msg:
 			return
-		asyncio.run_coroutine_threadsafe(self.client.send_message(c, msg), self.loop)
+		prefix = self.getNetworkPrefix(s)
+		asyncio.run_coroutine_threadsafe(self.client.send_message(c, prefix['prefix'] + msg), self.loop)
 	def run(self):
+		self.acceptMessages = False
 		self.client.run(self.token)
 	def stop(self):
-		asyncio.run_coroutine_threadsafe(self.client.logout(), self.loop)
+		self.acceptMessages = False
+		try:
+			asyncio.run_coroutine_threadsafe(self.client.logout(), self.loop)
+		except:
+			pass
 		try:
 			asyncio.run_coroutine_threadsafe(self.client.close(), self.loop)
 		except:
