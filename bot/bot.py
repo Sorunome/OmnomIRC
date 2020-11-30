@@ -606,7 +606,7 @@ class User:
 		self.parent = parent
 	def add(self,u,c,i,uid = -1,donotify = True):
 		temp = self.parent.sql.query("SELECT `usernum`,`isOnline` FROM `{db_prefix}users` WHERE `username`=%s AND `channel`=%s AND `online`=%s",[u,c,int(i)])
-		notifiy = True
+		notify = True
 		if len(temp) == 0:
 			self.parent.sql.query("INSERT INTO `{db_prefix}users` (`username`,`channel`,`online`,`time`,`uid`) VALUES (%s,%s,%s,0,%s)",[u,c,int(i),int(uid)])
 		else:
