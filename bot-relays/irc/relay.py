@@ -297,7 +297,7 @@ class Bot_OIRC(irc.Bot,oirc.OircRelayHandle):
 		elif line[1]=='TOPIC':
 			if nick.lower()!=self.nick.lower() and nick.lower().rstrip('_')!=self.topicNick.lower().rstrip('_'):
 				self.addLine(nick,'','topic',message,chan)
-				self.handle.message.topic(message,self.chanToId(chan),self.id)
+				self.handle.message.sendTopic(message,self.chanToId(chan),self.id)
 		elif line[1]=='NICK':
 			self.handleNickChange(nick,line[2][1:])
 		elif line[1]=='352':
