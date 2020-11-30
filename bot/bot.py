@@ -36,8 +36,8 @@ except:
 				self.memcached = bmemcached.Client(['127.0.0.1:11211'], compression = None)
 			def get(self, s):
 				return self.memcached.get(s)
-			def set(self, s, val, time=0):
-				return self.memcached.set(s, val, compress_level = 0)
+			def set(self, s, val, time=0, compress_level=0):
+				return self.memcached.set(s, val, compress_level)
 			def delete(self,s):
 				return self.memcached.delete(s)
 				
@@ -47,7 +47,7 @@ except:
 		class Memcached_fake:
 			def get(self,str):
 				return False
-			def set(self,str,val,time=0):
+			def set(self,str,val,time=0, compress_level=0):
 				return False
 			def delete(self,str):
 				return False
