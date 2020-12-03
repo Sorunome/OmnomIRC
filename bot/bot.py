@@ -450,7 +450,7 @@ class Network:
 					r = self.add(n)
 					if r:
 						r.startRelay_wrap()
-	@oirc.async
+	@oirc.apply_async
 	def restart(self,i):
 		n = i
 		if type(n) == int:
@@ -691,7 +691,7 @@ class Main:
 			self.oircLink = OIRCLinkServer(self,res.group(1),int(res.group(2)),OIRCLink)
 		self.oircLink.start()
 		return True
-	@oirc.async
+	@oirc.apply_async
 	def update(self):
 		self.info('Got signal to update config!')
 		
