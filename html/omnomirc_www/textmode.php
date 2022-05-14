@@ -129,5 +129,5 @@ if(isset($_GET['message'])){
 		}
 	}
 	echo "<html><head><meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />".($banned?'':("<meta http-equiv=\"refresh\" content=\"5;url=textmode.php?update=".time()."&curline=".$curline."&".OIRC::$you->getUrlParams()."\">"))."</head>
-	<body>".(OIRC::$you->isLoggedIn()?"<a href=\"textmode.php?message&curline=".$curline."&".OIRC::$you->getUrlParams()."\" autofocus>Click here to write a message</a>":"You need to log in if you want to chat!")."<br>Channel: ".(OIRC::$you->channelName())."<table>".$_SESSION['content']."</table></body></html>";
+	<body>".(OIRC::$you->isLoggedIn()?"<a href=\"textmode.php?message&curline=".$curline."&".OIRC::$you->getUrlParams()."\" autofocus>Click here to write a message</a>":"You need to log in if you want to chat!")."<br>Channel: ".(OIRC::$you->channelName())."<table>".($_SESSION['content'] ?? '')."</table></body></html>";
 }
