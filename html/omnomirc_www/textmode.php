@@ -38,6 +38,7 @@ if(isset($_GET['message'])){
 		die();
 	}
 	$banned = false;
+	$channel = '';
 	if(isset($_GET['update']) && isset($_GET['curline']) && !(isset($_SESSION['content']) && $_SESSION['content']==='')){
 		if(OIRC::$you->isBanned()){
 			$lines = array();
