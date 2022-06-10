@@ -105,8 +105,6 @@ ALTER TABLE `{db_prefix}channels` ADD UNIQUE (`chan`) COMMENT '';
 DROP EVENT IF EXISTS `Clean up Userstuff`;
 CREATE EVENT `Clean up Userstuff` ON SCHEDULE EVERY 1 DAY ON COMPLETION NOT PRESERVE ENABLE COMMENT 'Clean up the db' DO DELETE FROM {db_prefix}userstuff
 	WHERE (ignores = '' OR ignores IS NULL)
-	AND (ops = '' OR ops IS NULL)
-	AND (bans = '' OR bans IS NULL)
 	AND (kicks = '' OR kicks IS NULL)
 	AND globalOp = '0'
 	AND globalBan = '0';
